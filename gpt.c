@@ -473,6 +473,7 @@ int GPTpr (const int id)
   int i, ii, n, nn;        /* indices */
   char outfile[11];        /* name of output file: timing.xxx */
   float *sum;              /* sum of overhead values (per thread) */
+  float osum;              /* sum of overhead over threads */
   bool found;              /* jump out of loop when name found */
   bool foundany;           /* whether summation print necessary */
   bool first;              /* flag 1st time entry found */
@@ -592,8 +593,12 @@ int GPTpr (const int id)
     ** Repeat overhead print in loop over threads
     */
 
-    for (n = 0; n < nthreads; ++n)
+    osum = 0.;
+    for (n = 0; n < nthreads; ++n) {
       fprintf (fp, "OVERHEAD.%3.3d (wallclock seconds) = %9.3f\n", n, sum[n]);
+      osum += sum[n];
+    }
+    fprintf (fp, "OVERHEAD.SUM (wallclock seconds) = %9.3f\n", osum);
   }
 
   /*
