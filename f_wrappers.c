@@ -1,45 +1,10 @@
 /*
-** $Id: f_wrappers.c,v 1.3 2004-10-14 19:25:54 rosinski Exp $
+** $Id: f_wrappers.c,v 1.4 2004-10-14 21:11:42 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines
 */
 
 #include "private.h"
-
-#ifdef OLDWRAPPERS
-#if ( defined FORTRANCAPS )
-
-#define t_initializef GPTINITIALIZE
-#define t_prf GPTPR
-#define t_resetf GPTRESET
-#define t_stampf GPTSTAMP
-#define t_startf GPTSTART
-#define t_stopf GPTSTOP
-#define t_setoptionf GPTSETOPTION
-
-#elif ( defined FORTRANUNDERSCORE )
-
-#define t_initializef gptinitialize_
-#define t_prf gptpr_
-#define t_resetf gptreset_
-#define t_stampf gptstamp_
-#define t_startf gptstart_
-#define t_stopf gptstop_
-#define t_setoptionf gptsetoption_
-
-#elif ( defined FORTRANDOUBLEUNDERSCORE )
-
-#define t_initializef gptinitialize__
-#define t_prf gptpr__
-#define t_resetf gptreset__
-#define t_stampf gptstamp__
-#define t_startf gptstart__
-#define t_stopf gptstop__
-#define t_setoptionf gptsetoption__
-
-#endif
-
-#else
 
 #if ( defined FORTRANCAPS )
 
@@ -71,7 +36,6 @@
 #define gptstop gptstop__
 #define gptsetoption gptsetoption__
 
-#endif
 #endif
 
 int gptstart (char *, int);
