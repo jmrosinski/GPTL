@@ -14,6 +14,10 @@ typedef struct {
   char *str;
 } Papientry;
 
+/*
+** Mapping of PAPI counters to short and long printed strings
+*/
+
 static Papientry papitable [] = {
   {PAPI_L1_DCM, "L1 Dcache miss  ", "Level 1 data cache misses"},
   {PAPI_L1_ICM, "L1 Icache miss  ", "Level 1 instruction cache misses"},
@@ -119,14 +123,14 @@ static Papientry papitable [] = {
   {PAPI_FNV_INS,"Finv ins        ", "Finv ins"},
   {PAPI_FP_OPS, "FP ops executed ", "Floating point operations executed"}};
 
-static int nentries = sizeof (papitable) / sizeof (Papientry);
-static Papientry eventlist[MAX_AUX];
+static const int nentries = sizeof (papitable) / sizeof (Papientry);
+static Papientry eventlist[MAX_AUX];    /* list of PAPI events to be counted */
 static int nevents = 0;                 /* number of events: initialize to 0 */ 
-static int *EventSet;
-static long_long **papicounters;
-static bool *started;
-static char papiname[PAPI_MAX_STR_LEN];
-static const int BADCOUNT = -999999;
+static int *EventSet;                   /* list of events to be counted by PAPI */
+static long_long **papicounters;        /* counters return from PAPI */
+static bool *started;                   /* flag indicates EventSet has been started */
+static char papiname[PAPI_MAX_STR_LEN]; /* returned from PAPI_event_code_to_name */
+static const int BADCOUNT = -999999;    /* Set counters to this when they are bad */
 static bool overhead = false;           /* ability to overhead computations */
 static int overheadindx = -999999;      /* init to bad index value */
 static long_long *lastoverhead;         /* needed because aux not available for overhead */
@@ -157,11 +161,11 @@ int GPT_PAPIsetoption (const int counter,
     if (counter == papitable[n].counter) {
       if ((ret = PAPI_query_event (counter)) != PAPI_OK) {
 	(void) PAPI_event_code_to_name (counter, papiname);
-	printf ("GPT_PAPIinitialize: event %s not available on this arch\n", papiname);
+	printf ("GPT_PAPIsetoption: event %s not available on this arch\n", papiname);
       } else {
 	if (nevents+1 > MAX_AUX) {
 	  (void) PAPI_event_code_to_name (counter, papiname);
-	  printf ("GPT_PAPIinitialize: Event %s is too many\n", papiname);
+	  printf ("GPT_PAPIsetoption: Event %s is too many\n", papiname);
 	} else {
 	  if (counter == PAPI_TOT_CYC) {
 	    overhead = true;
@@ -170,7 +174,7 @@ int GPT_PAPIsetoption (const int counter,
 	  eventlist[nevents].counter = counter;
 	  eventlist[nevents].prstr   = papitable[n].prstr;
 	  eventlist[nevents].str     = papitable[n].str;
-	  printf ("GPT_PAPIinitialize: event %s enabled\n", eventlist[nevents].str);
+	  printf ("GPT_PAPIsetoption: event %s enabled\n", eventlist[nevents].str);
 	  ++nevents;
 	}
       }
@@ -369,4 +373,10 @@ void GPT_PAPIadd (Papistats *auxout,
       auxout->accum[n] = BADCOUNT;
     else
       auxout->accum[n] += auxin->accum[n];
+
+  if (overhead)
+    if (auxin->accum_cycles == BADCOUNT || auxout->accum_cycles == BADCOUNT)
+      auxout->accum_cycles += auxin->accum_cycles;
+    else
+      auxout->accum_cycles += auxin->accum_cycles;
 }
