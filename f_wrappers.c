@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.1 2000-12-27 06:10:31 rosinski Exp $
+** $Id: f_wrappers.c,v 1.2 2001-01-01 19:34:05 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines
 */
@@ -8,81 +8,82 @@
 #include <fortran.h>
 #endif
 
-#include "header.h"
+#include "gpt.h"
+#include "private.h"
 
 #if ( defined FORTRANCAPS )
 
-#define GPTinitialize GPTINITIALIZE
-#define GPTpr GPTPR
-#define GPTreset GPTRESET
-#define GPTstamp GPTSTAMP
-#define GPTstart GPTSTART
-#define GPTstop GPTSTOP
-#define GPTsetoption GPTSETOPTION
+#define gptinitialize GPTINITIALIZE
+#define gptpr GPTPR
+#define gptreset GPTRESET
+#define gptstamp GPTSTAMP
+#define gptstart GPTSTART
+#define gptstop GPTSTOP
+#define gptsetoption GPTSETOPTION
 
 #elif ( defined FORTRANUNDERSCORE )
 
-#define GPTinitialize GPTinitialize_
-#define GPTpr GPTpr_
-#define GPTreset GPTreset_
-#define GPTstamp GPTstamp_
-#define GPTstart GPTstart_
-#define GPTstop GPTstop_
-#define GPTsetoption GPTsetoption_
+#define gptinitialize gptinitialize_
+#define gptpr gptpr_
+#define gptreset gptreset_
+#define gptstamp gptstamp_
+#define gptstart gptstart_
+#define gptstop gptstop_
+#define gptsetoption gptsetoption_
 
 #elif ( defined FORTRANDOUBLEUNDERSCORE )
 
-#define GPTinitialize GPTinitialize__
-#define GPTpr GPTpr__
-#define GPTreset GPTreset__
-#define GPTstamp GPTstamp__
-#define GPTstart GPTstart__
-#define GPTstop GPTstop__
-#define GPTsetoption GPTsetoption__
+#define gptinitialize gptinitialize__
+#define gptpr gptpr__
+#define gptreset gptreset__
+#define gptstamp gptstamp__
+#define gptstart gptstart__
+#define gptstop gptstop__
+#define gptsetoption gptsetoption__
 
 #endif
 
 #if ( defined CRAY ) || ( defined T3D )
 
-int GPTstart (_fcd);
-int GPTstop (_fcd);
+int gptstart (_fcd);
+int gptstop (_fcd);
 
 #else
 
-int GPTstart (char *, int);
-int GPTstop (char *, int);
+int gptstart (char *, int);
+int gptstop (char *, int);
 
 #endif
 
-int GPTinitialize ()
+int gptinitialize ()
 {
   return GPTinitialize ();
 }
 
-int GPTpr (int *procid)
+int gptpr (int *procid)
 {
   return GPTpr (*procid);
 }
 
-void GPTreset ()
+void gptreset ()
 {
   GPTreset();
   return;
 }
 
-int GPTsetoption (int *option, int *val)
+int gptsetoption (int *option, int *val)
 {
   return GPTsetoption ( (OptionName) *option, (Boolean) *val);
 }
 
-int GPTstamp (double *wall, double *usr, double *sys)
+int gptstamp (double *wall, double *usr, double *sys)
 {
   return GPTstamp (wall, usr, sys);
 }
 
 #if ( defined CRAY ) || ( defined T3D )
 
-int GPTstart (_fcd name)
+int gptstart (_fcd name)
 {
   char cname[MAX_CHARS+1];
   int numchars;
@@ -93,7 +94,7 @@ int GPTstart (_fcd name)
   return GPTstart (cname);
 }
 
-int GPTstop (_fcd name)
+int gptstop (_fcd name)
 {
   char cname[MAX_CHARS+1];
   int numchars;
@@ -106,7 +107,7 @@ int GPTstop (_fcd name)
 
 #else
 
-int GPTstart (char *name, int nc1)
+int gptstart (char *name, int nc1)
 {
   char cname[MAX_CHARS+1];
   int numchars;
@@ -117,7 +118,7 @@ int GPTstart (char *name, int nc1)
   return GPTstart (cname);
 }
 
-int GPTstop (char *name, int nc1)
+int gptstop (char *name, int nc1)
 {
   char cname[MAX_CHARS+1];
   int numchars;

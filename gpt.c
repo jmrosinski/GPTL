@@ -44,6 +44,19 @@ Counter_t counter[] = {
 #endif
 };
 
+struct Stats {		   
+  float usr;	   /* user CPU time */
+  float sys;	   /* system CPU time */
+  float usrsys;	   /* usr + sys */
+  float elapse;	   /* elapsed time */
+  float max_wtime; /* max elapsed wallclock time per call */
+  float min_wtime; /* min elapsed wallclock time per call */
+
+  long count;	   /* number of invocations of this timer */
+
+  PCL_CNT_TYPE pcl_result[PCL_COUNTER_MAX];
+};
+
 int ncounter = sizeof (counter) / sizeof (Counter_t);
 
 /*
@@ -205,7 +218,7 @@ pthread_t *threadid;
   if (get_thread_num () > 0) 
     return GPTerror ("GPTinitialize: should only be called by master thread\n");
 
-  for (n = 0; n < npossible; n++) {
+  for (n = 0; n < ncounter; n++) {
     if (counter[n].enabled) {
       if (counter[n].name == usrsys)
 	usrsysenabled = true;
@@ -219,7 +232,7 @@ pthread_t *threadid;
       ** Set up PCL stuff based on what setoption has provided.
       */
 
-      if (counter[n]->name > pcl_start && counter[n]->name < pcl_end) {
+      if (counter[n].name > pcl_start && counter[n].name < pcl_end) {
 
 	pclenabled = true;
 
@@ -498,7 +511,7 @@ int GPTstop (char *name)
   PCL_CNT_TYPE i_pcl_result2[PCL_COUNTER_MAX];     /* final output fm PCLread */
   PCL_FP_CNT_TYPE fp_pcl_result[PCL_COUNTER_MAX];  /* required by PCLread */
 
-  if ( ! t_initialized)
+  if ( ! initialized)
     return GPTerror ("GPTstop: GPTinitialize has not been called\n");
 
   /*
@@ -685,19 +698,6 @@ int GPTstamp (double *wall, double *usr, double *sys)
   return 0;
 }
 
-struct Stats {		   
-  float usr;	   /* user CPU time */
-  float sys;	   /* system CPU time */
-  float usrsys;	   /* usr + sys */
-  float elapse;	   /* elapsed time */
-  float max_wtime; /* max elapsed wallclock time per call */
-  float min_wtime; /* min elapsed wallclock time per call */
-
-  long count;	   /* number of invocations of this timer */
-
-  PCL_CNT_TYPE pcl_result[PCL_COUNTER_MAX];
-};
-
 /*
 ** GPTpr: print stats for all known timers to a file
 **
@@ -731,7 +731,7 @@ int GPTpr (int procid)
   struct timeval tp1, tp2; /* input to gettimeofday() */
   struct tms buf;          /* input to times() */
 
-  if ( ! t_initialized)
+  if ( ! initialized)
     return GPTerror ("t_pr: t_initialize has not been called\n");
 
   if ((ticks_per_sec = sysconf (_SC_CLK_TCK)) == -1)
@@ -985,13 +985,15 @@ void print_stats_line (FILE *fp, struct Stats *stats)
     fprintf (fp, "%9.3f %9.3f %9.3f ", stats->elapse, stats->max_wtime, 
 	     stats->min_wtime);
   
-  for (n = 0; n < nevent; n++) {
-    if (event[n]->name > pcl_start && event[n]->name < pcl_end) {
-      index = event[n]->index;
-      if (stats->pcl_result[index] > 1.e6)
-	fprintf (fp, "%9.3e ", (double) stats->pcl_result[index]);
-      else
-	fprintf (fp, "%9ld ", (long) stats->pcl_result[index]);
+  for (n = 0; n < ncounter; n++) {
+    if (counter[n].enabled) {
+      if (counter[n].name > pcl_start && counter[n].name < pcl_end) {
+	index = counter[n].index;
+	if (stats->pcl_result[index] > 1.e6)
+	  fprintf (fp, "%9.3e ", (double) stats->pcl_result[index]);
+	else
+	  fprintf (fp, "%9ld ", (long) stats->pcl_result[index]);
+      }
     }
   }
 
@@ -1014,9 +1016,12 @@ void print_header (FILE *fp, int indent_level)
   if (wallenabled)
     fprintf (fp, "Wallclock Max       Min       ");
 
-  for (n = 0; n < nevent; n++)
-    if (event[n]->name > pcl_start && event[n]->name <= pcl_end)
-      fprintf (fp, event[n]->string);
+  for (n = 0; n < ncounter; n++) {
+    if (counter[n].enabled) {
+      if (counter[n].name > pcl_start && counter[n].name <= pcl_end)
+	fprintf (fp, counter[n].string);
+    }
+  }
 
   fprintf (fp, "\n");
 }
