@@ -60,16 +60,18 @@ dnl Archive flags
 ARFLAGS="$ARFLAGS ruv";
 
 dnl Whether to include PAPI lib and how to do so
-AC_ARG_ENABLE([papi],[--enable-papi       Enable PAPI library interface],
-              [PAPI=YES;PAPIOBJS=gptl_papi.o],[PAPI=NO])
-
 FORTDEFS=""
+AC_ARG_WITH(papi,[--with-papi=<path>  Specify path to root of PAPI installation],
+            [PAPI_ROOT="$withval";
+             PAPI=YES;
+	     PAPIOBJS=gptl_papi.o;
+             PAPIPREP="-I$withval/include";
+	     LDFLAGS="$LDFLAGS -L$PAPI_ROOT/lib"],
+
+	     [PAPI=NO])
+
 if test "$PAPI" = YES ; then
   AC_DEFINE([HAVE_PAPI])
-  AC_ARG_WITH(papi,[--with-papi=<path>  Specify path to root of PAPI installation],
-              [PAPI_ROOT="$withval";
-               PAPIPREP="-I$withval/include";
-	       LDFLAGS="$LDFLAGS -L$PAPI_ROOT/lib"],)
 dnl AIX needs pmapi
 dnl AIX also passes defines through Fortran in a special way
   if test "x$OS" = xaix ; then

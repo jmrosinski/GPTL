@@ -154,7 +154,7 @@ int main ()
     }
 
     sum = 0;
-    for (i = 0; i < iter; i++) {
+    for (i = 0; i <= iter; i++) {
       sum += i*iter;
     }
   }
