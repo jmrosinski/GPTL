@@ -218,6 +218,7 @@ int GPT_PAPIstart (const int mythread,
     }
     if ((ret = PAPI_start (EventSet[mythread])) != PAPI_OK)
       printf ("%s\n", PAPI_strerror (ret));
+
     started[mythread] = true;
   }
 

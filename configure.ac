@@ -35,13 +35,13 @@ fi
 AC_PROG_CC($CCLIST)
 AC_PROG_F77($FCLIST)
 
-AC_ARG_WITH(bitmode,
-            [  --with-bitmode=64       Specify to build 64 bit mode library],
-	    bitmode=YES,bitmode=NO)
+AC_ARG_ENABLE(bit64,
+            [--enable-bit64      Specify to build 64 bit library],
+	    bit64=YES,bit64=NO)
 
 BITEXT=
 
-if test "$bitmode" = YES; then
+if test "$bit64" = YES; then
   BITEXT=64;
   if test "x$OS" = xirix ; then
      BITFLAGS="-64";
@@ -58,7 +58,8 @@ fi
 ARFLAGS="$ARFLAGS ruv";
 
 dnl Whether to include PAPI lib
-AC_ARG_ENABLE([papi],[--enable-papi],[PAPI=YES;PAPIOBJS=gpt_papi.o],[PAPI=NO])
+AC_ARG_ENABLE([papi],[--enable-papi       Specify to include PAPI library],
+              [PAPI=YES;PAPIOBJS=gpt_papi.o],[PAPI=NO])
 
 FORTDEFS=""
 if test "$PAPI" = YES ; then
@@ -87,10 +88,12 @@ fi
 dnl AC_ARG_ENABLE(papi,[--enable-papi],PAPIPREP="-I/home/rosinski/include -DHAVE_PAPI";PAPILIB="-L/home/rosinski/lib -lpapi",)
 
 dnl Whether to enable debugging
-AC_ARG_ENABLE(debug,[--enable-debug],[CFLAGS="$CFLAGS -g";FFLAGS="$FFLAGS -g"],)
+AC_ARG_ENABLE(debug,[--enable-debug      Specify to enable debugging],
+              [CFLAGS="$CFLAGS -g";FFLAGS="$FFLAGS -g"],)
 
 dnl Whether to enable optimization
-AC_ARG_ENABLE(opt,[--enable-opt],[CFLAGS="$CFLAGS -O";FFLAGS="$FFLAGS -O"],)
+AC_ARG_ENABLE(opt,[--enable-opt        Specify to optimize for speed],
+              [CFLAGS="$CFLAGS -O";FFLAGS="$FFLAGS -O"],)
 
 dnl need to add -qfixed to FFLAGS for Fortran tests on AIX
 if test "$F77" = xlf90 ; then
@@ -108,12 +111,13 @@ dnl PTHREADDEFS, PTHREADCFLAGS
 UD_SET_PTHREADS_C
 THREADDEFS=""
 THREADFLAGS=""
-AC_ARG_ENABLE(pthreads,[--enable-pthreads],[THREADDEFS="$PTHREADDEFS";
-                                            THREADFLAGS="$PTHREADCFLAGS"],)
+AC_ARG_ENABLE(pthreads,[--enable-pthreads   Specify to thread with pthreads],
+              [THREADDEFS="$PTHREADDEFS";THREADFLAGS="$PTHREADCFLAGS"],)
 
 dnl openmp will override pthreads if both are specified
-AC_ARG_ENABLE(openmp,[--enable-openmp],[THREADDEFS="$OMPDEFS";
-	                                THREADFLAGS="$OMPCFLAGS"],)
+AC_ARG_ENABLE(openmp,[--enable-openmp     Specify to thread with OpenMP],
+              [THREADDEFS="$OMPDEFS";THREADFLAGS="$OMPCFLAGS"],)
+	                                
 dnl OMPFFLAGS
 UD_SET_OMP_F77
 

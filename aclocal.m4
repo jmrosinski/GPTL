@@ -1,3 +1,4 @@
+dnl Sets OMPCFLAGS, OMPDEFS.  Sets OMP to YES or NO
 AC_DEFUN(UD_SET_OMP_C,
 [
   OMPCFLAGS=""
@@ -35,6 +36,7 @@ AC_DEFUN(UD_SET_OMP_C,
   CFLAGS="$OLDFLAGS"
 ])
 
+dnl Sets OMPFFLAGS.  Sets FORTOMP to YES or NO
 AC_DEFUN(UD_SET_OMP_F77,
 [
   AC_LANG_PUSH(Fortran 77)
@@ -76,6 +78,7 @@ AC_DEFUN(UD_SET_OMP_F77,
   AC_LANG_POP(Fortran 77)
 ])
 
+dnl Sets PTHREADCFLAGS, PTHREADDEFS.  Sets PTHREADS to YES or NO
 AC_DEFUN(UD_SET_PTHREADS_C,
 [
   OLDLDFLAGS="$LDFLAGS"
@@ -94,6 +97,7 @@ AC_DEFUN(UD_SET_PTHREADS_C,
     AC_MSG_RESULT([not found])
     AC_MSG_ERROR([quitting.  Rerun configure without --enable-pthreads])
   fi
+  LDFLAGS="$OLDLDFLAGS"
 ])
 
 dnl Modify FLDFLAGS only, not LDFLAGS in the end

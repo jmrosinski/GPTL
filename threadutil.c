@@ -138,14 +138,14 @@ int get_thread_num (int *nthreads, int *maxthreads)
 static int lock_mutex ()
 {
   if (pthread_mutex_lock (&t_mutex) != 0)
-    return GPTerror ("pthread_mutex_lock failure\n");
+    return GPTerror ("pthread_lock_mutex failure\n");
   return 0;
 }
 
 static int unlock_mutex ()
 {
   if (pthread_mutex_unlock (&t_mutex) != 0)
-    return GPTerror ("pthread_mutex_unlock failure\n");
+    return GPTerror ("pthread_unlock_mutex failure\n");
   return 0;
 }
 
