@@ -27,17 +27,17 @@ depth: depth.o
 overhead: overhead.o
 	$(CC) -o $@ overhead.o $(CFLAGS) $(THREADFLAGS) $(LDFLAGS)
 flopsperclock: flopsperclock.o
-	$(F77) -o $@ flopsperclock.o $(FFLAGS) $(FLDFLAGS)
+	$(FC) -o $@ flopsperclock.o $(FFLAGS) $(FLDFLAGS)
 omptest: omptest.o
-	$(F77) -o $@ omptest.o $(FFLAGS) $(FTHREADFLAGS) $(FLDFLAGS)
+	$(FC) -o $@ omptest.o $(FFLAGS) $(FTHREADFLAGS) $(FLDFLAGS)
 errtest: errtest.o
-	$(F77) -o $@ errtest.o $(FFLAGS) $(FLDFLAGS)
+	$(FC) -o $@ errtest.o $(FFLAGS) $(FLDFLAGS)
 opscost: opscost.o
-	$(F77) -o $@ opscost.o $(FFLAGS) $(FLDFLAGS)
+	$(FC) -o $@ opscost.o $(FFLAGS) $(FLDFLAGS)
 hashtest: hashtest.o
-	$(F77) -o $@ hashtest.o $(FFLAGS) $(FTHREADFLAGS) $(FLDFLAGS)
+	$(FC) -o $@ hashtest.o $(FFLAGS) $(FTHREADFLAGS) $(FLDFLAGS)
 papitest: papitest.o
-	$(F77) -o $@ papitest.o $(FFLAGS) $(FTHREADFLAGS) $(FLDFLAGS)
+	$(FC) -o $@ papitest.o $(FFLAGS) $(FTHREADFLAGS) $(FLDFLAGS)
 
 clean:
 	rm $(FOBJS) $(COBJS) $(FEXES) $(CEXES)
@@ -47,6 +47,6 @@ clean:
 overhead.o: overhead.c
 	$(CC) -c $(CFLAGS) $(THREADFLAGS) $<
 papitest.o: papitest.F
-	$(F77) -c $(FFLAGS) $(FTHREADFLAGS) $<
+	$(FC) -c $(FFLAGS) $(FTHREADFLAGS) $<
 omptest.o: omptest.F
-	$(F77) -c $(FFLAGS) $(FTHREADFLAGS) $<
+	$(FC) -c $(FFLAGS) $(FTHREADFLAGS) $<

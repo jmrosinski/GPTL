@@ -102,7 +102,6 @@ static void *getentry (char *string,
 		       char *name, 
 		       int *indx)
 {
-  int i;
   char *c = name;
 
   for (*indx = 0; *c; c++)

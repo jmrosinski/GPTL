@@ -14,30 +14,47 @@ case "$OS" in
 esac
 
 dnl C and Fortran compilers
-if test "$OS" = linux ; then
-  AC_PROG_CC(cc gcc g++ icc pgcc)
-  AC_PROG_F77(g77 f77 pgf90 ifort lf95 g95)
-elif test "$OS" = solaris ; then
-  AC_PROG_CC(cc gcc g++)
-  AC_PROG_F77(f90 g77 f77)
-elif test "$OS" = irix ; then
-  AC_PROG_CC(cc gcc g++)
-  AC_PROG_F77(f90 g77 f77)
-  if test "$CC" = cc ; then
-    AC_ARG_WITH(bitmode,
-            [  --with-bitmode=64       Specify to build 64 bit mode library],
-            [BITFLAGS="-64"],)
-  fi
-elif test "$OS" = aix ; then
-  AC_PROG_CC(cc_r xlc_r cc xlc gcc g++)
-  AC_PROG_F77(xlf90_r xlf90)
-  AC_ARG_WITH(bitmode,
-          [  --with-bitmode=64       Specify to build 64 bit mode library],
-          [BITFLAGS="-q64";ARFLAGS="-X 64"],)
+dnl Embedding AC_PROG_XX inside the shell code failed on SGI
+if test "$OS" = "linux"; then
+  CCLIST="cc gcc g++ icc pgcc"
+  FCLIST="g77 f77 pgf90 ifort lf95 g95"
+elif test "$OS" = "solaris"; then
+  CCLIST="cc gcc g++"
+  FCLIST="f90 g77 f77"
+elif test "$OS" = "irix"; then
+  CCLIST="cc gcc g++"
+  FCLIST="f90 g77 f77"
 else
-  AC_PROG_CC
-  AC_PROG_F77
+  CCLIST=
+  FCLIST=
 fi
+
+AC_PROG_CC($CCLIST)
+AC_PROG_F77($FCLIST)
+
+AC_MSG_WARN([setting bitmode])
+AC_ARG_WITH(bitmode,
+            [  --with-bitmode=64       Specify to build 64 bit mode library],
+	    bitmode=YES,bitmode=NO)
+
+BITEXT=
+ARFLAGS=
+
+if test "$bitmode" = YES; then
+  BITEXT=64;
+  if test "$OS" = irix ; then
+     BITFLAGS="-64";
+     CFLAGS="$CFLAGS $BITFLAGS";
+     FFLAGS="$FFLAGS $BITFLAGS";
+  elif test "$OS" = aix ; then
+     BITFLAGS="-q64";
+     CFLAGS="$CFLAGS $BITFLAGS";
+     FFLAGS="$FFLAGS $BITFLAGS";
+     ARFLAGS="-X 64";
+  fi
+fi
+
+echo "bitflags=$BITFLAGS"
 
 dnl Whether to include PAPI lib
 AC_ARG_ENABLE([papi],[--enable-papi],[PAPI=YES;PAPIOBJS=gpt_papi.o],[PAPI=NO])
@@ -46,20 +63,20 @@ if test "$PAPI" = YES ; then
   AC_DEFINE([HAVE_PAPI])
   if test "x$PAPI_DIR" != x ; then
     PAPIPREP="-I$PAPI_DIR/include"
-    LDFLAGS="-L$PAPI_DIR/lib -lpapi"
+    LDFLAGS="$LDFLAGS -L$PAPI_DIR/lib"
   fi
 dnl will add -lpapi if successful
-  AC_CHECK_LIB(papi, PAPI_library_init,,
-	       [AC_MSG_ERROR([not found. Rebuild with PAPI_DIR or w/o --enable-papi])])
+  AC_CHECK_LIB(papi$BITEXT, PAPI_library_init,,
+	       [AC_MSG_ERROR([[not found. Rebuild w/ PAPI_DIR set or w/o --enable-papi]])])
 fi
 
 dnl AC_ARG_ENABLE(papi,[--enable-papi],PAPIPREP="-I/home/rosinski/include -DHAVE_PAPI";PAPILIB="-L/home/rosinski/lib -lpapi",)
 
 dnl Whether to enable debugging
-AC_ARG_ENABLE(debug,[--enable-debug],CFLAGS=-g;FFLAGS=-g,)
+AC_ARG_ENABLE(debug,[--enable-debug],[CFLAGS="$CFLAGS -g";FFLAGS="$FFLAGS -g"],)
 
 dnl Whether to enable optimization
-AC_ARG_ENABLE(opt,[--enable-opt],CFLAGS=-O;FFLAGS=-O,)
+AC_ARG_ENABLE(opt,[--enable-opt],[CFLAGS="$CFLAGS -O";FFLAGS="$FFLAGS -O"],)
 
 dnl need to add -qfixed to FFLAGS for Fortran tests on AIX
 if test "$F77" = xlf90 ; then
@@ -91,7 +108,8 @@ case $zzz in
 esac
 
 dnl Determine required Fortran load flags
-AC_F77_LIBRARY_LDFLAGS
+dnl Dont do this now because of the above name mangling exersize.
+dnl AC_F77_LIBRARY_LDFLAGS
 
 dnl Checks for libraries.
 dnl Replace `main' with a function in -lm:
