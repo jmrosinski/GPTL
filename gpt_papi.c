@@ -1,4 +1,5 @@
 #include <papi.h>
+#include <stdlib.h>
 
 #if ( defined THREADED_OMP )
 #include <omp.h>
@@ -125,21 +126,17 @@ static Papientry papitable [] = {
 
 static const int nentries = sizeof (papitable) / sizeof (Papientry);
 static Papientry eventlist[MAX_AUX];    /* list of PAPI events to be counted */
+static Papientry propeventlist[MAX_AUX]; /* list of PAPI events hoped to be counted */
 static int nevents = 0;                 /* number of events: initialize to 0 */ 
+static int nprop = 0;                   /* number of hoped events: initialize to 0 */ 
 static int *EventSet;                   /* list of events to be counted by PAPI */
 static long_long **papicounters;        /* counters return from PAPI */
-static bool *started;                   /* flag indicates EventSet has been started */
 static char papiname[PAPI_MAX_STR_LEN]; /* returned from PAPI_event_code_to_name */
 static const int BADCOUNT = -999999;    /* Set counters to this when they are bad */
-static bool overhead = false;           /* ability to overhead computations */
-static int overheadindx = -999999;      /* init to bad index value */
+static int GPToverheadindx = -1;        /* index into counters array */
 static long_long *lastoverhead;         /* needed because aux not available for overhead */
 
-/*
-** Function prototypes
-*/
-
-static int chkstarted (const int mythread);
+static int create_and_start_events (int);
 
 int GPT_PAPIsetoption (const int counter,
 		       const int val)
@@ -152,30 +149,22 @@ int GPT_PAPIsetoption (const int counter,
     return 0;
 
   /*
-  ** Loop through table looking for counter. If found, ensure it can be
-  ** enabled on this architecture.
+  ** Loop through table looking for counter. If found, add the entry to the
+  ** list of "proposed events".  Won't know till init time whether the event
+  ** is available on this arch.
   */
 
   for (n = 0; n < nentries; n++)
     if (counter == papitable[n].counter) {
-      if (PAPI_query_event (counter) != PAPI_OK) {
-	(void) PAPI_event_code_to_name (counter, papiname);
-	printf ("GPT_PAPIsetoption: event %s not available on this arch\n", papiname);
+      if (nprop+1 > MAX_AUX) {
+	return GPTerror ("GPT_PAPIsetoption: Event %s is too many\n", papitable[n].str);
       } else {
-	if (nevents+1 > MAX_AUX) {
-	  (void) PAPI_event_code_to_name (counter, papiname);
-	  printf ("GPT_PAPIsetoption: Event %s is too many\n", papiname);
-	} else {
-	  if (counter == PAPI_TOT_CYC) {
-	    overhead = true;
-	    overheadindx = nevents;
-	  }
-	  eventlist[nevents].counter = counter;
-	  eventlist[nevents].prstr   = papitable[n].prstr;
-	  eventlist[nevents].str     = papitable[n].str;
-	  printf ("GPT_PAPIsetoption: event %s enabled\n", eventlist[nevents].str);
-	  ++nevents;
-	}
+	propeventlist[nprop].counter = counter;
+	propeventlist[nprop].prstr   = papitable[n].prstr;
+	propeventlist[nprop].str     = papitable[n].str;
+	printf ("GPT_PAPIsetoption: will attempt to enable event %s\n", 
+		propeventlist[nprop].str);
+	++nprop;
       }
       return 0;
     }
@@ -187,6 +176,10 @@ int GPT_PAPIinitialize (const int maxthreads)
 {
   int ret;
   int n;
+  int counter;
+  int t;
+  int *rc;
+  bool badret;
 
   if ((ret = PAPI_library_init (PAPI_VER_CURRENT)) != PAPI_VER_CURRENT)
     return GPTerror ("GPT_PAPIinitialize: PAPI_library_init failure:%s\n",
@@ -200,16 +193,79 @@ int GPT_PAPIinitialize (const int maxthreads)
     return GPTerror ("GPT_PAPIinitialize: PAPI_thread_init failure\n");
 #endif
 
-  started      = (bool *)       GPTallocate (maxthreads * sizeof (bool));
   EventSet     = (int *)        GPTallocate (maxthreads * sizeof (int));
   papicounters = (long_long **) GPTallocate (maxthreads * sizeof (long_long *));
   lastoverhead = (long_long *)  GPTallocate (maxthreads * sizeof (long_long));
 
   for (n = 0; n < maxthreads; n++) {
-    started[n] = false;
     EventSet[n] = PAPI_NULL;
     papicounters[n] = (long_long *) GPTallocate (MAX_AUX * sizeof (long_long));
+    lastoverhead[n] = -1;
   }
+
+  for (n = 0; n < nprop; n++) {
+    counter = propeventlist[n].counter;
+    if (PAPI_query_event (counter) != PAPI_OK) {
+      (void) PAPI_event_code_to_name (counter, papiname);
+      printf ("GPT_PAPIinitialize: event %s not available on this arch\n", papiname);
+    } else {
+      if (nevents+1 > MAX_AUX) {
+	(void) PAPI_event_code_to_name (counter, papiname);
+	printf ("GPT_PAPIinitialize: Event %s is too many\n", papiname);
+      } else {
+	if (counter == PAPI_TOT_CYC)
+	  GPToverheadindx = nevents;
+
+	eventlist[nevents].counter = counter;
+	eventlist[nevents].prstr   = propeventlist[n].prstr;
+	eventlist[nevents].str     = propeventlist[n].str;
+	printf ("GPT_PAPIinitialize: event %s enabled\n", eventlist[nevents].str);
+	++nevents;
+      }
+    }
+  }
+
+  if (nevents > 0) {
+    rc = (int *) GPTallocate (maxthreads * sizeof (int));
+
+#pragma omp parallel for private (t)
+
+    for (t = 0; t < maxthreads; t++)
+      rc[t] = create_and_start_events (t);
+  
+    badret = false;
+    for (t = 0; t < maxthreads; t++)
+      if (rc[t] < 0)
+	badret = true;
+    
+    free (rc);
+
+    if (badret)
+      return -1;
+  }
+
+  return 0;
+}
+
+static int create_and_start_events (int t)
+{
+  int ret;
+  int n;
+
+  if ((ret = PAPI_create_eventset (&EventSet[t])) != PAPI_OK)
+    return GPTerror ("GPT_PAPIstart: failure creating eventset: %s\n", 
+		     PAPI_strerror (ret));
+
+  for (n = 0; n < nevents; n++) {
+    if ((ret = PAPI_add_event (EventSet[t], eventlist[n].counter)) != PAPI_OK) {
+      printf ("%s\n", PAPI_strerror (ret));
+      return GPTerror ("GPT_PAPIstart: failure adding event: %s\n", 
+		       eventlist[n].str);
+    }
+  }
+
+  if ((ret = PAPI_start (EventSet[t])) != PAPI_OK)
+    return GPTerror ("%s\n", PAPI_strerror (ret));
 
   return 0;
 }
@@ -225,40 +281,12 @@ int GPT_PAPIstart (const int mythread,
   if (nevents == 0)
     return 0;
 
-  if (chkstarted (mythread) < 0)
-    return -1;
-
   if ((ret = PAPI_read (EventSet[mythread], papicounters[mythread])) != PAPI_OK)
     return GPTerror ("GPT_PAPIstart: %s\n", PAPI_strerror (ret));
 
   for (n = 0; n < nevents; n++)
     aux->last[n] = papicounters[mythread][n];
   
-  return 0;
-}
-
-static int chkstarted (const int mythread)
-{
-  int ret;
-  int n;
-
-  if ( ! started[mythread]) {
-    if ((ret = PAPI_create_eventset (&EventSet[mythread])) != PAPI_OK)
-      return GPTerror ("GPT_PAPIstart: failure creating eventset: %s\n", 
-		       PAPI_strerror (ret));
-
-    for (n = 0; n < nevents; n++) {
-      if ((ret = PAPI_add_event (EventSet[mythread], eventlist[n].counter)) != PAPI_OK) {
-	printf ("%s\n", PAPI_strerror (ret));
-	return GPTerror ("GPT_PAPIstart: failure adding event: %s\n", 
-			 eventlist[n].str);
-      }
-    }
-    if ((ret = PAPI_start (EventSet[mythread])) != PAPI_OK)
-      printf ("%s\n", PAPI_strerror (ret));
-
-    started[mythread] = true;
-  }
   return 0;
 }
 
@@ -287,7 +315,8 @@ int GPT_PAPIstop (const int mythread,
   return 0;
 }
 
-/* Have to set the static variable lastoverhead because a pointer to the correct
+/* 
+** Have to set the static variable lastoverhead because a pointer to the correct
 ** aux timer is not yet available
 */
 
@@ -295,15 +324,14 @@ int GPT_PAPIoverheadstart (const int mythread)
 {
   int ret;
 
-  if (overhead) {
-    if (chkstarted (mythread) < 0)
-      return -1;
+  if (GPToverheadindx < 0)
+    return -1;
 
-    if ((ret = PAPI_read (EventSet[mythread], papicounters[mythread])) != PAPI_OK)
-      return GPTerror ("GPT_PAPIoverheadstart: %s\n", PAPI_strerror (ret));
+  if ((ret = PAPI_read (EventSet[mythread], papicounters[mythread])) != PAPI_OK)
+    return GPTerror ("GPT_PAPIoverheadstart: %s\n", PAPI_strerror (ret));
 
-    lastoverhead[mythread] = papicounters[mythread][overheadindx];
-  }
+  lastoverhead[mythread] = papicounters[mythread][GPToverheadindx];
+
   return 0;
 }
     
@@ -313,15 +341,17 @@ int GPT_PAPIoverheadstop (const int mythread,
   int ret;
   long_long diff;
 
-  if (overhead) {
-    if ((ret = PAPI_read (EventSet[mythread], papicounters[mythread])) != PAPI_OK)
-      return GPTerror ("GPT_PAPIoverheadstart: %s\n", PAPI_strerror (ret));
-    diff = papicounters[mythread][overheadindx] - lastoverhead[mythread];
-    if (diff < 0)
-      aux->accum_cycles = BADCOUNT;
-    else
-      aux->accum_cycles += diff;
-  }
+  if (GPToverheadindx < 0)
+    return -1;
+
+  if ((ret = PAPI_read (EventSet[mythread], papicounters[mythread])) != PAPI_OK)
+    return GPTerror ("GPT_PAPIoverheadstart: %s\n", PAPI_strerror (ret));
+  diff = papicounters[mythread][GPToverheadindx] - lastoverhead[mythread];
+  if (diff < 0)
+    aux->accum_cycles = BADCOUNT;
+  else
+    aux->accum_cycles += diff;
+
   return 0;
 }
 
@@ -332,7 +362,7 @@ void GPT_PAPIprstr (FILE *fp)
   for (n = 0; n < nevents; n++)
     fprintf (fp, "%16s ", eventlist[n].prstr);
 
-  if (overhead)
+  if (lastoverhead[0] > 0)
     fprintf (fp, "Overhead (cycles)");
 }
 
@@ -347,7 +377,8 @@ void GPT_PAPIpr (FILE *fp,
     else
       fprintf (fp, "%16.10e ", (double) aux->accum[n]);
   }
-  if (overhead)
+
+  if (lastoverhead[0] > 0)
     if (aux->accum_cycles < 1000000)
       fprintf (fp, "%16ld ", (long) aux->accum_cycles);
     else
@@ -359,8 +390,7 @@ void GPTPAPIprinttable ()
   int n;
 
   for (n = 0; n < nentries; n++)
-    if (PAPI_query_event (papitable[n].counter) == PAPI_OK)
-      printf ("%d %s\n", papitable[n].counter, papitable[n].str);
+    printf ("%d %s\n", papitable[n].counter, papitable[n].str);
 }
 
 void GPT_PAPIadd (Papistats *auxout,
@@ -374,9 +404,8 @@ void GPT_PAPIadd (Papistats *auxout,
     else
       auxout->accum[n] += auxin->accum[n];
 
-  if (overhead)
-    if (auxin->accum_cycles == BADCOUNT || auxout->accum_cycles == BADCOUNT)
-      auxout->accum_cycles += auxin->accum_cycles;
-    else
-      auxout->accum_cycles += auxin->accum_cycles;
+  if (auxin->accum_cycles == BADCOUNT || auxout->accum_cycles == BADCOUNT)
+    auxout->accum_cycles += auxin->accum_cycles;
+  else
+    auxout->accum_cycles += auxin->accum_cycles;
 }

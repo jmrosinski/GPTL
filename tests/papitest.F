@@ -8,13 +8,13 @@
 
       integer ret, iter, niter
       integer papioption
+      integer gptoption
+      integer val
       logical done
       
       if (gptsetoption (gptcpu, 0) < 0) stop 99
       if (gptsetoption (gptwall, 0) < 0) stop 99
       if (gptsetoption (gptabort_on_error, 1) < 0) stop 99
-
-      if (gptinitialize () < 0) stop 99
 
 #ifdef HAVE_PAPI
       call gptpapiprinttable ()
@@ -33,6 +33,27 @@
           done = .true.
         end if
       end do
+
+      write(6,*)'GPTwall           = 1'
+      write(6,*)'GPTcpu            = 2'
+      write(6,*)'GPTabort_on_error = 3'
+      write(6,*)'GPToverhead       = 4'
+
+      done = .false.
+      do while (.not. done)
+        write(6,*)'Enter GPT option to set, then 0 (off) or 1 (on)'
+        write(6,*)'   or negative number when done'
+        read (5,*)gptoption, val
+        if (gptoption > 0) then
+          if (gptsetoption (gptoption, val) < 0) then
+            write(6,*)'gptsetoption failure'
+          end if
+        else
+          done = .true.
+        end if
+      end do
+      
+      if (gptinitialize () < 0) stop 99
 
       write(6,*)'Enter iteration count for threaded loop'
       read (5,*)niter
