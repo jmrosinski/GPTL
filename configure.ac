@@ -40,7 +40,6 @@ AC_ARG_WITH(bitmode,
 	    bitmode=YES,bitmode=NO)
 
 BITEXT=
-ARFLAGS=ruv
 
 if test "$bitmode" = YES; then
   BITEXT=64;
@@ -52,9 +51,11 @@ if test "$bitmode" = YES; then
      BITFLAGS="-q64";
      CFLAGS="$CFLAGS $BITFLAGS";
      FFLAGS="$FFLAGS $BITFLAGS";
-     ARFLAGS="$ARFLAGS -X 64";
+     ARFLAGS="-X 64";
   fi
 fi
+
+ARFLAGS="$ARFLAGS ruv";
 
 dnl Whether to include PAPI lib
 AC_ARG_ENABLE([papi],[--enable-papi],[PAPI=YES;PAPIOBJS=gpt_papi.o],[PAPI=NO])

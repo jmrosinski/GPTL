@@ -20,36 +20,49 @@ all: $(CEXES) $(FEXES)
 cexes: $(CEXES)
 fexes: $(FEXES)
 
-.F.o:
-	$(FC) -c -o $@ $(FFLAGS) $<
 
 llcost: llcost.o
 	$(CC) -o $@ llcost.o $(LDFLAGS)
+
 depth: depth.o
 	$(CC) -o $@ depth.o $(LDFLAGS)
+
 overhead: overhead.o
 	$(CC) -o $@ overhead.o $(LDFLAGS)
+overhead.o: overhead.c
+	$(CC) -c $(CFLAGS) $(THREADFLAGS) $<
+
 flopsperclock: flopsperclock.o
 	$(FC) -o $@ flopsperclock.o $(FLDFLAGS)
+flopsperclock.o: flopsperclock.F
+	$(FC) -c $(FFLAGS) $<
+
 omptest: omptest.o
 	$(FC) -o $@ omptest.o $(FLDFLAGS)
+omptest.o: omptest.F
+	$(FC) -c $(FFLAGS) $(FTHREADFLAGS) $<
+
 errtest: errtest.o
 	$(FC) -o $@ errtest.o $(FLDFLAGS)
+errtest.o: errtest.F
+	$(FC) -c $(FFLAGS) $<
+
 opscost: opscost.o
 	$(FC) -o $@ opscost.o $(FLDFLAGS)
+opscost.o: opscost.F
+	$(FC) -c $(FFLAGS) $<
+
 hashtest: hashtest.o
 	$(FC) -o $@ hashtest.o $(FLDFLAGS)
+hashtest.o: hashtest.F
+	$(FC) -c $(FFLAGS) $<
+
 papitest: papitest.o
 	$(FC) -o $@ papitest.o $(FLDFLAGS)
+papitest.o: papitest.F
+	$(FC) -c $(FFLAGS) $(FTHREADFLAGS) $<
 
 clean:
 	rm $(FOBJS) $(COBJS) $(FEXES) $(CEXES)
 
-# Add appropriate thread flags to threaded executables
 
-overhead.o: overhead.c
-	$(CC) -c $(CFLAGS) $(THREADFLAGS) $<
-papitest.o: papitest.F
-	$(FC) -c $(FFLAGS) $(FTHREADFLAGS) $<
-omptest.o: omptest.F
-	$(FC) -c $(FFLAGS) $(FTHREADFLAGS) $<
