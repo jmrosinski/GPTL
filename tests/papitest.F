@@ -2,6 +2,7 @@
       implicit none
 
 #include "../gpt.inc"
+#include <f77papi.h>
 
       integer ret, iter, niter
       integer papioption
@@ -125,9 +126,12 @@
       call badcache (64, arr1, arr2)
       call badcache (128, arr1, arr2)
 
+! hangs on IBM
+#ifndef AIX
       ret = gptstart ('sleep1')
       call sleep(1)
       ret = gptstop ('sleep1')
+#endif
 
       return
       end subroutine sub

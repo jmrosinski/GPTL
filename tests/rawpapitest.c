@@ -1,7 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <papi.h>
 #include "../private.h"
+
+#ifdef HAVE_PAPI
+#include <papi.h>
+#endif
 
 #if ( defined THREADED_OMP )
 #include <omp.h>
@@ -18,7 +21,7 @@ typedef struct {
 static Papientry eventlist[MAX_AUX];
 static int nevents = 0;                 /* number of events: initialize to 0 */ 
 static int *EventSet;
-static long_long **papicounters;
+static long long **papicounters;
 static long long **prvcounters;
 static bool *started;
 int nthreads;
@@ -28,7 +31,7 @@ void parsub (int);
 
 int main ()
 {
-
+#ifdef HAVE_PAPI
   int ret;
   int counter;
   int n;
@@ -99,8 +102,12 @@ int main ()
     parsub (ompiter);
   }
   return 0;
+#else
+  printf ("PAPI not enabled so this code does nothing\n");
+#endif
 }
 
+#ifdef HAVE_PAPI
   void parsub (int iter)
 {
   int mythread;
@@ -151,3 +158,4 @@ int main ()
     }
   }
 }
+#endif

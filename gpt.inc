@@ -30,8 +30,3 @@
       external gptstamp 
       external gptpr
       external gptreset 
-
-#ifdef HAVE_PAPI
-      external gptpapiprinttable
-#include <f77papi.h>
-#endif
