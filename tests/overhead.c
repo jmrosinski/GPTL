@@ -49,6 +49,7 @@ static void overhead (int iter, int ninvoke)
   struct tms buf;
   void *nothing;
 
+  GPTstart ("mallocstuff");
   strings1 = (char **) malloc (ninvoke * sizeof (char *));
   strings2 = (char **) malloc (ninvoke * sizeof (char *));
   for (i = 0; i < ninvoke; ++i) {
@@ -57,6 +58,7 @@ static void overhead (int iter, int ninvoke)
     sprintf (strings1[i], "str%3d", i);
     sprintf (strings2[i], "str%3d", i);
   }
+  GPTstop ("mallocstuff");
   
 #ifdef THREADED_OMP
   GPTstart ("get_thread_num");
@@ -84,12 +86,14 @@ static void overhead (int iter, int ninvoke)
   }
   GPTstop ("getentry");
 
+  GPTstart ("freestuff");
   for (i = 0; i < ninvoke; ++i) {
     free (strings1[i]);
     free (strings2[i]);
   }
   free (strings1);
   free (strings2);
+  GPTstop ("freestuff");
 }
 
 static void *getentry (char *string,
