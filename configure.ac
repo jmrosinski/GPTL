@@ -15,13 +15,16 @@ esac
 
 dnl C and Fortran compilers
 dnl Embedding AC_PROG_XX inside the shell code failed on SGI
-if test "$OS" = "linux"; then
+if test "x$OS" = "xlinux"; then
   CCLIST="cc gcc g++ icc pgcc"
   FCLIST="g77 f77 pgf90 ifort lf95 g95"
-elif test "$OS" = "solaris"; then
+elif test "x$OS" = "xirix"; then
   CCLIST="cc gcc g++"
   FCLIST="f90 g77 f77"
-elif test "$OS" = "irix"; then
+elif test "x$OS" = "xaix"; then
+  CCLIST="xlc_r cc_r xlc cc gcc g++"
+  FCLIST="xlf90_r xlf90"
+elif test "x$OS" = "xsolaris"; then
   CCLIST="cc gcc g++"
   FCLIST="f90 g77 f77"
 else
@@ -37,19 +40,19 @@ AC_ARG_WITH(bitmode,
 	    bitmode=YES,bitmode=NO)
 
 BITEXT=
-ARFLAGS=
+ARFLAGS=ruv
 
 if test "$bitmode" = YES; then
   BITEXT=64;
-  if test "$OS" = irix ; then
+  if test "x$OS" = xirix ; then
      BITFLAGS="-64";
      CFLAGS="$CFLAGS $BITFLAGS";
      FFLAGS="$FFLAGS $BITFLAGS";
-  elif test "$OS" = aix ; then
+  elif test "x$OS" = xaix ; then
      BITFLAGS="-q64";
      CFLAGS="$CFLAGS $BITFLAGS";
      FFLAGS="$FFLAGS $BITFLAGS";
-     ARFLAGS="-X 64";
+     ARFLAGS="$ARFLAGS -X 64";
   fi
 fi
 
@@ -61,6 +64,10 @@ if test "$PAPI" = YES ; then
   if test "x$PAPI_DIR" != x ; then
     PAPIPREP="-I$PAPI_DIR/include"
     LDFLAGS="$LDFLAGS -L$PAPI_DIR/lib"
+  fi
+dnl AIX needs pmapi
+  if test "x$OS" = xaix ; then
+    LDFLAGS="$LDFLAGS -lpmapi"
   fi
 dnl will add -lpapi if successful
   AC_CHECK_LIB(papi$BITEXT, PAPI_library_init,,

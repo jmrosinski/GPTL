@@ -8,7 +8,7 @@ OBJS     = camwrappers.o f_wrappers.o gpt.o util.o threadutil.o @PAPIOBJS@
 @SET_MAKE@
 
 $(LIBNAME): $(OBJS)
-	ar $(ARFLAGS) $@ $(OBJS)
+	ar @ARFLAGS@ $@ $(OBJS)
 	rm -f tests/*.o
 
 all: $(LIBNAME) tests/all
