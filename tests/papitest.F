@@ -124,14 +124,10 @@
       call badcache (32, arr1, arr2)
       call badcache (64, arr1, arr2)
       call badcache (128, arr1, arr2)
-!
-! For some reason sleep can hang on AIX
-!
-#ifndef AIX
+
       ret = gptstart ('sleep1')
       call sleep(1)
       ret = gptstop ('sleep1')
-#endif
 
       return
       end subroutine sub
