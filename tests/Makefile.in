@@ -2,8 +2,8 @@ CC       = @CC@
 CFLAGS   = @CFLAGS@
 FC       = @F77@
 FFLAGS   = @FFLAGS@
-LDFLAGS  = -L.. -lgpt @LIBS@ @LDFLAGS@ $(CFLAGS) -lefence
-FLDFLAGS = -L.. -lgpt -lefence
+LDFLAGS  = -L.. -lgpt @LIBS@ @LDFLAGS@ $(CFLAGS)
+FLDFLAGS = -L.. -lgpt
 LOADER = @F77@
 
 COBJS = exp.o timetiming.o llcost.o depth.o

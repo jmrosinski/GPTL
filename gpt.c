@@ -1,6 +1,6 @@
-#include <stdlib.h>  /* malloc */
+#include <stdlib.h>        /* malloc */
 #include <sys/time.h>      /* gettimeofday */
-#include <sys/times.h>    /* times */
+#include <sys/times.h>     /* times */
 #include <unistd.h>        /* gettimeofday */
 #include <stdio.h>
 #include <string.h>        /* memset, strcmp (via STRMATCH) */
@@ -8,26 +8,26 @@
 
 #include "private.h"
 
-static Timer **timers = 0;      /* linked list of timers */
-static Timer **last = 0;        /* last element in list */
-static int *max_depth;          /* maximum indentation level */
-static int *max_name_len;       /* max length of timer name */
-static int *current_depth;      /* current depth in timer tree */
-static int nthreads    = -1;    /* num threads. Init to bad value */
-static int maxthreads  = -1;    /* max threads (=nthreads for OMP). Init to bad value */
-static bool initialized     = false; /* GPTinitialize has been called */
+static Timer **timers = 0;       /* linked list of timers */
+static Timer **last = 0;         /* last element in list */
+static int *max_depth;           /* maximum indentation level */
+static int *max_name_len;        /* max length of timer name */
+static int *current_depth;       /* current depth in timer tree */
+static int nthreads    = -1;     /* num threads. Init to bad value */
+static int maxthreads  = -1;     /* max threads (=nthreads for OMP). Init to bad value */
+static bool initialized = false; /* GPTinitialize has been called */
 static Settings primary[] = {
   {GPTwall, "Wallclock","Wallclock max       min     Overhead  ", true },
   {GPTcpu,  "Cpu",      "Usr       sys       usr+sys",            false}};
-static const int nprim = sizeof (primary) / sizeof (Settings);
-static const int wallidx = 0;
-static const int cpuidx = 1;
-static bool wallenabled;
-static bool cpuenabled;
-static int naux = 0;               /* number of auxiliary stats */
+static const int nprim = sizeof (primary) / sizeof (Settings); /* number of primary opts */
+static const int wallidx = 0;    /* index into primary */
+static const int cpuidx = 1;     /* index into primary */
+static bool wallenabled;         /* save primary[wallidx].enabled for speed */
+static bool cpuenabled;          /* save primary[cpuidx].enabled for speed */
+static int naux = 0;             /* number of auxiliary stats */
 static Settings aux[] = {{GPTother, "none", false}};
 static const int tablesize = 128*MAX_CHARS;  /* 128 is size of ASCII char set */
-static Hashtable **hashtable;
+static Hashtable **hashtable;    /* table of entries hashed by sum of chars */
 
 /* Local function prototypes */
 
@@ -53,6 +53,10 @@ int GPTsetoption (const Option option,     /* option name */
 		  const int val)           /* whether to enable */
 {
   int n;   /* loop index */
+
+#ifdef DISABLE_TIMERS
+  return 0;
+#endif
 
   if (initialized)
     return (GPTerror ("GPTsetoption: Options must be set BEFORE GPTinitialize\n"));
@@ -94,6 +98,10 @@ int GPTinitialize (void)
 {
   int n;             /* index */
   int i;             /* index */
+
+#ifdef DISABLE_TIMERS
+  return 0;
+#endif
 
   if (initialized)
     return GPTerror ("GPTinitialize() has already been called\n");
@@ -161,6 +169,10 @@ int GPTstart (const char *name)       /* timer name */
   int mythread;                 /* thread index (of this thread) */
   int indx;
   int nument;
+
+#ifdef DISABLE_TIMERS
+  return 0;
+#endif
 
   /*
   ** 1st system timer call is solely for overhead timing
@@ -290,6 +302,10 @@ int GPTstop (const char *name)
   ** the input timer
   */
 
+#ifdef DISABLE_TIMERS
+  return 0;
+#endif
+
   if (wallenabled)
     gettimeofday (&tp1, 0);
 
@@ -393,6 +409,10 @@ int GPTstamp (double *wall, double *usr, double *sys)
   struct timeval tp;         /* argument to gettimeofday */
   struct tms buf;            /* argument to times */
 
+#ifdef DISABLE_TIMERS
+  return 0;
+#endif
+
   *usr = 0;
   *sys = 0;
 
@@ -418,6 +438,10 @@ int GPTreset (void)
 {
   int n;             /* index over threads */
   Timer *ptr;  /* linked list index */
+
+#ifdef DISABLE_TIMERS
+  return 0;
+#endif
 
   if ( ! initialized)
     return GPTerror ("GPTreset: GPTinitialize has not been called\n");
@@ -452,6 +476,10 @@ int GPTpr (const int id)
   bool found;              /* jump out of loop when name found */
   bool foundany;           /* whether summation print necessary */
   bool first;              /* flag 1st time entry found */
+
+#ifdef DISABLE_TIMERS
+  return 0;
+#endif
 
   if ( ! initialized)
     return GPTerror ("GPTpr: GPTinitialize() has not been called\n");

@@ -1,5 +1,5 @@
 /*
-** $Id: util.c,v 1.5 2004-10-15 16:48:12 rosinski Exp $
+** $Id: util.c,v 1.6 2004-10-17 00:39:46 rosinski Exp $
 */
 
 #include <stdarg.h>
@@ -19,7 +19,7 @@
 ** Return value: -1 (failure)
 */
 
-static bool abort_on_error = 0;
+static bool abort_on_error = false;
 
 int GPTerror (const char *fmt, ...)
 {
