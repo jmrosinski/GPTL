@@ -1,9 +1,10 @@
 /*
-** $Id: util.c,v 1.4 2004-10-15 04:56:27 rosinski Exp $
+** $Id: util.c,v 1.5 2004-10-15 16:48:12 rosinski Exp $
 */
 
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "private.h"
 

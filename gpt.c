@@ -18,15 +18,15 @@ static int *current_depth;       /* current depth in timer tree */
 static int nthreads            = 1;     /* num threads.  1 means no threading */
 static bool initialized       = false; /* GPTinitialize has been called */
 static Settings primary[] = {
-  GPTwall, "Wallclock","Wallclock max       min     Overhead  ", true,
-  GPTcpu,  "Cpu",      "Usr       sys       usr+sys",            false};
+  {GPTwall, "Wallclock","Wallclock max       min     Overhead  ", true },
+  {GPTcpu,  "Cpu",      "Usr       sys       usr+sys",            false}};
 static const int nprim = sizeof (primary) / sizeof (Settings);
 static const int wallidx = 0;
 static const int cpuidx = 1;
 static bool wallenabled;
 static bool cpuenabled;
 static int naux = 0;               /* number of auxiliary stats */
-static Settings aux[1] = {GPTother, "none", false};
+static Settings aux[] = {{GPTother, "none", false}};
 
 #if ( defined THREADED_OMP )
 static omp_lock_t lock;
@@ -98,8 +98,6 @@ int GPTsetoption (Option option,     /* option name */
 int GPTinitialize (void)
 {
   int n;             /* index */
-  int nbytes;        /* number of bytes for malloc */
-  int ret;           /* return code */
 
   if (initialized)
     return GPTerror ("GPTinitialize() has already been called\n");
@@ -168,8 +166,6 @@ int GPTstart (char *name)       /* timer name */
 
   int nchars;                   /* number of characters in timer */
   int mythread;                 /* thread index (of this thread) */
-  int depth0;                   /* indentation level for this timer */
-  int ret;                      /* return code */
   int depth;                    /* depth in tree of timers which are on */
 
   /*
@@ -282,7 +278,6 @@ int GPTstop (char *name)
   Timer *ptr;               /* linked list pointer */
 
   int mythread;             /* thread number for this process */
-  int ret;                  /* return code */
 
   long usr;
   long sys;

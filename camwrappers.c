@@ -1,9 +1,10 @@
 /*
-** $Id: camwrappers.c,v 1.2 2004-10-14 21:17:52 rosinski Exp $
+** $Id: camwrappers.c,v 1.3 2004-10-15 16:48:11 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines as called from CAM
 */
 
+#include <string.h>
 #include "private.h"
 
 #if ( defined FORTRANCAPS )

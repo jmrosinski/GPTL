@@ -1,9 +1,10 @@
 /*
-** $Id: f_wrappers.c,v 1.4 2004-10-14 21:11:42 rosinski Exp $
+** $Id: f_wrappers.c,v 1.5 2004-10-15 16:48:11 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines
 */
 
+#include <string.h>
 #include "private.h"
 
 #if ( defined FORTRANCAPS )
