@@ -10,6 +10,9 @@ AC_PROG_CC(xlc_r cc_r xlc pgcc icc cc gcc g++)
 dnl Fortran compiler
 AC_PROG_F77(xlf90_r xlf90 pgf90 ifort lf95 f90 g95 g77 f77)
 
+dnl Whether to include PAPI lib
+AC_ARG_ENABLE(papi,[--enable-papi],PAPIPREP="-I/home/rosinski/include -DHAVE_PAPI";PAPILIB="-L/home/rosinski/lib -lpapi",)
+
 dnl Whether to enable debugging
 AC_ARG_ENABLE(debug,[--enable-debug],CFLAGS=-g;FFLAGS=-g,)
 
@@ -71,4 +74,6 @@ AC_SUBST(CDEFS)
 AC_SUBST(THREADDEFS)
 AC_SUBST(THREADFLAGS)
 AC_SUBST(FTHREADFLAGS)
+AC_SUBST(PAPIPREP)
+AC_SUBST(PAPILIB)
 AC_OUTPUT(Makefile tests/Makefile)

@@ -1,7 +1,8 @@
 /*
-$Id: private.h,v 1.14 2004-10-19 03:16:18 rosinski Exp $
+$Id: private.h,v 1.15 2004-10-25 03:27:10 rosinski Exp $
 */
 
+#include <stdio.h>
 #include "gpt.h"
 
 #ifndef MIN
@@ -14,6 +15,7 @@ $Id: private.h,v 1.14 2004-10-19 03:16:18 rosinski Exp $
 
 #define STRMATCH(X,Y) (strcmp((X),(Y)) == 0)
 #define MAX_CHARS 15
+#define MAX_AUX 8
 
 typedef enum {false = 0, true = 1} bool;
 
@@ -35,8 +37,9 @@ typedef struct {
 } Cpustats;
 
 typedef struct {
-  long some_compilers_dont_allow_empty_structs;
-} Auxstats;
+  long long last[MAX_AUX];
+  long long accum[MAX_AUX];
+} Papistats;
   
 typedef struct TIMER {
   char name[MAX_CHARS+1];
@@ -45,19 +48,9 @@ typedef struct TIMER {
   unsigned long count;
   Wallstats wall;
   Cpustats cpu;
-  /*
-  ** For later when hooked to PAPI or PCL
-  *  Auxstats aux; 
-  */
+  Papistats aux; 
   struct TIMER *next;
 } Timer;
-
-typedef struct {
-  const GPTOption option;
-  const char *name;
-  const char *str;
-  bool enabled;
-} Settings;
 
 typedef struct {
   unsigned int nument;
@@ -68,6 +61,17 @@ typedef struct {
 
 extern int GPTerror (const char *, ...);
 extern void GPTset_abort_on_error (bool val);
+extern void *GPTallocate (const int);
 extern int threadinit (int *, int *);          /* initialize threading environment */
 extern void threadfinalize (void);             /* finalize threading environment */
 extern int get_thread_num (int *, int *);      /* determine thread number */
+
+#ifdef HAVE_PAPI
+extern int GPT_PAPIsetoption (int);
+extern int GPT_PAPIinitialize (int);
+extern int GPT_PAPIstart (int, Papistats *);
+extern int GPT_PAPIstop (int, Papistats *);
+extern void GPT_PAPIprstr (FILE *);
+extern void GPT_PAPIpr (FILE *, const Papistats *);
+extern void GPT_PAPIadd (Papistats *, const Papistats *);
+#endif

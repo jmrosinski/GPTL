@@ -1,5 +1,5 @@
 /*
-** $Id: camwrappers.c,v 1.5 2004-10-19 03:16:18 rosinski Exp $
+** $Id: camwrappers.c,v 1.6 2004-10-25 03:27:10 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines as called from CAM
 */
@@ -60,7 +60,7 @@ void t_resetf ()
 
 int t_setoptionf (int *option, int *val)
 {
-  return GPTsetoption ((GPTOption) *option, *val);
+  return GPTsetoption (*option, *val);
 }
 
 int t_stampf (double *wall, double *usr, double *sys)

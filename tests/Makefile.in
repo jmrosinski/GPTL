@@ -1,20 +1,20 @@
 CC           = @CC@
-CFLAGS       = @CFLAGS@
+CFLAGS       = @CFLAGS@ @PAPIPREP@
 THREADFLAGS  = @THREADFLAGS@ @THREADDEFS@
-LDFLAGS      = -L.. -lgpt @LIBS@ @LDFLAGS@ @CFLAGS@ @THREADFLAGS@
+LDFLAGS      = -L.. -lgpt @LIBS@ @LDFLAGS@ @CFLAGS@ @THREADFLAGS@ @PAPILIB@
 
 FC           = @F77@
-FFLAGS       = @FFLAGS@
+FFLAGS       = @FFLAGS@ @PAPIPREP@
 FTHREADFLAGS = @FTHREADFLAGS@
-FLDFLAGS     = -L.. -lgpt @THREADFLAGS@
+FLDFLAGS     = -L.. -lgpt @THREADFLAGS@ @PAPILIB@
 
 COBJS = llcost.o depth.o overhead.o
 CEXES = llcost   depth   overhead
 
 FOBJS = flopsperclock.o omptest.o errtest.o opscost.o \
-        hashtest.o
+        hashtest.o papitest.o
 FEXES = flopsperclock   omptest   errtest   opscost \
-        hashtest
+        hashtest   papitest
 
 all: $(CEXES) $(FEXES)
 cexes: $(CEXES)
@@ -36,6 +36,8 @@ opscost: opscost.o
 	$(F77) -o $@ opscost.o $(FFLAGS) $(FLDFLAGS)
 hashtest: hashtest.o
 	$(F77) -o $@ hashtest.o $(FFLAGS) $(FTHREADFLAGS) $(FLDFLAGS)
+papitest: papitest.o
+	$(F77) -o $@ papitest.o $(FFLAGS) $(FTHREADFLAGS) $(FLDFLAGS)
 
 clean:
 	rm $(FOBJS) $(COBJS) $(FEXES) $(CEXES)
@@ -44,7 +46,7 @@ clean:
 
 overhead.o: overhead.c
 	$(CC) -c $(CFLAGS) $(THREADFLAGS) $<
-hashtest.o: hashtest.F
+papitest.o: papitest.F
 	$(F77) -c $(FFLAGS) $(FTHREADFLAGS) $<
 omptest.o: omptest.F
 	$(F77) -c $(FFLAGS) $(FTHREADFLAGS) $<

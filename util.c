@@ -1,5 +1,5 @@
 /*
-** $Id: util.c,v 1.6 2004-10-17 00:39:46 rosinski Exp $
+** $Id: util.c,v 1.7 2004-10-25 03:27:10 rosinski Exp $
 */
 
 #include <stdarg.h>
@@ -42,3 +42,14 @@ void GPTset_abort_on_error (bool val)
 {
   abort_on_error = val;
 }
+
+void *GPTallocate (const int nbytes)
+{
+  void *ptr;
+
+  if ( ! (ptr = malloc (nbytes)))
+    (void) GPTerror ("GPTallocate: malloc failed for %d bytes\n", nbytes);
+
+  return ptr;
+}
+

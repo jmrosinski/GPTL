@@ -2,6 +2,7 @@
 #include <sys/times.h> /* times */
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #ifdef THREADED_OMP
 #include <omp.h>
 #endif

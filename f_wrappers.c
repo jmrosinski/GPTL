@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.7 2004-10-19 03:16:18 rosinski Exp $
+** $Id: f_wrappers.c,v 1.8 2004-10-25 03:27:10 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines
 */
@@ -17,6 +17,7 @@
 #define gptstart GPTSTART
 #define gptstop GPTSTOP
 #define gptsetoption GPTSETOPTION
+#define gptpapiprinttable GPTPAPIPRINTTABLE
 
 #elif ( defined FORTRANUNDERSCORE )
 
@@ -28,6 +29,7 @@
 #define gptstart gptstart_
 #define gptstop gptstop_
 #define gptsetoption gptsetoption_
+#define gptpapiprinttable gptpapiprinttable_
 
 #elif ( defined FORTRANDOUBLEUNDERSCORE )
 
@@ -39,6 +41,7 @@
 #define gptstart gptstart__
 #define gptstop gptstop__
 #define gptsetoption gptsetoption__
+#define gptpapiprinttable gptpapiprinttable__
 
 #endif
 
@@ -66,11 +69,6 @@ void gptreset ()
   return;
 }
 
-int gptsetoption (int *option, int *val)
-{
-  return GPTsetoption ((GPTOption) *option, (bool) *val);
-}
-
 int gptstamp (double *wall, double *usr, double *sys)
 {
   return GPTstamp (wall, usr, sys);
@@ -96,4 +94,15 @@ int gptstop (char *name, int nc1)
   strncpy (cname, name, numchars);
   cname[numchars] = '\0';
   return GPTstop (cname);
+}
+
+int gptsetoption (int *option, int *val)
+{
+  return GPTsetoption (*option, (bool) *val);
+}
+
+void gptpapiprinttable ()
+{
+  GPTPAPIprinttable ();
+  return;
 }
