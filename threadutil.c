@@ -8,7 +8,7 @@ static int unlock_mutex (void);    /* unlock a mutex for exit from a critical re
 #include <omp.h>
 static omp_lock_t lock;
 
-int threadinit (int *nthreads)
+int threadinit (int *nthreads, int *maxthreads)
 {
   /*
   ** Must call init_lock before using the lock (get_thread_num())
@@ -16,13 +16,18 @@ int threadinit (int *nthreads)
 
   omp_init_lock (&lock);
 
-  *nthreads = omp_get_max_threads ();
-  if (get_thread_num (nthreads) > 0)
+  /*
+  ** In OMP case, maxthreads and nthreads are the same number
+  */
+
+  *maxthreads = omp_get_max_threads ();
+  *nthreads = *maxthreads;
+  if (get_thread_num (nthreads, maxthreads) > 0)
     return GPTerror ("GPTthreadinit: MUST be called only by master thread");
   return 0;
 }
 
-int get_thread_num (int *nthreads)
+int get_thread_num (int *nthreads, int *maxthreads)
 {
   int mythread;
 
@@ -54,7 +59,7 @@ static int unlock_mutex (void)
 pthread_mutex_t t_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_t *threadid;
 
-int threadinit (int *nthreads)
+int threadinit (int *nthreads, int *maxthreads)
 {
   int nbytes;
 
@@ -69,17 +74,17 @@ int threadinit (int *nthreads)
 
   /*
   ** Initialize nthreads to 1 and define the threadid array now that initialization 
-  ** is done. The resetting is necessary because the actual value will be
-  ** determined dynamically when get_thread_num is called.
+  ** is done. The actual value will be determined as get_thread_num is called.
   */
 
   threadid[0] = pthread_self ();
   *nthreads = 1;
+  *maxthreads = MAX_THREADS;
 
   return 0;
 }
 
-int get_thread_num (int *nthreads)
+int get_thread_num (int *nthreads, int *maxthreads)
 {
   int n;                 /* return value: loop index over number of threads */
   pthread_t mythreadid;  /* thread id from pthreads library */

@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.11 2004-10-16 20:22:14 rosinski Exp $
+$Id: private.h,v 1.12 2004-10-16 21:37:58 rosinski Exp $
 */
 
 #include "gpt.h"
@@ -68,5 +68,5 @@ typedef struct {
 
 extern int GPTerror (const char *, ...);
 extern void GPTset_abort_on_error (bool val);
-extern int threadinit (int *);            /* initialize threading environment */
-extern int get_thread_num (int *);        /* determine thread number */
+extern int threadinit (int *, int *);          /* initialize threading environment */
+extern int get_thread_num (int *, int *);      /* determine thread number */

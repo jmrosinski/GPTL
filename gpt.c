@@ -8,12 +8,13 @@
 
 #include "private.h"
 
-static Timer **timers = 0;       /* linked list of timers */
-static Timer **last = 0;         /* last element in list */
-static int *max_depth;             /* maximum indentation level */
-static int *max_name_len;        /* max length of timer name */
-static int *current_depth;       /* current depth in timer tree */
-static int nthreads         = -1;    /* num threads. Init to bad value */
+static Timer **timers = 0;      /* linked list of timers */
+static Timer **last = 0;        /* last element in list */
+static int *max_depth;          /* maximum indentation level */
+static int *max_name_len;       /* max length of timer name */
+static int *current_depth;      /* current depth in timer tree */
+static int nthreads    = -1;    /* num threads. Init to bad value */
+static int maxthreads  = -1;    /* max threads (=nthreads for OMP). Init to bad value */
 static bool initialized     = false; /* GPTinitialize has been called */
 static Settings primary[] = {
   {GPTwall, "Wallclock","Wallclock max       min     Overhead  ", true },
@@ -97,25 +98,25 @@ int GPTinitialize (void)
   if (initialized)
     return GPTerror ("GPTinitialize() has already been called\n");
 
-  if (threadinit (&nthreads) < 0)
+  if (threadinit (&nthreads, &maxthreads) < 0)
     return GPTerror ("GPTinitialize: bad return from threadinit\n");
 
   /*
   ** Allocate space for global arrays
   */
 
-  timers        = (Timer **) allocate (nthreads * sizeof (Timer *));
-  last          = (Timer **) allocate (nthreads * sizeof (Timer *));
-  current_depth = (int *)    allocate (nthreads * sizeof (int));
-  max_depth     = (int *)    allocate (nthreads * sizeof (int));
-  max_name_len  = (int *)    allocate (nthreads * sizeof (int));
-  hashtable     = (Hashtable **) allocate (nthreads * sizeof (Hashtable *));
+  timers        = (Timer **) allocate (maxthreads * sizeof (Timer *));
+  last          = (Timer **) allocate (maxthreads * sizeof (Timer *));
+  current_depth = (int *)    allocate (maxthreads * sizeof (int));
+  max_depth     = (int *)    allocate (maxthreads * sizeof (int));
+  max_name_len  = (int *)    allocate (maxthreads * sizeof (int));
+  hashtable     = (Hashtable **) allocate (maxthreads * sizeof (Hashtable *));
 
   /*
   ** Initialize array values
   */
 
-  for (n = 0; n < nthreads; n++) {
+  for (n = 0; n < maxthreads; n++) {
     timers[n] = 0;
     current_depth[n] = 0;
     max_depth[n]     = 0;
@@ -127,7 +128,7 @@ int GPTinitialize (void)
     }
   }
 
-  if (get_thread_num (&nthreads) > 0) 
+  if (get_thread_num (&nthreads, &maxthreads) > 0) 
     return GPTerror ("GPTinitialize: must only be called by master thread\n");
 
   /* Set enabled flags for speed */
@@ -171,7 +172,7 @@ int GPTstart (const char *name)       /* timer name */
   if ( ! initialized)
     return GPTerror ("GPTstart: GPTinitialize has not been called\n");
 
-  if ((mythread = get_thread_num (&nthreads)) < 0)
+  if ((mythread = get_thread_num (&nthreads, &maxthreads)) < 0)
     return GPTerror ("GPTstart\n");
 
   /*
@@ -298,7 +299,7 @@ int GPTstop (const char *name)
   if ( ! initialized)
     return GPTerror ("GPTstop: GPTinitialize has not been called\n");
 
-  if ((mythread = get_thread_num (&nthreads)) < 0)
+  if ((mythread = get_thread_num (&nthreads, &maxthreads)) < 0)
     return GPTerror ("GPTstop\n");
 
 #ifdef HASH
@@ -425,7 +426,7 @@ int GPTreset (void)
   ** Only allow the master thread to reset timers
   */
 
-  if (get_thread_num (&nthreads) != 0)
+  if (get_thread_num (&nthreads, &maxthreads) != 0)
     return 0;
 
   for (n = 0; n < nthreads; n++) {
