@@ -1,5 +1,5 @@
 /*
-** $Id: camwrappers.c,v 1.1 2004-10-14 21:11:42 rosinski Exp $
+** $Id: camwrappers.c,v 1.2 2004-10-14 21:17:52 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines as called from CAM
 */
@@ -8,7 +8,7 @@
 
 #if ( defined FORTRANCAPS )
 
-#define t_startf T_STARTF
+#define t_initializef T_INITIALIZEF
 #define t_prf T_PRF
 #define t_resetf T_RESETF
 #define t_stampf T_STAMPF
@@ -18,7 +18,7 @@
 
 #elif ( defined FORTRANUNDERSCORE )
 
-#define t_startf t_startf_
+#define t_initializef t_initializef_
 #define t_prf t_prf_
 #define t_resetf t_resetf_
 #define t_stampf t_stampf_
@@ -28,7 +28,7 @@
 
 #elif ( defined FORTRANDOUBLEUNDERSCORE )
 
-#define t_startf t_startf__
+#define t_initializef t_initializef__
 #define t_prf t_prf__
 #define t_resetf t_resetf__
 #define t_stampf t_stampf__
@@ -41,7 +41,7 @@
 int t_startf (char *, int);
 int t_stopf (char *, int);
 
-int t_startf ()
+int t_initializef ()
 {
   return GPTinitialize ();
 }
