@@ -81,8 +81,8 @@ int GPTsetoption (const int option,  /* option */
       return 0;
     }
   }
-#ifdef HAVE_PAPI  
-  if (GPT_PAPIsetoption (option) == 0)
+#ifdef HAVE_PAPI
+  if (GPT_PAPIsetoption (option, val) == 0)
     return 0;
 #endif
   return GPTerror ("GPTsetoption: option %d not found\n", (int) option);

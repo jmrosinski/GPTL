@@ -128,10 +128,16 @@ static bool *started;
 static char papiname[PAPI_MAX_STR_LEN];
 static const int BADCOUNT = -999999;
 
-int GPT_PAPIsetoption (const int counter)
+int GPT_PAPIsetoption (const int counter,
+		       const int val)
 {
   int n;
   int ret;
+  
+  /* Just return if the flag says disable an option, because default is off */
+
+  if ( ! val)
+    return 0;
 
   /*
   ** Loop through table looking for counter. If found, ensure it can be
@@ -161,7 +167,7 @@ int GPT_PAPIsetoption (const int counter)
   return GPTerror ("GPT_PAPIsetoption: counter %d does not exist\n", counter);
 }
 
-int GPT_PAPIinitialize (int maxthreads)
+int GPT_PAPIinitialize (const int maxthreads)
 {
   int ret;
   int n;
@@ -190,12 +196,17 @@ int GPT_PAPIinitialize (int maxthreads)
   return 0;
 }
 
-int GPT_PAPIstart (int mythread, 
+int GPT_PAPIstart (const int mythread, 
 		   Papistats *aux)
 {
   int ret;
   int n;
   
+  /* If no events are to be counted just return */
+
+  if (EventSet[mythread] == PAPI_NULL)
+    return 0;
+
   if ( ! started[mythread]) {
     PAPI_create_eventset (&EventSet[mythread]);
     for (n = 0; n < nevents; n++) {
@@ -219,7 +230,7 @@ int GPT_PAPIstart (int mythread,
   return 0;
 }
 
-int GPT_PAPIstop (int mythread, 
+int GPT_PAPIstop (const int mythread, 
 		  Papistats *aux)
 {
   int ret;

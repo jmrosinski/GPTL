@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.15 2004-10-25 03:27:10 rosinski Exp $
+$Id: private.h,v 1.16 2004-10-31 17:32:38 rosinski Exp $
 */
 
 #include <stdio.h>
@@ -67,10 +67,10 @@ extern void threadfinalize (void);             /* finalize threading environment
 extern int get_thread_num (int *, int *);      /* determine thread number */
 
 #ifdef HAVE_PAPI
-extern int GPT_PAPIsetoption (int);
-extern int GPT_PAPIinitialize (int);
-extern int GPT_PAPIstart (int, Papistats *);
-extern int GPT_PAPIstop (int, Papistats *);
+extern int GPT_PAPIsetoption (const int, const int);
+extern int GPT_PAPIinitialize (const int);
+extern int GPT_PAPIstart (const int, Papistats *);
+extern int GPT_PAPIstop (const int, Papistats *);
 extern void GPT_PAPIprstr (FILE *);
 extern void GPT_PAPIpr (FILE *, const Papistats *);
 extern void GPT_PAPIadd (Papistats *, const Papistats *);
