@@ -1,3 +1,14 @@
+gpt0_3: Added overflow diagnostic novfl
+	Migrate threading ops to threadutil.c
+	Remove useless calcs from GPTstop
+	Added iteration option to depth test
+	overhead test is now a C code and tests potentially expensive
+          calcs embedded in the library
+	Removed exp, expensive, timetimeing tests
+	Reenabled pthreads
+	Fix SGI complaints about arg lists
+	Changed depth array to mitigate false sharing
+	Added DISABLE_TIMERS ifdef
 gpt0_2: Remove unused components in Timer. Make "name" component a fixed
         size for efficiency.
 gpt0_1: Add hashtable for efficiency. Add some more tests.  Add ChangeLog.

@@ -1,28 +1,22 @@
 CC       = @CC@
-CFLAGS   = @CFLAGS@
+CFLAGS   = @CFLAGS@ @THREADDEFS@
 FC       = @F77@
 FFLAGS   = @FFLAGS@
 LDFLAGS  = -L.. -lgpt @LIBS@ @LDFLAGS@ $(CFLAGS)
 FLDFLAGS = -L.. -lgpt
-LOADER = @F77@
+LOADER   = @F77@
 
-COBJS = exp.o timetiming.o llcost.o depth.o
-CEXES = exp   timetiming   llcost   depth
+COBJS = llcost.o depth.o overhead.o
+CEXES = llcost   depth   overhead
 
-FOBJS = cheap.o expensive.o flopsperclock.o omptest.o errtest.o overhead.o opscost.o \
+FOBJS = flopsperclock.o omptest.o errtest.o opscost.o \
         hashtest.o
-FEXES = cheap   expensive   flopsperclock   omptest   errtest   overhead   opscost \
+FEXES = flopsperclock   omptest   errtest   opscost \
         hashtest
 
 all: $(CEXES) $(FEXES)
 cexes: $(CEXES)
 fexes: $(FEXES)
-
-exp: exp.o
-	$(CC) -o $@ exp.o $(CFLAGS) $(LDFLAGS) -lm
-
-timetiming: timetiming.o
-	$(CC) -o $@ timetiming.o $(CFLAGS) $(LDFLAGS) -lm
 
 llcost: llcost.o
 	$(CC) -o $@ llcost.o $(CFLAGS) $(LDFLAGS)
@@ -30,11 +24,8 @@ llcost: llcost.o
 depth: depth.o
 	$(CC) -o $@ depth.o $(CFLAGS) $(LDFLAGS)
 
-cheap: cheap.o
-	$(LOADER) -o $@ cheap.o $(FFLAGS) $(FLDFLAGS)
-
-expensive: expensive.o
-	$(LOADER) -o $@ expensive.o $(FFLAGS) $(FLDFLAGS)
+overhead: overhead.o
+	$(CC) -o $@ overhead.o $(CFLAGS) $(LDFLAGS)
 
 flopsperclock: flopsperclock.o
 	$(LOADER) -o $@ flopsperclock.o $(FFLAGS) $(FLDFLAGS)
@@ -44,9 +35,6 @@ omptest: omptest.o
 
 errtest: errtest.o
 	$(LOADER) -o $@ errtest.o $(FFLAGS) $(FLDFLAGS)
-
-overhead: overhead.o
-	$(LOADER) -o $@ overhead.o $(FFLAGS) $(FLDFLAGS)
 
 opscost: opscost.o
 	$(LOADER) -o $@ opscost.o $(FFLAGS) $(FLDFLAGS)

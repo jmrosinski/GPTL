@@ -32,6 +32,7 @@ static int naux = 0;             /* number of auxiliary stats */
 static Settings aux[] = {{GPTother, "none", false}};
 static const int tablesize = 128*MAX_CHARS;  /* 128 is size of ASCII char set */
 static Hashtable **hashtable;    /* table of entries hashed by sum of chars */
+static unsigned int *novfl;      /* microsecond overflow counter (only when DIAG set */
 
 /* Local function prototypes */
 
@@ -123,6 +124,9 @@ int GPTinitialize (void)
   max_depth     = (int *)    allocate (maxthreads * sizeof (int));
   max_name_len  = (int *)    allocate (maxthreads * sizeof (int));
   hashtable     = (Hashtable **) allocate (maxthreads * sizeof (Hashtable *));
+#ifdef DIAG
+  novfl         = (unsigned int *) allocate (maxthreads * sizeof (unsigned int));
+#endif
 
   /*
   ** Initialize array values
@@ -134,6 +138,9 @@ int GPTinitialize (void)
     max_depth[n]     = 0;
     max_name_len[n]  = 0;
     hashtable[n] = (Hashtable *) allocate (tablesize * sizeof (Hashtable));
+#ifdef DIAG
+    novfl[n] = 0;
+#endif
     for (i = 0; i < tablesize; i++) {
       hashtable[n][i].nument = 0;
       hashtable[n][i].entries = 0;
@@ -339,26 +346,14 @@ int GPTstop (const char *name)
   ptr->onflg = false;
   ptr->count++;
 
-  /*
-  ** 1st timer stoppage: set max and min to computed values.  Otherwise apply
-  ** max or min function
-  */
-
   if (wallenabled) {
 
     delta_wtime_sec  = tp1.tv_sec  - ptr->wall.last_sec;
     delta_wtime_usec = tp1.tv_usec - ptr->wall.last_usec;
     delta_wtime      = delta_wtime_sec + 1.e-6*delta_wtime_usec;
 
-    if (ptr->count == 1) {
-      ptr->wall.max = delta_wtime;
-      ptr->wall.min = delta_wtime;
-      
-    } else {
-      
-      ptr->wall.max = MAX (ptr->wall.max, delta_wtime);
-      ptr->wall.min = MIN (ptr->wall.min, delta_wtime);
-    }
+    ptr->wall.max = MAX (ptr->wall.max, delta_wtime);
+    ptr->wall.min = MIN (ptr->wall.min, delta_wtime);
 
     ptr->wall.accum_sec  += delta_wtime_sec;
     ptr->wall.accum_usec += delta_wtime_usec;
@@ -371,13 +366,16 @@ int GPTstop (const char *name)
     if (ptr->wall.accum_usec > 1000000) {
       ptr->wall.accum_sec  += 1;
       ptr->wall.accum_usec -= 1000000;
+#ifdef DIAG
+      ++novfl[mythread];
+#endif
     } else if (ptr->wall.accum_usec < -1000000) {
       ptr->wall.accum_sec  -= 1;
       ptr->wall.accum_usec += 1000000;
+#ifdef DIAG
+      ++novfl[mythread];
+#endif
     }
-
-    ptr->wall.last_sec  = tp1.tv_sec;
-    ptr->wall.last_usec = tp1.tv_usec;
 
     /*
     ** 2nd system timer call is solely for overhead timing
@@ -603,6 +601,11 @@ int GPTpr (const int id)
       osum += sum[n];
     }
     fprintf (fp, "OVERHEAD.SUM (wallclock seconds) = %9.3f\n", osum);
+#ifdef DIAG
+    fprintf (fp, "\n");
+    for (n = 0; n < nthreads; ++n) 
+      fprintf (fp, "novfl[%d]=%d\n", n, novfl[n]);
+#endif
   }
 
   /*

@@ -146,13 +146,14 @@ static int unlock_mutex ()
 ** Unthreaded case
 */
 
-int threadinit (int *nthreads)
+int threadinit (int *nthreads, int *maxthreads)
 {
   *nthreads = 1;
+  *maxthreads = 1;
   return 0;
 }
 
-int get_thread_num (int *nthreads)
+int get_thread_num (int *nthreads, int *maxthreads)
 {
   return 0;
 }
