@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.13 2004-10-17 05:19:23 rosinski Exp $
+$Id: private.h,v 1.14 2004-10-19 03:16:18 rosinski Exp $
 */
 
 #include "gpt.h"
@@ -53,7 +53,7 @@ typedef struct TIMER {
 } Timer;
 
 typedef struct {
-  const Option option;
+  const GPTOption option;
   const char *name;
   const char *str;
   bool enabled;
@@ -69,4 +69,5 @@ typedef struct {
 extern int GPTerror (const char *, ...);
 extern void GPTset_abort_on_error (bool val);
 extern int threadinit (int *, int *);          /* initialize threading environment */
+extern void threadfinalize (void);             /* finalize threading environment */
 extern int get_thread_num (int *, int *);      /* determine thread number */

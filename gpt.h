@@ -1,5 +1,5 @@
 /*
-$Id: gpt.h,v 1.6 2004-10-16 00:03:44 rosinski Exp $
+$Id: gpt.h,v 1.7 2004-10-19 03:16:18 rosinski Exp $
 */
 
 typedef enum {
@@ -7,14 +7,15 @@ typedef enum {
   GPTcpu            = 2,
   GPTabort_on_error = 3,
   GPTother          = 4
-} Option;
+} GPTOption;
 
 /*
 ** Function prototypes
 */
 
-extern int GPTsetoption (const Option, const int);
+extern int GPTsetoption (const GPTOption, const int);
 extern int GPTinitialize (void);
+extern int GPTfinalize (void);
 extern int GPTstart (const char *);
 extern int GPTstop (const char *);
 extern int GPTstamp (double *, double *, double *);

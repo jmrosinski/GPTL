@@ -49,12 +49,12 @@ static long ticks_per_sec; /* clock ticks per second */
 **
 ** Input arguments:
 **   option: option to be set
-**   val:    value to which option should be set
+**   val:    value to which option should be set (nonzero=true, zero=false)
 **
 ** Return value: 0 (success) or -1 (failure)
 */
 
-int GPTsetoption (const Option option,     /* option name */
+int GPTsetoption (const GPTOption option,  /* option name */
 		  const int val)           /* whether to enable */
 {
   int n;   /* loop index */
@@ -64,7 +64,7 @@ int GPTsetoption (const Option option,     /* option name */
 #endif
 
   if (initialized)
-    return (GPTerror ("GPTsetoption: Options must be set BEFORE GPTinitialize\n"));
+    return GPTerror ("GPTsetoption: Options must be set BEFORE GPTinitialize\n");
   
   if (option == GPTabort_on_error) {
     GPTset_abort_on_error ((bool) val);
@@ -109,10 +109,16 @@ int GPTinitialize (void)
 #endif
 
   if (initialized)
-    return GPTerror ("GPTinitialize() has already been called\n");
+    return GPTerror ("GPTinitialize: has already been called\n");
 
   if (threadinit (&nthreads, &maxthreads) < 0)
     return GPTerror ("GPTinitialize: bad return from threadinit\n");
+
+  if (get_thread_num (&nthreads, &maxthreads) > 0) 
+    return GPTerror ("GPTinitialize: must only be called by master thread\n");
+
+  if ((ticks_per_sec = sysconf (_SC_CLK_TCK)) == -1)
+    return GPTerror ("GPTinitialize: sysconf (_SC_CLK_TCK) failed\n");
 
   /*
   ** Allocate space for global arrays
@@ -147,18 +153,55 @@ int GPTinitialize (void)
     }
   }
 
-  if (get_thread_num (&nthreads, &maxthreads) > 0) 
-    return GPTerror ("GPTinitialize: must only be called by master thread\n");
-
   /* Set enabled flags for speed */
 
   wallenabled = primary[wallidx].enabled;
   cpuenabled  = primary[cpuidx].enabled;
 
-  if ((ticks_per_sec = sysconf (_SC_CLK_TCK)) == -1)
-    return GPTerror ("GPTinitialize: sysconf (_SC_CLK_TCK) failed\n");
-
   initialized = true;
+  return 0;
+}
+
+/*
+** GPTfinalize (): Finalization routine must be called from single-threaded
+**   region. Free all malloc'd space
+** return value: 0 (success) or -1 (failure)
+*/
+
+int GPTfinalize (void)
+{
+  int n;                /* index */
+  Timer *ptr, *ptrnext; /* ll indices */
+
+#ifdef DISABLE_TIMERS
+  return 0;
+#endif
+
+  if (get_thread_num (&nthreads, &maxthreads) > 0) 
+    return GPTerror ("GPTfinalize: must only be called by master thread\n");
+
+  if ( ! initialized)
+    return GPTerror ("GPTinitialize() has not been called\n");
+
+  for (n = 0; n < maxthreads; ++n) {
+    free (hashtable[n]);
+    for (ptr = timers[n]; ptr; ptr = ptrnext) {
+      ptrnext = ptr->next;
+      free (ptr);
+    }
+  }
+
+  free (timers);
+  free (current_depth);
+  free (max_depth);
+  free (max_name_len);
+  free (hashtable);
+#ifdef DIAG
+  free (novfl);
+#endif
+
+  threadfinalize ();
+  initialized = false;
   return 0;
 }
 
@@ -452,8 +495,8 @@ int GPTreset (void)
   ** Only allow the master thread to reset timers
   */
 
-  if (get_thread_num (&nthreads, &maxthreads) != 0)
-    return 0;
+  if (get_thread_num (&nthreads, &maxthreads) > 0) 
+    return GPTerror ("GPTreset: must only be called by master thread\n");
 
   for (n = 0; n < nthreads; n++) {
     for (ptr = timers[n]; ptr; ptr = ptr->next) {

@@ -16,7 +16,6 @@ int main ()
   int nompiter;
   int ompiter;
   int ninvoke;
-  int i;
 
   printf ("Enter number of iterations for threaded loop:\n");
   scanf ("%d", &nompiter);
@@ -41,7 +40,9 @@ int main ()
 static void overhead (int iter, int ninvoke)
 {
   int i;
+#ifdef THREADED_OMP
   int tnum;
+#endif
   int indx;
   char **strings1;
   char **strings2;

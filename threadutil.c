@@ -27,6 +27,10 @@ int threadinit (int *nthreads, int *maxthreads)
   return 0;
 }
 
+void threadfinalize ()
+{
+}
+
 int get_thread_num (int *nthreads, int *maxthreads)
 {
   int mythread;
@@ -82,6 +86,11 @@ int threadinit (int *nthreads, int *maxthreads)
   *maxthreads = MAX_THREADS;
 
   return 0;
+}
+
+void threadfinalize ()
+{
+  free (threadid);
 }
 
 int get_thread_num (int *nthreads, int *maxthreads)
@@ -156,5 +165,8 @@ int threadinit (int *nthreads, int *maxthreads)
 int get_thread_num (int *nthreads, int *maxthreads)
 {
   return 0;
+}
+void threadfinalize ()
+{
 }
 #endif

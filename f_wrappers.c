@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.6 2004-10-17 02:38:20 rosinski Exp $
+** $Id: f_wrappers.c,v 1.7 2004-10-19 03:16:18 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines
 */
@@ -10,6 +10,7 @@
 #if ( defined FORTRANCAPS )
 
 #define gptinitialize GPTINITIALIZE
+#define gptfinalize GPTFINALIZE
 #define gptpr GPTPR
 #define gptreset GPTRESET
 #define gptstamp GPTSTAMP
@@ -20,6 +21,7 @@
 #elif ( defined FORTRANUNDERSCORE )
 
 #define gptinitialize gptinitialize_
+#define gptfinalize gptfinalize_
 #define gptpr gptpr_
 #define gptreset gptreset_
 #define gptstamp gptstamp_
@@ -30,6 +32,7 @@
 #elif ( defined FORTRANDOUBLEUNDERSCORE )
 
 #define gptinitialize gptinitialize__
+#define gptfinalize gptfinalize__
 #define gptpr gptpr__
 #define gptreset gptreset__
 #define gptstamp gptstamp__
@@ -47,6 +50,11 @@ int gptinitialize ()
   return GPTinitialize ();
 }
 
+int gptfinalize ()
+{
+  return GPTfinalize ();
+}
+
 int gptpr (int *procid)
 {
   return GPTpr (*procid);
@@ -60,7 +68,7 @@ void gptreset ()
 
 int gptsetoption (int *option, int *val)
 {
-  return GPTsetoption ((Option) *option, (bool) *val);
+  return GPTsetoption ((GPTOption) *option, (bool) *val);
 }
 
 int gptstamp (double *wall, double *usr, double *sys)
