@@ -291,5 +291,8 @@ void GPT_PAPIadd (Papistats *auxout,
   int n;
   
   for (n = 0; n < nevents; n++)
-    auxout->accum[n] += auxin->accum[n];
+    if (auxin->accum[n] == BADCOUNT)
+      auxout->accum[n] = BADCOUNT;
+    else
+      auxout->accum[n] += auxin->accum[n];
 }
