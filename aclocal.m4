@@ -29,50 +29,50 @@ AC_DEFUN(UD_SET_OMP_C,
     THREADDEFS=-DTHREADED_OMP
     AC_MSG_RESULT($THREADFLAGS works)
   else
-    CFLAGS="$OLDFLAGS"
     AC_MSG_RESULT([not found])
     AC_MSG_ERROR([quitting.  Rerun configure without --enable-openmp])
   fi
+  CFLAGS="$OLDFLAGS"
 ])
 
 AC_DEFUN(UD_SET_OMP_F77,
 [
   AC_LANG_PUSH(Fortran 77)
-  THREADFLAGS=""
+  FTHREADFLAGS=""
   OLDFLAGS="$FFLAGS"
   FORTOMP="NO"
 
   AC_MSG_CHECKING([Fortran openmp threading])
 
-  THREADFLAGS="-mp"
-  FFLAGS="$OLDFLAGS $THREADFLAGS"
+  FTHREADFLAGS="-mp"
+  FFLAGS="$OLDFLAGS $FTHREADFLAGS"
   AC_TRY_LINK(,[      call omp_get_max_threads()],FORTOMP="YES",)
 
   if test "$FORTOMP" = "NO" ; then
-    THREADFLAGS="-qsmp=omp"
-    FFLAGS="$OLDFLAGS $THREADFLAGS"
+    FTHREADFLAGS="-qsmp=omp"
+    FFLAGS="$OLDFLAGS $FTHREADFLAGS"
     AC_TRY_LINK(,[      call omp_get_max_threads()],FORTOMP="YES",)
   fi
 
   if test "$FORTOMP" = "NO" ; then
-    THREADFLAGS="-omp"
-    FFLAGS="$OLDFLAGS $THREADFLAGS"
+    FTHREADFLAGS="-omp"
+    FFLAGS="$OLDFLAGS $FTHREADFLAGS"
     AC_TRY_LINK(,[      call omp_get_max_threads()],FORTOMP="YES",)
   fi
 
   if test "$FORTOMP" = "NO" ; then
-    THREADFLAGS="-openmp"
-    FFLAGS="$OLDFLAGS $THREADFLAGS"
+    FTHREADFLAGS="-openmp"
+    FFLAGS="$OLDFLAGS $FTHREADFLAGS"
     AC_TRY_LINK(,[      call omp_get_max_threads()],FORTOMP="YES",)
   fi
 
   if test "$FORTOMP" = "YES" ; then
-    AC_MSG_RESULT($THREADFLAGS)
+    AC_MSG_RESULT($FTHREADFLAGS)
   else
-    FFLAGS="$OLDFLAGS"
     AC_MSG_RESULT([not found])
     AC_MSG_WARN([threaded Fortran tests may fail])
   fi
+  FFLAGS="$OLDFLAGS"
   AC_LANG_POP(Fortran 77)
 ])
 
@@ -101,8 +101,8 @@ AC_DEFUN(UD_SET_PTHREADS_F77,
 [
   AC_LANG_PUSH(Fortran 77)
   OLDLDFLAGS="$LDFLAGS"
-  THREADFLAGS="-lpthread"
-  LDFLAGS="$OLDLDFLAGS $THREADFLAGS"
+  FTHREADFLAGS="-lpthread"
+  LDFLAGS="$OLDLDFLAGS $FTHREADFLAGS"
   PTHREADS="NO"
 
   AC_MSG_CHECKING([pthreads under Fortran])
@@ -110,7 +110,7 @@ AC_DEFUN(UD_SET_PTHREADS_F77,
 
   if test "$PTHREADS" = "YES" ; then
     THREADDEFS=-DTHREADED_PTHREADS
-    AC_MSG_RESULT($THREADFLAGS)
+    AC_MSG_RESULT($FTHREADFLAGS)
   else
     AC_MSG_RESULT([not found])
   fi

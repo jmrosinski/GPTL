@@ -1,28 +1,30 @@
 CC       = @CC@
-CFLAGS   = -DHASH @CFLAGS@ @FDEFS@ @THREADDEFS@ @DEFS@
+CFLAGS   = -DHASH @CFLAGS@ @THREADFLAGS@ @FDEFS@ @THREADDEFS@ @DEFS@
 
 LIBNAME  = libgpt.a
+LIBDIR   = @prefix@/lib
+INCDIR   = @prefix@/include
 OBJS     = camwrappers.o f_wrappers.o gpt.o util.o threadutil.o
-MAKE     = gmake
+@SET_MAKE@
+
+$(LIBNAME): $(OBJS)
+	ar $(ARFLAGS) $@ $(OBJS)
+	rm -f tests/*.o
 
 all: $(LIBNAME) tests/all
 
-install: @prefix@/$(LIBNAME)
-	cp $(LIBNAME) @prefix@/lib
+install:
+	cp $(LIBNAME) $(LIBDIR)
+	cp gpt.h gpt.inc $(INCDIR)
 
 uninstall:
-	$(RM) @prefix@/lib/$(LIBNAME) @prefix@/include/gpt.h \
-              @prefix@/include/gpt.inc
-
-$(LIBNAME): $(OBJS)
-	$(AR) $(ARFLAGS) $@ $(OBJS)
-	$(RM) -f tests/*.o
+	rm $(LIBDIR)/$(LIBNAME) $(INCDIR)/gpt.h $(INCDIR)/gpt.inc
 
 tests/all:
 	(cd tests; $(MAKE) all)
 
 clean:
-	$(RM) $(OBJS)
+	rm $(OBJS)
 	(cd tests; $(MAKE) clean)
 
 camwrappers.o: gpt.h private.h

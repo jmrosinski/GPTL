@@ -1,10 +1,12 @@
-CC       = @CC@
-CFLAGS   = @CFLAGS@ @THREADDEFS@
-FC       = @F77@
-FFLAGS   = @FFLAGS@
-LDFLAGS  = -L.. -lgpt @LIBS@ @LDFLAGS@ @CFLAGS@
-FLDFLAGS = -L.. -lgpt
-LOADER   = @F77@
+CC           = @CC@
+CFLAGS       = @CFLAGS@
+THREADFLAGS  = @THREADFLAGS@ @THREADDEFS@
+LDFLAGS      = -L.. -lgpt @LIBS@ @LDFLAGS@ @CFLAGS@ @THREADFLAGS@
+
+FC           = @F77@
+FFLAGS       = @FFLAGS@
+FTHREADFLAGS = @FTHREADFLAGS@
+FLDFLAGS     = -L.. -lgpt @THREADFLAGS@
 
 COBJS = llcost.o depth.o overhead.o
 CEXES = llcost   depth   overhead
@@ -20,27 +22,29 @@ fexes: $(FEXES)
 
 llcost: llcost.o
 	$(CC) -o $@ llcost.o $(CFLAGS) $(LDFLAGS)
-
 depth: depth.o
 	$(CC) -o $@ depth.o $(CFLAGS) $(LDFLAGS)
-
 overhead: overhead.o
-	$(CC) -o $@ overhead.o $(CFLAGS) $(LDFLAGS)
-
+	$(CC) -o $@ overhead.o $(CFLAGS) $(THREADFLAGS) $(LDFLAGS)
 flopsperclock: flopsperclock.o
-	$(LOADER) -o $@ flopsperclock.o $(FFLAGS) $(FLDFLAGS)
-
+	$(F77) -o $@ flopsperclock.o $(FFLAGS) $(FLDFLAGS)
 omptest: omptest.o
-	$(LOADER) -o $@ omptest.o $(FFLAGS) $(FLDFLAGS)
-
+	$(F77) -o $@ omptest.o $(FFLAGS) $(FTHREADFLAGS) $(FLDFLAGS)
 errtest: errtest.o
-	$(LOADER) -o $@ errtest.o $(FFLAGS) $(FLDFLAGS)
-
+	$(F77) -o $@ errtest.o $(FFLAGS) $(FLDFLAGS)
 opscost: opscost.o
-	$(LOADER) -o $@ opscost.o $(FFLAGS) $(FLDFLAGS)
-
+	$(F77) -o $@ opscost.o $(FFLAGS) $(FLDFLAGS)
 hashtest: hashtest.o
-	$(LOADER) -o $@ hashtest.o $(FFLAGS) $(FLDFLAGS)
+	$(F77) -o $@ hashtest.o $(FFLAGS) $(FTHREADFLAGS) $(FLDFLAGS)
 
 clean:
-	$(RM) $(FOBJS) $(COBJS) $(FEXES) $(CEXES)
+	rm $(FOBJS) $(COBJS) $(FEXES) $(CEXES)
+
+# Add appropriate thread flags to threaded executables
+
+overhead.o: overhead.c
+	$(CC) -c $(CFLAGS) $(THREADFLAGS) $<
+hashtest.o: hashtest.F
+	$(F77) -c $(FFLAGS) $(FTHREADFLAGS) $<
+omptest.o: omptest.F
+	$(F77) -c $(FFLAGS) $(FTHREADFLAGS) $<

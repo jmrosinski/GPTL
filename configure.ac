@@ -2,11 +2,12 @@ dnl Process this file with autoconf to produce a configure script.
 AC_INIT(private.h)
 AC_LANG(C)
 
-dnl Checks for programs.
+AC_PROG_MAKE_SET
+
+dnl C compiler
 AC_PROG_CC(xlc_r cc_r xlc pgcc icc cc gcc g++)
 
-dnl Added by me:
-dnl What fortran compiler to use:
+dnl Fortran compiler
 AC_PROG_F77(xlf90_r xlf90 pgf90 ifort lf95 f90 g95 g77 f77)
 
 dnl Whether to enable debugging
@@ -14,6 +15,12 @@ AC_ARG_ENABLE(debug,[--enable-debug],CFLAGS=-g;FFLAGS=-g,)
 
 dnl Whether to enable optimization
 AC_ARG_ENABLE(opt,[--enable-opt],CFLAGS=-O;FFLAGS=-O,)
+
+dnl need to add -qfixed to FFLAGS for Fortran tests on AIX
+AC_AIX
+if test "x$_ALL_SOURCE" != x ; then
+  FFLAGS="$FFLAGS -qfixed"
+fi
 
 dnl Whether and how to enable threading
 AC_ARG_ENABLE(openmp,[--enable-openmp],UD_SET_OMP_C,)
@@ -59,4 +66,6 @@ AC_SUBST(FDEFS)
 AC_SUBST(FLDFLAGS)
 AC_SUBST(CDEFS)
 AC_SUBST(THREADDEFS)
+AC_SUBST(THREADFLAGS)
+AC_SUBST(FTHREADFLAGS)
 AC_OUTPUT(Makefile tests/Makefile)
