@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.2 2001-01-01 19:34:05 rosinski Exp $
+$Id: private.h,v 1.3 2001-01-01 20:38:43 rosinski Exp $
 */
 
 #if ( defined THREADED_OMP )
@@ -79,3 +79,10 @@ extern omp_lock_t lock;
 extern pthread_mutex_t t_mutex;
 extern pthread_t *threadid;
 #endif
+
+/*
+** Function prototypes
+*/
+
+int GPTerror (const char *, ...);
+char *pclstr (int);

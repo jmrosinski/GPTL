@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.1 2000-12-28 00:38:05 rosinski Exp $
+dnl $Id: aclocal.m4,v 1.2 2001-01-01 20:38:43 rosinski Exp $
 dnl UD macros for netcdf configure
 
 
@@ -489,7 +489,7 @@ AC_DEFUN(PAC_GET_FORTNAMES,[
    # where a Fortran compiler option is used to force a particular
    # external name format (rs6000 xlf, for example).
    cat > confftest.F <<EOF
-       subroutine t_startf(xxx)
+       subroutine gptstart(xxx)
        integer xxx
        xxx = 1
        return
@@ -508,15 +508,15 @@ EOF
     # directly.
     if test $arch_CRAY ; then
      # Cray doesn't accept -a ...
-     nameform1=`strings confftest.o | grep t_startf_  | sed -n -e '1p'`
-     nameform2=`strings confftest.o | grep T_STARTF   | sed -n -e '1p'`
-     nameform3=`strings confftest.o | grep t_startf   | sed -n -e '1p'`
-     nameform4=`strings confftest.o | grep t_startf__ | sed -n -e '1p'`
+     nameform1=`strings confftest.o | grep gptstart_  | sed -n -e '1p'`
+     nameform2=`strings confftest.o | grep GPTSTART   | sed -n -e '1p'`
+     nameform3=`strings confftest.o | grep gptstart   | sed -n -e '1p'`
+     nameform4=`strings confftest.o | grep gptstart__ | sed -n -e '1p'`
     else
-     nameform1=`strings -a confftest.o | grep t_startf_  | sed -n -e '1p'`
-     nameform2=`strings -a confftest.o | grep T_STARTF   | sed -n -e '1p'`
-     nameform3=`strings -a confftest.o | grep t_startf   | sed -n -e '1p'`
-     nameform4=`strings -a confftest.o | grep t_startf__ | sed -n -e '1p'`
+     nameform1=`strings -a confftest.o | grep gptstart_  | sed -n -e '1p'`
+     nameform2=`strings -a confftest.o | grep GPTSTART   | sed -n -e '1p'`
+     nameform3=`strings -a confftest.o | grep gptstart   | sed -n -e '1p'`
+     nameform4=`strings -a confftest.o | grep gptstart__ | sed -n -e '1p'`
     fi
     /bin/rm -f confftest.F confftest.o
     if test -n "$nameform4" ; then
@@ -617,12 +617,12 @@ if test -n "$arch_IRIX64" ; then
 fi
 if test -n "$arch_LINUX" ; then
     arch_Linux=1
-    if test "$CC = pgcc" ; then
-	CFLAGS="$CFLAGS -mp"
-    fi
-    if test "$FC = pgf90" ; then
-	FFLAGS="$FFLAGS -mp -Msecond_underscore"
-    fi
+#    if test "$CC = pgcc" ; then
+#	CFLAGS="$CFLAGS -mp"
+#    fi
+#    if test "$FC = pgf90" ; then
+#	FFLAGS="$FFLAGS -mp -Msecond_underscore"
+#    fi
 fi
 if test -n "$arch_IRIX32" ; then
     arch_IRIX=1

@@ -3,7 +3,7 @@ CFLAGS     = @DEFS@ @CFLAGS@ @WDEF@ @ARCHDEF@
 INSTALLDIR = @prefix@/lib
 RM         = rm
 @VPATH@    = @top_srcdir@
-LIBNAME = libtiming.a
+LIBNAME = libgpt.a
 OBJS = gpt.o util.o f_wrappers.o
 
 all: $(INSTALLDIR)/$(LIBNAME) testit

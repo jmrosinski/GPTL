@@ -10,19 +10,19 @@ main()
   struct rusage r_usage;
 #endif
 
-  t_initialize();
+  GPTinitialize();
   for (n = 0; n < 100000; n++) {
 #ifdef HAVE_GETRUSAGE
-    t_start("getrusage");
+    GPTstart("getrusage");
     (void) getrusage (RUSAGE_SELF, &r_usage);
-    t_stop("getrusage");
+    GPTstop("getrusage");
 #endif
 
-    t_start("times");
+    GPTstart("times");
     (void) times (&buf);
-    t_stop("times");
+    GPTstop("times");
   }
-  t_pr(0);
+  GPTpr(0);
   exit(0);
 }
 

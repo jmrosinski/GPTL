@@ -1,7 +1,7 @@
       program flopsperclock
       implicit none
 
-      include '../header.inc'
+      include '../gpt.inc'
 
       integer iter, ret, n
 
@@ -14,12 +14,12 @@
       real*8 y1,y2,y3,y4,y5,y6,y7,y8,y9,y10
       real*8 z1,z2,z3,z4,z5,z6,z7,z8,z9,z10
 
-      integer t_stampf, t_initializef, t_setoptionf
-      external t_stampf, t_initializef, t_setoptionf
+      integer gptstamp, gptinitialize, gptsetoption
+      external gptstamp, gptinitialize, gptsetoption
 
-      if (t_initializef() < 0) stop 99
+      if (gptinitialize() < 0) stop 99
       open (unit=7, file='junk', form='formatted')
-      if (t_setoptionf (usrsys, .false.) < 0) stop 99
+      if (gptsetoption (usrsys, .false.) < 0) stop 99
 
       call setvals (x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,
      $              y1,y2,y3,y4,y5,y6,y7,y8,y9,y10,
@@ -27,17 +27,17 @@
 
       do iter=1,10
 
-        if (t_stampf (wall1, usr1, sys1) < 0) stop 99
+        if (gptstamp (wall1, usr1, sys1) < 0) stop 99
         do n=1,1000000
           call sub
         end do
-        if (t_stampf (wall2, usr2, sys2) < 0) stop 99
+        if (gptstamp (wall2, usr2, sys2) < 0) stop 99
 
         overhead = wall2 - wall1
 
         sum0 = 0.
 
-        if (t_stampf (wall1, usr1, sys1) < 0) stop 99
+        if (gptstamp (wall1, usr1, sys1) < 0) stop 99
         do n=1,1000000
           call sub
 
@@ -52,14 +52,14 @@
           sum0 = sum0 + x9
           sum0 = sum0 + x10
         end do
-        if (t_stampf (wall2, usr2, sys2) < 0) stop 99
+        if (gptstamp (wall2, usr2, sys2) < 0) stop 99
         t1 = wall2 - wall1
 
         write(7,*)'sum=',sum0
 
         sum1 = 0.
 
-        if (t_stampf (wall1, usr1, sys1) < 0) stop 99
+        if (gptstamp (wall1, usr1, sys1) < 0) stop 99
         do n=1,1000000
           call sub
 
@@ -84,7 +84,7 @@
           sum0 = sum0 + 1.1*x10
           sum1 = sum1 + 1.1*y10
         end do
-        if (t_stampf (wall2, usr2, sys2) < 0) stop 99
+        if (gptstamp (wall2, usr2, sys2) < 0) stop 99
         t2 = wall2 - wall1
 
         write(7,*)'sum=',sum0,sum1

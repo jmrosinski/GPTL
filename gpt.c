@@ -28,7 +28,7 @@ typedef struct {
 } Counter_t;
 
 Counter_t counter[] = {
-  {usrsys,               true,  "          ", -1},
+  {usrsys,               true,  "Usr    Sys", -1},
   {wall,                 true,  "Wallclock ", -1},
 #ifdef HAVE_PCL
   {pcl_start,            false, "          ", -1},  /* bracket PCL entries */
@@ -68,15 +68,8 @@ int pcl_counter_list[PCL_COUNTER_MAX];
 int npcl = 0;                      /* number of PCL counters enabled */
 PCL_CNT_TYPE *overhead_pcl;        /* overhead counter (cycles) */
 
-/*
-** GPTsetoption: set option value to true or false.
-**
-** Input arguments:
-**   option: option to be set
-**   val:    value to which option should be set
-**
-** Return value: 0 (success) or -1 (failure)
-*/
+static int lock_mutex (void);
+static int unlock_mutex (void);
 
 /* 
 ** Specific to GPTpr
@@ -89,6 +82,15 @@ static void print_stats_line (FILE *, struct Stats *);
 static long ticks_per_sec; /* clock ticks per second */
 
 /*******************************************************************************/
+/*
+** GPTsetoption: set option value to true or false.
+**
+** Input arguments:
+**   option: option to be set
+**   val:    value to which option should be set
+**
+** Return value: 0 (success) or -1 (failure)
+*/
 
 int GPTsetoption (OptionName option, Boolean val)
 {
@@ -110,8 +112,11 @@ int GPTsetoption (OptionName option, Boolean val)
     }
   }
 
-  return (GPTerror ("t_setoption: Option with enum index %d not available\n",
-		     option));
+  if (val)
+    return (GPTerror ("GPTsetoption: Option with enum index %d not available\n",
+		      option));
+
+  return 0;
 }
 
 /*
@@ -123,7 +128,7 @@ int GPTsetoption (OptionName option, Boolean val)
 ** return value: 0 (success) or -1 (failure)
 */
 
-int t_initialize ()
+int GPTinitialize ()
 {
 #if ( defined THREADED_OMP )
 
@@ -292,7 +297,7 @@ pthread_t *threadid;
 
     /*
     ** PCLinit must be called on a per-thread basis.  Therefore must make the call here
-    ** rather than in t_initialize.  null timer list flags not initialized.
+    ** rather than in GPTinitialize.  null timer list flags not initialized.
     ** Also, the critical section is necessary because PCLstart appears not to be
     ** thread-safe.
     */
@@ -308,7 +313,7 @@ pthread_t *threadid;
       {
 	if ((ret = PCLinit (&descr[thread])) != PCL_SUCCESS)
 	  return GPTerror ("unable to allocate PCL handle for thread %d. %s\n",
-			  thread, t_pclstr (ret));
+			  thread, pclstr (ret));
 
 	/*
 	** Always count user mode only
@@ -317,10 +322,10 @@ pthread_t *threadid;
 	flags = PCL_MODE_USER;
 
 	if ((ret = PCLquery (descr[thread], counter_list, npcl, flags)) != PCL_SUCCESS)
-	  return GPTerror ("Bad return from PCLquery thread %d: %s\n", thread, t_pclstr (ret));
+	  return GPTerror ("Bad return from PCLquery thread %d: %s\n", thread, pclstr (ret));
 
 	if ((ret = PCLstart (descr[thread], counter_list, npcl, flags)) != PCL_SUCCESS)
-	  return GPTerror ("PCLstart failed thread=%d: %s\n", thread, t_pclstr (ret));
+	  return GPTerror ("PCLstart failed thread=%d: %s\n", thread, pclstr (ret));
       }
     }
   }
@@ -361,7 +366,7 @@ int GPTstart (char *name)        /* timer name */
     gettimeofday (&tp1, NULL);
 
   if ( ! initialized)
-    return GPTerror ("GPTstart: t_initialize has not been called\n");
+    return GPTerror ("GPTstart: GPTinitialize has not been called\n");
 
   if ((mythread = get_thread_num ()) < 0)
     return GPTerror ("GPTstart\n");
@@ -369,7 +374,7 @@ int GPTstart (char *name)        /* timer name */
   if (npcl > 0) {
     ret = PCLread (descr[mythread], i_pcl_result1, fp_pcl_result, npcl);
     if (ret != PCL_SUCCESS)
-      return GPTerror ("GPTstart: error from PCLread: %s\n", t_pclstr (ret));
+      return GPTerror ("GPTstart: error from PCLread: %s\n", pclstr (ret));
   }
 
   /*
@@ -634,7 +639,7 @@ int GPTstop (char *name)
 
     ret = PCLread (descr[mythread], i_pcl_result2, fp_pcl_result, npcl);
     if (ret != PCL_SUCCESS)
-      return GPTerror ("GPTstop: error from PCLread: %s\n", t_pclstr (ret));
+      return GPTerror ("GPTstop: error from PCLread: %s\n", pclstr (ret));
 
     if (pcl_cyclesenabled) {
       index = pcl_cyclesindex;
@@ -732,10 +737,10 @@ int GPTpr (int procid)
   struct tms buf;          /* input to times() */
 
   if ( ! initialized)
-    return GPTerror ("t_pr: t_initialize has not been called\n");
+    return GPTerror ("GPTpr: GPTinitialize has not been called\n");
 
   if ((ticks_per_sec = sysconf (_SC_CLK_TCK)) == -1)
-    return GPTerror ("t_pr: token _SC_CLK_TCK is not defined\n");
+    return GPTerror ("GPTpr: token _SC_CLK_TCK is not defined\n");
 
   /*
   ** Only allow the master thread to print stats
@@ -1024,4 +1029,161 @@ void print_header (FILE *fp, int indent_level)
   }
 
   fprintf (fp, "\n");
+}
+
+/*
+** get_thread_num: Obtain logical thread number of calling thread.  If new
+** thread, adjust global variables.
+*/
+
+int get_thread_num ()
+{
+  int mythread = 0 ;  /* return value: default zero for non-threaded case */
+
+#ifdef THREADED_PTHREADS
+  pthread_t mythreadid;  /* thread id from pthreads library */
+#endif
+
+#if ( defined THREADED_OMP )
+
+  if ((mythread = omp_get_thread_num ()) >= numthreads)
+    return t_error ("get_thread_num: returned id %d exceed numthreads %d\n",
+		    mythread, numthreads);
+
+#elif ( defined THREADED_PTHREADS )
+
+  mythreadid = pthread_self ();
+
+  if (lock_mutex () < 0)
+    return t_error ("get_thread_num: mutex lock failure\n");
+
+  /*
+  ** Loop over known physical thread id's.  When my id is found, map it 
+  ** to logical thread id for indexing.  If not found return a negative 
+  ** number.
+  ** A critical region is necessary because acess to
+  ** the array threadid must be by only one thread at a time.
+  */
+
+  {
+    int n;              /* loop index over number of threads */
+    for (n = 0; n < numthreads; n++)
+      if (pthread_equal (mythreadid, threadid[n]))
+	break;
+
+  /*
+  ** If our thread id is not in the known list, add to it after checking that
+  ** we do not have too many threads.
+  */
+
+    if (n == numthreads) {
+      if (numthreads >= MAX_THREADS)
+	return t_error ("get_thread_num: numthreads=%d is too big Recompile "
+			"with larger value of MAX_THREADS\n", numthreads);
+
+      threadid[n] = mythreadid;
+      numthreads++;
+    }
+
+    if (unlock_mutex () < 0)
+      return t_error ("get_thread_num: mutex unlock failure\n");
+
+    mythread = n;
+  }
+
+#endif
+
+  return mythread;
+}
+
+/*
+** lock_mutex: lock a mutex for entry into a critical region
+*/
+
+static int lock_mutex ()
+{
+#if ( defined THREADED_OMP )
+  omp_set_lock (&lock);
+#elif ( defined THREADED_PTHREADS )
+  if (pthread_mutex_lock (&t_mutex) != 0)
+    return t_error ("pthread_mutex_lock failure\n");
+#endif
+  return 0;
+}
+
+/*
+** unlock_mutex: unlock a mutex for exit from a critical region
+*/
+
+static int unlock_mutex ()
+{
+#if ( defined THREADED_OMP )
+  omp_unset_lock (&lock);
+#elif ( defined THREADED_PTHREADS )
+  if (pthread_mutex_unlock (&t_mutex) != 0)
+    return t_error ("pthread_mutex_unlock failure\n");
+#endif
+  return 0;
+}
+/*
+** get_cpustamp: Invoke the proper system timer and return stats.
+**
+** Output arguments:
+**   usr: user time
+**   sys: system time
+**
+** Return value: 0 (success)
+*/
+
+int get_cpustamp (long *usr, long *sys)
+{
+  struct tms buf;
+
+  if (usrsysenabled) {
+
+    /*
+    ** Throw away the wallclock time from times: use gettimeofday instead
+    */
+
+    (void) times (&buf);
+    *usr = buf.tms_utime;
+    *sys = buf.tms_stime;
+
+  } else {
+
+    *usr = 0;
+    *sys = 0;
+  }
+
+  return 0;
+}
+
+/*
+** t_reset: reset all known timers to 0
+**
+** Return value: 0 (success) or -1 (failure)
+*/
+
+int GPTreset ()
+{
+  int n;             /* index over threads */
+  struct node *ptr;  /* linked list index */
+
+  if ( ! initialized)
+    return GPTerror ("GPTreset: GPTinitialize has not been called\n");
+
+  /*
+  ** Only allow the master thread to reset timers
+  */
+
+  if (get_thread_num () != 0)
+    return 0;
+
+  for (n = 0; n < numthreads; n++) {
+    for (ptr = timers[n]; ptr != NULL; ptr = ptr->next) {
+      memset (timers[n], 0, sizeof (struct node));
+      printf ("Reset accumulators for timer %s to zero\n", ptr->name);
+    }
+  }
+  return 0;
 }

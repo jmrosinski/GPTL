@@ -3,7 +3,7 @@ FC         = @FC@
 CFLAGS     = @CFLAGS@ @WDEF@
 FFLAGS     = @FFLAGS@
 INSTALLDIR = @prefix@/lib
-LDFLAGS    = -L$(INSTALLDIR) -ltiming @PCL@
+LDFLAGS    = -L$(INSTALLDIR) -lgpt @PCL@
 RM         = rm
 
 all: exp timetiming cheap expensive omptest flopsperclock

@@ -1,5 +1,5 @@
 /*
-** $Id: util.c,v 1.1 2000-12-27 06:10:31 rosinski Exp $
+** $Id: util.c,v 1.2 2001-01-01 20:38:43 rosinski Exp $
 */
 
 #include <stdarg.h>
@@ -33,7 +33,7 @@ int GPTerror (const char *fmt, ...)
   return (-1);
 }
 
-char *GPTpclstr (int code)
+char *pclstr (int code)
 {
 #ifdef HAVE_PCL
   switch (code) {

@@ -1,58 +1,58 @@
       program omptest
       implicit none
 
-      include '../header.inc'
+      include '../gpt.inc'
 
-      integer t_setoptionf
-      integer t_initializef
-      integer t_startf
-      integer t_stopf
-      integer t_prf
+      integer gptsetoption
+      integer gptinitialize
+      integer gptstart
+      integer gptstop
+      integer gptpr
       
-      external t_setoptionf
-      external t_initializef
-      external t_startf
-      external t_stopf
-      external t_prf
+      external gptsetoption
+      external gptinitialize
+      external gptstart
+      external gptstop
+      external gptpr
 
       integer ret, iter
       
-      if (t_setoptionf (usrsys, 0) < 0) call exit(99)
-      if (t_setoptionf (wall, 0) < 0) call exit(99)
-      if (t_setoptionf (pcl_l1dcache_miss, 0) < 0) call exit(99)
-      if (t_setoptionf (pcl_l2cache_miss, 0) < 0) call exit(99)
-      if (t_setoptionf (pcl_cycles, 1) < 0) call exit(99)
-      if (t_setoptionf (pcl_elapsed_cycles, 0) < 0) call exit(99)
-      if (t_setoptionf (pcl_fp_instr, 1) < 0) call exit(99)
-      if (t_setoptionf (pcl_loadstore_instr, 0) < 0) call exit(99)
-      if (t_setoptionf (pcl_instr, 0) < 0) call exit(99)
-      if (t_setoptionf (pcl_stall, 0) < 0) call exit(99)
-      if (t_setoptionf (pcl_l2cache_miss, 0) < 0) call exit(99)
-      if (t_initializef() < 0) then
-        write(6,*)'t_initializef failed'
+      if (gptsetoption (usrsys, 1) < 0) call exit(99)
+      if (gptsetoption (wall, 1) < 0) call exit(99)
+      if (gptsetoption (pcl_l1dcache_miss, 0) < 0) call exit(99)
+      if (gptsetoption (pcl_l2cache_miss, 0) < 0) call exit(99)
+      if (gptsetoption (pcl_cycles, 0) < 0) call exit(99)
+      if (gptsetoption (pcl_elapsed_cycles, 0) < 0) call exit(99)
+      if (gptsetoption (pcl_fp_instr, 0) < 0) call exit(99)
+      if (gptsetoption (pcl_loadstore_instr, 0) < 0) call exit(99)
+      if (gptsetoption (pcl_instr, 0) < 0) call exit(99)
+      if (gptsetoption (pcl_stall, 0) < 0) call exit(99)
+      if (gptsetoption (pcl_l2cache_miss, 0) < 0) call exit(99)
+      if (gptinitialize() < 0) then
+        write(6,*)'gptinitialize failed'
         call exit(99)
       end if
-!      call t_setoptionf (usrsys, .false.)
+!      call gptsetoption (usrsys, .false.)
 
-      if (t_startf ('outside_nothing') < 0) stop 99
+      if (gptstart ('outside_nothing') < 0) stop 99
 
 !!$OMP PARALLEL DO PRIVATE (iter)
 
       do iter=1,2
-        if (t_startf ('inside_nothing') < 0) stop 99
+        if (gptstart ('inside_nothing') < 0) stop 99
         call do_nothing (iter)
-        if (t_stopf ('inside_nothing') < 0) stop 99
+        if (gptstop ('inside_nothing') < 0) stop 99
       end do
 
-      if (t_stopf ('outside_nothing') < 0) stop 99
+      if (gptstop ('outside_nothing') < 0) stop 99
 
 !$OMP PARALLEL DO PRIVATE (iter)
 
-      do iter=1,64
+      do iter=1,32
         call sub(iter)
       end do
 
-      if (t_prf(0) < 0) call exit(99)
+      if (gptpr(0) < 0) call exit(99)
       stop
       end program
           
@@ -63,11 +63,11 @@
       integer iter, ret
       real sum1, sum2, x
 
-      integer t_startf
-      integer t_stopf
+      integer gptstart
+      integer gptstop
       
-      external t_startf
-      external t_stopf
+      external gptstart
+      external gptstop
 
       integer i
 
@@ -76,7 +76,7 @@
       sum1 = 0
       sum2 = 0
 
-      ret = t_startf (name)
+      ret = gptstart (name)
 
       do i=1,iter*100000
         x = i
@@ -84,7 +84,7 @@
         sum2 = sum2 + 3.2*x
       end do
 
-      ret = t_stopf (name)
+      ret = gptstop (name)
 
       write(6,*)'iter, sum=', iter, sum1, sum2
       return
