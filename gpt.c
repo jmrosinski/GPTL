@@ -602,10 +602,14 @@ int GPTpr (const int id)
 
 #ifdef HASH  
   for (n = 0; n < nthreads; n++) {
-    fprintf (fp, "\nhashtable stats for thread %d:\n", n);
+    first = true;
     for (i = 0; i < tablesize; i++) {
       int nument = hashtable[n][i].nument;
       if (nument > 1) {
+	if (first) {
+	  first = false;
+	  fprintf (fp, "\nthread %d had some hash collisions:\n", n);
+	}
 	fprintf (fp, "hashtable[%d][%d] had %d entries:", n, i, nument);
 	for (ii = 0; ii < nument; ii++)
 	  fprintf (fp, " %s", hashtable[n][i].entries[ii]->name);
