@@ -90,9 +90,9 @@ fi
 
 dnl Whether to enable debugging
 AC_ARG_ENABLE(debug,[--enable-debug      Enable debugging],
-              [CFLAGS="$CFLAGS -g";
-	       FFLAGS="$FFLAGS -g";
-	       LDFLAGS="$LDFLAGS -g";
+              [CFLAGS="$CFLAGS -g"
+	       FFLAGS="$FFLAGS -g"
+	       LDFLAGS="$LDFLAGS -g"
 	       FLDFLAGS="$FLDFLAGS -g"],)
 
 dnl Whether to enable optimization

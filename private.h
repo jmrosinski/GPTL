@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.16 2004-10-31 17:32:38 rosinski Exp $
+$Id: private.h,v 1.17 2004-11-03 17:02:06 rosinski Exp $
 */
 
 #include <stdio.h>
@@ -39,6 +39,7 @@ typedef struct {
 typedef struct {
   long long last[MAX_AUX];
   long long accum[MAX_AUX];
+  long long accum_cycles;   /* for overhead computation */
 } Papistats;
   
 typedef struct TIMER {
@@ -48,7 +49,9 @@ typedef struct TIMER {
   unsigned long count;
   Wallstats wall;
   Cpustats cpu;
-  Papistats aux; 
+#ifdef HAVE_PAPI
+  Papistats aux;
+#endif 
   struct TIMER *next;
 } Timer;
 
@@ -74,4 +77,6 @@ extern int GPT_PAPIstop (const int, Papistats *);
 extern void GPT_PAPIprstr (FILE *);
 extern void GPT_PAPIpr (FILE *, const Papistats *);
 extern void GPT_PAPIadd (Papistats *, const Papistats *);
+extern int GPT_PAPIoverheadstart (const int);
+extern int GPT_PAPIoverheadstop (const int, Papistats *);
 #endif

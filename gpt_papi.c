@@ -127,6 +127,15 @@ static long_long **papicounters;
 static bool *started;
 static char papiname[PAPI_MAX_STR_LEN];
 static const int BADCOUNT = -999999;
+static bool overhead = false;           /* ability to overhead computations */
+static int overheadindx = -999999;      /* init to bad index value */
+static long_long *lastoverhead;         /* needed because aux not available for overhead */
+
+/*
+** Function prototypes
+*/
+
+static int chkstarted (const int mythread);
 
 int GPT_PAPIsetoption (const int counter,
 		       const int val)
@@ -154,6 +163,10 @@ int GPT_PAPIsetoption (const int counter,
 	  (void) PAPI_event_code_to_name (counter, papiname);
 	  printf ("GPT_PAPIinitialize: Event %s is too many\n", papiname);
 	} else {
+	  if (counter == PAPI_TOT_CYC) {
+	    overhead = true;
+	    overheadindx = nevents;
+	  }
 	  eventlist[nevents].counter = counter;
 	  eventlist[nevents].prstr   = papitable[n].prstr;
 	  eventlist[nevents].str     = papitable[n].str;
@@ -186,6 +199,7 @@ int GPT_PAPIinitialize (const int maxthreads)
   started      = (bool *)       GPTallocate (maxthreads * sizeof (bool));
   EventSet     = (int *)        GPTallocate (maxthreads * sizeof (int));
   papicounters = (long_long **) GPTallocate (maxthreads * sizeof (long_long *));
+  lastoverhead = (long_long *)  GPTallocate (maxthreads * sizeof (long_long));
 
   for (n = 0; n < maxthreads; n++) {
     started[n] = false;
@@ -207,6 +221,23 @@ int GPT_PAPIstart (const int mythread,
   if (nevents == 0)
     return 0;
 
+  if (chkstarted (mythread) < 0)
+    return -1;
+
+  if ((ret = PAPI_read (EventSet[mythread], papicounters[mythread])) != PAPI_OK)
+    return GPTerror ("GPT_PAPIstart: %s\n", PAPI_strerror (ret));
+
+  for (n = 0; n < nevents; n++)
+    aux->last[n] = papicounters[mythread][n];
+  
+  return 0;
+}
+
+static int chkstarted (const int mythread)
+{
+  int ret;
+  int n;
+
   if ( ! started[mythread]) {
     if ((ret = PAPI_create_eventset (&EventSet[mythread])) != PAPI_OK)
       return GPTerror ("GPT_PAPIstart: failure creating eventset: %s\n", 
@@ -224,13 +255,6 @@ int GPT_PAPIstart (const int mythread,
 
     started[mythread] = true;
   }
-
-  if ((ret = PAPI_read (EventSet[mythread], papicounters[mythread])) != PAPI_OK)
-    return GPTerror ("GPT_PAPIstart: %s\n", PAPI_strerror (ret));
-
-  for (n = 0; n < nevents; n++)
-    aux->last[n] = papicounters[mythread][n];
-  
   return 0;
 }
 
@@ -259,12 +283,53 @@ int GPT_PAPIstop (const int mythread,
   return 0;
 }
 
+/* Have to set the static variable lastoverhead because a pointer to the correct
+** aux timer is not yet available
+*/
+
+int GPT_PAPIoverheadstart (const int mythread)
+{
+  int ret;
+
+  if (overhead) {
+    if (chkstarted (mythread) < 0)
+      return -1;
+
+    if ((ret = PAPI_read (EventSet[mythread], papicounters[mythread])) != PAPI_OK)
+      return GPTerror ("GPT_PAPIoverheadstart: %s\n", PAPI_strerror (ret));
+
+    lastoverhead[mythread] = papicounters[mythread][overheadindx];
+  }
+  return 0;
+}
+    
+int GPT_PAPIoverheadstop (const int mythread,
+			  Papistats *aux)
+{
+  int ret;
+  long_long diff;
+
+  if (overhead) {
+    if ((ret = PAPI_read (EventSet[mythread], papicounters[mythread])) != PAPI_OK)
+      return GPTerror ("GPT_PAPIoverheadstart: %s\n", PAPI_strerror (ret));
+    diff = papicounters[mythread][overheadindx] - lastoverhead[mythread];
+    if (diff < 0)
+      aux->accum_cycles = BADCOUNT;
+    else
+      aux->accum_cycles += diff;
+  }
+  return 0;
+}
+
 void GPT_PAPIprstr (FILE *fp)
 {
   int n;
   
   for (n = 0; n < nevents; n++)
     fprintf (fp, "%16s ", eventlist[n].prstr);
+
+  if (overhead)
+    fprintf (fp, "Overhead (cycles)");
 }
 
 void GPT_PAPIpr (FILE *fp,
@@ -278,6 +343,11 @@ void GPT_PAPIpr (FILE *fp,
     else
       fprintf (fp, "%16.10e ", (double) aux->accum[n]);
   }
+  if (overhead)
+    if (aux->accum_cycles < 1000000)
+      fprintf (fp, "%16ld ", (long) aux->accum_cycles);
+    else
+      fprintf (fp, "%16.10e ", (double) aux->accum_cycles);
 }
 
 void GPTPAPIprinttable ()

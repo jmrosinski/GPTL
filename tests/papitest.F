@@ -2,7 +2,9 @@
       implicit none
 
 #include "../gpt.inc"
+#ifdef HAVE_PAPI
 #include <f77papi.h>
+#endif
 
       integer ret, iter, niter
       integer papioption

@@ -45,7 +45,7 @@ static unsigned int *novfl;      /* microsecond overflow counter (only when DIAG
 static void printstats (const Timer *, FILE *, const int, const bool);
 static void add (Timer *, const Timer *);
 static int get_cpustamp (long *, long *);
-static Timer *getentry (const Hashtable *, const char *, int *);
+static inline Timer *getentry (const Hashtable *, const char *, int *);
 
 static long ticks_per_sec; /* clock ticks per second */
 
@@ -225,16 +225,20 @@ int GPTstart (const char *name)       /* timer name */
   return 0;
 #endif
 
-  /* 1st system timer call is solely for overhead timing */
+  if ((mythread = get_thread_num (&nthreads, &maxthreads)) < 0)
+    return GPTerror ("GPTstart\n");
+
+  /* 1st calls to overheadstart and gettimeofday are solely for overhead timing */
+
+#ifdef HAVE_PAPI
+  (void) GPT_PAPIoverheadstart (mythread);
+#endif
 
   if (primary[wallidx].enabled)
     gettimeofday (&tp1, 0);
 
   if ( ! initialized)
     return GPTerror ("GPTstart: GPTinitialize has not been called\n");
-
-  if ((mythread = get_thread_num (&nthreads, &maxthreads)) < 0)
-    return GPTerror ("GPTstart\n");
 
   /* Look for the requested timer in the current list. */
 
@@ -319,6 +323,8 @@ int GPTstart (const char *name)       /* timer name */
 #ifdef HAVE_PAPI
   if (GPT_PAPIstart (mythread, &ptr->aux) < 0)
     return GPTerror ("GPTstart: error from GPT_PAPIstart\n");
+
+  (void) GPT_PAPIoverheadstop (mythread, &ptr->aux);
 #endif
 
   return (0);
@@ -356,6 +362,13 @@ int GPTstop (const char *name)
   return 0;
 #endif
 
+  if ((mythread = get_thread_num (&nthreads, &maxthreads)) < 0)
+    return GPTerror ("GPTstop\n");
+
+#ifdef HAVE_PAPI
+  (void) GPT_PAPIoverheadstart (mythread);
+#endif
+
   if (primary[wallidx].enabled)
     gettimeofday (&tp1, 0);
 
@@ -364,9 +377,6 @@ int GPTstop (const char *name)
 
   if ( ! initialized)
     return GPTerror ("GPTstop: GPTinitialize has not been called\n");
-
-  if ((mythread = get_thread_num (&nthreads, &maxthreads)) < 0)
-    return GPTerror ("GPTstop\n");
 
 #ifdef HASH
   ptr = getentry (hashtable[mythread], name, &indx);
@@ -434,6 +444,10 @@ int GPTstop (const char *name)
     ptr->cpu.last_utime   = usr;
     ptr->cpu.last_stime   = sys;
   }
+
+#ifdef HAVE_PAPI
+  (void) GPT_PAPIoverheadstop (mythread, &ptr->aux);
+#endif
   return 0;
 }
 
@@ -793,9 +807,9 @@ static int get_cpustamp (long *usr, long *sys)
   return 0;
 }
 
-static Timer *getentry (const Hashtable *hashtable, 
-			const char *name, 
-			int *indx)
+static inline Timer *getentry (const Hashtable *hashtable, 
+			       const char *name, 
+			       int *indx)
 {
   int i;
   const char *c = name;
