@@ -131,7 +131,7 @@ static int *EventSet;                    /* list of events to be counted by PAPI
 static long_long **papicounters;         /* counters return from PAPI */
 static char papiname[PAPI_MAX_STR_LEN];  /* returned from PAPI_event_code_to_name */
 static const int BADCOUNT = -999999;     /* Set counters to this when they are bad */
-static int GPTLoverheadindx = -1;         /* index into counters array */
+static int GPTLoverheadindx = -1;        /* index into counters array */
 static long_long *lastoverhead;          /* needed because aux not available for overhead */
 
 /* Function prototypes */
@@ -496,7 +496,7 @@ void GPTL_PAPIprstr (FILE *fp)   /* file descriptor */
   for (n = 0; n < nevents; n++)
     fprintf (fp, "%16s ", eventlist[n].prstr);
 
-  if (lastoverhead[0] > 0)
+  if (lastoverhead[0] > -1)
     fprintf (fp, "Overhead (cycles)");
 }
 
@@ -521,9 +521,9 @@ void GPTL_PAPIpr (FILE *fp,              /* file descriptor to write to */
       fprintf (fp, "%16.10e ", (double) aux->accum[n]);
   }
 
-  /* The check on lastoverhead > 0 determines whether it was ever set */
+  /* The check on lastoverhead > -1 determines whether it was ever set */
 
-  if (lastoverhead[0] > 0)
+  if (lastoverhead[0] > -1)
     if (aux->accum_cycles < 1000000)
       fprintf (fp, "%16ld ", (long) aux->accum_cycles);
     else

@@ -41,7 +41,9 @@ code change is in aix.c where a static definition needs to NOT be static.
 		 --prefix=/home/tempest/rosinski<BR>
 IMPORTANT REQUIREMENT: must ensure env. var. LD_LIBRARY64_PATH
 (or LD_LIBRARY_PATH in 32-bit mode) includes the path to where PAPI was
-installed (/home/tempest/rosinski/lib in my case).
+installed (/home/tempest/rosinski/lib in my case).<P>
+papitest gives same answer for fp ops as fp instr.  Fishy?<P>
+papitest cannot enable 1st table option.  Probably need xor logic.
   <TH ALIGN=LEFT>configure args:<BR>
                  --prefix=/home/tempest/rosinski<BR>
                  --with-papi=/home/tempest/rosinski<BR>

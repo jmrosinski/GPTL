@@ -311,7 +311,7 @@ int GPTLstart (const char *name)       /* timer name */
     if ( ! eptr)
       return GPTLerror ("GPTLstart: realloc error\n");
 
-    hashtable[t][indx].entries = eptr;						 
+    hashtable[t][indx].entries           = eptr;
     hashtable[t][indx].entries[nument-1] = ptr;
 #endif
   }
@@ -332,7 +332,7 @@ int GPTLstart (const char *name)       /* timer name */
     ptr->wall.last_usec = tp2.tv_usec;
     if (overheadstats.enabled)
       ptr->wall.overhead +=       (tp2.tv_sec  - tp1.tv_sec) + 
-	1.e-6*(tp2.tv_usec - tp1.tv_usec);
+                            1.e-6*(tp2.tv_usec - tp1.tv_usec);
   }
 
 #ifdef HAVE_PAPI
@@ -893,7 +893,7 @@ static inline Timer *getentry (const Hashentry *hashtable, /* hash table */
   int i;                 /* loop index */
   const char *c = name;  /* pointer to elements of "name" */
 
-  /* Generate the hash value by summing values of the chars in "name */
+  /* Generate the hash value by summing values of the chars in "name" */
 
   for (*indx = 0; *c; c++)
     *indx += *c;
