@@ -4,7 +4,7 @@ THREADFLAGS  = @THREADFLAGS@ @THREADDEFS@
 LDFLAGS      = @THREADFLAGS@ @CFLAGS@ @THREADFLAGS@ @BITFLAGS@ -L.. -lgpt @LDFLAGS@ @LIBS@
 
 FC           = @F77@
-FFLAGS       = @FFLAGS@ @PAPIPREP@ @BITFLAGS@ @DEFS@
+FFLAGS       = @FFLAGS@ @PAPIPREP@ @BITFLAGS@ @AIXFDEFS@
 FTHREADFLAGS = @FTHREADFLAGS@
 FLDFLAGS     = @FTHREADFLAGS@ @BITFLAGS@ -L.. -lgpt @LDFLAGS@ @LIBS@
 
@@ -19,6 +19,8 @@ FEXES = flopsperclock   omptest   errtest   opscost \
 all: $(CEXES) $(FEXES)
 cexes: $(CEXES)
 fexes: $(FEXES)
+clean:
+	rm $(FOBJS) $(COBJS) $(FEXES) $(CEXES)
 
 
 llcost: llcost.o
@@ -61,8 +63,4 @@ papitest: papitest.o
 	$(FC) -o $@ papitest.o $(FLDFLAGS)
 papitest.o: papitest.F
 	$(FC) -c $(FFLAGS) $(FTHREADFLAGS) $<
-
-clean:
-	rm $(FOBJS) $(COBJS) $(FEXES) $(CEXES)
-
 

@@ -28,8 +28,8 @@ elif test "x$OS" = "xsolaris"; then
   CCLIST="cc gcc g++"
   FCLIST="f90 g77 f77"
 else
-  CCLIST=
-  FCLIST=
+  CCLIST=""
+  FCLIST=""
 fi
 
 AC_PROG_CC($CCLIST)
@@ -60,6 +60,7 @@ ARFLAGS="$ARFLAGS ruv";
 dnl Whether to include PAPI lib
 AC_ARG_ENABLE([papi],[--enable-papi],[PAPI=YES;PAPIOBJS=gpt_papi.o],[PAPI=NO])
 
+AIXFDEFS=""
 if test "$PAPI" = YES ; then
   AC_DEFINE([HAVE_PAPI])
   if test "x$PAPI_DIR" != x ; then
@@ -67,7 +68,9 @@ if test "$PAPI" = YES ; then
     LDFLAGS="$LDFLAGS -L$PAPI_DIR/lib"
   fi
 dnl AIX needs pmapi
+dnl AIX also passes defines through Fortran in a special way
   if test "x$OS" = xaix ; then
+    AIXFDEFS="-WF,-DHAVE_PAPI"
     LDFLAGS="$LDFLAGS -lpmapi"
   fi
 dnl will add -lpapi if successful
@@ -141,4 +144,5 @@ AC_SUBST(PAPIPREP)
 AC_SUBST(PAPIOBJS)
 AC_SUBST(ARFLAGS)
 AC_SUBST(BITFLAGS)
+AC_SUBST(AIXFDEFS)
 AC_OUTPUT(Makefile tests/Makefile)
