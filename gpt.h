@@ -1,10 +1,10 @@
 /*
-$Id: gpt.h,v 1.3 2004-10-14 19:25:54 rosinski Exp $
+$Id: gpt.h,v 1.4 2004-10-14 22:02:18 rosinski Exp $
 */
 
 typedef enum {
-  GPTcpu   = 1,
-  GPTwall  = 2,
+  GPTwall  = 1,
+  GPTcpu   = 2,
   GPTother = 3
 } Option;
 
