@@ -6,8 +6,8 @@ LDFLAGS  = -L.. -lgpt @LIBS@ @LDFLAGS@ $(CFLAGS)
 FLDFLAGS = -L.. -lgpt
 LOADER = @F77@
 
-COBJS = exp.o timetiming.o llcost.o
-CEXES = exp   timetiming   llcost
+COBJS = exp.o timetiming.o llcost.o depth.o
+CEXES = exp   timetiming   llcost   depth
 
 FOBJS = cheap.o expensive.o flopsperclock.o omptest.o errtest.o overhead.o opscost.o
 FEXES = cheap   expensive   flopsperclock   omptest   errtest   overhead   opscost
@@ -24,6 +24,9 @@ timetiming: timetiming.o
 
 llcost: llcost.o
 	$(CC) -o $@ llcost.o $(CFLAGS) $(LDFLAGS)
+
+depth: depth.o
+	$(CC) -o $@ depth.o $(CFLAGS) $(LDFLAGS)
 
 cheap: cheap.o
 	$(LOADER) -o $@ cheap.o $(FFLAGS) $(FLDFLAGS)

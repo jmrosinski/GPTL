@@ -166,7 +166,6 @@ int GPTstart (char *name)       /* timer name */
 
   int nchars;                   /* number of characters in timer */
   int mythread;                 /* thread index (of this thread) */
-  int depth;                    /* depth in tree of timers which are on */
 
   /*
   ** 1st system timer call is solely for overhead timing
@@ -186,11 +185,7 @@ int GPTstart (char *name)       /* timer name */
   ** match but are currently active, increase the indentation level by 1
   */
 
-  depth = 0;
-  for (ptr = timers[mythread]; ptr && ! STRMATCH (name, ptr->name); ptr = ptr->next) {
-    if (ptr->onflg)
-      ++depth;
-  }
+  for (ptr = timers[mythread]; ptr && ! STRMATCH (name, ptr->name); ptr = ptr->next);
 
   if (ptr && ptr->onflg)
     return GPTerror ("GPTstart thread %d: timer %s was already on: "
@@ -216,7 +211,7 @@ int GPTstart (char *name)       /* timer name */
     ptr->name = (char *) allocate (nchars+1);
     strncpy (ptr->name, name, nchars);
     ptr->name[nchars] = '\0';
-    ptr->depth = depth;
+    ptr->depth = current_depth[mythread];
 
     if (timers[mythread])
       last[mythread]->next = ptr;
@@ -233,8 +228,8 @@ int GPTstart (char *name)       /* timer name */
     ** happen any time the thing being timed is called from more than 1
     ** branch in the call tree.
     */
-
-    if (ptr->depth != depth)
+  
+    if (ptr->depth != current_depth[mythread])
       ptr->depth = 0;
   }
 
