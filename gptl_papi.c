@@ -100,21 +100,21 @@ static Papientry papitable [] = {
   {PAPI_L1_ICR, "L1 I cache reads", "L1 instruction cache reads"},
   {PAPI_L2_ICR, "L2 I cache reads", "L2 instruction cache reads"},
   {PAPI_L3_ICR, "L3 I cache reads", "L3 instruction cache reads"},
-  {PAPI_L1_ICW, "L1 I cache wr   ", "L1 instruction cache writes"},
-  {PAPI_L2_ICW, "L2 I cache wr   ", "L2 instruction cache writes"},
-  {PAPI_L3_ICW, "L3 I cache wr   ", "L3 instruction cache writes"},
+  {PAPI_L1_ICW, "L1 I cache write", "L1 instruction cache writes"},
+  {PAPI_L2_ICW, "L2 I cache write", "L2 instruction cache writes"},
+  {PAPI_L3_ICW, "L3 I cache write", "L3 instruction cache writes"},
   {PAPI_L1_TCH, "L1 cache hits   ", "L1 total cache hits"},
   {PAPI_L2_TCH, "L2 cache hits   ", "L2 total cache hits"},
   {PAPI_L3_TCH, "L3 cache hits   ", "L3 total cache hits"},
-  {PAPI_L1_TCA, "L1 cache acc    ", "L1 total cache accesses"},
-  {PAPI_L2_TCA, "L2 cache acc    ", "L2 total cache accesses"},
-  {PAPI_L3_TCA, "L3 cache acc    ", "L3 total cache accesses"},
-  {PAPI_L1_TCR, "L1 cache read   ", "L1 total cache reads"},
-  {PAPI_L2_TCR, "L2 cache read   ", "L2 total cache reads"},
-  {PAPI_L3_TCR, "L3 cache read   ", "L3 total cache reads"},
-  {PAPI_L1_TCW, "L1 cache wr     ", "L1 total cache writes"},
-  {PAPI_L2_TCW, "L2 cache wr     ", "L2 total cache writes"},
-  {PAPI_L3_TCW, "L3 cache wr     ", "L3 total cache writes"},
+  {PAPI_L1_TCA, "L1 cache access ", "L1 total cache accesses"},
+  {PAPI_L2_TCA, "L2 cache access ", "L2 total cache accesses"},
+  {PAPI_L3_TCA, "L3 cache access ", "L3 total cache accesses"},
+  {PAPI_L1_TCR, "L1 cache reads  ", "L1 total cache reads"},
+  {PAPI_L2_TCR, "L2 cache reads  ", "L2 total cache reads"},
+  {PAPI_L3_TCR, "L3 cache reads  ", "L3 total cache reads"},
+  {PAPI_L1_TCW, "L1 cache writes ", "L1 total cache writes"},
+  {PAPI_L2_TCW, "L2 cache writes ", "L2 total cache writes"},
+  {PAPI_L3_TCW, "L3 cache writes ", "L3 total cache writes"},
   {PAPI_FML_INS,"FM ins          ", "FM ins"},
   {PAPI_FAD_INS,"FA ins          ", "FA ins"},
   {PAPI_FDV_INS,"FD ins          ", "FD ins"},
@@ -261,10 +261,7 @@ int GPTL_PAPIinitialize (const int maxthreads)  /* number of threads */
     }
   }
 
-  /* 
-  ** Not sure whether event starting must actually be within a threaded loop,
-  ** so play it safe and do so.
-  */
+  /* Event starting apparently must be within a threaded loop. */
 
   if (nevents > 0) {
     rc = (int *) GPTLallocate (maxthreads * sizeof (int));
