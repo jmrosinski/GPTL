@@ -3,12 +3,13 @@ and cpu timing statistics for a code instrumented with an aribtrary sequence
 of calls to the pair of routines "GPTstart" and "GPTstop" (more details
 below).  It is thread-safe, presuming either OpenMP or pthreads is available.
 
-GPT also provides hooks into the hardware counters library PAPI.  If this
-option is enabled (./configure --enable-papi), the same "GPTstart" and
-"GPTstop" calls can be used to provide various low-level hardware counter
-info, such as total cycles, floating point ops, cache misses, and various
-other performance information depending on the target architecture.  PAPI
-must already be installed in order to enable this option.
+GPT also provides hooks into the hardware counters library PAPI
+(http://icl.cs.utk.edu/papi/index.html).  If this option is enabled
+(./configure --enable-papi), the same "GPTstart" and "GPTstop" calls can be
+used to provide various low-level hardware counter info, such as total
+cycles, floating point ops, cache misses, and various other performance
+information depending on the target architecture.  PAPI must already be
+installed in order to enable this option.
 
 
 Building GPT

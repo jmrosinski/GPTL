@@ -575,7 +575,7 @@ void GPT_PAPIadd (Papistats *auxout,      /* output struct */
 }
 
 /*
-** GPT_papifinalize: finalization routine must be called from single-threaded
+** GPT_PAPIfinalize: finalization routine must be called from single-threaded
 **   region. Free all malloc'd space
 */
 

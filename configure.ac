@@ -80,7 +80,7 @@ dnl AIX also passes defines through Fortran in a special way
   fi
 dnl will add -lpapi if successful
   AC_CHECK_LIB(papi$BITEXT, PAPI_library_init,,
-	       [AC_MSG_ERROR([[not found. Rebuild w/ PAPI_ROOT set or w/o --enable-papi]])])
+	       [AC_MSG_ERROR([[not found. Rebuild using --with-papi or w/o --enable-papi]])])
 fi
 
 dnl One of the Fortran tests has ifdef AIX and defines are funky on AIX Fortran

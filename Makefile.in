@@ -17,7 +17,7 @@ all: $(LIBNAME) tests/all
 install:
 	cp $(LIBNAME) $(LIBDIR)
 	cp gpt.h gpt.inc $(INCDIR)
-	cp man/man3/* $(MANDIR)
+	cp man/man3/*.3 $(MANDIR)
 
 uninstall:
 	rm $(LIBDIR)/$(LIBNAME) $(INCDIR)/gpt.h $(INCDIR)/gpt.inc

@@ -58,7 +58,6 @@ static inline Timer *getentry (const Hashentry *, const char *, int *);
 int GPTsetoption (const int option,  /* option */
 		  const int val)     /* whether to enable */
 {
-  int n;   /* loop index */
 
 #ifdef DISABLE_TIMERS
   return 0;
@@ -75,15 +74,15 @@ int GPTsetoption (const int option,  /* option */
 
   switch (option) {
   case GPTcpu:      
-    cpustats.enabled = val; 
+    cpustats.enabled = (bool) val; 
     printf ("GPTsetoption: set cpustats to %d\n", val);
     return 0;
   case GPTwall:     
-    wallstats.enabled = val; 
+    wallstats.enabled = (bool) val; 
     printf ("GPTsetoption: set wallstats to %d\n", val);
     return 0;
   case GPToverhead: 
-    overheadstats.enabled = val; 
+    overheadstats.enabled = (bool) val; 
     printf ("GPTsetoption: set overheadstats to %d\n", val);
     return 0;
   default:
@@ -109,7 +108,6 @@ int GPTsetoption (const int option,  /* option */
 int GPTinitialize (void)
 {
   int i, n;          /* indices */
-  int ret;           /* return code */
 
 #ifdef DISABLE_TIMERS
   return 0;
