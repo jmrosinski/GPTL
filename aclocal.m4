@@ -28,7 +28,7 @@ AC_DEFUN(UD_SET_OMP_C,
 
   if test "$OMP" = "YES" ; then
     OMPDEFS=-DTHREADED_OMP
-    AC_MSG_RESULT($OMPCFLAGS works)
+    AC_MSG_RESULT([$OMPCFLAGS])
   else
     AC_MSG_RESULT([not found])
     AC_MSG_WARN([Threaded tests may behave incorrectly])
@@ -45,7 +45,7 @@ AC_DEFUN(UD_SET_OMP_F77,
   OLDFLAGS="$FFLAGS"
   FORTOMP="NO"
 
-  AC_MSG_CHECKING([Fortran openmp threading])
+  AC_MSG_CHECKING([Fortran flags for openmp])
 
   OMPFFLAGS="-mp"
   FFLAGS="$OLDFLAGS $OMPFFLAGS"
@@ -70,7 +70,7 @@ AC_DEFUN(UD_SET_OMP_F77,
   fi
 
   if test "$FORTOMP" = "YES" ; then
-    AC_MSG_RESULT($OMPFFLAGS)
+    AC_MSG_RESULT([$OMPFFLAGS])
   else
     AC_MSG_RESULT([not found])
     AC_MSG_WARN([Threaded tests may behave incorrectly])
@@ -89,12 +89,12 @@ AC_DEFUN(UD_SET_PTHREADS_C,
   LDFLAGS="$OLDLDFLAGS $PTHREADCFLAGS"
   PTHREADS="NO"
 
-  AC_MSG_CHECKING([pthreads under C])
+  AC_MSG_CHECKING([C flags for pthreads])
   AC_TRY_LINK([#include <pthread.h>],[(void) pthread_self();],PTHREADS="YES",)
 
   if test "$PTHREADS" = "YES" ; then
     PTHREADDEFS=-DTHREADED_PTHREADS
-    AC_MSG_RESULT($PTHREADCFLAGS)
+    AC_MSG_RESULT([$PTHREADCFLAGS])
   else
     AC_MSG_RESULT([not found])
     AC_MSG_WARN([Threaded tests may behave incorrectly])
@@ -113,14 +113,15 @@ AC_DEFUN(UD_SET_PTHREADS_F77,
   LDFLAGS="$OLDLDFLAGS $PTHREADFFLAGS"
   PTHREADS="NO"
 
-  AC_MSG_CHECKING([pthreads under Fortran])
+  AC_MSG_CHECKING([Fortran flags for pthreads])
   AC_TRY_LINK(,[pthread_self()],PTHREADS="YES";FLDFLAGS="$LDFLAGS",)
 
   if test "$PTHREADS" = "YES" ; then
     THREADDEFS=-DTHREADED_PTHREADS
-    AC_MSG_RESULT($PTHREADFFLAGS)
+    AC_MSG_RESULT([$PTHREADFFLAGS])
   else
     AC_MSG_RESULT([not found])
+    AC_MSG_WARN([Threaded Fortran tests may behave incorrectly])
     PTHREADFFLAGS=""
   fi
   AC_LANG_POP(Fortran 77)
