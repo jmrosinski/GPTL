@@ -94,3 +94,25 @@ AC_DEFUN(UD_SET_PTHREADS_C,
   fi
 ])
 
+dnl Modify FLDFLAGS only, not LDFLAGS in the end
+
+AC_DEFUN(UD_SET_PTHREADS_F77,
+[
+  AC_LANG_PUSH(Fortran 77)
+  OLDLDFLAGS="$LDFLAGS"
+  THREADFLAGS="-lpthread"
+  LDFLAGS="$OLDLDFLAGS $THREADFLAGS"
+  PTHREADS="NO"
+
+  AC_MSG_CHECKING([pthreads under Fortran])
+  AC_TRY_LINK(,[pthread_self()],PTHREADS="YES";FLDFLAGS="$LDFLAGS",)
+
+  if test "$PTHREADS" = "YES" ; then
+    THREADDEFS=-DTHREADED_PTHREADS
+    AC_MSG_RESULT($THREADFLAGS)
+  else
+    AC_MSG_RESULT([not found])
+  fi
+  AC_LANG_POP(Fortran 77)
+  LDFLAGS="$OLDLDFLAGS"
+])

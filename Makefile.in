@@ -2,7 +2,7 @@ CC       = @CC@
 CFLAGS   = @CFLAGS@ @FDEFS@ @THREADDEFS@ @DEFS@
 
 LIBNAME  = libgpt.a
-OBJS     = camwrappers.o f_wrappers.o gpt.o util.o
+OBJS     = camwrappers.o f_wrappers.o gpt.o util.o threadutil.o
 MAKE     = gmake
 
 all: $(LIBNAME) tests/all
@@ -29,3 +29,4 @@ camwrappers.o: gpt.h private.h
 f_wrappers.o: gpt.h private.h
 gpt.o: gpt.h private.h
 util.o: gpt.h private.h
+threadutil.o: gpt.h private.h

@@ -19,6 +19,11 @@ dnl Whether and how to enable threading
 AC_ARG_ENABLE(openmp,[--enable-openmp],UD_SET_OMP_C,)
 if test "$OMP" = YES ; then
   UD_SET_OMP_F77
+else
+  AC_ARG_ENABLE(pthreads,[--enable-pthreads],UD_SET_PTHREADS_C,)
+  if test "$PTHREADS" = YES ; then
+    UD_SET_PTHREADS_F77
+  fi
 fi
 
 dnl How to mangle names:

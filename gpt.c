@@ -5,9 +5,6 @@
 #include <stdio.h>
 #include <string.h>        /* memset, strcmp (via STRMATCH) */
 #include <assert.h>
-#if ( defined THREADED_OMP )
-#include <omp.h>
-#endif
 
 #include "private.h"
 
@@ -16,8 +13,8 @@ static Timer **last = 0;         /* last element in list */
 static int *max_depth;             /* maximum indentation level */
 static int *max_name_len;        /* max length of timer name */
 static int *current_depth;       /* current depth in timer tree */
-static int nthreads            = 1;     /* num threads.  1 means no threading */
-static bool initialized       = false; /* GPTinitialize has been called */
+static int nthreads         = -1;    /* num threads. Init to bad value */
+static bool initialized     = false; /* GPTinitialize has been called */
 static Settings primary[] = {
   {GPTwall, "Wallclock","Wallclock max       min     Overhead  ", true },
   {GPTcpu,  "Cpu",      "Usr       sys       usr+sys",            false}};
@@ -28,21 +25,14 @@ static bool wallenabled;
 static bool cpuenabled;
 static int naux = 0;               /* number of auxiliary stats */
 static Settings aux[] = {{GPTother, "none", false}};
-static const int tablesize = 128*MAX_CHARS;
+static const int tablesize = 128*MAX_CHARS;  /* 128 is size of ASCII char set */
 static Hashtable **hashtable;
-
-#if ( defined THREADED_OMP )
-static omp_lock_t lock;
-#endif
 
 /* Local function prototypes */
 
 static void printstats (const Timer *, FILE *, const int, const bool);
 static void *allocate (const int);
 static void add (Timer *, const Timer *);
-static int get_thread_num (void);
-static int lock_mutex (void);
-static int unlock_mutex (void);
 static int get_cpustamp (long *, long *);
 static Timer *getentry (const Hashtable *, const char *, int *);
 
@@ -107,19 +97,8 @@ int GPTinitialize (void)
   if (initialized)
     return GPTerror ("GPTinitialize() has already been called\n");
 
-#if ( defined THREADED_OMP )
-
-  /*
-  ** OMP: must call init_lock before using the lock (get_thread_num())
-  */
-
-  omp_init_lock (&lock);
-
-  nthreads = omp_get_max_threads ();
-  if (get_thread_num () > 0)
-    return GPTerror ("GPTinitialize: MUST be called only by master thread");
-
-#endif
+  if (threadinit (&nthreads) < 0)
+    return GPTerror ("GPTinitialize: bad return from threadinit\n");
 
   /*
   ** Allocate space for global arrays
@@ -148,8 +127,8 @@ int GPTinitialize (void)
     }
   }
 
-  if (get_thread_num () > 0) 
-    return GPTerror ("GPTinitialize: should only be called by master thread\n");
+  if (get_thread_num (&nthreads) > 0) 
+    return GPTerror ("GPTinitialize: must only be called by master thread\n");
 
   /* Set enabled flags for speed */
 
@@ -192,7 +171,7 @@ int GPTstart (const char *name)       /* timer name */
   if ( ! initialized)
     return GPTerror ("GPTstart: GPTinitialize has not been called\n");
 
-  if ((mythread = get_thread_num ()) < 0)
+  if ((mythread = get_thread_num (&nthreads)) < 0)
     return GPTerror ("GPTstart\n");
 
   /*
@@ -319,7 +298,7 @@ int GPTstop (const char *name)
   if ( ! initialized)
     return GPTerror ("GPTstop: GPTinitialize has not been called\n");
 
-  if ((mythread = get_thread_num ()) < 0)
+  if ((mythread = get_thread_num (&nthreads)) < 0)
     return GPTerror ("GPTstop\n");
 
 #ifdef HASH
@@ -446,7 +425,7 @@ int GPTreset (void)
   ** Only allow the master thread to reset timers
   */
 
-  if (get_thread_num () != 0)
+  if (get_thread_num (&nthreads) != 0)
     return 0;
 
   for (n = 0; n < nthreads; n++) {
@@ -689,48 +668,6 @@ static void add (Timer *tout,
   }
 }
 
-/*
-** get_thread_num: Obtain logical thread number of calling thread.  If new
-** thread, adjust global variables.
-*/
-
-static int get_thread_num ()
-{
-  int mythread = 0;
-
-#if ( defined THREADED_OMP )
-
-  if ((mythread = omp_get_thread_num ()) >= nthreads)
-    return GPTerror ("get_thread_num: returned id %d exceed nthreads %d\n",
-		     mythread, nthreads);
-#endif
-
-  return mythread;
-}
-
-/*
-** lock_mutex: lock a mutex for entry into a critical region
-*/
-
-static int lock_mutex (void)
-{
-#if ( defined THREADED_OMP )
-  omp_set_lock (&lock);
-#endif
-  return 0;
-}
-
-/*
-** unlock_mutex: unlock a mutex for exit from a critical region
-*/
-
-static int unlock_mutex (void)
-{
-#if ( defined THREADED_OMP )
-  omp_unset_lock (&lock);
-#endif
-  return 0;
-}
 /*
 ** get_cpustamp: Invoke the proper system timer and return stats.
 **
