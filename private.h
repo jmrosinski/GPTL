@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.12 2004-10-16 21:37:58 rosinski Exp $
+$Id: private.h,v 1.13 2004-10-17 05:19:23 rosinski Exp $
 */
 
 #include "gpt.h"
@@ -41,8 +41,8 @@ typedef struct {
 typedef struct TIMER {
   char name[MAX_CHARS+1];
   bool onflg;
-  int depth;
-  long count;
+  unsigned int depth;
+  unsigned long count;
   Wallstats wall;
   Cpustats cpu;
   /*
@@ -60,7 +60,7 @@ typedef struct {
 } Settings;
 
 typedef struct {
-  int nument;
+  unsigned int nument;
   Timer **entries;
 } Hashtable;
 

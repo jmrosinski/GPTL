@@ -12,7 +12,11 @@ static Timer **timers = 0;       /* linked list of timers */
 static Timer **last = 0;         /* last element in list */
 static int *max_depth;           /* maximum indentation level */
 static int *max_name_len;        /* max length of timer name */
-static int *current_depth;       /* current depth in timer tree */
+typedef struct {
+  int depth;
+  int padding[31];
+} Nofalse; 
+static Nofalse *current_depth;   /* padding is to mitigate false cache sharing */
 static int nthreads    = -1;     /* num threads. Init to bad value */
 static int maxthreads  = -1;     /* max threads (=nthreads for OMP). Init to bad value */
 static bool initialized = false; /* GPTinitialize has been called */
@@ -115,7 +119,7 @@ int GPTinitialize (void)
 
   timers        = (Timer **) allocate (maxthreads * sizeof (Timer *));
   last          = (Timer **) allocate (maxthreads * sizeof (Timer *));
-  current_depth = (int *)    allocate (maxthreads * sizeof (int));
+  current_depth = (Nofalse *) allocate (maxthreads * sizeof (Nofalse));
   max_depth     = (int *)    allocate (maxthreads * sizeof (int));
   max_name_len  = (int *)    allocate (maxthreads * sizeof (int));
   hashtable     = (Hashtable **) allocate (maxthreads * sizeof (Hashtable *));
@@ -126,7 +130,7 @@ int GPTinitialize (void)
 
   for (n = 0; n < maxthreads; n++) {
     timers[n] = 0;
-    current_depth[n] = 0;
+    current_depth[n].depth = 0;
     max_depth[n]     = 0;
     max_name_len[n]  = 0;
     hashtable[n] = (Hashtable *) allocate (tablesize * sizeof (Hashtable));
@@ -203,9 +207,9 @@ int GPTstart (const char *name)       /* timer name */
     return GPTerror ("GPTstart thread %d: timer %s was already on: "
 		     "not restarting.\n", mythread, ptr->name);
 
-  ++current_depth[mythread];
-  if (current_depth[mythread] > max_depth[mythread])
-    max_depth[mythread] = current_depth[mythread];
+  ++current_depth[mythread].depth;
+  if (current_depth[mythread].depth > max_depth[mythread])
+    max_depth[mythread] = current_depth[mythread].depth;
 
   /* 
   ** If a new thing is being timed, add a new link and initialize 
@@ -222,7 +226,7 @@ int GPTstart (const char *name)       /* timer name */
 
     strncpy (ptr->name, name, nchars);
     ptr->name[nchars] = '\0';
-    ptr->depth = current_depth[mythread];
+    ptr->depth = current_depth[mythread].depth;
 
     if (timers[mythread])
       last[mythread]->next = ptr;
@@ -248,7 +252,7 @@ int GPTstart (const char *name)       /* timer name */
     ** branch in the call tree.
     */
   
-    if (ptr->depth != current_depth[mythread])
+    if (ptr->depth != current_depth[mythread].depth)
       ptr->depth = 0;
   }
 
@@ -330,7 +334,7 @@ int GPTstop (const char *name)
   if ( ! ptr->onflg )
     return GPTerror ("GPTstop: timer %s was already off.\n",ptr->name);
 
-  --current_depth[mythread];
+  --current_depth[mythread].depth;
 
   ptr->onflg = false;
   ptr->count++;
