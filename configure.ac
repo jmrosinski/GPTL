@@ -7,10 +7,10 @@ AC_PROG_MAKE_SET
 #Get the OS type
 OS="`uname | tr '[A-Z]' '[a-z]'`"
 case "$OS" in
-  linux) OS=linux;;
-  sunos)   OS=solaris ;;
-  irix64)  OS=irix ;;
-  aix) OS=aix;;
+  linux)  OS=linux;;
+  sunos)  OS=solaris ;;
+  irix64) OS=irix ;;
+  aix)    OS=aix;;
 esac
 
 dnl C and Fortran compilers
@@ -23,9 +23,17 @@ elif test "$OS" = solaris ; then
 elif test "$OS" = irix ; then
   AC_PROG_CC(cc gcc g++)
   AC_PROG_F77(f90 g77 f77)
+  if test "$CC" = cc ; then
+    AC_ARG_WITH(bitmode,
+            [  --with-bitmode=64       Specify to build 64 bit mode library],
+            [BITFLAGS="-64"],)
+  fi
 elif test "$OS" = aix ; then
   AC_PROG_CC(cc_r xlc_r cc xlc gcc g++)
   AC_PROG_F77(xlf90_r xlf90)
+  AC_ARG_WITH(bitmode,
+          [  --with-bitmode=64       Specify to build 64 bit mode library],
+          [BITFLAGS="-q64";ARFLAGS="-X 64"],)
 else
   AC_PROG_CC
   AC_PROG_F77
@@ -108,4 +116,6 @@ AC_SUBST(THREADFLAGS)
 AC_SUBST(FTHREADFLAGS)
 AC_SUBST(PAPIPREP)
 AC_SUBST(PAPIOBJS)
+AC_SUBST(ARFLAGS)
+AC_SUBST(BITFLAGS)
 AC_OUTPUT(Makefile tests/Makefile)
