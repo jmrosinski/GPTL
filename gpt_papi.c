@@ -145,7 +145,6 @@ int GPT_PAPIsetoption (const int counter,
 		       const int val)
 {
   int n;
-  int ret;
   
   /* Just return if the flag says disable an option, because default is off */
 
@@ -159,7 +158,7 @@ int GPT_PAPIsetoption (const int counter,
 
   for (n = 0; n < nentries; n++)
     if (counter == papitable[n].counter) {
-      if ((ret = PAPI_query_event (counter)) != PAPI_OK) {
+      if (PAPI_query_event (counter) != PAPI_OK) {
 	(void) PAPI_event_code_to_name (counter, papiname);
 	printf ("GPT_PAPIsetoption: event %s not available on this arch\n", papiname);
       } else {
@@ -190,7 +189,8 @@ int GPT_PAPIinitialize (const int maxthreads)
   int n;
 
   if ((ret = PAPI_library_init (PAPI_VER_CURRENT)) != PAPI_VER_CURRENT)
-    return GPTerror ("GPT_PAPIinitialize: PAPI_library_init failure\n");
+    return GPTerror ("GPT_PAPIinitialize: PAPI_library_init failure:%s\n",
+		     PAPI_strerror (ret));
 
 #if ( defined THREADED_OMP )
   if (PAPI_thread_init ((unsigned long (*)(void)) (omp_get_thread_num)) != PAPI_OK)
