@@ -1,4 +1,4 @@
-gpt0_4: Added PAPI support.  For whatever reason, on IBM get negative
+gpt1_0: Added PAPI support.  For whatever reason, on IBM get negative
 	increments occasionally.
 gpt0_3: Added overflow diagnostic novfl
 	Migrate threading ops to threadutil.c
