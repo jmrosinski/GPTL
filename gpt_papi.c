@@ -237,6 +237,11 @@ int GPT_PAPIstop (const int mythread,
   int n;
   long_long delta;
 
+  /* If no events are to be counted just return */
+
+  if (EventSet[mythread] == PAPI_NULL)
+    return 0;
+
   if ((ret = PAPI_read (EventSet[mythread], papicounters[mythread])) != PAPI_OK)
     return GPTerror ("GPT_PAPIstop: %s\n", PAPI_strerror (ret));
   
