@@ -12,9 +12,9 @@
       integer val
       logical done
       
-      if (gptsetoption (gptcpu, 0) < 0) stop 99
-      if (gptsetoption (gptwall, 0) < 0) stop 99
-      if (gptsetoption (gptabort_on_error, 1) < 0) stop 99
+      if (gptsetoption (gptcpu, 0) .lt. 0) stop 99
+      if (gptsetoption (gptwall, 0) .lt. 0) stop 99
+      if (gptsetoption (gptabort_on_error, 1) .lt. 0) stop 99
 
 #ifdef HAVE_PAPI
       call gptpapiprinttable ()
@@ -25,8 +25,8 @@
         write(6,*)'Enter PAPI option to be enabled'
         write(6,*)'or positive number when done'
         read (5,*)papioption
-        if (papioption < 0) then
-          if (gptsetoption (papioption, 1) < 0) then
+        if (papioption .lt. 0) then
+          if (gptsetoption (papioption, 1) .lt. 0) then
             write(6,*)'gptsetoption failure'
           end if
         else
@@ -42,10 +42,10 @@
       done = .false.
       do while (.not. done)
         write(6,*)'Enter GPT option to set, then 0 (off) or 1 (on)'
-        write(6,*)'   or negative number when done'
+        write(6,*)'   or negative numbers when done'
         read (5,*)gptoption, val
         if (gptoption > 0) then
-          if (gptsetoption (gptoption, val) < 0) then
+          if (gptsetoption (gptoption, val) .lt. 0) then
             write(6,*)'gptsetoption failure'
           end if
         else
@@ -53,12 +53,12 @@
         end if
       end do
       
-      if (gptinitialize () < 0) stop 99
+      if (gptinitialize () .lt. 0) stop 99
 
       write(6,*)'Enter iteration count for threaded loop'
       read (5,*)niter
 
-      if (gptstart ('total') < 0) stop 99
+      if (gptstart ('total') .lt. 0) stop 99
 
 !$OMP PARALLEL DO PRIVATE (iter)
 
@@ -66,11 +66,11 @@
         call sub (iter)
       end do
 
-      if (gptstop ('total') < 0) stop 99
-      if (gptpr (0) < 0) call exit(99)
+      if (gptstop ('total') .lt. 0) stop 99
+      if (gptpr (0) .lt. 0) call exit(99)
 
-      if (gptreset () < 0) stop 99
-      if (gptstart ('total') < 0) stop 99
+      if (gptreset () .lt. 0) stop 99
+      if (gptstart ('total') .lt. 0) stop 99
 
 !$OMP PARALLEL DO PRIVATE (iter)
 
@@ -78,8 +78,9 @@
         call sub (iter)
       end do
 
-      if (gptstop ('total') < 0) stop 99
-      if (gptpr (1) < 0) call exit(99)
+      if (gptstop ('total') .lt. 0) stop 99
+      if (gptpr (1) .lt. 0) call exit(99)
+      if (gptfinalize () .lt. 0) stop 99
 
       stop
       end program

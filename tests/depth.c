@@ -43,7 +43,8 @@ main()
     GPTstop ("depth0");
   }
 
-  GPTpr(0);
+  GPTpr (0);
+  GPTfinalize ();
   return 0;
 }
 

@@ -60,4 +60,5 @@ int main ()
   }
 
   GPTpr (0);
+  (void) GPTfinalize ();
 }

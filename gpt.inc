@@ -22,6 +22,7 @@
       integer gptstamp 
       integer gptpr
       integer gptreset 
+      integer gptfinalize
 
       external gptsetoption
       external gptinitialize
@@ -30,3 +31,4 @@
       external gptstamp 
       external gptpr
       external gptreset 
+      external gptfinalize

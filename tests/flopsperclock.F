@@ -102,6 +102,7 @@
      $                         overhead/t2*100.,'% of long loop'
       end do
 
+      if (gptfinalize () .lt. 0) stop 99
       stop
       end
 

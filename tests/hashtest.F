@@ -16,8 +16,8 @@
       read (5,*) ntimers
       ntpt = ntimers / niter
 
-      if (gptsetoption (gptabort_on_error, 1) < 0) stop 99
-      if (gptinitialize () < 0) stop 99
+      if (gptsetoption (gptabort_on_error, 1) .lt. 0) stop 99
+      if (gptinitialize () .lt. 0) stop 99
 
 !$OMP PARALLEL DO PRIVATE (N, START)
 
@@ -33,7 +33,8 @@
         call sub (start, ntpt)
       end do
 
-      if (gptpr (0) < 0) stop 77
+      if (gptpr (0) .lt. 0) stop 77
+      if (gptfinalize () .lt. 0) stop 99
       stop
       end
 
@@ -50,8 +51,8 @@
 
       do i=start,start+ntpt-1
         write (name,'(a5i4.4)') 'timer',i
-        if (gptstart (name) < 0) stop 99
-        if (gptstop (name) < 0) stop 99
+        if (gptstart (name) .lt. 0) stop 99
+        if (gptstop (name) .lt. 0) stop 99
       end do
 
       return

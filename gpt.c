@@ -34,7 +34,7 @@ static Settings wallstats =     {GPTwall,     "Wallclock max       min       ", 
 static Settings overheadstats = {GPToverhead, "Overhead  ",                     true };
 
 static const int tablesize = 128*MAX_CHARS;  /* 128 is size of ASCII char set */
-static Hashtable **hashtable;    /* table of entries hashed by sum of chars */
+static Hashentry **hashtable;    /* table of entries hashed by sum of chars */
 static unsigned int *novfl;      /* microsecond overflow counter (only when DIAG set */
 static long ticks_per_sec;       /* clock ticks per second */
 
@@ -43,7 +43,7 @@ static long ticks_per_sec;       /* clock ticks per second */
 static void printstats (const Timer *, FILE *, const int, const bool);
 static void add (Timer *, const Timer *);
 static int get_cpustamp (long *, long *);
-static inline Timer *getentry (const Hashtable *, const char *, int *);
+static inline Timer *getentry (const Hashentry *, const char *, int *);
 
 /*
 ** GPTsetoption: set option value to true or false.
@@ -94,7 +94,7 @@ int GPTsetoption (const int option,  /* option */
   if (GPT_PAPIsetoption (option, val) == 0)
     return 0;
 #endif
-  return GPTerror ("GPTsetoption: option %d not found\n", (int) option);
+  return GPTerror ("GPTsetoption: option %d not found\n", option);
 }
 
 /*
@@ -103,7 +103,7 @@ int GPTsetoption (const int option,  /* option */
 **   routine could be eliminated if not targetting timing library for threaded
 **   capability. 
 **
-** return value: 0 (success) or -1 (failure)
+** return value: 0 (success) or GPTerror (failure)
 */
 
 int GPTinitialize (void)
@@ -129,12 +129,12 @@ int GPTinitialize (void)
 
   /* Allocate space for global arrays */
 
-  timers        = (Timer **) GPTallocate (maxthreads * sizeof (Timer *));
-  last          = (Timer **) GPTallocate (maxthreads * sizeof (Timer *));
-  current_depth = (Nofalse *) GPTallocate (maxthreads * sizeof (Nofalse));
-  max_depth     = (int *)    GPTallocate (maxthreads * sizeof (int));
-  max_name_len  = (int *)    GPTallocate (maxthreads * sizeof (int));
-  hashtable     = (Hashtable **) GPTallocate (maxthreads * sizeof (Hashtable *));
+  timers        = (Timer **)     GPTallocate (maxthreads * sizeof (Timer *));
+  last          = (Timer **)     GPTallocate (maxthreads * sizeof (Timer *));
+  current_depth = (Nofalse *)    GPTallocate (maxthreads * sizeof (Nofalse));
+  max_depth     = (int *)        GPTallocate (maxthreads * sizeof (int));
+  max_name_len  = (int *)        GPTallocate (maxthreads * sizeof (int));
+  hashtable     = (Hashentry **) GPTallocate (maxthreads * sizeof (Hashentry *));
 #ifdef DIAG
   novfl         = (unsigned int *) GPTallocate (maxthreads * sizeof (unsigned int));
 #endif
@@ -146,7 +146,7 @@ int GPTinitialize (void)
     current_depth[n].depth = 0;
     max_depth[n]     = 0;
     max_name_len[n]  = 0;
-    hashtable[n] = (Hashtable *) GPTallocate (tablesize * sizeof (Hashtable));
+    hashtable[n] = (Hashentry *) GPTallocate (tablesize * sizeof (Hashentry));
 #ifdef DIAG
     novfl[n] = 0;
 #endif
@@ -223,7 +223,7 @@ int GPTfinalize (void)
 
 int GPTstart (const char *name)       /* timer name */
 {
-  struct timeval tp1, tp2;      /* argument to gettimeofday */
+  struct timeval tp1, tp2;      /* argument returned from gettimeofday */
   Timer *ptr;                   /* linked list pointer */
   Timer **eptr;                 /* for realloc */
 
@@ -270,7 +270,7 @@ int GPTstart (const char *name)       /* timer name */
   if (current_depth[mythread].depth > max_depth[mythread])
     max_depth[mythread] = current_depth[mythread].depth;
 
-  /* If a new thing is being timed, add a new link and initialize */
+  /* If a new thing is being timed, add a new entry and initialize */
 
   if ( ! ptr) {
     ptr = (Timer *) GPTallocate (sizeof (Timer));
@@ -358,8 +358,8 @@ int GPTstart (const char *name)       /* timer name */
 
 int GPTstop (const char *name) /* timer name */
 {
-  long delta_wtime_sec;     /* wallclock change fm GPTstart() to GPTstop() */    
-  long delta_wtime_usec;    /* wallclock change fm GPTstart() to GPTstop() */
+  long delta_wtime_sec;     /* wallclock sec change fm GPTstart() to GPTstop() */    
+  long delta_wtime_usec;    /* wallclock usec change fm GPTstart() to GPTstop() */
   float delta_wtime;        /* floating point wallclock change */
   struct timeval tp1, tp2;  /* argument to gettimeofday() */
   Timer *ptr;               /* linked list pointer */
@@ -835,8 +835,8 @@ static void add (Timer *tout,
       tout->wall.accum_usec += 10000000;
     }
       
-    tout->wall.max       = MAX (tout->wall.max, tin->wall.max);
-    tout->wall.min       = MIN (tout->wall.min, tin->wall.min);
+    tout->wall.max = MAX (tout->wall.max, tin->wall.max);
+    tout->wall.min = MIN (tout->wall.min, tin->wall.min);
     if (overheadstats.enabled)
       tout->wall.overhead += tin->wall.overhead;
   }
@@ -883,7 +883,7 @@ static int get_cpustamp (long *usr, long *sys)
 ** Return value: pointer to the entry, or NULL if not found
 */
 
-static inline Timer *getentry (const Hashtable *hashtable, /* hash table */
+static inline Timer *getentry (const Hashentry *hashtable, /* hash table */
 			       const char *name,           /* name to hash */
 			       int *indx)                  /* hash index */
 {

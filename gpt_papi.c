@@ -136,7 +136,7 @@ static long_long *lastoverhead;          /* needed because aux not available for
 
 /* Function prototypes */
 
-static int create_and_start_events (int);
+static int create_and_start_events (const int);
 
 /*
 ** GPT_PAPIsetoption: enable or disable PAPI event defined by "counter". Called 
@@ -299,7 +299,7 @@ int GPT_PAPIinitialize (const int maxthreads)  /* number of threads */
 ** Return value: 0 (success) or GPTerror (failure)
 */
 
-static int create_and_start_events (int t)  /* thread number */
+static int create_and_start_events (const int t)  /* thread number */
 {
   int ret;
   int n;

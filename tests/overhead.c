@@ -28,30 +28,34 @@ int main ()
 
 #ifdef HAVE_PAPI
   GPTPAPIprinttable ();
-  do {
+  while (1) {
     printf ("Enter PAPI option to enable, non-negative number when done\n");
     scanf ("%d", &papiopt);
+    if (papiopt >= 0)
+      break;
     if (GPTsetoption (papiopt, 1) < 0)
       printf ("gptsetoption failure\n");
-  } while (papiopt < 0);
+  }
 #endif
 
-  printf ("GPTwall           = 1");
-  printf ("GPTcpu            = 2");
-  printf ("GPTabort_on_error = 3");
-  printf ("GPToverhead       = 4");
-  do {
+  printf ("GPTwall           = 1\n");
+  printf ("GPTcpu            = 2\n");
+  printf ("GPTabort_on_error = 3\n");
+  printf ("GPToverhead       = 4\n");
+  while (1) {
     printf ("Enter GPT option and enable flag, negative numbers when done\n");
     scanf ("%d %d", &gptopt, &val);
+    if (gptopt <= 0)
+      break;
     if (GPTsetoption (gptopt, val) < 0)
       printf ("gptsetoption failure\n");
-  } while (gptopt < 0);
+  }
 
   printf ("Enter number of iterations for threaded loop:\n");
   scanf ("%d", &nompiter);
   printf ("Enter number of invocations of overhead portion:\n");
   scanf ("%d", &ninvoke);
-  printf ("nompiter=%d ninvoke=%d", nompiter, ninvoke);
+  printf ("nompiter=%d ninvoke=%d\n", nompiter, ninvoke);
 
   GPTinitialize ();
   GPTstart ("total");
@@ -65,6 +69,7 @@ int main ()
   }
   GPTstop ("total");
   GPTpr (0);
+  GPTfinalize ();
 }
 
 static void overhead (int iter, int ninvoke)

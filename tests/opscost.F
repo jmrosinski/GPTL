@@ -7,16 +7,16 @@
 
 #include "../gpt.inc"
 
-      if (gptsetoption (gptcpu, 1) < 0) stop 99
-      if (gptsetoption (gptwall, 1) < 0) stop 99
+      if (gptsetoption (gptcpu, 1) .lt. 0) stop 99
+      if (gptsetoption (gptwall, 1) .lt. 0) stop 99
 
-      if (gptinitialize () < 0) stop 99
+      if (gptinitialize () .lt. 0) stop 99
 
       do n=1,10
         sum(n) = n
       end do
 
-      if (gptstart ('multiplication') < 0) stop 99
+      if (gptstart ('multiplication') .lt. 0) stop 99
       do n=1,100000
         x = 1.1 + 0.0001*n
         sum(1) = sum(1) * x
@@ -30,9 +30,9 @@
         sum(9) = sum(9) * x
         sum(10) = sum(10) * x
       end do
-      if (gptstop ('multiplication') < 0) stop 99
+      if (gptstop ('multiplication') .lt. 0) stop 99
 
-      if (gptstart ('addition') < 0) stop 99
+      if (gptstart ('addition') .lt. 0) stop 99
       do n=1,100000
         x = n + 0.01
         sum(1) = sum(1) + x
@@ -46,9 +46,9 @@
         sum(9) = sum(9) + x
         sum(10) = sum(10) + x
       end do
-      if (gptstop ('addition') < 0) stop 99
+      if (gptstop ('addition') .lt. 0) stop 99
 
-      if (gptstart ('division') < 0) stop 99
+      if (gptstart ('division') .lt. 0) stop 99
       do n=1,100000
         x = 1.1 + 0.0001*n
         sum(1) = sum(1) / x
@@ -62,13 +62,13 @@
         sum(9) = sum(9) / x
         sum(10) = sum(10) / x
       end do
-      if (gptstop ('division') < 0) stop 99
+      if (gptstop ('division') .lt. 0) stop 99
 
       do n=1,10
         sum(n) = 0.
       end do
 
-      if (gptstart ('exponentiation') < 0) stop 99
+      if (gptstart ('exponentiation') .lt. 0) stop 99
       do n=1,100000
         x = -1. + 0.000001*n
         sum(1) = exp(sum(1)*x)
@@ -82,9 +82,9 @@
         sum(9) = exp(sum(9)*x)
         sum(10) = exp(sum(10)*x)
       end do
-      if (gptstop ('exponentiation') < 0) stop 99
+      if (gptstop ('exponentiation') .lt. 0) stop 99
 
-      if (gptstart ('power') < 0) stop 99
+      if (gptstart ('power') .lt. 0) stop 99
       do n=1,100000
         x = 1. + 0.000001*n
         sum(1) = sum(1)**x
@@ -98,8 +98,9 @@
         sum(9) = sum(9)**x
         sum(10) = sum(10)**x
       end do
-      if (gptstop ('power') < 0) stop 99
+      if (gptstop ('power') .lt. 0) stop 99
 
-      if (gptpr(0) < 0) stop 99
+      if (gptpr(0) .lt. 0) stop 99
+      if (gptfinalize () .lt. 0) stop 99
       stop
-      end program opscost
+      end program

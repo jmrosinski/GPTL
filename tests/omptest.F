@@ -5,33 +5,33 @@
 
       integer ret, iter
       
-      if (gptsetoption (gptcpu, 1) < 0) call exit(99)
-      if (gptsetoption (gptwall, 1) < 0) call exit(99)
-      if (gptsetoption (gptabort_on_error, 1) < 0) call exit(99)
-!      if (gpt_setoption (pcl_l1dcache_miss, 0) < 0) call exit(99)
-!      if (gpt_setoption (pcl_l2cache_miss, 0) < 0) call exit(99)
-!      if (gpt_setoption (pcl_cycles, 1) < 0) call exit(99)
-!      if (gpt_setoption (pcl_elapsed_cycles, 0) < 0) call exit(99)
-!      if (gpt_setoption (pcl_fp_instr, 1) < 0) call exit(99)
-!      if (gpt_setoption (pcl_loadstore_instr, 0) < 0) call exit(99)
-!      if (gpt_setoption (pcl_instr, 1) < 0) call exit(99)
-!      if (gpt_setoption (pcl_stall, 0) < 0) call exit(99)
-!      if (gpt_setoption (pcl_l2cache_miss, 0) < 0) call exit(99)
+      if (gptsetoption (gptcpu, 1) .lt. 0) call exit(99)
+      if (gptsetoption (gptwall, 1) .lt. 0) call exit(99)
+      if (gptsetoption (gptabort_on_error, 1) .lt. 0) call exit(99)
+!      if (gpt_setoption (pcl_l1dcache_miss, 0) .lt. 0) call exit(99)
+!      if (gpt_setoption (pcl_l2cache_miss, 0) .lt. 0) call exit(99)
+!      if (gpt_setoption (pcl_cycles, 1) .lt. 0) call exit(99)
+!      if (gpt_setoption (pcl_elapsed_cycles, 0) .lt. 0) call exit(99)
+!      if (gpt_setoption (pcl_fp_instr, 1) .lt. 0) call exit(99)
+!      if (gpt_setoption (pcl_loadstore_instr, 0) .lt. 0) call exit(99)
+!      if (gpt_setoption (pcl_instr, 1) .lt. 0) call exit(99)
+!      if (gpt_setoption (pcl_stall, 0) .lt. 0) call exit(99)
+!      if (gpt_setoption (pcl_l2cache_miss, 0) .lt. 0) call exit(99)
 !      call gpt_setoption (cpu, .false.)
 
-      if (gptinitialize () < 0) stop 99
+      if (gptinitialize () .lt. 0) stop 99
 
-      if (gptstart ('outside_nothing') < 0) stop 99
+      if (gptstart ('outside_nothing') .lt. 0) stop 99
 
 !!$OMP PARALLEL DO PRIVATE (iter)
 
       do iter=1,2
-        if (gptstart ('inside_nothing') < 0) stop 99
+        if (gptstart ('inside_nothing') .lt. 0) stop 99
         call do_nothing (iter)
-        if (gptstop ('inside_nothing') < 0) stop 99
+        if (gptstop ('inside_nothing') .lt. 0) stop 99
       end do
 
-      if (gptstop ('outside_nothing') < 0) stop 99
+      if (gptstop ('outside_nothing') .lt. 0) stop 99
 
 !$OMP PARALLEL DO PRIVATE (iter)
 
@@ -45,7 +45,8 @@
         call sub2 (iter)
       end do
 
-      if (gptpr (0) < 0) call exit(99)
+      if (gptpr (0) .lt. 0) call exit (99)
+      if (gptfinalize () .lt. 0) call exit (99)
       stop
       end program
           
@@ -80,7 +81,7 @@
       end subroutine sub
 
       subroutine do_nothing (iter)
-      integer :: iter
+      integer iter
       return
       end
 

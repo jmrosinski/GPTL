@@ -46,5 +46,6 @@
         if (gptpr ('errtest') .lt. 0) write(6,*)'stop failure'
       end if
 
+      if (gptfinalize () .lt. 0) write(6,*)'gptfinalize error'
       stop 0
       end program errtest
