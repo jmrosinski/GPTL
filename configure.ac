@@ -111,6 +111,9 @@ dnl Whether and how to enable threading
 THREADDEFS=""
 THREADFLAGS=""
 FTHREADFLAGS=""
+OMP=""
+PTHREADS=""
+dnl OMPDEFS, OMPCFLAGS, OMP
 AC_ARG_ENABLE(openmp,[--enable-openmp],UD_SET_OMP_C,)
 if test "$OMP" = YES ; then
   THREADDEFS="$OMPDEFS"
@@ -118,6 +121,7 @@ if test "$OMP" = YES ; then
   UD_SET_OMP_F77
   FTHREADFLAGS="$OMPFFLAGS"
 else
+dnl PTHREADDEFS, PTHREADCFLAGS, PTHREADS
   AC_ARG_ENABLE(pthreads,[--enable-pthreads],UD_SET_PTHREADS_C,)
   if test "$PTHREADS" = YES ; then
     THREADDEFS="$PTHREADDEFS"
@@ -126,22 +130,6 @@ else
     FTHREADFLAGS="$PTHREADFFLAGS"
   fi
 fi
-
-dnl OMPDEFS, OMPCFLAGS
-UD_SET_OMP_C
-dnl PTHREADDEFS, PTHREADCFLAGS
-UD_SET_PTHREADS_C
-THREADDEFS=""
-THREADFLAGS=""
-AC_ARG_ENABLE(pthreads,[--enable-pthreads   Specify to thread with pthreads],
-              [THREADDEFS="$PTHREADDEFS";THREADFLAGS="$PTHREADCFLAGS"],)
-
-dnl openmp will override pthreads if both are specified
-AC_ARG_ENABLE(openmp,[--enable-openmp     Specify to thread with OpenMP],
-              [THREADDEFS="$OMPDEFS";THREADFLAGS="$OMPCFLAGS"],)
-	                                
-dnl OMPFFLAGS
-UD_SET_OMP_F77
 
 dnl How to mangle names:
 AC_DEFINE(FDEFS)
@@ -184,3 +172,10 @@ AC_SUBST(BITFLAGS)
 AC_SUBST(FORTDEFS)
 
 AC_OUTPUT(Makefile tests/Makefile)
+
+dnl Print warnings if appropriate.
+if test "$OMP" = "NO" ; then
+  AC_MSG_WARN([GPT will be built WITHOUT the requested openmp threading. See config.log])
+elif test "$PTHREADS" = "NO" ; then
+  AC_MSG_WARN([GPT will be built WITHOUT the requested pthreads threading. See config.log])
+fi

@@ -1,10 +1,10 @@
 CC           = @CC@
 CFLAGS       = @PAPIPREP@ @THREADDEFS@ @CFLAGS@ @BITFLAGS@ @THREADFLAGS@
-LDFLAGS      = @CFLAGS@ -L.. -lgpt @LDFLAGS@ @LIBS@
+LDFLAGS      = @BITFLAGS@ @THREADFLAGS@ -L.. -lgpt @LDFLAGS@ @LIBS@
 
 FC           = @F77@
 FFLAGS       = @PAPIPREP@ @FORTDEFS@ @FFLAGS@ @BITFLAGS@ @FTHREADFLAGS@
-FLDFLAGS     = @FFLAGS@ -L.. -lgpt @LDFLAGS@ @LIBS@
+FLDFLAGS     = @BITFLAGS@ @FTHREADFLAGS@ -L.. -lgpt @LDFLAGS@ @LIBS@
 
 COBJS = llcost.o depth.o overhead.o
 CEXES = llcost   depth   overhead
