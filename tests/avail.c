@@ -19,12 +19,12 @@ int main ()
     return -1;
   }
   
-  printf("Name                Code        Description");
+  printf("Name                Code        Description\n");
   i = PAPI_PRESET_MASK;
 
   do {
     ret = PAPI_get_event_info (i, &info);
-    if (ret == PAPI_OK) {
+    if (ret == PAPI_OK && info.count > 0) {
       printf("%-20s %-10d %s\n", info.symbol, i & info.event_code, info.long_descr);
     }
   } while (PAPI_enum_event (&i, PAPI_ENUM_ALL) == PAPI_OK);
