@@ -1,33 +1,33 @@
 AC_DEFUN(UD_SET_OMP_C,
 [
-  THREADFLAGS=""
-  THREADDEFS=""
+  OMPCFLAGS=""
+  OMPDEFS=""
   OLDFLAGS="$CFLAGS"
   OMP="NO"
 
   AC_MSG_CHECKING([C flags for openmp])
 
   if test "$OMP" = "NO" ; then
-    THREADFLAGS="-qsmp=omp"
-    CFLAGS="$OLDFLAGS $THREADFLAGS"
+    OMPCFLAGS="-qsmp=omp"
+    CFLAGS="$OLDFLAGS $OMPCFLAGS"
     AC_TRY_LINK([#include <omp.h>],[(void) omp_get_max_threads();],OMP="YES",)
   fi
 
   if test "$OMP" = "NO" ; then
-    THREADFLAGS="-mp"
-    CFLAGS="$OLDFLAGS $THREADFLAGS"
+    OMPCFLAGS="-mp"
+    CFLAGS="$OLDFLAGS $OMPCFLAGS"
     AC_TRY_LINK([#include <omp.h>],[(void) omp_get_max_threads();],OMP="YES",)
   fi
 
   if test "$OMP" = "NO" ; then
-    THREADFLAGS="-openmp"
-    CFLAGS="$OLDFLAGS $THREADFLAGS"
+    OMPCFLAGS="-openmp"
+    CFLAGS="$OLDFLAGS $OMPCFLAGS"
     AC_TRY_LINK([#include <omp.h>],[(void) omp_get_max_threads();],OMP="YES",)
   fi
 
   if test "$OMP" = "YES" ; then
-    THREADDEFS=-DTHREADED_OMP
-    AC_MSG_RESULT($THREADFLAGS works)
+    OMPDEFS=-DTHREADED_OMP
+    AC_MSG_RESULT($OMPCFLAGS works)
   else
     AC_MSG_RESULT([not found])
     AC_MSG_ERROR([quitting.  Rerun configure without --enable-openmp])
@@ -38,36 +38,36 @@ AC_DEFUN(UD_SET_OMP_C,
 AC_DEFUN(UD_SET_OMP_F77,
 [
   AC_LANG_PUSH(Fortran 77)
-  FTHREADFLAGS=""
+  OMPFFLAGS=""
   OLDFLAGS="$FFLAGS"
   FORTOMP="NO"
 
   AC_MSG_CHECKING([Fortran openmp threading])
 
-  FTHREADFLAGS="-mp"
-  FFLAGS="$OLDFLAGS $FTHREADFLAGS"
+  OMPFFLAGS="-mp"
+  FFLAGS="$OLDFLAGS $OMPFFLAGS"
   AC_TRY_LINK(,[      call omp_get_max_threads()],FORTOMP="YES",)
 
   if test "$FORTOMP" = "NO" ; then
-    FTHREADFLAGS="-qsmp=omp"
-    FFLAGS="$OLDFLAGS $FTHREADFLAGS"
+    OMPFFLAGS="-qsmp=omp"
+    FFLAGS="$OLDFLAGS $OMPFFLAGS"
     AC_TRY_LINK(,[      call omp_get_max_threads()],FORTOMP="YES",)
   fi
 
   if test "$FORTOMP" = "NO" ; then
-    FTHREADFLAGS="-omp"
-    FFLAGS="$OLDFLAGS $FTHREADFLAGS"
+    OMPFFLAGS="-omp"
+    FFLAGS="$OLDFLAGS $OMPFFLAGS"
     AC_TRY_LINK(,[      call omp_get_max_threads()],FORTOMP="YES",)
   fi
 
   if test "$FORTOMP" = "NO" ; then
-    FTHREADFLAGS="-openmp"
-    FFLAGS="$OLDFLAGS $FTHREADFLAGS"
+    OMPFFLAGS="-openmp"
+    FFLAGS="$OLDFLAGS $OMPFFLAGS"
     AC_TRY_LINK(,[      call omp_get_max_threads()],FORTOMP="YES",)
   fi
 
   if test "$FORTOMP" = "YES" ; then
-    AC_MSG_RESULT($FTHREADFLAGS)
+    AC_MSG_RESULT($OMPFFLAGS)
   else
     AC_MSG_RESULT([not found])
     AC_MSG_WARN([threaded Fortran tests may fail])
@@ -79,8 +79,8 @@ AC_DEFUN(UD_SET_OMP_F77,
 AC_DEFUN(UD_SET_PTHREADS_C,
 [
   OLDLDFLAGS="$LDFLAGS"
-  THREADFLAGS="-lpthread"
-  LDFLAGS="$OLDLDFLAGS $THREADFLAGS"
+  PTHREADCFLAGS="-lpthread"
+  LDFLAGS="$OLDLDFLAGS $PTHREADCFLAGS"
   PTHREADS="NO"
 
   AC_MSG_CHECKING([pthreads under C])
@@ -88,7 +88,7 @@ AC_DEFUN(UD_SET_PTHREADS_C,
 
   if test "$PTHREADS" = "YES" ; then
     THREADDEFS=-DTHREADED_PTHREADS
-    AC_MSG_RESULT($THREADFLAGS)
+    AC_MSG_RESULT($PTHREADCFLAGS)
   else
     AC_MSG_RESULT([not found])
     AC_MSG_ERROR([quitting.  Rerun configure without --enable-pthreads])
@@ -101,8 +101,8 @@ AC_DEFUN(UD_SET_PTHREADS_F77,
 [
   AC_LANG_PUSH(Fortran 77)
   OLDLDFLAGS="$LDFLAGS"
-  FTHREADFLAGS="-lpthread"
-  LDFLAGS="$OLDLDFLAGS $FTHREADFLAGS"
+  PTHREADFFLAGS="-lpthread"
+  LDFLAGS="$OLDLDFLAGS $PTHREADFFLAGS"
   PTHREADS="NO"
 
   AC_MSG_CHECKING([pthreads under Fortran])
@@ -110,7 +110,7 @@ AC_DEFUN(UD_SET_PTHREADS_F77,
 
   if test "$PTHREADS" = "YES" ; then
     THREADDEFS=-DTHREADED_PTHREADS
-    AC_MSG_RESULT($FTHREADFLAGS)
+    AC_MSG_RESULT($PTHREADFFLAGS)
   else
     AC_MSG_RESULT([not found])
   fi

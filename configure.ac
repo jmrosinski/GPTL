@@ -102,15 +102,20 @@ if test "$F77" = xlf90_r ; then
 fi
 
 dnl Whether and how to enable threading
-AC_ARG_ENABLE(openmp,[--enable-openmp],UD_SET_OMP_C,)
-if test "$OMP" = YES ; then
-  UD_SET_OMP_F77
-else
-  AC_ARG_ENABLE(pthreads,[--enable-pthreads],UD_SET_PTHREADS_C,)
-  if test "$PTHREADS" = YES ; then
-    UD_SET_PTHREADS_F77
-  fi
-fi
+dnl OMPDEFS, OMPCFLAGS
+UD_SET_OMP_C
+dnl PTHREADDEFS, PTHREADCFLAGS
+UD_SET_PTHREADS_C
+THREADDEFS=""
+THREADFLAGS=""
+AC_ARG_ENABLE(pthreads,[--enable-pthreads],[THREADDEFS="$PTHREADDEFS";
+                                            THREADFLAGS="$PTHREADCFLAGS"],)
+
+dnl openmp will override pthreads if both are specified
+AC_ARG_ENABLE(openmp,[--enable-openmp],[THREADDEFS="$OMPDEFS";
+	                                THREADFLAGS="$OMPCFLAGS"],)
+dnl OMPFFLAGS
+UD_SET_OMP_F77
 
 dnl How to mangle names:
 AC_DEFINE(FDEFS)
@@ -145,10 +150,16 @@ AC_CHECK_FUNCS(gettimeofday)
 AC_SUBST(FDEFS)
 AC_SUBST(THREADDEFS)
 AC_SUBST(THREADFLAGS)
-AC_SUBST(FTHREADFLAGS)
 AC_SUBST(PAPIPREP)
 AC_SUBST(PAPIOBJS)
 AC_SUBST(ARFLAGS)
 AC_SUBST(BITFLAGS)
 AC_SUBST(FORTDEFS)
+dnl for tests directory
+AC_SUBST(OMPDEFS)
+AC_SUBST(OMPCFLAGS)
+AC_SUBST(OMPFFLAGS)
+AC_SUBST(PTHREADDEFS)
+AC_SUBST(PTHTEADCFLAGS)
+
 AC_OUTPUT(Makefile tests/Makefile)

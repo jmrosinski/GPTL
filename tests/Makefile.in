@@ -1,12 +1,12 @@
 CC           = @CC@
 CFLAGS       = @CFLAGS@ @PAPIPREP@ @BITFLAGS@
-THREADFLAGS  = @THREADFLAGS@ @THREADDEFS@
-LDFLAGS      = @THREADFLAGS@ @CFLAGS@ @THREADFLAGS@ @BITFLAGS@ -L.. -lgpt @LDFLAGS@ @LIBS@
+THREADFLAGS  = @OMPCFLAGS@ @OMPDEFS@
+LDFLAGS      = @OMPCFLAGS@ @CFLAGS@ @THREADFLAGS@ @BITFLAGS@ -L.. -lgpt @LDFLAGS@ @LIBS@
 
 FC           = @F77@
 FFLAGS       = @FFLAGS@ @PAPIPREP@ @BITFLAGS@ @FORTDEFS@
-FTHREADFLAGS = @FTHREADFLAGS@
-FLDFLAGS     = @FTHREADFLAGS@ @BITFLAGS@ -L.. -lgpt @LDFLAGS@ @LIBS@
+OMPFFLAGS    = @OMPFFLAGS@
+FLDFLAGS     = @OMPFFLAGS@ @BITFLAGS@ -L.. -lgpt @LDFLAGS@ @LIBS@
 
 COBJS = llcost.o depth.o overhead.o
 CEXES = llcost   depth   overhead
@@ -42,7 +42,7 @@ flopsperclock.o: flopsperclock.F
 omptest: omptest.o
 	$(FC) -o $@ omptest.o $(FLDFLAGS)
 omptest.o: omptest.F
-	$(FC) -c $(FFLAGS) $(FTHREADFLAGS) $<
+	$(FC) -c $(FFLAGS) $(OMPFFLAGS) $<
 
 errtest: errtest.o
 	$(FC) -o $@ errtest.o $(FLDFLAGS)
@@ -62,5 +62,5 @@ hashtest.o: hashtest.F
 papitest: papitest.o
 	$(FC) -o $@ papitest.o $(FLDFLAGS)
 papitest.o: papitest.F
-	$(FC) -c $(FFLAGS) $(FTHREADFLAGS) $<
+	$(FC) -c $(FFLAGS) $(OMPFFLAGS) $<
 
