@@ -21,7 +21,7 @@ static Nofalse *current_depth;
 
 static int nthreads    = -1;     /* num threads. Init to bad value */
 static int maxthreads  = -1;     /* max threads (=nthreads for OMP). Init to bad value */
-static bool initialized = false; /* GPTinitialize has been called */
+static bool initialized = false; /* GPTLinitialize has been called */
 
 typedef struct {
   const Option option;           /* wall, cpu, etc. */
@@ -31,9 +31,9 @@ typedef struct {
 
 /* Options, print strings, and default enable flags */
 
-static Settings cpustats =      {GPTcpu,      "Usr       sys       usr+sys   ", false};
-static Settings wallstats =     {GPTwall,     "Wallclock max       min       ", true };
-static Settings overheadstats = {GPToverhead, "Overhead  ",                     true };
+static Settings cpustats =      {GPTLcpu,      "Usr       sys       usr+sys   ", false};
+static Settings wallstats =     {GPTLwall,     "Wallclock max       min       ", true };
+static Settings overheadstats = {GPTLoverhead, "Overhead  ",                     true };
 
 static const int tablesize = 128*MAX_CHARS;  /* 128 is size of ASCII char set */
 static Hashentry **hashtable;    /* table of entries hashed by sum of chars */
@@ -48,17 +48,17 @@ static inline int get_cpustamp (long *, long *);
 static inline Timer *getentry (const Hashentry *, const char *, int *);
 
 /*
-** GPTsetoption: set option value to true or false.
+** GPTLsetoption: set option value to true or false.
 **
 ** Input arguments:
 **   option: option to be set
 **   val:    value to which option should be set (nonzero=true, zero=false)
 **
-** Return value: 0 (success) or GPTerror (failure)
+** Return value: 0 (success) or GPTLerror (failure)
 */
 
-int GPTsetoption (const int option,  /* option */
-		  const int val)     /* whether to enable */
+int GPTLsetoption (const int option,  /* option */
+		   const int val)     /* whether to enable */
 {
 
 #ifdef DISABLE_TIMERS
@@ -66,48 +66,48 @@ int GPTsetoption (const int option,  /* option */
 #endif
 
   if (initialized)
-    return GPTerror ("GPTsetoption: must be called BEFORE GPTinitialize\n");
+    return GPTLerror ("GPTLsetoption: must be called BEFORE GPTLinitialize\n");
 
-  if (option == GPTabort_on_error) {
-    GPTset_abort_on_error ((bool) val);
-    printf ("GPTsetoption: setting abort on error flag to %d\n", val);
+  if (option == GPTLabort_on_error) {
+    GPTLset_abort_on_error ((bool) val);
+    printf ("GPTLsetoption: setting abort on error flag to %d\n", val);
     return 0;
   }
 
   switch (option) {
-  case GPTcpu:      
+  case GPTLcpu:      
     cpustats.enabled = (bool) val; 
-    printf ("GPTsetoption: set cpustats to %d\n", val);
+    printf ("GPTLsetoption: set cpustats to %d\n", val);
     return 0;
-  case GPTwall:     
+  case GPTLwall:     
     wallstats.enabled = (bool) val; 
-    printf ("GPTsetoption: set wallstats to %d\n", val);
+    printf ("GPTLsetoption: set wallstats to %d\n", val);
     return 0;
-  case GPToverhead: 
+  case GPTLoverhead: 
     overheadstats.enabled = (bool) val; 
-    printf ("GPTsetoption: set overheadstats to %d\n", val);
+    printf ("GPTLsetoption: set overheadstats to %d\n", val);
     return 0;
   default:
     break;
   }
 
 #ifdef HAVE_PAPI
-  if (GPT_PAPIsetoption (option, val) == 0)
+  if (GPTL_PAPIsetoption (option, val) == 0)
     return 0;
 #endif
-  return GPTerror ("GPTsetoption: option %d not found\n", option);
+  return GPTLerror ("GPTLsetoption: option %d not found\n", option);
 }
 
 /*
-** GPTinitialize (): Initialization routine must be called from single-threaded
+** GPTLinitialize (): Initialization routine must be called from single-threaded
 **   region before any other timing routines may be called.  The need for this
 **   routine could be eliminated if not targetting timing library for threaded
 **   capability. 
 **
-** return value: 0 (success) or GPTerror (failure)
+** return value: 0 (success) or GPTLerror (failure)
 */
 
-int GPTinitialize (void)
+int GPTLinitialize (void)
 {
   int i;          /* loop index */
   int t;          /* thread index */
@@ -117,27 +117,27 @@ int GPTinitialize (void)
 #endif
 
   if (initialized)
-    return GPTerror ("GPTinitialize: has already been called\n");
+    return GPTLerror ("GPTLinitialize: has already been called\n");
 
   if (threadinit (&nthreads, &maxthreads) < 0)
-    return GPTerror ("GPTinitialize: bad return from threadinit\n");
+    return GPTLerror ("GPTLinitialize: bad return from threadinit\n");
 
   if (get_thread_num (&nthreads, &maxthreads) > 0) 
-    return GPTerror ("GPTinitialize: must only be called by master thread\n");
+    return GPTLerror ("GPTLinitialize: must only be called by master thread\n");
 
   if ((ticks_per_sec = sysconf (_SC_CLK_TCK)) == -1)
-    return GPTerror ("GPTinitialize: sysconf (_SC_CLK_TCK) failed\n");
+    return GPTLerror ("GPTLinitialize: sysconf (_SC_CLK_TCK) failed\n");
 
   /* Allocate space for global arrays */
 
-  timers        = (Timer **)     GPTallocate (maxthreads * sizeof (Timer *));
-  last          = (Timer **)     GPTallocate (maxthreads * sizeof (Timer *));
-  current_depth = (Nofalse *)    GPTallocate (maxthreads * sizeof (Nofalse));
-  max_depth     = (int *)        GPTallocate (maxthreads * sizeof (int));
-  max_name_len  = (int *)        GPTallocate (maxthreads * sizeof (int));
-  hashtable     = (Hashentry **) GPTallocate (maxthreads * sizeof (Hashentry *));
+  timers        = (Timer **)     GPTLallocate (maxthreads * sizeof (Timer *));
+  last          = (Timer **)     GPTLallocate (maxthreads * sizeof (Timer *));
+  current_depth = (Nofalse *)    GPTLallocate (maxthreads * sizeof (Nofalse));
+  max_depth     = (int *)        GPTLallocate (maxthreads * sizeof (int));
+  max_name_len  = (int *)        GPTLallocate (maxthreads * sizeof (int));
+  hashtable     = (Hashentry **) GPTLallocate (maxthreads * sizeof (Hashentry *));
 #ifdef DIAG
-  novfl         = (unsigned int *) GPTallocate (maxthreads * sizeof (unsigned int));
+  novfl         = (unsigned int *) GPTLallocate (maxthreads * sizeof (unsigned int));
 #endif
 
   /* Initialize array values */
@@ -147,7 +147,7 @@ int GPTinitialize (void)
     current_depth[t].depth = 0;
     max_depth[t]     = 0;
     max_name_len[t]  = 0;
-    hashtable[t] = (Hashentry *) GPTallocate (tablesize * sizeof (Hashentry));
+    hashtable[t] = (Hashentry *) GPTLallocate (tablesize * sizeof (Hashentry));
 #ifdef DIAG
     novfl[t] = 0;
 #endif
@@ -158,8 +158,8 @@ int GPTinitialize (void)
   }
 
 #ifdef HAVE_PAPI
-  if (GPT_PAPIinitialize (maxthreads) < 0)
-    return GPTerror ("GPTinitialize: GPT_PAPIinitialize failure\n");
+  if (GPTL_PAPIinitialize (maxthreads) < 0)
+    return GPTLerror ("GPTLinitialize: GPTL_PAPIinitialize failure\n");
 #endif
 
   initialized = true;
@@ -167,13 +167,13 @@ int GPTinitialize (void)
 }
 
 /*
-** GPTfinalize (): Finalization routine must be called from single-threaded
+** GPTLfinalize (): Finalization routine must be called from single-threaded
 **   region. Free all malloc'd space
 **
-** return value: 0 (success) or GPTerror (failure)
+** return value: 0 (success) or GPTLerror (failure)
 */
 
-int GPTfinalize (void)
+int GPTLfinalize (void)
 {
   int t;                /* thread index */
   Timer *ptr, *ptrnext; /* ll indices */
@@ -183,10 +183,10 @@ int GPTfinalize (void)
 #endif
 
   if ( ! initialized)
-    return GPTerror ("GPTfinalize: GPTinitialize() has not been called\n");
+    return GPTLerror ("GPTLfinalize: GPTLinitialize() has not been called\n");
 
   if (get_thread_num (&nthreads, &maxthreads) > 0) 
-    return GPTerror ("GPTfinalize: must only be called by master thread\n");
+    return GPTLerror ("GPTLfinalize: must only be called by master thread\n");
 
   for (t = 0; t < maxthreads; ++t) {
     free (hashtable[t]);
@@ -207,22 +207,22 @@ int GPTfinalize (void)
 
   threadfinalize ();
 #ifdef HAVE_PAPI
-  GPT_PAPIfinalize (maxthreads);
+  GPTL_PAPIfinalize (maxthreads);
 #endif
   initialized = false;
   return 0;
 }
 
 /*
-** GPTstart: start a timer
+** GPTLstart: start a timer
 **
 ** Input arguments:
 **   name: timer name
 **
-** Return value: 0 (success) or GPTerror (failure)
+** Return value: 0 (success) or GPTLerror (failure)
 */
 
-int GPTstart (const char *name)       /* timer name */
+int GPTLstart (const char *name)       /* timer name */
 {
   struct timeval tp1, tp2;      /* argument returned from gettimeofday */
   Timer *ptr;                   /* linked list pointer */
@@ -238,20 +238,20 @@ int GPTstart (const char *name)       /* timer name */
 #endif
 
   if ((t = get_thread_num (&nthreads, &maxthreads)) < 0)
-    return GPTerror ("GPTstart\n");
+    return GPTLerror ("GPTLstart\n");
 
   /* 1st calls to overheadstart and gettimeofday are solely for overhead timing */
 
   if (overheadstats.enabled) {
 #ifdef HAVE_PAPI
-    (void) GPT_PAPIoverheadstart (t);
+    (void) GPTL_PAPIoverheadstart (t);
 #endif
     if (wallstats.enabled)
       gettimeofday (&tp1, 0);
   }
 
   if ( ! initialized)
-    return GPTerror ("GPTstart: GPTinitialize has not been called\n");
+    return GPTLerror ("GPTLstart: GPTLinitialize has not been called\n");
 
   /* Look for the requested timer in the current list. */
 
@@ -263,8 +263,8 @@ int GPTstart (const char *name)       /* timer name */
 #endif
 
   if (ptr && ptr->onflg)
-    return GPTerror ("GPTstart thread %d: timer %s was already on: "
-		     "not restarting.\n", t, ptr->name);
+    return GPTLerror ("GPTLstart thread %d: timer %s was already on: "
+		      "not restarting.\n", t, ptr->name);
 
   ++current_depth[t].depth;
   if (current_depth[t].depth > max_depth[t])
@@ -285,7 +285,7 @@ int GPTstart (const char *name)       /* timer name */
 
     /* Add a new entry and initialize */
 
-    ptr = (Timer *) GPTallocate (sizeof (Timer));
+    ptr = (Timer *) GPTLallocate (sizeof (Timer));
     memset (ptr, 0, sizeof (Timer));
 
     /* Truncate input name if longer than MAX_CHARS characters  */
@@ -309,7 +309,7 @@ int GPTstart (const char *name)       /* timer name */
 
     eptr = realloc (hashtable[t][indx].entries, nument * sizeof (Timer *));
     if ( ! eptr)
-      return GPTerror ("GPTstart: realloc error\n");
+      return GPTLerror ("GPTLstart: realloc error\n");
 
     hashtable[t][indx].entries = eptr;						 
     hashtable[t][indx].entries[nument-1] = ptr;
@@ -319,7 +319,7 @@ int GPTstart (const char *name)       /* timer name */
   ptr->onflg = true;
 
   if (cpustats.enabled && get_cpustamp (&ptr->cpu.last_utime, &ptr->cpu.last_stime) < 0)
-    return GPTerror ("GPTstart: get_cpustamp error");
+    return GPTLerror ("GPTLstart: get_cpustamp error");
   
   /*
   ** The 2nd system timer call is used both for overhead estimation and
@@ -332,22 +332,22 @@ int GPTstart (const char *name)       /* timer name */
     ptr->wall.last_usec = tp2.tv_usec;
     if (overheadstats.enabled)
       ptr->wall.overhead +=       (tp2.tv_sec  - tp1.tv_sec) + 
-                            1.e-6*(tp2.tv_usec - tp1.tv_usec);
+	1.e-6*(tp2.tv_usec - tp1.tv_usec);
   }
 
 #ifdef HAVE_PAPI
-  if (GPT_PAPIstart (t, &ptr->aux) < 0)
-    return GPTerror ("GPTstart: error from GPT_PAPIstart\n");
+  if (GPTL_PAPIstart (t, &ptr->aux) < 0)
+    return GPTLerror ("GPTLstart: error from GPTL_PAPIstart\n");
 
   if (overheadstats.enabled)
-    (void) GPT_PAPIoverheadstop (t, &ptr->aux);
+    (void) GPTL_PAPIoverheadstop (t, &ptr->aux);
 #endif
 
   return (0);
 }
 
 /*
-** GPTstop: stop a timer
+** GPTLstop: stop a timer
 **
 ** Input arguments:
 **   name: timer name
@@ -355,10 +355,10 @@ int GPTstart (const char *name)       /* timer name */
 ** Return value: 0 (success) or -1 (failure)
 */
 
-int GPTstop (const char *name) /* timer name */
+int GPTLstop (const char *name) /* timer name */
 {
-  long delta_wtime_sec;     /* wallclock sec change fm GPTstart() to GPTstop() */    
-  long delta_wtime_usec;    /* wallclock usec change fm GPTstart() to GPTstop() */
+  long delta_wtime_sec;     /* wallclock sec change fm GPTLstart() to GPTLstop() */    
+  long delta_wtime_usec;    /* wallclock usec change fm GPTLstart() to GPTLstop() */
   float delta_wtime;        /* floating point wallclock change */
   struct timeval tp1, tp2;  /* argument to gettimeofday() */
   Timer *ptr;               /* linked list pointer */
@@ -374,11 +374,11 @@ int GPTstop (const char *name) /* timer name */
 #endif
 
   if ((t = get_thread_num (&nthreads, &maxthreads)) < 0)
-    return GPTerror ("GPTstop\n");
+    return GPTLerror ("GPTLstop\n");
 
 #ifdef HAVE_PAPI
   if (overheadstats.enabled)
-    (void) GPT_PAPIoverheadstart (t);
+    (void) GPTL_PAPIoverheadstart (t);
 #endif
 
   /*
@@ -390,10 +390,10 @@ int GPTstop (const char *name) /* timer name */
     gettimeofday (&tp1, 0);
 
   if (cpustats.enabled && get_cpustamp (&usr, &sys) < 0)
-    return GPTerror (0);
+    return GPTLerror (0);
 
   if ( ! initialized)
-    return GPTerror ("GPTstop: GPTinitialize has not been called\n");
+    return GPTLerror ("GPTLstop: GPTLinitialize has not been called\n");
 
 #ifdef HASH
   ptr = getentry (hashtable[t], name, &indx);
@@ -402,14 +402,14 @@ int GPTstop (const char *name) /* timer name */
 #endif
 
   if ( ! ptr) 
-    return GPTerror ("GPTstop: timer for %s had not been started.\n", name);
+    return GPTLerror ("GPTLstop: timer for %s had not been started.\n", name);
 
   if ( ! ptr->onflg )
-    return GPTerror ("GPTstop: timer %s was already off.\n",ptr->name);
+    return GPTLerror ("GPTLstop: timer %s was already off.\n",ptr->name);
 
 #ifdef HAVE_PAPI
-  if (GPT_PAPIstop (t, &ptr->aux) < 0)
-    return GPTerror ("GPTstart: error from GPT_PAPIstop\n");
+  if (GPTL_PAPIstop (t, &ptr->aux) < 0)
+    return GPTLerror ("GPTLstart: error from GPTL_PAPIstop\n");
 #endif
 
   --current_depth[t].depth;
@@ -458,7 +458,7 @@ int GPTstop (const char *name) /* timer name */
     if (overheadstats.enabled) {
       gettimeofday (&tp2, 0);
       ptr->wall.overhead +=       (tp2.tv_sec  - tp1.tv_sec) + 
-                            1.e-6*(tp2.tv_usec - tp1.tv_usec);
+	1.e-6*(tp2.tv_usec - tp1.tv_usec);
     }
   }
 
@@ -471,24 +471,24 @@ int GPTstop (const char *name) /* timer name */
 
 #ifdef HAVE_PAPI
   if (overheadstats.enabled)
-    (void) GPT_PAPIoverheadstop (t, &ptr->aux);
+    (void) GPTL_PAPIoverheadstop (t, &ptr->aux);
 #endif
 
   return 0;
 }
 
 /*
-** GPTstamp: Compute timestamp of usr, sys, and wallclock time (seconds)
+** GPTLstamp: Compute timestamp of usr, sys, and wallclock time (seconds)
 **
 ** Output arguments:
 **   wall: wallclock
 **   usr:  user time
 **   sys:  system time
 **
-** Return value: 0 (success) or GPTerror (failure)
+** Return value: 0 (success) or GPTLerror (failure)
 */
 
-int GPTstamp (double *wall, double *usr, double *sys)
+int GPTLstamp (double *wall, double *usr, double *sys)
 {
   struct timeval tp;         /* argument to gettimeofday */
   struct tms buf;            /* argument to times */
@@ -498,13 +498,13 @@ int GPTstamp (double *wall, double *usr, double *sys)
 #endif
 
   if ( ! initialized)
-    return GPTerror ("GPTstamp: GPTinitialize has not been called\n");
+    return GPTLerror ("GPTLstamp: GPTLinitialize has not been called\n");
 
   *usr = 0;
   *sys = 0;
 
   if (times (&buf) == -1)
-    return GPTerror ("GPTstamp: times() failed. Results bogus\n");
+    return GPTLerror ("GPTLstamp: times() failed. Results bogus\n");
 
   *usr = buf.tms_utime / (double) ticks_per_sec;
   *sys = buf.tms_stime / (double) ticks_per_sec;
@@ -516,12 +516,12 @@ int GPTstamp (double *wall, double *usr, double *sys)
 }
 
 /*
-** GPTreset: reset all known timers to 0
+** GPTLreset: reset all known timers to 0
 **
-** Return value: 0 (success) or GPTerror (failure)
+** Return value: 0 (success) or GPTLerror (failure)
 */
 
-int GPTreset (void)
+int GPTLreset (void)
 {
   int t;             /* index over threads */
   Timer *ptr;        /* linked list index */
@@ -531,12 +531,12 @@ int GPTreset (void)
 #endif
 
   if ( ! initialized)
-    return GPTerror ("GPTreset: GPTinitialize has not been called\n");
+    return GPTLerror ("GPTLreset: GPTLinitialize has not been called\n");
 
   /* Only allow the master thread to reset timers */
 
   if (get_thread_num (&nthreads, &maxthreads) > 0) 
-    return GPTerror ("GPTreset: must only be called by master thread\n");
+    return GPTLerror ("GPTLreset: must only be called by master thread\n");
 
   for (t = 0; t < nthreads; t++) {
     for (ptr = timers[t]; ptr; ptr = ptr->next) {
@@ -549,20 +549,20 @@ int GPTreset (void)
 #endif
     }
   }
-  printf ("GPTreset: accumulators for all timers set to zero\n");
+  printf ("GPTLreset: accumulators for all timers set to zero\n");
   return 0;
 }
 
 /* 
-** GPTpr: Print values of all timers
+** GPTLpr: Print values of all timers
 **
 ** Input arguments:
 **   id: integer to append to string "timing."
 **
-** Return value: 0 (success) or GPTerror (failure)
+** Return value: 0 (success) or GPTLerror (failure)
 */
 
-int GPTpr (const int id)   /* output file will be named "timing.<id>" */
+int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
 {
   FILE *fp;                /* file handle to write to */
   Timer *ptr;              /* walk through master thread linked list */
@@ -581,20 +581,20 @@ int GPTpr (const int id)   /* output file will be named "timing.<id>" */
 #endif
 
   if ( ! initialized)
-    return GPTerror ("GPTpr: GPTinitialize() has not been called\n");
+    return GPTLerror ("GPTLpr: GPTLinitialize() has not been called\n");
 
   if (get_thread_num (&nthreads, &maxthreads) > 0) 
-    return GPTerror ("GPTpr: must only be called by master thread\n");
+    return GPTLerror ("GPTLpr: must only be called by master thread\n");
 
   if (id < 0 || id > 9999)
-    return GPTerror ("GPTpr: bad id=%d for output file. Must be >= 0 and < 10000\n", id);
+    return GPTLerror ("GPTLpr: bad id=%d for output file. Must be >= 0 and < 10000\n", id);
 
   sprintf (outfile, "timing.%d", id);
 
   if ( ! (fp = fopen (outfile, "w")))
     fp = stderr;
 
-  sum = GPTallocate (nthreads * sizeof (float));
+  sum = GPTLallocate (nthreads * sizeof (float));
 
   for (t = 0; t < nthreads; ++t) {
     if (t > 0)
@@ -619,7 +619,7 @@ int GPTpr (const int id)   /* output file will be named "timing.<id>" */
     }
 
 #ifdef HAVE_PAPI
-    GPT_PAPIprstr (fp);
+    GPTL_PAPIprstr (fp);
 #endif
 
     fprintf (fp, "\n");        /* Done with titles, go to next line */
@@ -657,7 +657,7 @@ int GPTpr (const int id)   /* output file will be named "timing.<id>" */
     }
 
 #ifdef HAVE_PAPI
-    GPT_PAPIprstr (fp);
+    GPTL_PAPIprstr (fp);
 #endif
 
     fprintf (fp, "\n");
@@ -769,7 +769,7 @@ static void printstats (const Timer *timer,     /* timer to print */
   float elapse;        /* elapsed time */
 
   if ((ticks_per_sec = sysconf (_SC_CLK_TCK)) == -1)
-    (void) GPTerror ("printstats: token _SC_CLK_TCK is not defined\n");
+    (void) GPTLerror ("printstats: token _SC_CLK_TCK is not defined\n");
 
   /* Indent to depth of this timer */
 
@@ -808,7 +808,7 @@ static void printstats (const Timer *timer,     /* timer to print */
   }
 
 #ifdef HAVE_PAPI
-  GPT_PAPIpr (fp, &timer->aux);
+  GPTL_PAPIpr (fp, &timer->aux);
 #endif
 
   fprintf (fp, "\n");
@@ -849,7 +849,7 @@ static void add (Timer *tout,
     tout->cpu.accum_stime += tin->cpu.accum_stime;
   }
 #ifdef HAVE_PAPI
-  GPT_PAPIadd (&tout->aux, &tin->aux);
+  GPTL_PAPIadd (&tout->aux, &tin->aux);
 #endif
 }
 
