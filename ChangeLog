@@ -1,3 +1,4 @@
+gpt1_2: Changed GPT to GPTL to avoid overlap with other utilities named GPT...
 gpt1_1: Added README and man pages.  Better commenting.  Fixed bug in min
         calcs in GPTstop.
 gpt1_0: Added PAPI support.  For whatever reason, on IBM get negative
