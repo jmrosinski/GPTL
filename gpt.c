@@ -548,9 +548,9 @@ int GPTpr (const int id)
 
       foundany = false;
       first = true;
+      sumstats = *ptr;
       for (n = 1; n < nthreads; ++n) {
 	found = false;
-	sumstats = *ptr;
 	for (tptr = timers[n]; tptr && ! found; tptr = tptr->next) {
 	  if (STRMATCH (ptr->name, tptr->name)) {
 
