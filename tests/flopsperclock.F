@@ -1,7 +1,7 @@
       program flopsperclock
       implicit none
 
-      include '../gpt.inc'
+#include "../gpt.inc"
 
       integer iter, ret, n
 

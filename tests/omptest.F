@@ -1,7 +1,7 @@
       program omptest
       implicit none
 
-      include '../gpt.inc'
+#include "../gpt.inc"
 
       integer ret, iter
       
@@ -51,7 +51,8 @@
           
       subroutine sub(iter)
       implicit none
-      include '../gpt.inc'
+
+#include "../gpt.inc"
 
       character*7 name
       integer iter, ret
@@ -85,7 +86,8 @@
 
       subroutine sub2(iter)
       implicit none
-      include '../gpt.inc'
+
+#include "../gpt.inc"
 
       integer iter, ret
       real sum1, sum2, x

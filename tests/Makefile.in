@@ -1,12 +1,12 @@
 CC           = @CC@
 CFLAGS       = @CFLAGS@ @PAPIPREP@
 THREADFLAGS  = @THREADFLAGS@ @THREADDEFS@
-LDFLAGS      = -L.. -lgpt @LIBS@ @LDFLAGS@ @CFLAGS@ @THREADFLAGS@ @PAPILIB@
+LDFLAGS      = -L.. -lgpt @LIBS@ @LDFLAGS@ @CFLAGS@ @THREADFLAGS@
 
 FC           = @F77@
 FFLAGS       = @FFLAGS@ @PAPIPREP@
 FTHREADFLAGS = @FTHREADFLAGS@
-FLDFLAGS     = -L.. -lgpt @THREADFLAGS@ @PAPILIB@
+FLDFLAGS     = -L.. -lgpt @LIBS@ @LDFLAGS@ @THREADFLAGS@
 
 COBJS = llcost.o depth.o overhead.o
 CEXES = llcost   depth   overhead

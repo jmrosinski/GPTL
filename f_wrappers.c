@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.8 2004-10-25 03:27:10 rosinski Exp $
+** $Id: f_wrappers.c,v 1.9 2004-10-30 17:16:16 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines
 */
@@ -101,8 +101,10 @@ int gptsetoption (int *option, int *val)
   return GPTsetoption (*option, (bool) *val);
 }
 
+#ifdef HAVE_PAPI
 void gptpapiprinttable ()
 {
   GPTPAPIprinttable ();
   return;
 }
+#endif

@@ -4,14 +4,48 @@ AC_LANG(C)
 
 AC_PROG_MAKE_SET
 
-dnl C compiler
-AC_PROG_CC(xlc_r cc_r xlc pgcc icc cc gcc g++)
+#Get the OS type
+OS="`uname | tr '[A-Z]' '[a-z]'`"
+case "$OS" in
+  linux) OS=linux;;
+  sunos)   OS=solaris ;;
+  irix64)  OS=irix ;;
+  aix) OS=aix;;
+esac
 
-dnl Fortran compiler
-AC_PROG_F77(xlf90_r xlf90 pgf90 ifort lf95 f90 g95 g77 f77)
+dnl C and Fortran compilers
+if test "$OS" = linux ; then
+  AC_PROG_CC(cc gcc g++ icc pgcc)
+  AC_PROG_F77(g77 f77 pgf90 ifort lf95 g95)
+elif test "$OS" = solaris ; then
+  AC_PROG_CC(cc gcc g++)
+  AC_PROG_F77(f90 g77 f77)
+elif test "$OS" = irix ; then
+  AC_PROG_CC(cc gcc g++)
+  AC_PROG_F77(f90 g77 f77)
+elif test "$OS" = aix ; then
+  AC_PROG_CC(cc_r xlc_r cc xlc gcc g++)
+  AC_PROG_F77(xlf90_r xlf90)
+else
+  AC_PROG_CC
+  AC_PROG_F77
+fi
 
 dnl Whether to include PAPI lib
-AC_ARG_ENABLE(papi,[--enable-papi],PAPIPREP="-I/home/rosinski/include -DHAVE_PAPI";PAPILIB="-L/home/rosinski/lib -lpapi",)
+AC_ARG_ENABLE([papi],[--enable-papi],[PAPI=YES;PAPIOBJS=gpt_papi.o],[PAPI=NO])
+
+if test "$PAPI" = YES ; then
+  AC_DEFINE([HAVE_PAPI])
+  if test "x$PAPI_DIR" != x ; then
+    PAPIPREP="-I$PAPI_DIR/include"
+    LDFLAGS="-L$PAPI_DIR/lib -lpapi"
+  fi
+dnl will add -lpapi if successful
+  AC_CHECK_LIB(papi, PAPI_library_init,,
+	       [AC_MSG_ERROR([not found. Rebuild with PAPI_DIR or w/o --enable-papi])])
+fi
+
+dnl AC_ARG_ENABLE(papi,[--enable-papi],PAPIPREP="-I/home/rosinski/include -DHAVE_PAPI";PAPILIB="-L/home/rosinski/lib -lpapi",)
 
 dnl Whether to enable debugging
 AC_ARG_ENABLE(debug,[--enable-debug],CFLAGS=-g;FFLAGS=-g,)
@@ -69,11 +103,9 @@ AC_FUNC_VPRINTF
 AC_CHECK_FUNCS(gettimeofday)
 
 AC_SUBST(FDEFS)
-AC_SUBST(FLDFLAGS)
-AC_SUBST(CDEFS)
 AC_SUBST(THREADDEFS)
 AC_SUBST(THREADFLAGS)
 AC_SUBST(FTHREADFLAGS)
 AC_SUBST(PAPIPREP)
-AC_SUBST(PAPILIB)
+AC_SUBST(PAPIOBJS)
 AC_OUTPUT(Makefile tests/Makefile)

@@ -5,7 +5,7 @@
       real*8 sum(10)
       real*8 x
 
-      include '../gpt.inc'
+#include "../gpt.inc"
 
       if (gptsetoption (gptcpu, 1) < 0) stop 99
       if (gptsetoption (gptwall, 1) < 0) stop 99

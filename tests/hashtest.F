@@ -1,7 +1,7 @@
       program hashtest
       implicit none
 
-      include '../gpt.inc'
+#include "../gpt.inc"
 
       integer niter
       integer ntpt
@@ -40,7 +40,7 @@
       subroutine sub (start, ntpt)
       implicit none
 
-      include '../gpt.inc'
+#include "../gpt.inc"
 
       integer start
       integer ntpt

@@ -1,7 +1,7 @@
       program errtest
       implicit none
 
-      include '../gpt.inc'
+#include "../gpt.inc"
 
       integer ret, iter
       integer val

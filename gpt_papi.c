@@ -1,6 +1,4 @@
-#ifdef HAVE_PAPI
 #include <papi.h>
-#endif
 
 #if ( defined THREADED_OMP )
 #include <omp.h>
@@ -16,7 +14,6 @@ typedef struct {
   char *str;
 } Papientry;
 
-#ifdef HAVE_PAPI
 static Papientry papitable [] = {
   {PAPI_L1_DCM, "L1 Dcache miss  ", "Level 1 data cache misses"},
   {PAPI_L1_ICM, "L1 Icache miss  ", "Level 1 instruction cache misses"},
@@ -280,4 +277,3 @@ void GPT_PAPIadd (Papistats *auxout,
   for (n = 0; n < nevents; n++)
     auxout->accum[n] += auxin->accum[n];
 }
-#endif

@@ -4,7 +4,7 @@ CFLAGS   = -DHASH @CFLAGS@ @THREADFLAGS@ @FDEFS@ @THREADDEFS@ @DEFS@ @PAPIPREP@
 LIBNAME  = libgpt.a
 LIBDIR   = @prefix@/lib
 INCDIR   = @prefix@/include
-OBJS     = camwrappers.o f_wrappers.o gpt.o util.o threadutil.o gpt_papi.o
+OBJS     = camwrappers.o f_wrappers.o gpt.o util.o threadutil.o @PAPIOBJS@
 @SET_MAKE@
 
 $(LIBNAME): $(OBJS)
@@ -24,7 +24,7 @@ tests/all:
 	(cd tests; $(MAKE) all)
 
 clean:
-	rm $(OBJS)
+	rm $(OBJS) gpt_papi.o $(LIBNAME)
 	(cd tests; $(MAKE) clean)
 
 camwrappers.o: gpt.h private.h
