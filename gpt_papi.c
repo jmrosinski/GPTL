@@ -204,7 +204,7 @@ int GPT_PAPIstart (const int mythread,
   
   /* If no events are to be counted just return */
 
-  if (EventSet[mythread] == PAPI_NULL)
+  if (nevents == 0)
     return 0;
 
   if ( ! started[mythread]) {
@@ -239,7 +239,7 @@ int GPT_PAPIstop (const int mythread,
 
   /* If no events are to be counted just return */
 
-  if (EventSet[mythread] == PAPI_NULL)
+  if (nevents == 0)
     return 0;
 
   if ((ret = PAPI_read (EventSet[mythread], papicounters[mythread])) != PAPI_OK)
