@@ -17,8 +17,9 @@ static int *max_name_len;        /* max length of timer name */
 static int *current_depth;       /* current depth in timer tree */
 static int nthreads            = 1;     /* num threads.  1 means no threading */
 static bool initialized       = false; /* GPTinitialize has been called */
-static Settings primary[2] = {GPTwall, "Wallclock max       min     Overhead  ", true,
-			      GPTcpu,  "Usr       sys       usr+sys",            false};
+static Settings primary[2] = {
+  GPTwall, "Wallclock","Wallclock max       min     Overhead  ", true,
+  GPTcpu,  "Cpu",      "Usr       sys       usr+sys",            false};
 static const int wallidx = 0;
 static const int cpuidx = 1;
 static bool wallenabled;
@@ -64,6 +65,7 @@ int GPTsetoption (Option option,     /* option name */
   for (n = 0; n < 2; n++) {
     if (primary[n].option == option) {
       primary[n].enabled = (bool) val;
+      printf ("GPTsetoption: option %s set to %d\n", primary[n].name, val);
       break;
     }
   }
@@ -72,13 +74,13 @@ int GPTsetoption (Option option,     /* option name */
     for (n = 0; n < naux; n++) {
       if (aux[n].option == option) {
 	aux[n].enabled = (bool) val;
+	printf ("GPTsetoption: option %s set to %d\n", aux[n].name, val);
 	break;
       }
     }
     if (n == naux)
-      return GPTerror ("GPTsetoption: option %s not found\n", option);
+      return GPTerror ("GPTsetoption: option %d not found\n", (int) option);
   }
-  printf ("Option %d enabled\n", (int) option);
   return 0;
 }
 

@@ -4,6 +4,15 @@
       parameter (GPTwall = 1)
       parameter (GPTcpu  = 2)
 
+! for compatibility with CAM entries
+
+      integer wall
+      integer usrsys
+      parameter (wall = GPTwall)
+      parameter (usrsys = GPTcpu)
+
+! Externals
+
       integer gptsetoption
       integer gptinitialize
       integer gptstart

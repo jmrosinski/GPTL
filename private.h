@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.6 2004-10-14 19:42:41 rosinski Exp $
+$Id: private.h,v 1.7 2004-10-14 21:52:03 rosinski Exp $
 */
 
 #include "gpt.h"
@@ -56,8 +56,9 @@ typedef struct TIMER {
 } Timer;
 
 typedef struct {
-  Option option;
-  char *str;
+  const Option option;
+  const char *name;
+  const char *str;
   bool enabled;
 } Settings;
 
