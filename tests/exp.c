@@ -1,6 +1,6 @@
 #include <math.h>
-#include <sys/time.h>     // gettimeofday
-#include <unistd.h>       // gettimeofday
+#include <sys/time.h>     /* gettimeofday */
+#include <unistd.h>       /* gettimeofday */
 #include <stdio.h>
 #include "../gpt.h"
 main()
@@ -9,7 +9,7 @@ main()
   int i,n;
   double sum;
 
-  struct timeval tp1;      // argument to gettimeofday
+  struct timeval tp1;      /* argument to gettimeofday */
 
   GPTsetoption (GPTcpu, 1);
   GPTsetoption (GPTwall, 1);
@@ -22,7 +22,7 @@ main()
     printf ("n=%d\n", n);
     sprintf (name,"%s%4.4d","loop_",n+1);
     GPTstart(name);
-    gettimeofday (&tp1, 0);   // for overhead est.
+    gettimeofday (&tp1, 0);   /* for overhead est. */
     GPTstop(name);
   }
   GPTstart("loop_99");
@@ -39,7 +39,7 @@ main()
   GPTstart("usleep");
   for (n = 0; n < 1000; n++) {
     GPTstart("usleep1000");
-    //    usleep(1000);
+    /*    usleep(1000); */
     GPTstop("usleep1000");
   }  
   GPTstop("usleep");

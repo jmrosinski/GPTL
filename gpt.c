@@ -13,8 +13,8 @@
 static Timer **timers = 0;       /* linked list of timers */
 static Timer **last = 0;         /* last element in list */
 static int *max_depth;             /* maximum indentation level */
-static int *max_name_len;        // max length of timer name
-static int *current_depth;       // current depth in timer tree
+static int *max_name_len;        /* max length of timer name */
+static int *current_depth;       /* current depth in timer tree */
 static int nthreads            = 1;     /* num threads.  1 means no threading */
 static bool initialized       = false; /* GPTinitialize has been called */
 static Settings primary[2] = {GPTwall, "Wallclock max       min     Overhead  ", true,
@@ -23,14 +23,14 @@ static const int wallidx = 0;
 static const int cpuidx = 1;
 static bool wallenabled;
 static bool cpuenabled;
-static int naux = 0;               // number of auxiliary stats
+static int naux = 0;               /* number of auxiliary stats */
 static Settings aux[1] = {GPTother, "none", false};
 
 #if ( defined THREADED_OMP )
 static omp_lock_t lock;
 #endif
 
-// Local function prototypes
+/* Local function prototypes */
 
 static void printstats (Timer *, FILE *, int, bool);
 static void *allocate (int);
@@ -53,10 +53,10 @@ static long ticks_per_sec; /* clock ticks per second */
 ** Return value: 0 (success) or -1 (failure)
 */
 
-int GPTsetoption (Option option,     // option name
-		  int val)           // whether to enable
+int GPTsetoption (Option option,     /* option name */
+		  int val)           /* whether to enable */
 {
-  int n;   // loop index
+  int n;   /* loop index */
 
   if (initialized)
     return (GPTerror ("GPTsetoption: Options must be set BEFORE GPTinitialize\n"));
@@ -136,7 +136,7 @@ int GPTinitialize (void)
   if (get_thread_num () > 0) 
     return GPTerror ("GPTinitialize: should only be called by master thread\n");
 
-  // Set enabled flags for speed
+  /* Set enabled flags for speed */
 
   wallenabled = primary[wallidx].enabled;
   cpuenabled  = primary[cpuidx].enabled;
@@ -166,7 +166,7 @@ int GPTstart (char *name)       /* timer name */
   int mythread;                 /* thread index (of this thread) */
   int depth0;                   /* indentation level for this timer */
   int ret;                      /* return code */
-  int depth;                    // depth in tree of timers which are on
+  int depth;                    /* depth in tree of timers which are on */
 
   /*
   ** 1st system timer call is solely for overhead timing
@@ -208,7 +208,7 @@ int GPTstart (char *name)       /* timer name */
     ptr = (Timer *) allocate (sizeof (Timer));
     memset (ptr, 0, sizeof (Timer));
 
-    // Truncate input name if longer than MAX_CHARS characters 
+    /* Truncate input name if longer than MAX_CHARS characters  */
 
     nchars = MIN (strlen (name), MAX_CHARS);
     max_name_len[mythread] = MAX (nchars, max_name_len[mythread]);
@@ -433,20 +433,20 @@ int GPTreset (void)
   return 0;
 }
 
-// GPTpr: Print values of all timers
+/* GPTpr: Print values of all timers */
 
 int GPTpr (int id)
 {
-  FILE *fp;                // file handle to write to
-  Timer *ptr;              // walk through master thread linked list
-  Timer *tptr;             // walk through slave threads linked lists
+  FILE *fp;                /* file handle to write to */
+  Timer *ptr;              /* walk through master thread linked list */
+  Timer *tptr;             /* walk through slave threads linked lists */
   Timer sumstats;
-  int n, nn;               // indices
-  char outfile[11];        // name of output file: timing.xxx
-  float sum;               // sum of overhead values (per thread)
-  bool found;              // jump out of loop when name found
-  bool foundany;           // whether summation print necessary
-  bool first;              // flag 1st time entry found
+  int n, nn;               /* indices */
+  char outfile[11];        /* name of output file: timing.xxx */
+  float sum;               /* sum of overhead values (per thread) */
+  bool found;              /* jump out of loop when name found */
+  bool foundany;           /* whether summation print necessary */
+  bool first;              /* flag 1st time entry found */
 
   if ( ! initialized)
     return GPTerror ("GPTpr: GPTinitialize() has not been called\n");
@@ -462,10 +462,10 @@ int GPTpr (int id)
   for (n = 0; n < nthreads; ++n) {
     fprintf (fp, "Stats for thread %d:\n", n);
 
-    for (nn = 0; nn < max_depth[n]; ++nn)    // max indent level (depth starts at 1)
+    for (nn = 0; nn < max_depth[n]; ++nn)    /* max indent level (depth starts at 1) */
       fprintf (fp, "  ");
 
-    for (nn = 0; nn < max_name_len[n]; ++nn) // longest timer name
+    for (nn = 0; nn < max_name_len[n]; ++nn) /* longest timer name */
       fprintf (fp, " ");
 
     fprintf (fp, "Called   ");
@@ -478,14 +478,14 @@ int GPTpr (int id)
       if (aux[nn].enabled)
 	fprintf (fp, "%s", aux[nn].str);
 
-    // Done with titles, go to next line
+    /* Done with titles, go to next line */
 
     fprintf (fp, "\n");
 
     for (ptr = timers[n]; ptr; ptr = ptr->next)
       printstats (ptr, fp, n, true);
 
-    // Sum of overhead across timers is meaningful
+    /* Sum of overhead across timers is meaningful */
 
     sum = 0;
     for (ptr = timers[n]; ptr; ptr = ptr->next)
@@ -493,13 +493,13 @@ int GPTpr (int id)
     fprintf (fp, "Overhead sum = %9.3f wallclock seconds\n\n", sum);
   }
 
-  // Print per-name stats for all threads
+  /* Print per-name stats for all threads */
 
   if (nthreads > 1) {
     fprintf (fp, "\nSame stats sorted by timer for threaded regions:\n");
     fprintf (fp, "Thd ");
 
-    for (nn = 0; nn < max_name_len[0]; ++nn) // longest timer name
+    for (nn = 0; nn < max_name_len[0]; ++nn) /* longest timer name */
       fprintf (fp, " ");
 
     fprintf (fp, "Called   ");
@@ -516,9 +516,9 @@ int GPTpr (int id)
 
     for (ptr = timers[0]; ptr; ptr = ptr->next) {
       
-      // To print sum stats, create a new timer, accumulate the
-      // stats using the public "add" method, then invoke the print method.  
-      // delete when done
+      /* To print sum stats, create a new timer, accumulate the */
+      /* stats using the public "add" method, then invoke the print method.   */
+      /* delete when done */
 
       foundany = false;
       first = true;
@@ -528,7 +528,7 @@ int GPTpr (int id)
 	for (tptr = timers[n]; tptr && ! found; tptr = tptr->next) {
 	  if (STRMATCH (ptr->name, tptr->name)) {
 
-	    // Only print thread 0 when this timer found for other threads
+	    /* Only print thread 0 when this timer found for other threads */
 
 	    if (first) {
 	      first = false;
@@ -555,12 +555,12 @@ int GPTpr (int id)
   return 0;
 }
 
-// printstats: print a single timer
+/* printstats: print a single timer */
 
 static void printstats (Timer *timer,
 			FILE *fp,
-			int n,            // thread number
-			bool doindent)         // output stream
+			int n,            /* thread number */
+			bool doindent)         /* output stream */
 {
   int i;
   int indent;
@@ -574,21 +574,21 @@ static void printstats (Timer *timer,
   if ((ticks_per_sec = sysconf (_SC_CLK_TCK)) == -1)
     (void) GPTerror ("printstats: token _SC_CLK_TCK is not defined\n");
 
-  // Indent to depth of this timer
+  /* Indent to depth of this timer */
 
   if (doindent)
-    for (indent = 0; indent < timer->depth; ++indent)  // depth starts at 1
+    for (indent = 0; indent < timer->depth; ++indent)  /* depth starts at 1 */
       fprintf (fp, "  ");
 
   fprintf (fp, "%s", timer->name);
 
-  // Pad to length of longest name
+  /* Pad to length of longest name */
 
   extraspace = max_name_len[n] - strlen (timer->name);
   for (i = 0; i < extraspace; ++i)
     fprintf (fp, " ");
 
-  // Pad to max indent level
+  /* Pad to max indent level */
 
   if (doindent)
     for (indent = timer->depth; indent < max_depth[n]; ++indent)

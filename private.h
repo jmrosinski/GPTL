@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.4 2004-10-14 19:25:54 rosinski Exp $
+$Id: private.h,v 1.5 2004-10-14 19:41:04 rosinski Exp $
 */
 
 #include "gpt.h"
@@ -18,8 +18,6 @@ $Id: private.h,v 1.4 2004-10-14 19:25:54 rosinski Exp $
 typedef enum {false = 0, true = 1} bool;
 
 typedef struct {
-  //  char *name = "wall";
-  //  char *printstr = "Wallclock max       min";
   long last_sec;
   long last_usec;
   long accum_sec;
@@ -30,8 +28,6 @@ typedef struct {
 } Wallstats;
 
 typedef struct {
-  //  char *name = "cpu";
-  //  char *printstr = "Usr       sys       usr+sys";
   long last_utime;
   long last_stime;
   long accum_utime;
@@ -45,8 +41,8 @@ typedef struct TIMER {
   char *name;
   int depth;
   long count;
-  int *max_depth;         // max depth in timer tree (for indentation)
-  int *current_depth;     // current depth in timer tree (for indentation)
+  int *max_depth;         /* max depth in timer tree (for indentation) */
+  int *current_depth;     /* current depth in timer tree (for indentation) */
   int indent_level;
   Wallstats wall;
   Cpustats cpu;
@@ -64,6 +60,6 @@ typedef struct {
   bool enabled;
 } Settings;
 
-// Function prototypes
+/* Function prototypes */
 
 extern int GPTerror (const char *, ...);
