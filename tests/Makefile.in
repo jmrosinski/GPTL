@@ -3,7 +3,9 @@ CFLAGS       = @CFLAGS@ @PAPIPREP@ @BITFLAGS@
 THREADFLAGS  = @THREADFLAGS@ @THREADDEFS@
 LDFLAGS      = @THREADFLAGS@ @CFLAGS@ @THREADFLAGS@ @BITFLAGS@ -L.. -lgpt @LDFLAGS@ @LIBS@
 
-FC           = @F77@
+# Don't use FC because this somethimes results in different defaults make vs gmake
+
+F77          = @F77@
 FFLAGS       = @FFLAGS@ @PAPIPREP@ @BITFLAGS@ @DEFS@
 FTHREADFLAGS = @FTHREADFLAGS@
 FLDFLAGS     = @FTHREADFLAGS@ @BITFLAGS@ -L.. -lgpt @LDFLAGS@ @LIBS@
@@ -27,17 +29,17 @@ depth: depth.o
 overhead: overhead.o
 	$(CC) -o $@ overhead.o $(LDFLAGS)
 flopsperclock: flopsperclock.o
-	$(FC) -o $@ flopsperclock.o $(FLDFLAGS)
+	$(F77) -o $@ flopsperclock.o $(FLDFLAGS)
 omptest: omptest.o
-	$(FC) -o $@ omptest.o $(FLDFLAGS)
+	$(F77) -o $@ omptest.o $(FLDFLAGS)
 errtest: errtest.o
-	$(FC) -o $@ errtest.o $(FLDFLAGS)
+	$(F77) -o $@ errtest.o $(FLDFLAGS)
 opscost: opscost.o
-	$(FC) -o $@ opscost.o $(FLDFLAGS)
+	$(F77) -o $@ opscost.o $(FLDFLAGS)
 hashtest: hashtest.o
-	$(FC) -o $@ hashtest.o $(FLDFLAGS)
+	$(F77) -o $@ hashtest.o $(FLDFLAGS)
 papitest: papitest.o
-	$(FC) -o $@ papitest.o $(FLDFLAGS)
+	$(F77) -o $@ papitest.o $(FLDFLAGS)
 
 clean:
 	rm $(FOBJS) $(COBJS) $(FEXES) $(CEXES)
@@ -47,6 +49,6 @@ clean:
 overhead.o: overhead.c
 	$(CC) -c $(CFLAGS) $(THREADFLAGS) $<
 papitest.o: papitest.F
-	$(FC) -c $(FFLAGS) $(FTHREADFLAGS) $<
+	$(F77) -c $(FFLAGS) $(FTHREADFLAGS) $<
 omptest.o: omptest.F
-	$(FC) -c $(FFLAGS) $(FTHREADFLAGS) $<
+	$(F77) -c $(FFLAGS) $(FTHREADFLAGS) $<
