@@ -2,15 +2,17 @@ CC       = @CC@
 CFLAGS   = @CFLAGS@
 FC       = @F77@
 FFLAGS   = @FFLAGS@
-LDFLAGS  = -L.. -lgpt @LIBS@ @LDFLAGS@ $(CFLAGS)
-FLDFLAGS = -L.. -lgpt
+LDFLAGS  = -L.. -lgpt @LIBS@ @LDFLAGS@ $(CFLAGS) -lefence
+FLDFLAGS = -L.. -lgpt -lefence
 LOADER = @F77@
 
 COBJS = exp.o timetiming.o llcost.o depth.o
 CEXES = exp   timetiming   llcost   depth
 
-FOBJS = cheap.o expensive.o flopsperclock.o omptest.o errtest.o overhead.o opscost.o
-FEXES = cheap   expensive   flopsperclock   omptest   errtest   overhead   opscost
+FOBJS = cheap.o expensive.o flopsperclock.o omptest.o errtest.o overhead.o opscost.o \
+        hashtest.o
+FEXES = cheap   expensive   flopsperclock   omptest   errtest   overhead   opscost \
+        hashtest
 
 all: $(CEXES) $(FEXES)
 cexes: $(CEXES)
@@ -48,6 +50,9 @@ overhead: overhead.o
 
 opscost: opscost.o
 	$(LOADER) -o $@ opscost.o $(FFLAGS) $(FLDFLAGS)
+
+hashtest: hashtest.o
+	$(LOADER) -o $@ hashtest.o $(FFLAGS) $(FLDFLAGS)
 
 clean:
 	$(RM) $(FOBJS) $(COBJS) $(FEXES) $(CEXES)

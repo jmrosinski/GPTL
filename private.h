@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.8 2004-10-15 04:56:27 rosinski Exp $
+$Id: private.h,v 1.9 2004-10-16 00:03:45 rosinski Exp $
 */
 
 #include "gpt.h"
@@ -61,6 +61,11 @@ typedef struct {
   const char *str;
   bool enabled;
 } Settings;
+
+typedef struct {
+  int nument;
+  Timer **entries;
+} Hashtable;
 
 /* Function prototypes */
 

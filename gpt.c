@@ -4,6 +4,7 @@
 #include <unistd.h>        /* gettimeofday */
 #include <stdio.h>
 #include <string.h>        /* memset, strcmp (via STRMATCH) */
+#include <assert.h>
 #if ( defined THREADED_OMP )
 #include <omp.h>
 #endif
@@ -27,6 +28,8 @@ static bool wallenabled;
 static bool cpuenabled;
 static int naux = 0;               /* number of auxiliary stats */
 static Settings aux[] = {{GPTother, "none", false}};
+static const int tablesize = 128*MAX_CHARS;
+static Hashtable **hashtable;
 
 #if ( defined THREADED_OMP )
 static omp_lock_t lock;
@@ -34,13 +37,14 @@ static omp_lock_t lock;
 
 /* Local function prototypes */
 
-static void printstats (Timer *, FILE *, int, bool);
-static void *allocate (int);
-static void add (Timer *, Timer *);
+static void printstats (const Timer *, FILE *, const int, const bool);
+static void *allocate (const int);
+static void add (Timer *, const Timer *);
 static int get_thread_num (void);
 static int lock_mutex (void);
 static int unlock_mutex (void);
 static int get_cpustamp (long *, long *);
+static Timer *getentry (const Hashtable *, const char *, int *);
 
 static long ticks_per_sec; /* clock ticks per second */
 
@@ -54,8 +58,8 @@ static long ticks_per_sec; /* clock ticks per second */
 ** Return value: 0 (success) or -1 (failure)
 */
 
-int GPTsetoption (Option option,     /* option name */
-		  int val)           /* whether to enable */
+int GPTsetoption (const Option option,     /* option name */
+		  const int val)           /* whether to enable */
 {
   int n;   /* loop index */
 
@@ -98,6 +102,7 @@ int GPTsetoption (Option option,     /* option name */
 int GPTinitialize (void)
 {
   int n;             /* index */
+  int i;             /* index */
 
   if (initialized)
     return GPTerror ("GPTinitialize() has already been called\n");
@@ -111,6 +116,8 @@ int GPTinitialize (void)
   omp_init_lock (&lock);
 
   nthreads = omp_get_max_threads ();
+  if (get_thread_num () > 0)
+    return GPTerror ("GPTinitialize: MUST be called only by master thread");
 
 #endif
 
@@ -123,6 +130,7 @@ int GPTinitialize (void)
   current_depth = (int *)    allocate (nthreads * sizeof (int));
   max_depth     = (int *)    allocate (nthreads * sizeof (int));
   max_name_len  = (int *)    allocate (nthreads * sizeof (int));
+  hashtable     = (Hashtable **) allocate (nthreads * sizeof (Hashtable *));
 
   /*
   ** Initialize array values
@@ -133,6 +141,11 @@ int GPTinitialize (void)
     current_depth[n] = 0;
     max_depth[n]     = 0;
     max_name_len[n]  = 0;
+    hashtable[n] = (Hashtable *) allocate (tablesize * sizeof (Hashtable));
+    for (i = 0; i < tablesize; i++) {
+      hashtable[n][i].nument = 0;
+      hashtable[n][i].entries = 0;
+    }
   }
 
   if (get_thread_num () > 0) 
@@ -159,13 +172,15 @@ int GPTinitialize (void)
 ** Return value: 0 (success) or -1 (failure)
 */
 
-int GPTstart (char *name)       /* timer name */
+int GPTstart (const char *name)       /* timer name */
 {
   struct timeval tp1, tp2;      /* argument to gettimeofday */
   Timer *ptr;                   /* linked list pointer */
 
   int nchars;                   /* number of characters in timer */
   int mythread;                 /* thread index (of this thread) */
+  int indx;
+  int nument;
 
   /*
   ** 1st system timer call is solely for overhead timing
@@ -185,7 +200,12 @@ int GPTstart (char *name)       /* timer name */
   ** match but are currently active, increase the indentation level by 1
   */
 
+#ifdef HASH
+  ptr = getentry (hashtable[mythread], name, &indx);
+  assert (indx < tablesize);
+#else
   for (ptr = timers[mythread]; ptr && ! STRMATCH (name, ptr->name); ptr = ptr->next);
+#endif
 
   if (ptr && ptr->onflg)
     return GPTerror ("GPTstart thread %d: timer %s was already on: "
@@ -219,6 +239,14 @@ int GPTstart (char *name)       /* timer name */
       timers[mythread] = ptr;
 
     last[mythread] = ptr;
+
+#ifdef HASH
+    ++hashtable[mythread][indx].nument;
+    nument = hashtable[mythread][indx].nument;
+    hashtable[mythread][indx].entries = realloc (hashtable[mythread][indx].entries,
+						 nument * sizeof (Timer *));
+    hashtable[mythread][indx].entries[nument-1] = ptr;
+#endif
 
   } else {
 
@@ -264,7 +292,7 @@ int GPTstart (char *name)       /* timer name */
 ** Return value: 0 (success) or -1 (failure)
 */
 
-int GPTstop (char *name)
+int GPTstop (const char *name)
 {
   long delta_wtime_sec;     /* wallclock change fm GPTstart() to GPTstop() */    
   long delta_wtime_usec;    /* wallclock change fm GPTstart() to GPTstop() */
@@ -273,6 +301,7 @@ int GPTstop (char *name)
   Timer *ptr;               /* linked list pointer */
 
   int mythread;             /* thread number for this process */
+  int indx;
 
   long usr;
   long sys;
@@ -294,7 +323,11 @@ int GPTstop (char *name)
   if ((mythread = get_thread_num ()) < 0)
     return GPTerror ("GPTstop\n");
 
+#ifdef HASH
+  ptr = getentry (hashtable[mythread], name, &indx);
+#else
   for (ptr = timers[mythread]; ptr && ! STRMATCH (name, ptr->name); ptr = ptr->next);
+#endif
 
   if ( ! ptr) 
     return GPTerror ("GPTstop: timer for %s had not been started.\n", name);
@@ -362,7 +395,6 @@ int GPTstop (char *name)
     ptr->cpu.last_utime   = usr;
     ptr->cpu.last_stime   = sys;
   }
-
   return 0;
 }
 
@@ -429,13 +461,13 @@ int GPTreset (void)
 
 /* GPTpr: Print values of all timers */
 
-int GPTpr (int id)
+int GPTpr (const int id)
 {
   FILE *fp;                /* file handle to write to */
   Timer *ptr;              /* walk through master thread linked list */
   Timer *tptr;             /* walk through slave threads linked lists */
   Timer sumstats;
-  int n, nn;               /* indices */
+  int i, ii, n, nn;        /* indices */
   char outfile[11];        /* name of output file: timing.xxx */
   float sum;               /* sum of overhead values (per thread) */
   bool found;              /* jump out of loop when name found */
@@ -546,15 +578,35 @@ int GPTpr (int id)
       }
     }
   }
+
+  /*
+  ** Print hash table stats
+  */
+
+#ifdef HASH  
+  for (n = 0; n < nthreads; n++) {
+    fprintf (fp, "hashtable stats for thread %d:\n", n);
+    for (i = 0; i < tablesize; i++) {
+      int nument = hashtable[n][i].nument;
+      if (nument > 1) {
+	fprintf (fp, "hashtable[%d][%d] had %d entries:", n, i, nument);
+	for (ii = 0; ii < nument; ii++)
+	  fprintf (fp, " %s", hashtable[n][i].entries[ii]->name);
+	fprintf (fp, "\n");
+      }
+    }
+  }
+#endif
+
   return 0;
 }
 
 /* printstats: print a single timer */
 
-static void printstats (Timer *timer,
+static void printstats (const Timer *timer,
 			FILE *fp,
-			int n,            /* thread number */
-			bool doindent)         /* output stream */
+			const int n,            /* thread number */
+			const bool doindent)         /* output stream */
 {
   int i;
   int indent;
@@ -606,9 +658,9 @@ static void printstats (Timer *timer,
   fprintf (fp, "\n");
 }
 
-static void *allocate (int nbytes)
+static void *allocate (const int nbytes)
 {
-  void *ptr = 0;
+  void *ptr;
 
   if ( ! (ptr = malloc (nbytes)))
     (void) GPTerror ("allocate: malloc failed for %d bytes\n", nbytes);
@@ -617,7 +669,7 @@ static void *allocate (int nbytes)
 }
 
 static void add (Timer *tout,   
-		 Timer *tin)
+		 const Timer *tin)
 {
   if (wallenabled) {
     tout->count           += tin->count;
@@ -701,3 +753,19 @@ static int get_cpustamp (long *usr, long *sys)
   return 0;
 }
 
+static Timer *getentry (const Hashtable *hashtable, 
+			const char *name, 
+			int *indx)
+{
+  int i;
+  const char *c = name;
+
+  for (*indx = 0; *c; c++)
+    *indx += *c;
+
+  for (i = 0; i < hashtable[*indx].nument; i++)
+    if (STRMATCH (name, hashtable[*indx].entries[i]->name))
+      return hashtable[*indx].entries[i];
+
+  return 0;
+}
