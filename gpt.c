@@ -601,12 +601,12 @@ int GPTpr (const int id)
       osum += sum[n];
     }
     fprintf (fp, "OVERHEAD.SUM (wallclock seconds) = %9.3f\n", osum);
-#ifdef DIAG
-    fprintf (fp, "\n");
-    for (n = 0; n < nthreads; ++n) 
-      fprintf (fp, "novfl[%d]=%d\n", n, novfl[n]);
-#endif
   }
+#ifdef DIAG
+  fprintf (fp, "\n");
+  for (n = 0; n < nthreads; ++n) 
+    fprintf (fp, "novfl[%d]=%d\n", n, novfl[n]);
+#endif
 
   /*
   ** Print hash table stats
