@@ -1,5 +1,5 @@
 /*
-** $Id: util.c,v 1.8 2004-11-02 03:18:39 rosinski Exp $
+** $Id: util.c,v 1.9 2004-11-03 02:58:25 rosinski Exp $
 */
 
 #include <stdarg.h>
@@ -28,7 +28,7 @@ int GPTerror (const char *fmt, ...)
   va_start (args, fmt);
   
   if (fmt != NULL)
-#ifdef HAVE_VFPRINTF
+#ifdef HAVE_VPRINTF
     (void) vfprintf (stderr, fmt, args);
 #else
     (void) fprintf (stderr, "GPTerror: no vfprintf: fmt is %s\n", fmt);
