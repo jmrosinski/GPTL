@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.5 2004-10-15 16:48:11 rosinski Exp $
+** $Id: f_wrappers.c,v 1.6 2004-10-17 02:38:20 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines
 */
@@ -60,7 +60,7 @@ void gptreset ()
 
 int gptsetoption (int *option, int *val)
 {
-  return GPTsetoption (*option, (bool) *val);
+  return GPTsetoption ((Option) *option, (bool) *val);
 }
 
 int gptstamp (double *wall, double *usr, double *sys)

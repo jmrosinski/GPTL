@@ -417,7 +417,7 @@ int GPTstamp (double *wall, double *usr, double *sys)
   *sys = 0;
 
   if (times (&buf) == -1)
-    return GPTerror ("GPTstamp: times() failed. Timing bogus\n");
+    return GPTerror ("GPTstamp: times() failed. Results bogus\n");
 
   *usr = buf.tms_utime / (double) ticks_per_sec;
   *sys = buf.tms_stime / (double) ticks_per_sec;
@@ -469,10 +469,10 @@ int GPTpr (const int id)
   FILE *fp;                /* file handle to write to */
   Timer *ptr;              /* walk through master thread linked list */
   Timer *tptr;             /* walk through slave threads linked lists */
-  Timer sumstats;
+  Timer sumstats;          /* sum of same timer stats over threads */
   int i, ii, n, nn;        /* indices */
   char outfile[11];        /* name of output file: timing.xxx */
-  float sum;               /* sum of overhead values (per thread) */
+  float *sum;              /* sum of overhead values (per thread) */
   bool found;              /* jump out of loop when name found */
   bool foundany;           /* whether summation print necessary */
   bool first;              /* flag 1st time entry found */
@@ -492,12 +492,15 @@ int GPTpr (const int id)
   if ( ! (fp = fopen (outfile, "w")))
     fp = stderr;
 
+  sum = allocate (nthreads * sizeof (float));
+
   for (n = 0; n < nthreads; ++n) {
+    if (n > 0)
+      fprintf (fp, "\n");
     fprintf (fp, "Stats for thread %d:\n", n);
 
     for (nn = 0; nn < max_depth[n]; ++nn)    /* max indent level (depth starts at 1) */
       fprintf (fp, "  ");
-
     for (nn = 0; nn < max_name_len[n]; ++nn) /* longest timer name */
       fprintf (fp, " ");
 
@@ -520,10 +523,10 @@ int GPTpr (const int id)
 
     /* Sum of overhead across timers is meaningful */
 
-    sum = 0;
+    sum[n] = 0;
     for (ptr = timers[n]; ptr; ptr = ptr->next)
-      sum += ptr->wall.overhead;
-    fprintf (fp, "Overhead sum = %9.3f wallclock seconds\n\n", sum);
+      sum[n] += ptr->wall.overhead;
+    fprintf (fp, "Overhead sum = %9.3f wallclock seconds\n", sum[n]);
   }
 
   /* Print per-name stats for all threads */
@@ -584,6 +587,13 @@ int GPTpr (const int id)
 	fprintf (fp, "\n");
       }
     }
+
+    /*
+    ** Repeat overhead print in loop over threads
+    */
+
+    for (n = 0; n < nthreads; ++n)
+      fprintf (fp, "OVERHEAD.%3.3d (wallclock seconds) = %9.3f\n", n, sum[n]);
   }
 
   /*
@@ -592,7 +602,7 @@ int GPTpr (const int id)
 
 #ifdef HASH  
   for (n = 0; n < nthreads; n++) {
-    fprintf (fp, "hashtable stats for thread %d:\n", n);
+    fprintf (fp, "\nhashtable stats for thread %d:\n", n);
     for (i = 0; i < tablesize; i++) {
       int nument = hashtable[n][i].nument;
       if (nument > 1) {
@@ -605,6 +615,7 @@ int GPTpr (const int id)
   }
 #endif
 
+  free (sum);
   return 0;
 }
 
@@ -613,7 +624,7 @@ int GPTpr (const int id)
 static void printstats (const Timer *timer,
 			FILE *fp,
 			const int n,            /* thread number */
-			const bool doindent)         /* output stream */
+			const bool doindent)    /* output stream */
 {
   int i;
   int indent;
