@@ -16,7 +16,7 @@
       read (5,*) ntimers
       ntpt = ntimers / niter
 
-      call gptsetoption (gptabort_on_error, 1)
+      if (gptsetoption (gptabort_on_error, 1) < 0) stop 99
       if (gptinitialize () < 0) stop 99
 
 !$OMP PARALLEL DO PRIVATE (N, START)
@@ -38,6 +38,10 @@
       end
 
       subroutine sub (start, ntpt)
+      implicit none
+
+      include '../gpt.inc'
+
       integer start
       integer ntpt
       character*9 name
@@ -46,8 +50,8 @@
 
       do i=start,start+ntpt-1
         write (name,'(a5i4.4)') 'timer',i
-        call gptstart (name)
-        call gptstop (name)
+        if (gptstart (name) < 0) stop 99
+        if (gptstop (name) < 0) stop 99
       end do
 
       return

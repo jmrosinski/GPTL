@@ -228,7 +228,6 @@ int GPTstart (const char *name)       /* timer name */
     nchars = MIN (strlen (name), MAX_CHARS);
     max_name_len[mythread] = MAX (nchars, max_name_len[mythread]);
 
-    ptr->name = (char *) allocate (nchars+1);
     strncpy (ptr->name, name, nchars);
     ptr->name[nchars] = '\0';
     ptr->depth = current_depth[mythread];

@@ -8,7 +8,7 @@ int main ()
   int ntimers;
   
   printf ("Purpose: compare timings of basetimer1, basetimer2 and basetimer3.\n"
-	  "Difference is measure of cost of traversing linked list");
+	  "Difference is measure of cost of traversing linked list\n");
 
   printf ("Enter number of intermediate timers\n");
   scanf ("%d", &ntimers);

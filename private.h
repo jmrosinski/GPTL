@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.9 2004-10-16 00:03:45 rosinski Exp $
+$Id: private.h,v 1.10 2004-10-16 18:26:38 rosinski Exp $
 */
 
 #include "gpt.h"
@@ -35,23 +35,20 @@ typedef struct {
 } Cpustats;
 
 typedef struct {
-  int some_compilers_dont_allow_empty_structs;
+  long some_compilers_dont_allow_empty_structs;
 } Auxstats;
   
 typedef struct TIMER {
-  char *name;
+  char name[MAX_CHARS+1];
+  bool onflg;
   int depth;
   long count;
-  int *max_depth;         /* max depth in timer tree (for indentation) */
-  int *current_depth;     /* current depth in timer tree (for indentation) */
-  int indent_level;
   Wallstats wall;
   Cpustats cpu;
-  Auxstats aux;
-  bool gather_wall;
-  bool gather_cpu;
-  bool gather_aux;
-  bool onflg;
+  /*
+  ** For later when hooked to PAPI or PCL
+  *  Auxstats aux; 
+  */
   struct TIMER *next;
 } Timer;
 
