@@ -6,8 +6,8 @@ FC           = @F77@
 FFLAGS       = @PAPIPREP@ @FORTDEFS@ @FFLAGS@ @BITFLAGS@ @FTHREADFLAGS@
 FLDFLAGS     = @BITFLAGS@ @FTHREADFLAGS@ -L.. -lgptl @LDFLAGS@ @LIBS@
 
-COBJS = llcost.o depth.o overhead.o rawpapitest.o
-CEXES = llcost   depth   overhead   rawpapitest
+COBJS = avail.o llcost.o depth.o overhead.o rawpapitest.o
+CEXES = avail   llcost   depth   overhead   rawpapitest
 
 FOBJS = flopsperclock.o omptest.o errtest.o opscost.o \
         hashtest.o papitest.o
@@ -20,6 +20,9 @@ fexes: $(FEXES)
 clean:
 	rm $(FOBJS) $(COBJS) $(FEXES) $(CEXES)
 
+
+avail: avail.o
+	$(CC) -o $@ avail.o $(LDFLAGS)
 
 llcost: llcost.o
 	$(CC) -o $@ llcost.o $(LDFLAGS)
