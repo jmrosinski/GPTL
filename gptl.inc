@@ -1,10 +1,12 @@
       integer GPTLwall
       integer GPTLcpu
       integer GPTLabort_on_error
+      integer GPTLoverhead
 
       parameter (GPTLwall           = 1)
       parameter (GPTLcpu            = 2)
       parameter (GPTLabort_on_error = 3)
+      parameter (GPTLoverhead       = 4)
 
 ! for compatibility with CAM entries
 
