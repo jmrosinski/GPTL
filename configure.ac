@@ -17,7 +17,11 @@ dnl Whether to enable optimization
 AC_ARG_ENABLE(opt,[--enable-opt],CFLAGS=-O;FFLAGS=-O,)
 
 dnl need to add -qfixed to FFLAGS for Fortran tests on AIX
-if test "$F77" = xlf90 || "$F77" = xlf90_r ; then
+if test "$F77" = xlf90 ; then
+  FFLAGS="$FFLAGS -qfixed"
+fi
+
+if test "$F77" = xlf90_r ; then
   FFLAGS="$FFLAGS -qfixed"
 fi
 
