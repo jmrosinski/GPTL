@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.5 2004-10-14 19:41:04 rosinski Exp $
+$Id: private.h,v 1.6 2004-10-14 19:42:41 rosinski Exp $
 */
 
 #include "gpt.h"
@@ -35,6 +35,7 @@ typedef struct {
 } Cpustats;
 
 typedef struct {
+  int some_compilers_dont_allow_empty_structs;
 } Auxstats;
   
 typedef struct TIMER {
