@@ -363,15 +363,15 @@ int GPTstop (const char *name)
     ** microsecond accumulator.
     */
 
-    if (ptr->wall.accum_usec > 1000000) {
-      ptr->wall.accum_sec  += 1;
-      ptr->wall.accum_usec -= 1000000;
+    if (ptr->wall.accum_usec > 10000000) {
+      ptr->wall.accum_sec  += 10;
+      ptr->wall.accum_usec -= 10000000;
 #ifdef DIAG
       ++novfl[mythread];
 #endif
-    } else if (ptr->wall.accum_usec < -1000000) {
-      ptr->wall.accum_sec  -= 1;
-      ptr->wall.accum_usec += 1000000;
+    } else if (ptr->wall.accum_usec < -10000000) {
+      ptr->wall.accum_sec  -= 10;
+      ptr->wall.accum_usec += 10000000;
 #ifdef DIAG
       ++novfl[mythread];
 #endif
@@ -709,10 +709,14 @@ static void add (Timer *tout,
     tout->count           += tin->count;
     tout->wall.accum_sec  += tin->wall.accum_sec;
     tout->wall.accum_usec += tin->wall.accum_usec;
-    if (tout->wall.accum_usec > 1000000) {
-      tout->wall.accum_sec  += 1;
-      tout->wall.accum_usec -= 1000000;
+    if (tout->wall.accum_usec > 10000000) {
+      tout->wall.accum_sec  += 10;
+      tout->wall.accum_usec -= 10000000;
+    } else if (tout->wall_accum_usec < -10000000) {
+      tout->wall.accum_sec  -= 10;
+      tout->wall.accum_usec += 10000000;
     }
+      
     tout->wall.max       = MAX (tout->wall.max, tin->wall.max);
     tout->wall.min       = MIN (tout->wall.min, tin->wall.min);
     tout->wall.overhead += tin->wall.overhead;
