@@ -69,6 +69,18 @@
       if (gptstop ('total') < 0) stop 99
       if (gptpr (0) < 0) call exit(99)
 
+      if (gptreset () < 0) stop 99
+      if (gptstart ('total') < 0) stop 99
+
+!$OMP PARALLEL DO PRIVATE (iter)
+
+      do iter=1,niter
+        call sub (iter)
+      end do
+
+      if (gptstop ('total') < 0) stop 99
+      if (gptpr (1) < 0) call exit(99)
+
       stop
       end program
           

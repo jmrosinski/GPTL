@@ -14,37 +14,25 @@ static int *max_depth;           /* maximum indentation level */
 static int *max_name_len;        /* max length of timer name */
 
 typedef struct {
-  unsigned int depth;
-  int padding[31];
+  unsigned int depth;            /* depth in calling tree */
+  int padding[31];               /* padding is to mitigate false cache sharing */
 } Nofalse; 
-static Nofalse *current_depth;   /* padding is to mitigate false cache sharing */
+static Nofalse *current_depth;
 
 static int nthreads    = -1;     /* num threads. Init to bad value */
 static int maxthreads  = -1;     /* max threads (=nthreads for OMP). Init to bad value */
 static bool initialized = false; /* GPTinitialize has been called */
 
 typedef struct {
-  const Option option;
-  const char *name;
-  const char *str;
-  bool enabled;
+  const Option option;           /* wall, cpu, etc. */
+  const char *str;               /* descriptive string for printing */
+  bool enabled;                  /* flag */
 } Settings;
 
-static Settings primary[] = {
-  {GPTwall,    "Wallclock","Wallclock max       min       ", true },
-  {GPTcpu,     "Cpu",      "Usr       sys       usr+sys   ", false},
-  {GPToverhead,"Overhead", "Overhead  ",                     true }
-};
+static Settings cpustats =      {GPTcpu,      "Usr       sys       usr+sys   ", false};
+static Settings wallstats =     {GPTwall,     "Wallclock max       min       ", true };
+static Settings overheadstats = {GPToverhead, "Overhead  ",                     true };
 
-static const int nprim = sizeof (primary) / sizeof (Settings); /* number of primary opts */
-
-/* Set wall, cpu, and overhead to their primary values (just above) */
-/* This is bad coding having to set the same thing in 2 places, but the compiler */
-/* complains about "must be a constant value". */
-
-static bool wall     = true;
-static bool cpu      = false;
-static bool overhead = true;
 static const int tablesize = 128*MAX_CHARS;  /* 128 is size of ASCII char set */
 static Hashtable **hashtable;    /* table of entries hashed by sum of chars */
 static unsigned int *novfl;      /* microsecond overflow counter (only when DIAG set */
@@ -64,7 +52,7 @@ static inline Timer *getentry (const Hashtable *, const char *, int *);
 **   option: option to be set
 **   val:    value to which option should be set (nonzero=true, zero=false)
 **
-** Return value: 0 (success) or -1 (failure)
+** Return value: 0 (success) or GPTerror (failure)
 */
 
 int GPTsetoption (const int option,  /* option */
@@ -85,22 +73,23 @@ int GPTsetoption (const int option,  /* option */
     return 0;
   }
 
-  for (n = 0; n < nprim; n++) {
-    if (option == primary[n].option) {
-      primary[n].enabled = (bool) val;
-      printf ("GPTsetoption: option %s set to %d\n", primary[n].name, (bool) val);
-
-      /* Set boolean equivalents of structure members for speed */
-
-      switch (option) {
-      case GPTwall:     wall     = val; break;
-      case GPTcpu:      cpu      = val; break;
-      case GPToverhead: overhead = val; break;
-      default:                          break;
-      }
-      return 0;
-    }
+  switch (option) {
+  case GPTcpu:      
+    cpustats.enabled = val; 
+    printf ("GPTsetoption: set cpustats to %d\n", val);
+    return 0;
+  case GPTwall:     
+    wallstats.enabled = val; 
+    printf ("GPTsetoption: set wallstats to %d\n", val);
+    return 0;
+  case GPToverhead: 
+    overheadstats.enabled = val; 
+    printf ("GPTsetoption: set overheadstats to %d\n", val);
+    return 0;
+  default:
+    break;
   }
+
 #ifdef HAVE_PAPI
   if (GPT_PAPIsetoption (option, val) == 0)
     return 0;
@@ -171,13 +160,6 @@ int GPTinitialize (void)
   GPT_PAPIinitialize (maxthreads);
 #endif
 
-  /* If wallclock timer not enabled, cannot computer overhead*/
-
-  if ( ! wall) {
-    overhead = false;
-    primary[2].enabled = false;
-  }
-
   initialized = true;
   return 0;
 }
@@ -185,7 +167,7 @@ int GPTinitialize (void)
 /*
 ** GPTfinalize (): Finalization routine must be called from single-threaded
 **   region. Free all malloc'd space
-** return value: 0 (success) or -1 (failure)
+** return value: 0 (success) or GPTerror (failure)
 */
 
 int GPTfinalize (void)
@@ -197,11 +179,11 @@ int GPTfinalize (void)
   return 0;
 #endif
 
+  if ( ! initialized)
+    return GPTerror ("GPTfinalize: GPTinitialize() has not been called\n");
+
   if (get_thread_num (&nthreads, &maxthreads) > 0) 
     return GPTerror ("GPTfinalize: must only be called by master thread\n");
-
-  if ( ! initialized)
-    return GPTerror ("GPTinitialize() has not been called\n");
 
   for (n = 0; n < maxthreads; ++n) {
     free (hashtable[n]);
@@ -238,11 +220,12 @@ int GPTstart (const char *name)       /* timer name */
 {
   struct timeval tp1, tp2;      /* argument to gettimeofday */
   Timer *ptr;                   /* linked list pointer */
+  Timer **eptr;                 /* for realloc */
 
   int nchars;                   /* number of characters in timer */
   int mythread;                 /* thread index (of this thread) */
-  int indx;
-  int nument;
+  int indx;                     /* hash table index */
+  int nument;                   /* number of entries for a hash collision */
 
 #ifdef DISABLE_TIMERS
   return 0;
@@ -253,12 +236,12 @@ int GPTstart (const char *name)       /* timer name */
 
   /* 1st calls to overheadstart and gettimeofday are solely for overhead timing */
 
-  if (overhead) {
+  if (overheadstats.enabled) {
 #ifdef HAVE_PAPI
     (void) GPT_PAPIoverheadstart (mythread);
 #endif
 
-    if (wall)
+    if (wallstats.enabled)
       gettimeofday (&tp1, 0);
   }
 
@@ -307,8 +290,12 @@ int GPTstart (const char *name)       /* timer name */
 #ifdef HASH
     ++hashtable[mythread][indx].nument;
     nument = hashtable[mythread][indx].nument;
-    hashtable[mythread][indx].entries = realloc (hashtable[mythread][indx].entries,
-						 nument * sizeof (Timer *));
+
+    eptr = realloc (hashtable[mythread][indx].entries, nument * sizeof (Timer *));
+    if ( ! eptr)
+      return GPTerror ("GPTstart: realloc error\n");
+
+    hashtable[mythread][indx].entries = eptr;						 
     hashtable[mythread][indx].entries[nument-1] = ptr;
 #endif
 
@@ -327,7 +314,7 @@ int GPTstart (const char *name)       /* timer name */
 
   ptr->onflg = true;
 
-  if (cpu && get_cpustamp (&ptr->cpu.last_utime, &ptr->cpu.last_stime) < 0)
+  if (cpustats.enabled && get_cpustamp (&ptr->cpu.last_utime, &ptr->cpu.last_stime) < 0)
     return GPTerror ("GPTstart: get_cpustamp error");
   
   /*
@@ -335,11 +322,11 @@ int GPTstart (const char *name)       /* timer name */
   ** the input timer
   */
   
-  if (wall) {
+  if (wallstats.enabled) {
     gettimeofday (&tp2, 0);
     ptr->wall.last_sec  = tp2.tv_sec;
     ptr->wall.last_usec = tp2.tv_usec;
-    if (overhead)
+    if (overheadstats.enabled)
       ptr->wall.overhead +=       (tp2.tv_sec  - tp1.tv_sec) + 
                             1.e-6*(tp2.tv_usec - tp1.tv_usec);
   }
@@ -348,7 +335,7 @@ int GPTstart (const char *name)       /* timer name */
   if (GPT_PAPIstart (mythread, &ptr->aux) < 0)
     return GPTerror ("GPTstart: error from GPT_PAPIstart\n");
 
-  if (overhead) 
+  if (overheadstats.enabled)
     (void) GPT_PAPIoverheadstop (mythread, &ptr->aux);
 #endif
 
@@ -364,7 +351,7 @@ int GPTstart (const char *name)       /* timer name */
 ** Return value: 0 (success) or -1 (failure)
 */
 
-int GPTstop (const char *name)
+int GPTstop (const char *name) /* timer name */
 {
   long delta_wtime_sec;     /* wallclock change fm GPTstart() to GPTstop() */    
   long delta_wtime_usec;    /* wallclock change fm GPTstart() to GPTstop() */
@@ -373,10 +360,10 @@ int GPTstop (const char *name)
   Timer *ptr;               /* linked list pointer */
 
   int mythread;             /* thread number for this process */
-  int indx;
+  int indx;                 /* index into hash table */
 
-  long usr;
-  long sys;
+  long usr;                 /* user time (returned from get_cpustamp) */
+  long sys;                 /* system time (returned from get_cpustamp) */
 
 #ifdef DISABLE_TIMERS
   return 0;
@@ -386,7 +373,7 @@ int GPTstop (const char *name)
     return GPTerror ("GPTstop\n");
 
 #ifdef HAVE_PAPI
-  if (overhead)
+  if (overheadstats.enabled)
     (void) GPT_PAPIoverheadstart (mythread);
 #endif
 
@@ -395,10 +382,10 @@ int GPTstop (const char *name)
     ** the input timer
     */
     
-  if (wall)
+  if (wallstats.enabled)
     gettimeofday (&tp1, 0);
 
-  if (cpu && get_cpustamp (&usr, &sys) < 0)
+  if (cpustats.enabled && get_cpustamp (&usr, &sys) < 0)
     return GPTerror (0);
 
   if ( ! initialized)
@@ -426,14 +413,19 @@ int GPTstop (const char *name)
   ptr->onflg = false;
   ptr->count++;
 
-  if (wall) {
+  if (wallstats.enabled) {
 
     delta_wtime_sec  = tp1.tv_sec  - ptr->wall.last_sec;
     delta_wtime_usec = tp1.tv_usec - ptr->wall.last_usec;
     delta_wtime      = delta_wtime_sec + 1.e-6*delta_wtime_usec;
 
-    ptr->wall.max = MAX (ptr->wall.max, delta_wtime);
-    ptr->wall.min = MIN (ptr->wall.min, delta_wtime);
+    if (ptr->count == 1) {
+      ptr->wall.max = delta_wtime;
+      ptr->wall.min = delta_wtime;
+    } else {
+      ptr->wall.max = MAX (ptr->wall.max, delta_wtime);
+      ptr->wall.min = MIN (ptr->wall.min, delta_wtime);
+    }
 
     ptr->wall.accum_sec  += delta_wtime_sec;
     ptr->wall.accum_usec += delta_wtime_usec;
@@ -459,14 +451,14 @@ int GPTstop (const char *name)
 
     /* 2nd system timer call is solely for overhead timing */
 
-    if (overhead) {
+    if (overheadstats.enabled) {
       gettimeofday (&tp2, 0);
       ptr->wall.overhead +=       (tp2.tv_sec  - tp1.tv_sec) + 
                             1.e-6*(tp2.tv_usec - tp1.tv_usec);
     }
   }
 
-  if (cpu) {
+  if (cpustats.enabled) {
     ptr->cpu.accum_utime += usr - ptr->cpu.last_utime;
     ptr->cpu.accum_stime += sys - ptr->cpu.last_stime;
     ptr->cpu.last_utime   = usr;
@@ -474,7 +466,7 @@ int GPTstop (const char *name)
   }
 
 #ifdef HAVE_PAPI
-  if (overhead)
+  if (overheadstats.enabled)
     (void) GPT_PAPIoverheadstop (mythread, &ptr->aux);
 #endif
   return 0;
@@ -524,7 +516,7 @@ int GPTstamp (double *wall, double *usr, double *sys)
 int GPTreset (void)
 {
   int n;             /* index over threads */
-  Timer *ptr;  /* linked list index */
+  Timer *ptr;        /* linked list index */
 
 #ifdef DISABLE_TIMERS
   return 0;
@@ -533,25 +525,29 @@ int GPTreset (void)
   if ( ! initialized)
     return GPTerror ("GPTreset: GPTinitialize has not been called\n");
 
-  /*
-  ** Only allow the master thread to reset timers
-  */
+  /* Only allow the master thread to reset timers */
 
   if (get_thread_num (&nthreads, &maxthreads) > 0) 
     return GPTerror ("GPTreset: must only be called by master thread\n");
 
   for (n = 0; n < nthreads; n++) {
     for (ptr = timers[n]; ptr; ptr = ptr->next) {
-      memset (timers[n], 0, sizeof (Timer));
-      printf ("Reset accumulators for timer %s to zero\n", ptr->name);
+      ptr->onflg = false;
+      ptr->count = 0;
+      memset (&ptr->wall, 0, sizeof (ptr->wall));
+      memset (&ptr->cpu, 0, sizeof (ptr->cpu));
+#ifdef HAVE_PAPI
+      memset (&ptr->aux, 0, sizeof (ptr->aux));
+#endif
     }
   }
+  printf ("GPTreset: accumulators for all timers set to zero\n");
   return 0;
 }
 
 /* GPTpr: Print values of all timers */
 
-int GPTpr (const int id)
+int GPTpr (const int id)   /* output file will be named "timing.<id>" */
 {
   FILE *fp;                /* file handle to write to */
   Timer *ptr;              /* walk through master thread linked list */
@@ -594,9 +590,15 @@ int GPTpr (const int id)
 
     fprintf (fp, "Called   ");
 
-    for (nn = 0; nn < nprim; ++nn)
-      if (primary[nn].enabled)
-	fprintf (fp, "%s", primary[nn].str);
+    /* Print strings for enabled timer types */
+
+    if (cpustats.enabled)
+      fprintf (fp, "%s", cpustats.str);
+    if (wallstats.enabled) {
+      fprintf (fp, "%s", wallstats.str);
+      if (overheadstats.enabled)
+	fprintf (fp, "%s", overheadstats.str);
+    }
 
 #ifdef HAVE_PAPI
     GPT_PAPIprstr (fp);
@@ -611,7 +613,7 @@ int GPTpr (const int id)
 
     /* Sum of overhead across timers is meaningful */
 
-    if (overhead) {
+    if (wallstats.enabled && overheadstats.enabled) {
       sum[n] = 0;
       for (ptr = timers[n]; ptr; ptr = ptr->next)
 	sum[n] += ptr->wall.overhead;
@@ -630,9 +632,13 @@ int GPTpr (const int id)
 
     fprintf (fp, "Called   ");
 
-    for (nn = 0; nn < nprim; ++nn)
-      if (primary[nn].enabled)
-	fprintf (fp, "%s", primary[nn].str);
+    if (cpustats.enabled)
+      fprintf (fp, "%s", cpustats.str);
+    if (wallstats.enabled) {
+      fprintf (fp, "%s", wallstats.str);
+      if (overheadstats.enabled)
+	fprintf (fp, "%s", overheadstats.str);
+    }
 
 #ifdef HAVE_PAPI
     GPT_PAPIprstr (fp);
@@ -681,7 +687,7 @@ int GPTpr (const int id)
 
     /* Repeat overhead print in loop over threads */
 
-    if (overhead) {
+    if (wallstats.enabled && overheadstats.enabled) {
       osum = 0.;
       for (n = 0; n < nthreads; ++n) {
 	fprintf (fp, "OVERHEAD.%3.3d (wallclock seconds) = %9.3f\n", n, sum[n]);
@@ -764,18 +770,18 @@ static void printstats (const Timer *timer,
 
   fprintf (fp, "%8ld ", timer->count);
 
-  if (wall) {
-    elapse = timer->wall.accum_sec + 1.e-6*timer->wall.accum_usec;
-    fprintf (fp, "%9.3f %9.3f %9.3f ", elapse, timer->wall.max, timer->wall.min);
-    if (overhead)
-      fprintf (fp, "%9.3f ", timer->wall.overhead);
-  }
-
-  if (cpu) {
+  if (cpustats.enabled) {
     usr = timer->cpu.accum_utime / (float) ticks_per_sec;
     sys = timer->cpu.accum_stime / (float) ticks_per_sec;
     usrsys = usr + sys;
     fprintf (fp, "%9.3f %9.3f %9.3f ", usr, sys, usrsys);
+  }
+
+  if (wallstats.enabled) {
+    elapse = timer->wall.accum_sec + 1.e-6*timer->wall.accum_usec;
+    fprintf (fp, "%9.3f %9.3f %9.3f ", elapse, timer->wall.max, timer->wall.min);
+    if (overheadstats.enabled)
+      fprintf (fp, "%9.3f ", timer->wall.overhead);
   }
 
 #ifdef HAVE_PAPI
@@ -788,7 +794,7 @@ static void printstats (const Timer *timer,
 static void add (Timer *tout,   
 		 const Timer *tin)
 {
-  if (wall) {
+  if (wallstats.enabled) {
     tout->count           += tin->count;
     tout->wall.accum_sec  += tin->wall.accum_sec;
     tout->wall.accum_usec += tin->wall.accum_usec;
@@ -802,11 +808,11 @@ static void add (Timer *tout,
       
     tout->wall.max       = MAX (tout->wall.max, tin->wall.max);
     tout->wall.min       = MIN (tout->wall.min, tin->wall.min);
-    if (overhead)
+    if (overheadstats.enabled)
       tout->wall.overhead += tin->wall.overhead;
   }
 
-  if (cpu) {
+  if (cpustats.enabled) {
     tout->cpu.accum_utime += tin->cpu.accum_utime;
     tout->cpu.accum_stime += tin->cpu.accum_stime;
   }
@@ -836,15 +842,34 @@ static int get_cpustamp (long *usr, long *sys)
   return 0;
 }
 
+/*
+** Find the entry in the hash table and return a pointer to it.
+**
+** Input args:
+**   hashtable: the hashtable (array)
+**   name:      string to be hashed on (specifically, summed)
+** Output args:
+**   indx:      hashtable index
+**
+** Return value: pointer to the entry, or NULL if not found
+*/
+
 static inline Timer *getentry (const Hashtable *hashtable, 
 			       const char *name, 
 			       int *indx)
 {
-  int i;
-  const char *c = name;
+  int i;                 /* loop index */
+  const char *c = name;  /* pointer to elements of "name" */
+
+  /* Generate the hash value by summing values of the chars in "name */
 
   for (*indx = 0; *c; c++)
     *indx += *c;
+
+  /* 
+  ** If nument exceeds 1 there was a hash collision and we must search
+  ** linearly through an array for a match
+  */
 
   for (i = 0; i < hashtable[*indx].nument; i++)
     if (STRMATCH (name, hashtable[*indx].entries[i]->name))

@@ -1,0 +1,60 @@
+.\" $Id: GPTpr.3,v 1.1 2004-11-10 04:41:20 rosinski Exp $
+.TH GPTpr 3 "November, 2004" "GPT"
+
+.SH NAME
+GPTpr \- Print the values associated with all timers
+
+.SH SYNOPSIS
+.B C Interface:
+
+.BI "int\ GPTpr (int tag);"
+
+.fi
+.B Fortran Interface:
+
+.BI "integer gptpr (integer tag)"
+.fi
+
+.SH DESCRIPTION
+.B GPTpr
+Opens a file named timing.<tag> and writes the values for all timers to it.
+The value of the tag can be anything the user wishes.  Typically for MPI runs
+for example, the task id is used in order to obtain unique file names for all
+tasks.  See
+.B EXAMPLE OUTPUT
+below for a sample output file and description of contents.
+
+.SH RETURN VALUES
+On success, this function returns
+.B 0.
+On error, a non-zero error code is returned and a descriptive message
+printed. 
+
+.SH EXAMPLE OUTPUT
+Here is sample output produced by a call to GPTpr, where wallclock timing and
+the PAPI counter for Total Cycles were enabled.  Strings on the left are the
+names of the various timers input to GPTstart() and GPTstop().  Note that
+timer GPTstart/GPTstop pairs subsumed within other pairs are indented.  When
+wallclock times are being gathered, max and min stats for any single
+start/stop pair are also printed.  The number of start/stop pairs is output
+in the "Called" column.  By default (but not in the example below), if
+wallclock times and/or total cycles are being counted, a zeroth order attempt
+is made to estimate the overhead incurred by the GPT library itself.  This
+per-timer estimate will be printed in a separate column.
+.nf         
+.if t .ft CW
+
+Stats for thread 0:
+                   Called   Wallclock max       min       Total cycles
+  total                   1     1.003     1.003     1.003 1.5518420000e+06
+    0001*2000_+*          1     0.000     0.000     0.000            22512
+    0001*2000_+           1     0.000     0.000     0.000            24976
+    0001*2000_*           1     0.000     0.000     0.000            22738
+    0001*2000_/           1     0.000     0.000     0.000            88866
+    stormiss1K_001        1     0.000     0.000     0.000            13108
+    loadmiss1K_001        1     0.000     0.000     0.000            11516
+
+
+.if t .ft P
+.fi
+

@@ -1,0 +1,58 @@
+.\" $Id: GPTsetoption.3,v 1.1 2004-11-10 04:41:21 rosinski Exp $
+.TH GPTinitialize 3 "November, 2004" "GPT"
+
+.SH NAME
+GPTinitialize \- Initialize GPT to allow subsequent calls to GPTstart and GPTstop.
+
+.SH SYNOPSIS
+.B C Interface:
+
+.nf
+
+.BI "int\ GPTinitialize (void);"
+
+.fi
+.B Fortran Interface:
+
+.nf
+.B #include <gpt.inc>
+.B #include <fpapi.h> (for PAPI options if PAPI support is enabled)
+
+.BI "integer gptsetoption (integer " option ", integer " val ")"
+.fi
+
+.SH DESCRIPTION
+.B GPTsetoption
+enables or disables a counter (e.g. wallclock time).  This function MUST be
+called BEFORE GPTinitialize.
+
+.SH ARGUMENTS
+.I "option"
+--  an integer specifying an option to be enabled or disabled.  Available
+options are defined in gpt.h (gpt.inc for Fortran).  And in papi.h (fpapi.h
+for Fortran) if PAPI support is enabled.
+.BR
+.LP
+.I val
+-- an integer defining whether to enable or disable
+.BR option.
+Non-zero values mean enable, and a zero value means to disable the option.
+
+.SH RETURN VALUES
+On success, this function returns
+.B 0.
+On error, a non-zero error code is returned and a descriptive message
+printed. 
+
+.SH EXAMPLES
+.nf         
+.if t .ft CW
+
+if (GPTsetoption (GPTcpu, 1) != 0)  /* Enable cpu timing */
+  handle_error (1);
+
+.if t .ft P
+.fi
+
+.SH SEE ALSO
+.BR GPTinitialize "(3)" 

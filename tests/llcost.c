@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include "../gpt.h"
 
+#ifdef HAVE_PAPI
+#include <papiStdEventDefs.h>
+#endif
+
 int main ()
 {
   char timername[16];
@@ -13,6 +17,10 @@ int main ()
   printf ("Enter number of intermediate timers\n");
   scanf ("%d", &ntimers);
 
+#ifdef HAVE_PAPI
+  GPTsetoption (PAPI_TOT_CYC, 1);
+#endif
+
   GPTinitialize ();
   GPTstart ("basetimer1");
   GPTstop ("basetimer1");
@@ -24,6 +32,12 @@ int main ()
 
   GPTstart ("basetimer2");
   GPTstop ("basetimer2");
+
+  for (i = ntimers/2+1; i < ntimers; ++i) {
+    sprintf (timername, "midtimer%4.4d", i);
+    GPTstart (timername);
+    GPTstop (timername);
+  }
 
   for (i = ntimers/2+1; i < ntimers; ++i) {
     sprintf (timername, "midtimer%4.4d", i);

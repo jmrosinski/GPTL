@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.17 2004-11-03 17:02:06 rosinski Exp $
+$Id: private.h,v 1.18 2004-11-10 04:41:20 rosinski Exp $
 */
 
 #include <stdio.h>
@@ -20,6 +20,13 @@ $Id: private.h,v 1.17 2004-11-03 17:02:06 rosinski Exp $
 typedef enum {false = 0, true = 1} bool;
 
 typedef struct {
+  long last_utime;
+  long last_stime;
+  long accum_utime;
+  long accum_stime;
+} Cpustats;
+
+typedef struct {
   long last_sec;
   long last_usec;
   long accum_sec;
@@ -28,13 +35,6 @@ typedef struct {
   float min;
   float overhead;
 } Wallstats;
-
-typedef struct {
-  long last_utime;
-  long last_stime;
-  long accum_utime;
-  long accum_stime;
-} Cpustats;
 
 typedef struct {
   long long last[MAX_AUX];
