@@ -13,7 +13,7 @@ static Timer **last = 0;         /* last element in list */
 static int *max_depth;           /* maximum indentation level */
 static int *max_name_len;        /* max length of timer name */
 typedef struct {
-  int depth;
+  unsigned int depth;
   int padding[31];
 } Nofalse; 
 static Nofalse *current_depth;   /* padding is to mitigate false cache sharing */
