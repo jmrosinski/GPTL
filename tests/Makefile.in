@@ -20,6 +20,9 @@ all: $(CEXES) $(FEXES)
 cexes: $(CEXES)
 fexes: $(FEXES)
 
+.F.o:
+	$(FC) -c -o $@ $(FFLAGS) $<
+
 llcost: llcost.o
 	$(CC) -o $@ llcost.o $(LDFLAGS)
 depth: depth.o
