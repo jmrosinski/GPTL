@@ -421,7 +421,7 @@ int GPTLstop (const char *name) /* timer name */
 
     delta_wtime_sec       = tp1.tv_sec  - ptr->wall.last_sec;
     delta_wtime_usec      = tp1.tv_usec - ptr->wall.last_usec;
-    delta_wtim     e      = delta_wtime_sec + 1.e-6*delta_wtime_usec;
+    delta_wtime           = delta_wtime_sec + 1.e-6*delta_wtime_usec;
     ptr->wall.accum_sec  += delta_wtime_sec;
     ptr->wall.accum_usec += delta_wtime_usec;
 
