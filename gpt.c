@@ -712,7 +712,7 @@ static void add (Timer *tout,
     if (tout->wall.accum_usec > 10000000) {
       tout->wall.accum_sec  += 10;
       tout->wall.accum_usec -= 10000000;
-    } else if (tout->wall_accum_usec < -10000000) {
+    } else if (tout->wall.accum_usec < -10000000) {
       tout->wall.accum_sec  -= 10;
       tout->wall.accum_usec += 10000000;
     }
