@@ -28,4 +28,4 @@ clean:
 camwrappers.o: gpt.h private.h
 f_wrappers.o: gpt.h private.h
 gpt.o: gpt.h private.h
-util.o:
+util.o: gpt.h private.h

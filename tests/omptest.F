@@ -7,6 +7,7 @@
       
       if (gptsetoption (gptcpu, 1) < 0) call exit(99)
       if (gptsetoption (gptwall, 1) < 0) call exit(99)
+      if (gptsetoption (gptabort_on_error, 1) < 0) call exit(99)
 !      if (gpt_setoption (pcl_l1dcache_miss, 0) < 0) call exit(99)
 !      if (gpt_setoption (pcl_l2cache_miss, 0) < 0) call exit(99)
 !      if (gpt_setoption (pcl_cycles, 1) < 0) call exit(99)

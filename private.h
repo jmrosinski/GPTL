@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.7 2004-10-14 21:52:03 rosinski Exp $
+$Id: private.h,v 1.8 2004-10-15 04:56:27 rosinski Exp $
 */
 
 #include "gpt.h"
@@ -65,3 +65,4 @@ typedef struct {
 /* Function prototypes */
 
 extern int GPTerror (const char *, ...);
+extern void GPTset_abort_on_error (bool val);

@@ -1,8 +1,10 @@
       integer GPTwall
       integer GPTcpu
+      integer GPTabort_on_error
 
       parameter (GPTwall = 1)
       parameter (GPTcpu  = 2)
+      parameter (GPTabort_on_error  = 3)
 
 ! for compatibility with CAM entries
 

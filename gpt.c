@@ -17,9 +17,10 @@ static int *max_name_len;        /* max length of timer name */
 static int *current_depth;       /* current depth in timer tree */
 static int nthreads            = 1;     /* num threads.  1 means no threading */
 static bool initialized       = false; /* GPTinitialize has been called */
-static Settings primary[2] = {
+static Settings primary[] = {
   GPTwall, "Wallclock","Wallclock max       min     Overhead  ", true,
   GPTcpu,  "Cpu",      "Usr       sys       usr+sys",            false};
+static const int nprim = sizeof (primary) / sizeof (Settings);
 static const int wallidx = 0;
 static const int cpuidx = 1;
 static bool wallenabled;
@@ -43,7 +44,6 @@ static int get_cpustamp (long *, long *);
 
 static long ticks_per_sec; /* clock ticks per second */
 
-/*******************************************************************************/
 /*
 ** GPTsetoption: set option value to true or false.
 **
@@ -62,26 +62,28 @@ int GPTsetoption (Option option,     /* option name */
   if (initialized)
     return (GPTerror ("GPTsetoption: Options must be set BEFORE GPTinitialize\n"));
   
-  for (n = 0; n < 2; n++) {
+  if (option == GPTabort_on_error) {
+    GPTset_abort_on_error ((bool) val);
+    printf ("GPTsetoption: setting abort on error flag to %d\n", val);
+    return 0;
+  }
+
+  for (n = 0; n < nprim; n++) {
     if (primary[n].option == option) {
       primary[n].enabled = (bool) val;
-      printf ("GPTsetoption: option %s set to %d\n", primary[n].name, val);
-      break;
+      printf ("GPTsetoption: option %s set to %d\n", primary[n].name, (bool) val);
+      return 0;
     }
   }
 
-  if (n == 2) {
-    for (n = 0; n < naux; n++) {
-      if (aux[n].option == option) {
-	aux[n].enabled = (bool) val;
-	printf ("GPTsetoption: option %s set to %d\n", aux[n].name, val);
-	break;
-      }
+  for (n = 0; n < naux; n++) {
+    if (aux[n].option == option) {
+      aux[n].enabled = (bool) val;
+      printf ("GPTsetoption: option %s set to %d\n", aux[n].name, val);
+      return 0;
     }
-    if (n == naux)
-      return GPTerror ("GPTsetoption: option %d not found\n", (int) option);
   }
-  return 0;
+  return GPTerror ("GPTsetoption: option %d not found\n", (int) option);
 }
 
 /*
@@ -472,7 +474,7 @@ int GPTpr (int id)
 
     fprintf (fp, "Called   ");
 
-    for (nn = 0; nn < 2; ++nn)
+    for (nn = 0; nn < nprim; ++nn)
       if (primary[nn].enabled)
 	fprintf (fp, "%s", primary[nn].str);
 
@@ -506,7 +508,7 @@ int GPTpr (int id)
 
     fprintf (fp, "Called   ");
 
-    for (nn = 0; nn < 2; ++nn)
+    for (nn = 0; nn < nprim; ++nn)
       if (primary[nn].enabled)
 	fprintf (fp, "%s", primary[nn].str);
 
