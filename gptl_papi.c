@@ -131,7 +131,7 @@ static int *EventSet;                    /* list of events to be counted by PAPI
 static long_long **papicounters;         /* counters return from PAPI */
 static char papiname[PAPI_MAX_STR_LEN];  /* returned from PAPI_event_code_to_name */
 static const int BADCOUNT = -999999;     /* Set counters to this when they are bad */
-static int GPToverheadindx = -1;         /* index into counters array */
+static int GPTLoverheadindx = -1;         /* index into counters array */
 static long_long *lastoverhead;          /* needed because aux not available for overhead */
 
 /* Function prototypes */
@@ -139,19 +139,19 @@ static long_long *lastoverhead;          /* needed because aux not available for
 static int create_and_start_events (const int);
 
 /*
-** GPT_PAPIsetoption: enable or disable PAPI event defined by "counter". Called 
-**   from GPTsetoption.  Since all events are off by default, val=false degenerates
-**   to a no-op.  Coded this way to be consistent with the rest of GPT
+** GPTL_PAPIsetoption: enable or disable PAPI event defined by "counter". Called 
+**   from GPTLsetoption.  Since all events are off by default, val=false degenerates
+**   to a no-op.  Coded this way to be consistent with the rest of GPTL
 **
 ** Input args: 
 **   counter: PAPI counter
 **   val:     true or false for enable or disable
 **
-** Return value: 0 (success) or GPTerror (failure)
+** Return value: 0 (success) or GPTLerror (failure)
 */
 
-int GPT_PAPIsetoption (const int counter,  /* PAPI counter */
-		       const int val)      /* true or false for enable or disable */
+int GPTL_PAPIsetoption (const int counter,  /* PAPI counter */
+			const int val)      /* true or false for enable or disable */
 {
   int n;  /* loop index */
   
@@ -169,23 +169,23 @@ int GPT_PAPIsetoption (const int counter,  /* PAPI counter */
   for (n = 0; n < nentries; n++)
     if (counter == papitable[n].counter) {
       if (nprop+1 > MAX_AUX) {
-	return GPTerror ("GPT_PAPIsetoption: Event %s is too many\n", papitable[n].str);
+	return GPTLerror ("GPTL_PAPIsetoption: Event %s is too many\n", papitable[n].str);
       } else {
 	propeventlist[nprop].counter = counter;
 	propeventlist[nprop].prstr   = papitable[n].prstr;
 	propeventlist[nprop].str     = papitable[n].str;
-	printf ("GPT_PAPIsetoption: will attempt to enable event %s\n", 
+	printf ("GPTL_PAPIsetoption: will attempt to enable event %s\n", 
 		propeventlist[nprop].str);
 	++nprop;
       }
       return 0;
     }
 
-  return GPTerror ("GPT_PAPIsetoption: counter %d does not exist\n", counter);
+  return GPTLerror ("GPTL_PAPIsetoption: counter %d does not exist\n", counter);
 }
 
 /*
-** GPT_PAPIinitialize(): Initialize the PAPI interface. Called from GPTinitialize.
+** GPTL_PAPIinitialize(): Initialize the PAPI interface. Called from GPTLinitialize.
 **   PAPI_library_init must be called before any other PAPI routines.  
 **   PAPI_thread_init is called subsequently if threading is enabled.
 **   Finally, allocate space for PAPI counters and start them.
@@ -193,10 +193,10 @@ int GPT_PAPIsetoption (const int counter,  /* PAPI counter */
 ** Input args: 
 **   maxthreads: number of threads
 **
-** Return value: 0 (success) or GPTerror or -1 (failure)
+** Return value: 0 (success) or GPTLerror or -1 (failure)
 */
  
-int GPT_PAPIinitialize (const int maxthreads)  /* number of threads */
+int GPTL_PAPIinitialize (const int maxthreads)  /* number of threads */
 {
   int ret;       /* return code */
   int n;         /* loop index */
@@ -208,33 +208,33 @@ int GPT_PAPIinitialize (const int maxthreads)  /* number of threads */
   /* PAPI_library_init needs to be called before ANY other PAPI routine */
 
   if ((ret = PAPI_library_init (PAPI_VER_CURRENT)) != PAPI_VER_CURRENT)
-    return GPTerror ("GPT_PAPIinitialize: PAPI_library_init failure:%s\n",
-		     PAPI_strerror (ret));
+    return GPTLerror ("GPTL_PAPIinitialize: PAPI_library_init failure:%s\n",
+		      PAPI_strerror (ret));
 
   /* PAPI_thread_init needs to be called if threading enabled */
 
 #if ( defined THREADED_OMP )
   if (PAPI_thread_init ((unsigned long (*)(void)) (omp_get_thread_num)) != PAPI_OK)
-    return GPTerror ("GPT_PAPIinitialize: PAPI_thread_init failure\n");
+    return GPTLerror ("GPTL_PAPIinitialize: PAPI_thread_init failure\n");
 #elif ( defined THREADED_PTHREADS )
   if (PAPI_thread_init ((unsigned long (*)(void)) (pthread_self)) != PAPI_OK)
-    return GPTerror ("GPT_PAPIinitialize: PAPI_thread_init failure\n");
+    return GPTLerror ("GPTL_PAPIinitialize: PAPI_thread_init failure\n");
 #endif
 
   /* allocate and initialize static local space */
 
-  EventSet     = (int *)        GPTallocate (maxthreads * sizeof (int));
-  papicounters = (long_long **) GPTallocate (maxthreads * sizeof (long_long *));
-  lastoverhead = (long_long *)  GPTallocate (maxthreads * sizeof (long_long));
+  EventSet     = (int *)        GPTLallocate (maxthreads * sizeof (int));
+  papicounters = (long_long **) GPTLallocate (maxthreads * sizeof (long_long *));
+  lastoverhead = (long_long *)  GPTLallocate (maxthreads * sizeof (long_long));
 
   for (t = 0; t < maxthreads; t++) {
     EventSet[t] = PAPI_NULL;
-    papicounters[t] = (long_long *) GPTallocate (MAX_AUX * sizeof (long_long));
+    papicounters[t] = (long_long *) GPTLallocate (MAX_AUX * sizeof (long_long));
     lastoverhead[t] = -1;
   }
 
   /* 
-  ** Loop over events set by earlier calls to GPT_PAPIsetoption. For the
+  ** Loop over events set by earlier calls to GPTL_PAPIsetoption. For the
   ** events which can be counted on this architecture, fill in the values
   ** (array "eventlist")
   */
@@ -243,19 +243,19 @@ int GPT_PAPIinitialize (const int maxthreads)  /* number of threads */
     counter = propeventlist[n].counter;
     if (PAPI_query_event (counter) != PAPI_OK) {
       (void) PAPI_event_code_to_name (counter, papiname);
-      printf ("GPT_PAPIinitialize: event %s not available on this arch\n", papiname);
+      printf ("GPTL_PAPIinitialize: event %s not available on this arch\n", papiname);
     } else {
       if (nevents+1 > MAX_AUX) {
 	(void) PAPI_event_code_to_name (counter, papiname);
-	printf ("GPT_PAPIinitialize: Event %s is too many\n", papiname);
+	printf ("GPTL_PAPIinitialize: Event %s is too many\n", papiname);
       } else {
 	if (counter == PAPI_TOT_CYC)
-	  GPToverheadindx = nevents;
+	  GPTLoverheadindx = nevents;
 
 	eventlist[nevents].counter = counter;
 	eventlist[nevents].prstr   = propeventlist[n].prstr;
 	eventlist[nevents].str     = propeventlist[n].str;
-	printf ("GPT_PAPIinitialize: event %s enabled\n", eventlist[nevents].str);
+	printf ("GPTL_PAPIinitialize: event %s enabled\n", eventlist[nevents].str);
 	++nevents;
       }
     }
@@ -267,7 +267,7 @@ int GPT_PAPIinitialize (const int maxthreads)  /* number of threads */
   */
 
   if (nevents > 0) {
-    rc = (int *) GPTallocate (maxthreads * sizeof (int));
+    rc = (int *) GPTLallocate (maxthreads * sizeof (int));
 
 #pragma omp parallel for private (t)
 
@@ -291,12 +291,12 @@ int GPT_PAPIinitialize (const int maxthreads)  /* number of threads */
 /*
 ** create_and_start_events: Create and start the PAPI eventset.  File-local.
 **   Threaded routine to create the "event set" (PAPI terminology) and start
-**   the counters. This is only done once, and is called from GPT_PAPIinitialize 
+**   the counters. This is only done once, and is called from GPTL_PAPIinitialize 
 ** 
 ** Input args: 
 **   t: thread number
 **
-** Return value: 0 (success) or GPTerror (failure)
+** Return value: 0 (success) or GPTLerror (failure)
 */
 
 static int create_and_start_events (const int t)  /* thread number */
@@ -307,30 +307,30 @@ static int create_and_start_events (const int t)  /* thread number */
   /* Create the event set */
 
   if ((ret = PAPI_create_eventset (&EventSet[t])) != PAPI_OK)
-    return GPTerror ("GPT_PAPIstart: failure creating eventset: %s\n", 
-		     PAPI_strerror (ret));
+    return GPTLerror ("GPTL_PAPIstart: failure creating eventset: %s\n", 
+		      PAPI_strerror (ret));
 
   /* Add requested events to the event set */
 
   for (n = 0; n < nevents; n++) {
     if ((ret = PAPI_add_event (EventSet[t], eventlist[n].counter)) != PAPI_OK) {
       printf ("%s\n", PAPI_strerror (ret));
-      return GPTerror ("GPT_PAPIstart: failure adding event: %s\n", 
-		       eventlist[n].str);
+      return GPTLerror ("GPTL_PAPIstart: failure adding event: %s\n", 
+			eventlist[n].str);
     }
   }
 
   /* Start the event set.  It will only be read from now on--never stopped */
 
   if ((ret = PAPI_start (EventSet[t])) != PAPI_OK)
-    return GPTerror ("%s\n", PAPI_strerror (ret));
+    return GPTLerror ("%s\n", PAPI_strerror (ret));
 
   return 0;
 }
 
 /*
-** GPT_PAPIstart: Start the PAPI counters (actually they are just read).  
-**   Called from GPTstart.
+** GPTL_PAPIstart: Start the PAPI counters (actually they are just read).  
+**   Called from GPTLstart.
 **
 ** Input args:  
 **   t: thread number
@@ -338,11 +338,11 @@ static int create_and_start_events (const int t)  /* thread number */
 ** Output args: 
 **   aux: struct containing the counters
 **
-** Return value: 0 (success) or GPTerror (failure)
+** Return value: 0 (success) or GPTLerror (failure)
 */
 
-int GPT_PAPIstart (const int t,          /* thread number */
-		   Papistats *aux)       /* struct containing PAPI stats */
+int GPTL_PAPIstart (const int t,          /* thread number */
+		    Papistats *aux)       /* struct containing PAPI stats */
 {
   int ret;  /* return code from PAPI lib calls */
   int n;    /* loop index */
@@ -355,10 +355,10 @@ int GPT_PAPIstart (const int t,          /* thread number */
   /* Read the counters */
 
   if ((ret = PAPI_read (EventSet[t], papicounters[t])) != PAPI_OK)
-    return GPTerror ("GPT_PAPIstart: %s\n", PAPI_strerror (ret));
+    return GPTLerror ("GPTL_PAPIstart: %s\n", PAPI_strerror (ret));
 
   /* 
-  ** Store the counter values.  When GPT_PAPIstop is called, the counters
+  ** Store the counter values.  When GPTL_PAPIstop is called, the counters
   ** will again be read, and differenced with the values saved here.
   */
 
@@ -369,8 +369,8 @@ int GPT_PAPIstart (const int t,          /* thread number */
 }
 
 /*
-** GPT_PAPIstop: Stop the PAPI counters (actually they are just read).  
-**   Called from GPTstop.
+** GPTL_PAPIstop: Stop the PAPI counters (actually they are just read).  
+**   Called from GPTLstop.
 **
 ** Input args:
 **   t: thread number
@@ -378,11 +378,11 @@ int GPT_PAPIstart (const int t,          /* thread number */
 ** Input/output args: 
 **   aux: struct containing the counters
 **
-** Return value: 0 (success) or GPTerror (failure)
+** Return value: 0 (success) or GPTLerror (failure)
 */
 
-int GPT_PAPIstop (const int t,         /* thread number */
-		  Papistats *aux)      /* struct containing PAPI stats */
+int GPTL_PAPIstop (const int t,         /* thread number */
+		   Papistats *aux)      /* struct containing PAPI stats */
 {
   int ret;          /* return code from PAPI lib calls */
   int n;            /* loop index */
@@ -396,7 +396,7 @@ int GPT_PAPIstop (const int t,         /* thread number */
   /* Read the counters */
 
   if ((ret = PAPI_read (EventSet[t], papicounters[t])) != PAPI_OK)
-    return GPTerror ("GPT_PAPIstop: %s\n", PAPI_strerror (ret));
+    return GPTLerror ("GPTL_PAPIstop: %s\n", PAPI_strerror (ret));
   
   /* 
   ** Accumulate the difference since timer start in aux.
@@ -415,37 +415,37 @@ int GPT_PAPIstop (const int t,         /* thread number */
 }
 
 /* 
-** GPT_PAPIoverheadstart: Read the PAPI counters for overhead calcs (only
-**   possible if total cycles are being counted). Called from GPTstart and GPTstop.
+** GPTL_PAPIoverheadstart: Read the PAPI counters for overhead calcs (only
+**   possible if total cycles are being counted). Called from GPTLstart and GPTLstop.
 **   Have to set the static variable lastoverhead because a pointer to the correct 
 **   aux timer is not yet available.
 ** 
 ** Input args: 
 **   t: thread number
 **
-** Return value: 0 (success) or GPTerror (failure)
+** Return value: 0 (success) or GPTLerror (failure)
 */
 
-int GPT_PAPIoverheadstart (const int t)  /* thread number */
+int GPTL_PAPIoverheadstart (const int t)  /* thread number */
 {
   int ret;  /* return code from PAPI lib routine */
 
   /* If the overhead index hasn't been set we can't do anything */
 
-  if (GPToverheadindx < 0)
+  if (GPTLoverheadindx < 0)
     return -1;
 
   if ((ret = PAPI_read (EventSet[t], papicounters[t])) != PAPI_OK)
-    return GPTerror ("GPT_PAPIoverheadstart: %s\n", PAPI_strerror (ret));
+    return GPTLerror ("GPTL_PAPIoverheadstart: %s\n", PAPI_strerror (ret));
 
-  lastoverhead[t] = papicounters[t][GPToverheadindx];
+  lastoverhead[t] = papicounters[t][GPTLoverheadindx];
 
   return 0;
 }
 
 /*
-** GPT_PAPIoverheadstop: Read the PAPI counters and record overhead (only
-**   possible if total cycles are being counted). Called from GPTstart and GPTstop.
+** GPTL_PAPIoverheadstop: Read the PAPI counters and record overhead (only
+**   possible if total cycles are being counted). Called from GPTLstart and GPTLstop.
 **
 ** Input args:
 **   t: thread number
@@ -453,26 +453,26 @@ int GPT_PAPIoverheadstart (const int t)  /* thread number */
 ** Input/output args:
 **   aux: struct containing the overhead accumulator
 **
-** Return value: 0 (success) or GPTerror (failure)
+** Return value: 0 (success) or GPTLerror (failure)
 */
     
-int GPT_PAPIoverheadstop (const int t,         /* thread number */               
-			  Papistats *aux)      /* struct containing PAPI stats */
+int GPTL_PAPIoverheadstop (const int t,         /* thread number */               
+			   Papistats *aux)      /* struct containing PAPI stats */
 {
   int ret;         /* return code from PAPI_read */
   long_long diff;  /* difference in cycle count from when started */
 
   /* overheadindx <= 0 means cycle counting was not enabled */
 
-  if (GPToverheadindx < 0)
+  if (GPTLoverheadindx < 0)
     return -1;
 
   if ((ret = PAPI_read (EventSet[t], papicounters[t])) != PAPI_OK)
-    return GPTerror ("GPT_PAPIoverheadstart: %s\n", PAPI_strerror (ret));
+    return GPTLerror ("GPTL_PAPIoverheadstart: %s\n", PAPI_strerror (ret));
 
   /* Accumulate the overhead cycles.  Check for a negative increment */
 
-  diff = papicounters[t][GPToverheadindx] - lastoverhead[t];
+  diff = papicounters[t][GPTLoverheadindx] - lastoverhead[t];
   if (diff < 0)
     aux->accum_cycles = BADCOUNT;
   else
@@ -482,14 +482,14 @@ int GPT_PAPIoverheadstop (const int t,         /* thread number */
 }
 
 /*
-** GPT_PAPIprstr: Print the descriptive string for all enabled PAPI events.
-**   Called from GPTpr.
+** GPTL_PAPIprstr: Print the descriptive string for all enabled PAPI events.
+**   Called from GPTLpr.
 **
 ** Input args: 
 **   fp: file descriptor
 */
 
-void GPT_PAPIprstr (FILE *fp)   /* file descriptor */
+void GPTL_PAPIprstr (FILE *fp)   /* file descriptor */
 {
   int n;
   
@@ -501,16 +501,16 @@ void GPT_PAPIprstr (FILE *fp)   /* file descriptor */
 }
 
 /*
-** GPT_PAPIpr: Print PAPI counter values for all enabled events. Called from
-**   GPTpr.
+** GPTL_PAPIpr: Print PAPI counter values for all enabled events. Called from
+**   GPTLpr.
 **
 ** Input args: 
 **   fp: file descriptor
 **   aux: struct containing the counters
 */
 
-void GPT_PAPIpr (FILE *fp,              /* file descriptor to write to */
-		 const Papistats *aux)  /* stats to write */
+void GPTL_PAPIpr (FILE *fp,              /* file descriptor to write to */
+		  const Papistats *aux)  /* stats to write */
 {
   int n;
   
@@ -531,13 +531,13 @@ void GPT_PAPIpr (FILE *fp,              /* file descriptor to write to */
 }
 
 /*
-** GPTPAPIprinttable:  Print table of PAPI native counters. Not all are
+** GPTLPAPIprinttable:  Print table of PAPI native counters. Not all are
 **   necessarily available on this architecture. This is the one routine 
-**   in this file which is user-visible. No underscores in GPTPAPIprinttable 
+**   in this file which is user-visible. No underscores in GPTLPAPIprinttable 
 **   to avoid underscore weirdness of g77
 */
 
-void GPTPAPIprinttable ()
+void GPTLPAPIprinttable ()
 {
   int n;
 
@@ -546,7 +546,7 @@ void GPTPAPIprinttable ()
 }
 
 /*
-** GPT_PAPIadd: Accumulate PAPI counters. Called from add.
+** GPTL_PAPIadd: Accumulate PAPI counters. Called from add.
 **
 ** Input/Output args: 
 **   auxout: auxout = auxout + auxin
@@ -555,8 +555,8 @@ void GPTPAPIprinttable ()
 **   auxin: counters to be summed into auxout
 */
 
-void GPT_PAPIadd (Papistats *auxout,      /* output struct */
-		  const Papistats *auxin) /* input struct */
+void GPTL_PAPIadd (Papistats *auxout,      /* output struct */
+		   const Papistats *auxin) /* input struct */
 {
   int n;
   
@@ -575,11 +575,11 @@ void GPT_PAPIadd (Papistats *auxout,      /* output struct */
 }
 
 /*
-** GPT_PAPIfinalize: finalization routine must be called from single-threaded
+** GPTL_PAPIfinalize: finalization routine must be called from single-threaded
 **   region. Free all malloc'd space
 */
 
-void GPT_PAPIfinalize (int maxthreads)
+void GPTL_PAPIfinalize (int maxthreads)
 {
   int t;
 
