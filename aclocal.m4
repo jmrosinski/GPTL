@@ -31,7 +31,8 @@ AC_DEFUN(UD_SET_OMP_C,
     AC_MSG_RESULT($OMPCFLAGS works)
   else
     AC_MSG_RESULT([not found])
-    AC_MSG_ERROR([quitting.  Rerun configure without --enable-openmp])
+    AC_MSG_WARN([Threaded tests may behave incorrectly])
+    OMPCFLAGS=""
   fi
   CFLAGS="$OLDFLAGS"
 ])
@@ -72,7 +73,8 @@ AC_DEFUN(UD_SET_OMP_F77,
     AC_MSG_RESULT($OMPFFLAGS)
   else
     AC_MSG_RESULT([not found])
-    AC_MSG_WARN([threaded Fortran tests may fail])
+    AC_MSG_WARN([Threaded tests may behave incorrectly])
+    OMPFFLAGS=""
   fi
   FFLAGS="$OLDFLAGS"
   AC_LANG_POP(Fortran 77)
@@ -95,7 +97,8 @@ AC_DEFUN(UD_SET_PTHREADS_C,
     AC_MSG_RESULT($PTHREADCFLAGS)
   else
     AC_MSG_RESULT([not found])
-    AC_MSG_ERROR([quitting.  Rerun configure without --enable-pthreads])
+    AC_MSG_WARN([Threaded tests may behave incorrectly])
+    PTHREADCFLAGS=""
   fi
   LDFLAGS="$OLDLDFLAGS"
 ])
@@ -118,6 +121,7 @@ AC_DEFUN(UD_SET_PTHREADS_F77,
     AC_MSG_RESULT($PTHREADFFLAGS)
   else
     AC_MSG_RESULT([not found])
+    PTHREADFFLAGS=""
   fi
   AC_LANG_POP(Fortran 77)
   LDFLAGS="$OLDLDFLAGS"

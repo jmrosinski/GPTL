@@ -89,7 +89,10 @@ dnl AC_ARG_ENABLE(papi,[--enable-papi],PAPIPREP="-I/home/rosinski/include -DHAVE
 
 dnl Whether to enable debugging
 AC_ARG_ENABLE(debug,[--enable-debug      Specify to enable debugging],
-              [CFLAGS="$CFLAGS -g";FFLAGS="$FFLAGS -g"],)
+              [CFLAGS="$CFLAGS -g";
+	       FFLAGS="$FFLAGS -g";
+	       LDFLAGS="$LDFLAGS -g";
+	       FLDFLAGS="$FLDFLAGS -g"],)
 
 dnl Whether to enable optimization
 AC_ARG_ENABLE(opt,[--enable-opt        Specify to optimize for speed],
