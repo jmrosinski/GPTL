@@ -1,0 +1,21 @@
+CC         = @CC@
+CFLAGS     = @DEFS@ @CFLAGS@ @WDEF@ @ARCHDEF@
+INSTALLDIR = @prefix@/lib
+RM         = rm
+@VPATH@    = @top_srcdir@
+LIBNAME = libtiming.a
+OBJS = gpt.o util.o f_wrappers.o
+
+all: $(INSTALLDIR)/$(LIBNAME) testit
+
+$(INSTALLDIR)/$(LIBNAME): $(OBJS)
+	$(AR) $(ARFLAGS) $@ $(OBJS)
+	@RANLIB@
+
+testit:
+	cd tests || exit 1; make
+
+clean:
+	$(RM) -f $(OBJS) $(INSTALLDIR)/$(LIBNAME)
+	cd tests || exit 1; make clean
+

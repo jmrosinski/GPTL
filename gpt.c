@@ -84,7 +84,7 @@ int GPTsetoption (OptionName option, Boolean val)
   if (initialized)
     return (GPTerror ("GPTsetoption: Options must be set BEFORE GPTinitialize\n"));
 
-  for (n = 0; n < npossible; n++) {
+  for (n = 0; n < ncounter; n++) {
     if (counter[n].name == option) {
       counter[n].enabled = val;
 

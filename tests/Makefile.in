@@ -1,0 +1,30 @@
+CC         = @CC@
+FC         = @FC@
+CFLAGS     = @CFLAGS@ @WDEF@
+FFLAGS     = @FFLAGS@
+INSTALLDIR = @prefix@/lib
+LDFLAGS    = -L$(INSTALLDIR) -ltiming @PCL@
+RM         = rm
+
+all: exp timetiming cheap expensive omptest flopsperclock
+
+exp: exp.o
+	$(CC) -o $@ $(CFLAGS) $@.c $(LDFLAGS) -lm
+
+timetiming: timetiming.o
+	$(CC) -o $@ $(CFLAGS) $@.c $(LDFLAGS)
+
+cheap: cheap.o
+	$(FC) -o $@ $(FFLAGS) $@.F $(LDFLAGS)
+
+expensive: expensive.o
+	$(FC) -o $@ $(FFLAGS) $@.F $(LDFLAGS)
+
+omptest: omptest.o
+	$(FC) -o $@ $(FFLAGS) $@.F $(LDFLAGS)
+
+flopsperclock: flopsperclock.o
+	$(FC) -o $@ $(FFLAGS) $@.F $(LDFLAGS)
+
+clean:
+	$(RM) -f *.o
