@@ -80,6 +80,10 @@ dnl will add -lpapi if successful
 	       [AC_MSG_ERROR([[not found. Rebuild w/ PAPI_DIR set or w/o --enable-papi]])])
 fi
 
+if test "x$OS" = xaix ; then
+  FORTDEFS="$FORTDEFS -WF,-DAIX"
+fi
+
 dnl AC_ARG_ENABLE(papi,[--enable-papi],PAPIPREP="-I/home/rosinski/include -DHAVE_PAPI";PAPILIB="-L/home/rosinski/lib -lpapi",)
 
 dnl Whether to enable debugging
