@@ -85,6 +85,7 @@ int main ()
 	(void) PAPI_event_code_to_name (counter, papiname);
 	printf ("Event %s is too many\n", papiname);
       } else {
+	(void) PAPI_event_code_to_name (counter, papiname);
 	eventlist[nevents].counter = counter;
 	eventlist[nevents].str     = papiname;
 	printf ("Event %s enabled\n", eventlist[nevents].str);

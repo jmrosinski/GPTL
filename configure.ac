@@ -4,7 +4,7 @@ AC_LANG(C)
 
 AC_PROG_MAKE_SET
 
-#Get the OS type
+dnl Get the OS type
 OS="`uname | tr '[A-Z]' '[a-z]'`"
 case "$OS" in
   linux)  OS=linux;;
@@ -35,8 +35,9 @@ fi
 AC_PROG_CC($CCLIST)
 AC_PROG_F77($FCLIST)
 
+dnl Whether to target 64-bit addressing
 AC_ARG_ENABLE(bit64,
-            [--enable-bit64      Specify to build 64 bit library],
+            [--enable-bit64      Build 64 bit library],
 	    bit64=YES,bit64=NO)
 
 BITEXT=
@@ -55,19 +56,20 @@ if test "$bit64" = YES; then
   fi
 fi
 
+dnl Archive flags
 ARFLAGS="$ARFLAGS ruv";
 
-dnl Whether to include PAPI lib
-AC_ARG_ENABLE([papi],[--enable-papi       Specify to include PAPI library],
+dnl Whether to include PAPI lib and how to do so
+AC_ARG_ENABLE([papi],[--enable-papi       Enable PAPI library interface],
               [PAPI=YES;PAPIOBJS=gpt_papi.o],[PAPI=NO])
 
 FORTDEFS=""
 if test "$PAPI" = YES ; then
   AC_DEFINE([HAVE_PAPI])
-  if test "x$PAPI_DIR" != x ; then
-    PAPIPREP="-I$PAPI_DIR/include"
-    LDFLAGS="$LDFLAGS -L$PAPI_DIR/lib"
-  fi
+  AC_ARG_WITH(papi,[--with-papi=<path>  Specify path to root of PAPI installation],
+              [PAPI_ROOT="$withval";
+               PAPIPREP="-I$withval/include";
+	       LDFLAGS="$LDFLAGS -L$PAPI_ROOT/lib"],)
 dnl AIX needs pmapi
 dnl AIX also passes defines through Fortran in a special way
   if test "x$OS" = xaix ; then
@@ -78,24 +80,23 @@ dnl AIX also passes defines through Fortran in a special way
   fi
 dnl will add -lpapi if successful
   AC_CHECK_LIB(papi$BITEXT, PAPI_library_init,,
-	       [AC_MSG_ERROR([[not found. Rebuild w/ PAPI_DIR set or w/o --enable-papi]])])
+	       [AC_MSG_ERROR([[not found. Rebuild w/ PAPI_ROOT set or w/o --enable-papi]])])
 fi
 
+dnl One of the Fortran tests has ifdef AIX and defines are funky on AIX Fortran
 if test "x$OS" = xaix ; then
   FORTDEFS="$FORTDEFS -WF,-DAIX"
 fi
 
-dnl AC_ARG_ENABLE(papi,[--enable-papi],PAPIPREP="-I/home/rosinski/include -DHAVE_PAPI";PAPILIB="-L/home/rosinski/lib -lpapi",)
-
 dnl Whether to enable debugging
-AC_ARG_ENABLE(debug,[--enable-debug      Specify to enable debugging],
+AC_ARG_ENABLE(debug,[--enable-debug      Enable debugging],
               [CFLAGS="$CFLAGS -g";
 	       FFLAGS="$FFLAGS -g";
 	       LDFLAGS="$LDFLAGS -g";
 	       FLDFLAGS="$FLDFLAGS -g"],)
 
 dnl Whether to enable optimization
-AC_ARG_ENABLE(opt,[--enable-opt        Specify to optimize for speed],
+AC_ARG_ENABLE(opt,[--enable-opt        Optimize for speed],
               [CFLAGS="$CFLAGS -O";FFLAGS="$FFLAGS -O"],)
 
 dnl need to add -qfixed to FFLAGS for Fortran tests on AIX
@@ -114,7 +115,8 @@ FTHREADFLAGS=""
 OMP=""
 PTHREADS=""
 dnl OMPDEFS, OMPCFLAGS, OMP
-AC_ARG_ENABLE(openmp,[--enable-openmp],UD_SET_OMP_C,)
+AC_ARG_ENABLE(openmp,[--enable-openmp     OpenMP threading (overrides pthreads)],
+              UD_SET_OMP_C,)
 if test "$OMP" = YES ; then
   THREADDEFS="$OMPDEFS"
   THREADFLAGS="$OMPCFLAGS"
@@ -122,7 +124,7 @@ if test "$OMP" = YES ; then
   FTHREADFLAGS="$OMPFFLAGS"
 else
 dnl PTHREADDEFS, PTHREADCFLAGS, PTHREADS
-  AC_ARG_ENABLE(pthreads,[--enable-pthreads],UD_SET_PTHREADS_C,)
+  AC_ARG_ENABLE(pthreads,[--enable-pthreads   pthreads threading],UD_SET_PTHREADS_C,)
   if test "$PTHREADS" = YES ; then
     THREADDEFS="$PTHREADDEFS"
     THREADFLAGS="$PTHREADCFLAGS"
@@ -131,7 +133,7 @@ dnl PTHREADDEFS, PTHREADCFLAGS, PTHREADS
   fi
 fi
 
-dnl How to mangle names:
+dnl How to mangle Fortran names:
 AC_DEFINE(FDEFS)
 AC_F77_FUNC(zzz,zzz)
 case $zzz in
@@ -144,22 +146,13 @@ dnl Determine required Fortran load flags
 dnl Dont do this now because of the above name mangling exersize.
 dnl AC_F77_LIBRARY_LDFLAGS
 
-dnl Checks for libraries.
-dnl Replace `main' with a function in -lm:
-AC_CHECK_LIB(m, sqrt)
-
-dnl Checks for header files.
-AC_HEADER_STDC
-AC_CHECK_HEADERS(sys/time.h unistd.h)
-
-dnl Checks for typedefs, structures, and compiler characteristics.
+dnl For proper handling of const and inline
 AC_C_CONST
 AC_C_INLINE
-AC_HEADER_TIME
 
 dnl Checks for library functions.
 AC_FUNC_VPRINTF
-AC_CHECK_FUNCS(gettimeofday)
+AC_CHECK_FUNCS(gettimeofday times,,AC_MSG_ERROR([not found. giving up]))
 
 AC_SUBST(FDEFS)
 AC_SUBST(THREADDEFS)

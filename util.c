@@ -1,5 +1,5 @@
 /*
-** $Id: util.c,v 1.7 2004-10-25 03:27:10 rosinski Exp $
+** $Id: util.c,v 1.8 2004-11-02 03:18:39 rosinski Exp $
 */
 
 #include <stdarg.h>
@@ -24,12 +24,16 @@ static bool abort_on_error = false;
 int GPTerror (const char *fmt, ...)
 {
   va_list args;
-
+  
   va_start (args, fmt);
-
+  
   if (fmt != NULL)
+#ifdef HAVE_VFPRINTF
     (void) vfprintf (stderr, fmt, args);
-
+#else
+    (void) fprintf (stderr, "GPTerror: no vfprintf: fmt is %s\n", fmt);
+#endif
+  
   va_end (args);
   
   if (abort_on_error)
