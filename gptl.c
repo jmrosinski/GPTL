@@ -10,7 +10,7 @@
 
 static Timer **timers = 0;       /* linked list of timers */
 static Timer **last = 0;         /* last element in list */
-static int *max_depth;           /* maximum indentation level */
+static int *max_depth;           /* maximum indentation level encountered */
 static int *max_name_len;        /* max length of timer name */
 
 typedef struct {
@@ -419,9 +419,11 @@ int GPTLstop (const char *name) /* timer name */
 
   if (wallstats.enabled) {
 
-    delta_wtime_sec  = tp1.tv_sec  - ptr->wall.last_sec;
-    delta_wtime_usec = tp1.tv_usec - ptr->wall.last_usec;
-    delta_wtime      = delta_wtime_sec + 1.e-6*delta_wtime_usec;
+    delta_wtime_sec       = tp1.tv_sec  - ptr->wall.last_sec;
+    delta_wtime_usec      = tp1.tv_usec - ptr->wall.last_usec;
+    delta_wtim     e      = delta_wtime_sec + 1.e-6*delta_wtime_usec;
+    ptr->wall.accum_sec  += delta_wtime_sec;
+    ptr->wall.accum_usec += delta_wtime_usec;
 
     if (ptr->count == 1) {
       ptr->wall.max = delta_wtime;
@@ -430,9 +432,6 @@ int GPTLstop (const char *name) /* timer name */
       ptr->wall.max = MAX (ptr->wall.max, delta_wtime);
       ptr->wall.min = MIN (ptr->wall.min, delta_wtime);
     }
-
-    ptr->wall.accum_sec  += delta_wtime_sec;
-    ptr->wall.accum_usec += delta_wtime_usec;
 
     /*
     ** Adjust accumulated wallclock values to guard against overflow in the
