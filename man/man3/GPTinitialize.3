@@ -1,4 +1,4 @@
-.\" $Id: GPTinitialize.3,v 1.1 2004-11-10 04:41:20 rosinski Exp $
+.\" $Id: GPTinitialize.3,v 1.2 2004-11-17 04:55:35 rosinski Exp $
 .TH GPTinitialize 3 "November, 2004" "GPT"
 
 .SH NAME
@@ -17,14 +17,14 @@ GPTinitialize \- Initialize GPT to allow subsequent calls to GPTstart and GPTsto
 
 .SH DESCRIPTION
 .B GPTinitialize
-initializes the GPT library for subsequent calls to GPTstart and GPTstop.
+Initializes the GPT library for subsequent calls to GPTstart and GPTstop.
 This function MUST be called AFTER all calls to GPTsetoption and BEFORE all
 calls to GPTstart and GPTstop.
 
 .SH RETURN VALUES
 On success, this function returns
 .B 0.
-On error, a non-zero error code is returned and a descriptive message
+On error, a negative error code is returned and a descriptive message
 printed. 
 
 .SH EXAMPLES

@@ -1,0 +1,40 @@
+.\" $Id: GPTfinalize.3,v 1.1 2004-11-17 04:55:34 rosinski Exp $
+.TH GPTfinalize 3 "November, 2004" "GPT"
+
+.SH NAME
+GPTfinalize \- Finalize the GPT environment (free memory, etc).
+
+.SH SYNOPSIS
+.B C Interface:
+
+.BI "int\ GPTfinalize (void);"
+
+.fi
+.B Fortran Interface:
+
+.BI "integer gptfinalize ()"
+.fi
+
+.SH DESCRIPTION
+.B GPTfinalize
+Finalizes the GPT environment.  All internally allocated space is freed.
+Further use of the library requires another invocation of GPTinitialize.
+
+.SH RETURN VALUES
+On success, this function returns
+.B 0.
+On error, a negative error code is returned and a descriptive message
+printed. 
+
+.SH EXAMPLES
+.nf         
+.if t .ft CW
+
+if (GPTfinalize () != 0)
+  handle_error (1);
+
+.if t .ft P
+.fi
+
+.SH SEE ALSO
+.BR GPTinitialize "(3)" 
