@@ -208,11 +208,14 @@ int GPT_PAPIstart (const int mythread,
     return 0;
 
   if ( ! started[mythread]) {
-    PAPI_create_eventset (&EventSet[mythread]);
+    if ((ret = PAPI_create_eventset (&EventSet[mythread])) != PAPI_OK)
+      return GPTerror ("GPT_PAPIstart: failure creating eventset: %s\n", 
+		       PAPI_strerror (ret));
+
     for (n = 0; n < nevents; n++) {
       if ((ret = PAPI_add_event (EventSet[mythread], eventlist[n].counter)) != PAPI_OK) {
 	printf ("%s\n", PAPI_strerror (ret));
-	return GPTerror ("GPT_PAPIstart: failure attempting to add event: %s\n", 
+	return GPTerror ("GPT_PAPIstart: failure adding event: %s\n", 
 			 eventlist[n].str);
       }
     }

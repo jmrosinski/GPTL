@@ -67,9 +67,12 @@ int main ()
 
   GPTPAPIprinttable ();
 
-  do {
+  while (1) {
     printf ("Enter option to be enabled, or positive number when done:\n");
     scanf ("%d", &counter);
+
+    if (counter > 0)
+      break;
 
     if ((ret = PAPI_query_event (counter)) != PAPI_OK) {
       (void) PAPI_event_code_to_name (counter, papiname);
@@ -85,7 +88,7 @@ int main ()
 	++nevents;
       }
     }
-  } while (counter < 0);
+  }
 
   printf ("Enter number of parallel iterations\n");
   scanf ("%d", &nompiter);
@@ -108,7 +111,12 @@ int main ()
   mythread = get_thread_num (&nthreads, &maxthreads);
 
   if ( ! started[mythread]) {
-    PAPI_create_eventset (&EventSet[mythread]);
+    if ((ret = PAPI_create_eventset (&EventSet[mythread])) != PAPI_OK) {
+      printf ("GPT_PAPIstart: failure creating eventset: %s\n", 
+		       PAPI_strerror (ret));
+      exit (1);
+    }
+
     for (n = 0; n < nevents; n++) {
       if ((ret = PAPI_add_event (EventSet[mythread], eventlist[n].counter)) != PAPI_OK) {
 	printf ("%s\n", PAPI_strerror (ret));
