@@ -8,17 +8,21 @@ static int unlock_mutex (void);    /* unlock a mutex for exit from a critical re
 #include <omp.h>
 static omp_lock_t lock;
 
+/*
+** threadinit: Initialize locking capability and set number of threads
+**
+** Output arguments:
+**   nthreads:   number of threads
+**   maxthreads: number of threads (these don't differ under OpenMP)
+*/
+
 int threadinit (int *nthreads, int *maxthreads)
 {
-  /*
-  ** Must call init_lock before using the lock (get_thread_num())
-  */
+  /* Must call init_lock before using the lock (get_thread_num()) */
 
   omp_init_lock (&lock);
 
-  /*
-  ** In OMP case, maxthreads and nthreads are the same number
-  */
+  /* In OMP case, maxthreads and nthreads are the same number */
 
   *maxthreads = omp_get_max_threads ();
   *nthreads = *maxthreads;
@@ -27,9 +31,23 @@ int threadinit (int *nthreads, int *maxthreads)
   return 0;
 }
 
+/*
+** threadfinalize: no-op under OpenMP
+*/
+
 void threadfinalize ()
 {
 }
+
+/*
+** get_thread_num: determine thread number of the calling thread
+**
+** Input args:
+**   nthreads:   number of threads
+**   maxthreads: number of threads (unused on OpenMP case)
+**
+** Return value: thread number (success) or GPTerror (failure)
+*/
 
 int get_thread_num (int *nthreads, int *maxthreads)
 {
@@ -42,11 +60,19 @@ int get_thread_num (int *nthreads, int *maxthreads)
   return mythread;
 }
 
+/*
+** lock_mutex: lock a mutex for private access
+*/
+
 int lock_mutex (void)
 {
   omp_set_lock (&lock);
   return 0;
 }
+
+/*
+** unlock_mutex: unlock a mutex from private access
+*/
 
 static int unlock_mutex (void)
 {
@@ -60,17 +86,24 @@ static int unlock_mutex (void)
 
 #include <pthread.h>
 
-pthread_mutex_t t_mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_t *threadid;
+static pthread_mutex_t t_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_t *threadid;
+
+/*
+** threadinit: Set number of threads and max number of threads
+**
+** Output arguments:
+**   nthreads:   number of threads
+**   maxthreads: number of threads (these don't differ under OpenMP)
+**
+** Return value: 0 (success) or GPTerror (failure)
+*/
 
 int threadinit (int *nthreads, int *maxthreads)
 {
   int nbytes;
 
-  /*
-  ** Manage the threadid array which maps
-  ** physical thread id's to logical id's
-  */
+  /* Manage the threadid array which maps physical thread id's to logical id's */
 
   nbytes = MAX_THREADS * sizeof (pthread_t);
   if ( ! (threadid = (pthread_t *) malloc (nbytes)))
@@ -88,10 +121,26 @@ int threadinit (int *nthreads, int *maxthreads)
   return 0;
 }
 
+/*
+** threadfinalize: free allocated space
+*/
+
 void threadfinalize ()
 {
   free (threadid);
 }
+
+/*
+** get_thread_num: determine zero-based thread number of the calling thread
+**
+** Input args:
+**   nthreads:   number of threads
+**
+** Input/output args:
+**   maxthreads: max number of threads
+**
+** Return value: thread number (success) or GPTerror (failure)
+*/
 
 int get_thread_num (int *nthreads, int *maxthreads)
 {
@@ -121,10 +170,12 @@ int get_thread_num (int *nthreads, int *maxthreads)
   */
 
   if (n == *nthreads) {
-    if (*nthreads >= MAX_THREADS)
+    if (*nthreads >= MAX_THREADS) {
+      if (unlock_mutex () < 0)
+	printf ("get_thread_num: mutex unlock failure\n");
       return GPTerror ("get_thread_num: nthreads=%d is too big Recompile "
-		      "with larger value of MAX_THREADS\n", *nthreads);
-    
+		       "with larger value of MAX_THREADS\n", *nthreads);
+    }    
     threadid[n] = mythreadid;
     ++*nthreads;
   }
@@ -135,12 +186,20 @@ int get_thread_num (int *nthreads, int *maxthreads)
   return n;
 }
 
+/*
+** lock_mutex: lock a mutex for private access
+*/
+
 static int lock_mutex ()
 {
   if (pthread_mutex_lock (&t_mutex) != 0)
     return GPTerror ("pthread_lock_mutex failure\n");
   return 0;
 }
+
+/*
+** unlock_mutex: unlock a mutex from private access
+*/
 
 static int unlock_mutex ()
 {

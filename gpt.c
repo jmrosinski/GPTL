@@ -108,8 +108,8 @@ int GPTsetoption (const int option,  /* option */
 
 int GPTinitialize (void)
 {
-  int n;             /* index */
-  int i;             /* index */
+  int i, n;          /* indices */
+  int ret;           /* return code */
 
 #ifdef DISABLE_TIMERS
   return 0;
@@ -157,7 +157,8 @@ int GPTinitialize (void)
   }
 
 #ifdef HAVE_PAPI
-  GPT_PAPIinitialize (maxthreads);
+  if (GPT_PAPIinitialize (maxthreads) < 0)
+    return GPTerror ("GPTinitialize: GPT_PAPIinitialize failure\n");
 #endif
 
   initialized = true;
@@ -167,6 +168,7 @@ int GPTinitialize (void)
 /*
 ** GPTfinalize (): Finalization routine must be called from single-threaded
 **   region. Free all malloc'd space
+**
 ** return value: 0 (success) or GPTerror (failure)
 */
 
@@ -203,6 +205,9 @@ int GPTfinalize (void)
 #endif
 
   threadfinalize ();
+#ifdef HAVE_PAPI
+  GPT_PAPIfinalize (maxthreads);
+#endif
   initialized = false;
   return 0;
 }
@@ -213,7 +218,7 @@ int GPTfinalize (void)
 ** Input arguments:
 **   name: timer name
 **
-** Return value: 0 (success) or -1 (failure)
+** Return value: 0 (success) or GPTerror (failure)
 */
 
 int GPTstart (const char *name)       /* timer name */
@@ -377,10 +382,10 @@ int GPTstop (const char *name) /* timer name */
     (void) GPT_PAPIoverheadstart (mythread);
 #endif
 
-    /*
-    ** The 1st system timer call is used both for overhead estimation and
-    ** the input timer
-    */
+  /*
+  ** The 1st system timer call is used both for overhead estimation and
+  ** the input timer
+  */
     
   if (wallstats.enabled)
     gettimeofday (&tp1, 0);
@@ -469,6 +474,7 @@ int GPTstop (const char *name) /* timer name */
   if (overheadstats.enabled)
     (void) GPT_PAPIoverheadstop (mythread, &ptr->aux);
 #endif
+
   return 0;
 }
 
@@ -480,7 +486,7 @@ int GPTstop (const char *name) /* timer name */
 **   usr:  user time
 **   sys:  system time
 **
-** Return value: 0 (success) or -1 (failure)
+** Return value: 0 (success) or GPTerror (failure)
 */
 
 int GPTstamp (double *wall, double *usr, double *sys)
@@ -510,7 +516,7 @@ int GPTstamp (double *wall, double *usr, double *sys)
 /*
 ** GPTreset: reset all known timers to 0
 **
-** Return value: 0 (success) or -1 (failure)
+** Return value: 0 (success) or GPTerror (failure)
 */
 
 int GPTreset (void)
@@ -545,7 +551,14 @@ int GPTreset (void)
   return 0;
 }
 
-/* GPTpr: Print values of all timers */
+/* 
+** GPTpr: Print values of all timers
+**
+** Input arguments:
+**   id: integer to append to string "timing."
+**
+** Return value: 0 (success) or GPTerror (failure)
+*/
 
 int GPTpr (const int id)   /* output file will be named "timing.<id>" */
 {
@@ -696,15 +709,14 @@ int GPTpr (const int id)   /* output file will be named "timing.<id>" */
       fprintf (fp, "OVERHEAD.SUM (wallclock seconds) = %9.3f\n", osum);
     }
   }
+
 #ifdef DIAG
   fprintf (fp, "\n");
   for (n = 0; n < nthreads; ++n) 
     fprintf (fp, "novfl[%d]=%d\n", n, novfl[n]);
 #endif
 
-  /*
-  ** Print hash table stats
-  */
+  /* Print hash table stats */
 
 #ifdef HASH  
   for (n = 0; n < nthreads; n++) {
@@ -729,21 +741,29 @@ int GPTpr (const int id)   /* output file will be named "timing.<id>" */
   return 0;
 }
 
-/* printstats: print a single timer */
+/* 
+** printstats: print a single timer
+**
+** Input arguments:
+**   timer:    timer for which to print stats
+**   fp:       file descriptor to write to
+**   n:        thread number
+**   doindent: whether to indent
+*/
 
-static void printstats (const Timer *timer,
-			FILE *fp,
+static void printstats (const Timer *timer,     /* timer to print */
+			FILE *fp,               /* file descriptor to write to */
 			const int n,            /* thread number */
-			const bool doindent)    /* output stream */
+			const bool doindent)    /* whether indenting will be done */
 {
-  int i;
-  int indent;
-  int extraspace;
-  long ticks_per_sec;
-  float usr;
-  float sys;
-  float usrsys;
-  float elapse;
+  int i;               /* index */
+  int indent;          /* index for indenting */
+  int extraspace;      /* for padding to length of longest name */
+  long ticks_per_sec;  /* returned from sysconf */
+  float usr;           /* user time */
+  float sys;           /* system time */
+  float usrsys;        /* usr + sys */
+  float elapse;        /* elapsed time */
 
   if ((ticks_per_sec = sysconf (_SC_CLK_TCK)) == -1)
     (void) GPTerror ("printstats: token _SC_CLK_TCK is not defined\n");
@@ -790,6 +810,15 @@ static void printstats (const Timer *timer,
 
   fprintf (fp, "\n");
 }
+
+/* 
+** add: add the contents of tin to tout
+**
+** Input arguments:
+**   tin:  input timer
+** Input/output arguments:
+**   tout: output timer summed into
+*/
 
 static void add (Timer *tout,   
 		 const Timer *tin)
@@ -843,7 +872,7 @@ static int get_cpustamp (long *usr, long *sys)
 }
 
 /*
-** Find the entry in the hash table and return a pointer to it.
+** getentry: find the entry in the hash table and return a pointer to it.
 **
 ** Input args:
 **   hashtable: the hashtable (array)
@@ -854,9 +883,9 @@ static int get_cpustamp (long *usr, long *sys)
 ** Return value: pointer to the entry, or NULL if not found
 */
 
-static inline Timer *getentry (const Hashtable *hashtable, 
-			       const char *name, 
-			       int *indx)
+static inline Timer *getentry (const Hashtable *hashtable, /* hash table */
+			       const char *name,           /* name to hash */
+			       int *indx)                  /* hash index */
 {
   int i;                 /* loop index */
   const char *c = name;  /* pointer to elements of "name" */

@@ -1,5 +1,5 @@
 /*
-** $Id: util.c,v 1.9 2004-11-03 02:58:25 rosinski Exp $
+** $Id: util.c,v 1.10 2004-11-10 23:55:57 rosinski Exp $
 */
 
 #include <stdarg.h>
@@ -7,6 +7,8 @@
 #include <stdlib.h>
 
 #include "private.h"
+
+static bool abort_on_error = false; /* flag says to abort on any error */
 
 /*
 ** GPTerror: error return routine to print a message and return a failure
@@ -18,8 +20,6 @@
 **
 ** Return value: -1 (failure)
 */
-
-static bool abort_on_error = false;
 
 int GPTerror (const char *fmt, ...)
 {
@@ -42,10 +42,26 @@ int GPTerror (const char *fmt, ...)
   return (-1);
 }
 
+/*
+** GPTset_abort_on_error: User-visible routine to set abort_on_error flag
+**
+** Input arguments:
+**   val: true (abort on error) or false (don't)
+*/
+
 void GPTset_abort_on_error (bool val)
 {
   abort_on_error = val;
 }
+
+/*
+** GPTallocate: wrapper utility for malloc
+**
+** Input arguments:
+**   nbytes: size to allocate
+**
+** Return value: pointer to the new space (or NULL)
+*/
 
 void *GPTallocate (const int nbytes)
 {

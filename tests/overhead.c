@@ -3,8 +3,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #ifdef THREADED_OMP
 #include <omp.h>
+#endif
+
+#ifdef HAVE_PAPI
+#include <papi.h>
 #endif
 
 #include "../gpt.h"
@@ -17,6 +22,30 @@ int main ()
   int nompiter;
   int ompiter;
   int ninvoke;
+  int papiopt;
+  int gptopt;
+  int val;
+
+#ifdef HAVE_PAPI
+  GPTPAPIprinttable ();
+  do {
+    printf ("Enter PAPI option to enable, non-negative number when done\n");
+    scanf ("%d", &papiopt);
+    if (GPTsetoption (papiopt, 1) < 0)
+      printf ("gptsetoption failure\n");
+  } while (papiopt < 0);
+#endif
+
+  printf ("GPTwall           = 1");
+  printf ("GPTcpu            = 2");
+  printf ("GPTabort_on_error = 3");
+  printf ("GPToverhead       = 4");
+  do {
+    printf ("Enter GPT option and enable flag, negative numbers when done\n");
+    scanf ("%d %d", &gptopt, &val);
+    if (GPTsetoption (gptopt, val) < 0)
+      printf ("gptsetoption failure\n");
+  } while (gptopt < 0);
 
   printf ("Enter number of iterations for threaded loop:\n");
   scanf ("%d", &nompiter);
@@ -96,6 +125,11 @@ static void overhead (int iter, int ninvoke)
   free (strings1);
   free (strings2);
   GPTstop ("freestuff");
+
+  for (i = 0; i < ninvoke; ++i) {
+    GPTstart ("2or4PAPI_reads");
+    GPTstop ("2or4PAPI_reads");
+  }
 }
 
 static void *getentry (char *string,
