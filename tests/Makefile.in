@@ -2,7 +2,7 @@ CC       = @CC@
 CFLAGS   = @CFLAGS@ @THREADDEFS@
 FC       = @F77@
 FFLAGS   = @FFLAGS@
-LDFLAGS  = -L.. -lgpt @LIBS@ @LDFLAGS@ $(CFLAGS)
+LDFLAGS  = -L.. -lgpt @LIBS@ @LDFLAGS@ @CFLAGS@
 FLDFLAGS = -L.. -lgpt
 LOADER   = @F77@
 

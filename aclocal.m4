@@ -6,7 +6,6 @@ AC_DEFUN(UD_SET_OMP_C,
   OMP="NO"
 
   AC_MSG_CHECKING([C flags for openmp])
-  AC_TRY_LINK([#include <omp.h>],[(void) omp_get_max_threads();],OMP="YES",)
 
   if test "$OMP" = "NO" ; then
     THREADFLAGS="-mp"
@@ -30,6 +29,7 @@ AC_DEFUN(UD_SET_OMP_C,
     THREADDEFS=-DTHREADED_OMP
     AC_MSG_RESULT($THREADFLAGS works)
   else
+    CFLAGS="$OLDFLAGS"
     AC_MSG_RESULT([not found])
     AC_MSG_ERROR([quitting.  Rerun configure without --enable-openmp])
   fi
@@ -69,6 +69,7 @@ AC_DEFUN(UD_SET_OMP_F77,
   if test "$FORTOMP" = "YES" ; then
     AC_MSG_RESULT($THREADFLAGS)
   else
+    FFLAGS="$OLDFLAGS"
     AC_MSG_RESULT([not found])
     AC_MSG_WARN([threaded Fortran tests may fail])
   fi

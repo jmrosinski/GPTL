@@ -9,6 +9,7 @@ gpt0_3: Added overflow diagnostic novfl
 	Fix SGI complaints about arg lists
 	Changed depth array to mitigate false sharing
 	Added DISABLE_TIMERS ifdef
+	autoconf bugfix
 gpt0_2: Remove unused components in Timer. Make "name" component a fixed
         size for efficiency.
 gpt0_1: Add hashtable for efficiency. Add some more tests.  Add ChangeLog.
