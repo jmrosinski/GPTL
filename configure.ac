@@ -60,7 +60,7 @@ ARFLAGS="$ARFLAGS ruv";
 dnl Whether to include PAPI lib
 AC_ARG_ENABLE([papi],[--enable-papi],[PAPI=YES;PAPIOBJS=gpt_papi.o],[PAPI=NO])
 
-AIXFDEFS=""
+FORTDEFS=""
 if test "$PAPI" = YES ; then
   AC_DEFINE([HAVE_PAPI])
   if test "x$PAPI_DIR" != x ; then
@@ -70,8 +70,10 @@ if test "$PAPI" = YES ; then
 dnl AIX needs pmapi
 dnl AIX also passes defines through Fortran in a special way
   if test "x$OS" = xaix ; then
-    AIXFDEFS="-WF,-DHAVE_PAPI"
+    FORTDEFS="-WF,-DHAVE_PAPI"
     LDFLAGS="$LDFLAGS -lpmapi"
+  else
+    FORTDEFS="-DHAVE_PAPI"
   fi
 dnl will add -lpapi if successful
   AC_CHECK_LIB(papi$BITEXT, PAPI_library_init,,
@@ -144,5 +146,5 @@ AC_SUBST(PAPIPREP)
 AC_SUBST(PAPIOBJS)
 AC_SUBST(ARFLAGS)
 AC_SUBST(BITFLAGS)
-AC_SUBST(AIXFDEFS)
+AC_SUBST(FORTDEFS)
 AC_OUTPUT(Makefile tests/Makefile)
