@@ -3,30 +3,34 @@
 
       include '../gpt.inc'
 
-      call gptinitialize
-!      call gptsetoption (usrsys, .false.)
-      call gptstart('total')
+      if (gptsetoption (gptcpu, 1) < 0) stop 99
+      if (gptsetoption (gptwall, 0) < 0) stop 99
+
+      if (gptinitialize () < 0) stop 99
+
+      if (gptstart('total') < 0) stop 99
+
       do n=1,98
         if (n.lt.10) then
           write(name,'(a6,i1)') 'loop_0',n
         else
           write(name,'(a5,i2)') 'loop_',n
         end if
-        call gptstart(name)
-        call gptstop(name)
+        if (gptstart(name) < 0) stop 99
+        if (gptstop(name) < 0) stop 99
       end do
-      call gptstart('loop_99 ')
+      if (gptstart('loop_99 ') < 0) stop 99
       do n=1,100
-        call gptstart('loop_100')
+        if (gptstart('loop_100') < 0) stop 99
         sum = 0.
         do i=1,100000
           sum = sum + log(float(i))
         end do
         write(6,*)'sum=',sum
-        call gptstop('loop_100')
+        if (gptstop('loop_100') < 0) stop 99
       end do
-      call gptstop('loop_99 ')
-      call gptstop('total')
-      call gptpr(0)
+      if (gptstop('loop_99 ') < 0) stop 99
+      if (gptstop('total') < 0) stop 99
+      if (gptpr(0) < 0) stop 99
       stop
       end

@@ -1,15 +1,45 @@
 /*
-** $Id: f_wrappers.c,v 1.2 2001-01-01 19:34:05 rosinski Exp $
+** $Id: f_wrappers.c,v 1.3 2004-10-14 19:25:54 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines
 */
 
-#if ( defined CRAY ) || ( defined T3D )
-#include <fortran.h>
+#include "private.h"
+
+#ifdef OLDWRAPPERS
+#if ( defined FORTRANCAPS )
+
+#define t_initializef GPTINITIALIZE
+#define t_prf GPTPR
+#define t_resetf GPTRESET
+#define t_stampf GPTSTAMP
+#define t_startf GPTSTART
+#define t_stopf GPTSTOP
+#define t_setoptionf GPTSETOPTION
+
+#elif ( defined FORTRANUNDERSCORE )
+
+#define t_initializef gptinitialize_
+#define t_prf gptpr_
+#define t_resetf gptreset_
+#define t_stampf gptstamp_
+#define t_startf gptstart_
+#define t_stopf gptstop_
+#define t_setoptionf gptsetoption_
+
+#elif ( defined FORTRANDOUBLEUNDERSCORE )
+
+#define t_initializef gptinitialize__
+#define t_prf gptpr__
+#define t_resetf gptreset__
+#define t_stampf gptstamp__
+#define t_startf gptstart__
+#define t_stopf gptstop__
+#define t_setoptionf gptsetoption__
+
 #endif
 
-#include "gpt.h"
-#include "private.h"
+#else
 
 #if ( defined FORTRANCAPS )
 
@@ -42,18 +72,10 @@
 #define gptsetoption gptsetoption__
 
 #endif
-
-#if ( defined CRAY ) || ( defined T3D )
-
-int gptstart (_fcd);
-int gptstop (_fcd);
-
-#else
+#endif
 
 int gptstart (char *, int);
 int gptstop (char *, int);
-
-#endif
 
 int gptinitialize ()
 {
@@ -73,39 +95,13 @@ void gptreset ()
 
 int gptsetoption (int *option, int *val)
 {
-  return GPTsetoption ( (OptionName) *option, (Boolean) *val);
+  return GPTsetoption (*option, (bool) *val);
 }
 
 int gptstamp (double *wall, double *usr, double *sys)
 {
   return GPTstamp (wall, usr, sys);
 }
-
-#if ( defined CRAY ) || ( defined T3D )
-
-int gptstart (_fcd name)
-{
-  char cname[MAX_CHARS+1];
-  int numchars;
-
-  numchars = MIN (_fcdlen (name), MAX_CHARS);
-  strncpy (cname, _fcdtocp (name), numchars);
-  cname[numchars] = '\0';
-  return GPTstart (cname);
-}
-
-int gptstop (_fcd name)
-{
-  char cname[MAX_CHARS+1];
-  int numchars;
-
-  numchars = MIN (_fcdlen (name), MAX_CHARS);
-  strncpy (cname, _fcdtocp (name), numchars);
-  cname[numchars] = '\0';
-  return GPTstop (cname);
-}
-
-#else
 
 int gptstart (char *name, int nc1)
 {
@@ -128,5 +124,3 @@ int gptstop (char *name, int nc1)
   cname[numchars] = '\0';
   return GPTstop (cname);
 }
-
-#endif

@@ -1,7 +1,7 @@
       program cheap
       character*8 name
 
-      call gptinitialize
+      call gptinitialize ()
       do n=1,98
         if (n.lt.10) then
           write(name,'(a6,i1)') 'loop_0',n

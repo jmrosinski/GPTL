@@ -1,21 +1,30 @@
-CC         = @CC@
-CFLAGS     = @DEFS@ @CFLAGS@ @WDEF@ @ARCHDEF@
-INSTALLDIR = @prefix@/lib
-RM         = rm
-@VPATH@    = @top_srcdir@
-LIBNAME = libgpt.a
-OBJS = gpt.o util.o f_wrappers.o
+CC       = @CC@
+CFLAGS   = @CFLAGS@ @FDEFS@ @THREADDEFS@ @DEFS@
 
-all: $(INSTALLDIR)/$(LIBNAME) testit
+LIBNAME  = libgpt.a
+OBJS     = f_wrappers.o gpt.o util.o
+MAKE     = gmake
 
-$(INSTALLDIR)/$(LIBNAME): $(OBJS)
+all: $(LIBNAME) tests/all
+
+install: @prefix@/$(LIBNAME)
+	cp $(LIBNAME) @prefix@/lib
+
+uninstall:
+	$(RM) @prefix@/lib/$(LIBNAME) @prefix@/include/gpt.h \
+              @prefix@/include/gpt.inc
+
+$(LIBNAME): $(OBJS)
 	$(AR) $(ARFLAGS) $@ $(OBJS)
-	@RANLIB@
+	$(RM) -f tests/*.o
 
-testit:
-	cd tests || exit 1; make
+tests/all:
+	(cd tests; $(MAKE) all)
 
 clean:
-	$(RM) -f $(OBJS) $(INSTALLDIR)/$(LIBNAME)
-	cd tests || exit 1; make clean
+	$(RM) $(OBJS)
+	(cd tests; $(MAKE) clean)
 
+f_wrappers.o: gpt.h private.h
+gpt.o: gpt.h private.h
+util.o:

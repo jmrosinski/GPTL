@@ -1,30 +1,56 @@
-CC         = @CC@
-FC         = @FC@
-CFLAGS     = @CFLAGS@ @WDEF@
-FFLAGS     = @FFLAGS@
-INSTALLDIR = @prefix@/lib
-LDFLAGS    = -L$(INSTALLDIR) -lgpt @PCL@
-RM         = rm
+CC       = @CC@
+CFLAGS   = @CFLAGS@
+FC       = @F77@
+FFLAGS   = @FFLAGS@
+LDFLAGS  = -L.. -lgpt @LIBS@ @LDFLAGS@ $(CFLAGS)
+FLDFLAGS = -L.. -lgpt
+LOADER = @F77@
 
-all: exp timetiming cheap expensive omptest flopsperclock
+OBJS1 = cheap.o
+OBJS2 = exp.o
+OBJS3 = expensive.o
+OBJS4 = timetiming.o
+OBJS5 = flopsperclock.o
+OBJS6 = omptest.o
+OBJS7 = errtest.o
+OBJS8 = overhead.o
+OBJS9 = opscost.o
 
-exp: exp.o
-	$(CC) -o $@ $(CFLAGS) $@.c $(LDFLAGS) -lm
+CEXES = exp timetiming 
+FEXES = cheap expensive flopsperclock omptest errtest overhead opscost
 
-timetiming: timetiming.o
-	$(CC) -o $@ $(CFLAGS) $@.c $(LDFLAGS)
+all: $(CEXES) $(FEXES)
 
-cheap: cheap.o
-	$(FC) -o $@ $(FFLAGS) $@.F $(LDFLAGS)
+cexes: $(CEXES)
 
-expensive: expensive.o
-	$(FC) -o $@ $(FFLAGS) $@.F $(LDFLAGS)
+fexes: $(FEXES)
 
-omptest: omptest.o
-	$(FC) -o $@ $(FFLAGS) $@.F $(LDFLAGS)
+exp: $(OBJS2)
+	$(CC) -o $@ $(OBJS2) $(CCFLAGS) $(LDFLAGS) -lm
 
-flopsperclock: flopsperclock.o
-	$(FC) -o $@ $(FFLAGS) $@.F $(LDFLAGS)
+timetiming: $(OBJS4)
+	$(CC) -o $@ $(OBJS4) $(CCFLAGS) $(LDFLAGS) -lm
+
+cheap: $(OBJS1)
+	$(LOADER) -o $@ $(OBJS1) $(FFLAGS) $(FLDFLAGS)
+
+expensive: $(OBJS3)
+	$(LOADER) -o $@ $(OBJS3) $(FFLAGS) $(FLDFLAGS)
+
+flopsperclock: $(OBJS5)
+	$(LOADER) -o $@ $(OBJS5) $(FFLAGS) $(FLDFLAGS)
+
+omptest: $(OBJS6)
+	$(LOADER) -o $@ $(OBJS6) $(FFLAGS) $(FLDFLAGS)
+
+errtest: $(OBJS7)
+	$(LOADER) -o $@ $(OBJS7) $(FFLAGS) $(FLDFLAGS)
+
+overhead: $(OBJS8)
+	$(LOADER) -o $@ $(OBJS8) $(FFLAGS) $(FLDFLAGS)
+
+opscost: $(OBJS9)
+	$(LOADER) -o $@ $(OBJS9) $(FFLAGS) $(FLDFLAGS)
 
 clean:
-	$(RM) -f *.o
+	$(RM) $(OBJS1) $(OBJS2) $(OBJS3) $(OBJS4) $(OBJS5) $(OBJS6) $(OBJS7) $(OBJS8) $(OBJS9) $(EXES)

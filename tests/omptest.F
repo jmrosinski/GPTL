@@ -3,36 +3,22 @@
 
       include '../gpt.inc'
 
-      integer gptsetoption
-      integer gptinitialize
-      integer gptstart
-      integer gptstop
-      integer gptpr
-      
-      external gptsetoption
-      external gptinitialize
-      external gptstart
-      external gptstop
-      external gptpr
-
       integer ret, iter
       
-      if (gptsetoption (usrsys, 1) < 0) call exit(99)
-      if (gptsetoption (wall, 1) < 0) call exit(99)
-      if (gptsetoption (pcl_l1dcache_miss, 0) < 0) call exit(99)
-      if (gptsetoption (pcl_l2cache_miss, 0) < 0) call exit(99)
-      if (gptsetoption (pcl_cycles, 0) < 0) call exit(99)
-      if (gptsetoption (pcl_elapsed_cycles, 0) < 0) call exit(99)
-      if (gptsetoption (pcl_fp_instr, 0) < 0) call exit(99)
-      if (gptsetoption (pcl_loadstore_instr, 0) < 0) call exit(99)
-      if (gptsetoption (pcl_instr, 0) < 0) call exit(99)
-      if (gptsetoption (pcl_stall, 0) < 0) call exit(99)
-      if (gptsetoption (pcl_l2cache_miss, 0) < 0) call exit(99)
-      if (gptinitialize() < 0) then
-        write(6,*)'gptinitialize failed'
-        call exit(99)
-      end if
-!      call gptsetoption (usrsys, .false.)
+      if (gptsetoption (gptcpu, 1) < 0) call exit(99)
+      if (gptsetoption (gptwall, 1) < 0) call exit(99)
+!      if (gpt_setoption (pcl_l1dcache_miss, 0) < 0) call exit(99)
+!      if (gpt_setoption (pcl_l2cache_miss, 0) < 0) call exit(99)
+!      if (gpt_setoption (pcl_cycles, 1) < 0) call exit(99)
+!      if (gpt_setoption (pcl_elapsed_cycles, 0) < 0) call exit(99)
+!      if (gpt_setoption (pcl_fp_instr, 1) < 0) call exit(99)
+!      if (gpt_setoption (pcl_loadstore_instr, 0) < 0) call exit(99)
+!      if (gpt_setoption (pcl_instr, 1) < 0) call exit(99)
+!      if (gpt_setoption (pcl_stall, 0) < 0) call exit(99)
+!      if (gpt_setoption (pcl_l2cache_miss, 0) < 0) call exit(99)
+!      call gpt_setoption (cpu, .false.)
+
+      if (gptinitialize () < 0) stop 99
 
       if (gptstart ('outside_nothing') < 0) stop 99
 
@@ -48,26 +34,27 @@
 
 !$OMP PARALLEL DO PRIVATE (iter)
 
-      do iter=1,32
-        call sub(iter)
+      do iter=1,64
+        call sub (iter)
       end do
 
-      if (gptpr(0) < 0) call exit(99)
+!$OMP PARALLEL DO PRIVATE (iter)
+
+      do iter=1,64
+        call sub2 (iter)
+      end do
+
+      if (gptpr (0) < 0) call exit(99)
       stop
       end program
           
       subroutine sub(iter)
       implicit none
+      include '../gpt.inc'
 
       character*7 name
       integer iter, ret
       real sum1, sum2, x
-
-      integer gptstart
-      integer gptstop
-      
-      external gptstart
-      external gptstop
 
       integer i
 
@@ -94,3 +81,29 @@
       integer :: iter
       return
       end
+
+      subroutine sub2(iter)
+      implicit none
+      include '../gpt.inc'
+
+      integer iter, ret
+      real sum1, sum2, x
+
+      integer i
+
+      sum1 = 0
+      sum2 = 0
+
+      ret = gptstart ('sub2')
+
+      do i=1,iter*100000
+        x = i
+        sum1 = sum1 + 2.1*x
+        sum2 = sum2 + 3.2*x
+      end do
+
+      ret = gptstop ('sub2')
+
+      write(6,*)'iter, sum=', iter, sum1, sum2
+      return
+      end subroutine sub2

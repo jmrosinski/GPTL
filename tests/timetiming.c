@@ -2,27 +2,23 @@
 #include <sys/resource.h>
 #include <unistd.h>
 #include <sys/times.h>
+#include "../gpt.h"
 main()
 {
   int n;
   struct tms buf;
-#ifdef HAVE_GETRUSAGE
-  struct rusage r_usage;
-#endif
 
-  GPTinitialize();
+  GPTsetoption (GPTcpu, 0);
+  GPTsetoption (GPTwall, 1);
+
+  GPTinitialize ();
+
   for (n = 0; n < 100000; n++) {
-#ifdef HAVE_GETRUSAGE
-    GPTstart("getrusage");
-    (void) getrusage (RUSAGE_SELF, &r_usage);
-    GPTstop("getrusage");
-#endif
-
-    GPTstart("times");
+    GPTstart ("times");
     (void) times (&buf);
-    GPTstop("times");
+    GPTstop ("times");
   }
-  GPTpr(0);
-  exit(0);
+  GPTpr (0);
+  return 0;
 }
 

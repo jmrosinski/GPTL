@@ -4,80 +4,41 @@
 #include <unistd.h>        /* gettimeofday */
 #include <stdio.h>
 #include <string.h>        /* memset, strcmp (via STRMATCH) */
+#if ( defined THREADED_OMP )
+#include <omp.h>
+#endif
 
-#include "gpt.h"
 #include "private.h"
 
-static struct node **timers = NULL;       /* linked list of timers */
-static struct node **last = NULL;         /* last element in list */
-static float *overhead;                   /* wallclock estimate of timer overhead */
-static int *max_indent_level;             /* maximum indentation level */
-static int numthreads            = 1;     /* num threads.  1 means no threading */
-static Boolean initialized       = false; /* GPTinitialize has been called */
-static Boolean wallenabled       = false; /* wallclock timer stats enabled */
-static Boolean usrsysenabled     = false; /* usr & sys timer stats enabled */
-static Boolean pclenabled        = false; /* need to call PCL library */     
-static Boolean pcl_cyclesenabled = false; /* enable PCL cycle count */
-static int pcl_cyclesindex       = -1;    /* index for PCL cycle count */
+static Timer **timers = 0;       /* linked list of timers */
+static Timer **last = 0;         /* last element in list */
+static int *max_depth;             /* maximum indentation level */
+static int *max_name_len;        // max length of timer name
+static int *current_depth;       // current depth in timer tree
+static int nthreads            = 1;     /* num threads.  1 means no threading */
+static bool initialized       = false; /* GPTinitialize has been called */
+static Settings primary[2] = {GPTwall, "Wallclock max       min     Overhead  ", true,
+			      GPTcpu,  "Usr       sys       usr+sys",            false};
+static const int wallidx = 0;
+static const int cpuidx = 1;
+static bool wallenabled;
+static bool cpuenabled;
+static int naux = 0;               // number of auxiliary stats
+static Settings aux[1] = {GPTother, "none", false};
 
-typedef struct {
-  OptionName name;
-  Boolean enabled;
-  char string[10];
-  int index;
-} Counter_t;
-
-Counter_t counter[] = {
-  {usrsys,               true,  "Usr    Sys", -1},
-  {wall,                 true,  "Wallclock ", -1},
-#ifdef HAVE_PCL
-  {pcl_start,            false, "          ", -1},  /* bracket PCL entries */
-  {pcl_l1dcache_miss,    false, "l1 D miss ", -1},
-  {pcl_l2cache_miss,     false, "L2 miss   ", -1},
-  {pcl_cycles,           false, "Cycles    ", -1},
-  {pcl_elapsed_cycles,   false, "E-Cycles  ", -1},
-  {pcl_fp_instr,         false, "FP instr  ", -1},
-  {pcl_loadstore_instr,  false, "L/S instr ", -1},
-  {pcl_instr,            false, "Instruct  ", -1},
-  {pcl_stall,            false, "Stall     ", -1},
-  {pcl_end,              false, "          ", -1},  /* bracket PCL entries */
+#if ( defined THREADED_OMP )
+static omp_lock_t lock;
 #endif
-};
 
-struct Stats {		   
-  float usr;	   /* user CPU time */
-  float sys;	   /* system CPU time */
-  float usrsys;	   /* usr + sys */
-  float elapse;	   /* elapsed time */
-  float max_wtime; /* max elapsed wallclock time per call */
-  float min_wtime; /* min elapsed wallclock time per call */
+// Local function prototypes
 
-  long count;	   /* number of invocations of this timer */
-
-  PCL_CNT_TYPE pcl_result[PCL_COUNTER_MAX];
-};
-
-int ncounter = sizeof (counter) / sizeof (Counter_t);
-
-/*
-** Needed by PCL library: otherwise unused
-*/
-
-PCL_DESCR_TYPE *descr;
-int pcl_counter_list[PCL_COUNTER_MAX];
-int npcl = 0;                      /* number of PCL counters enabled */
-PCL_CNT_TYPE *overhead_pcl;        /* overhead counter (cycles) */
-
+static void printstats (Timer *, FILE *, int, bool);
+static void *allocate (int);
+static void add (Timer *, Timer *);
+static int get_thread_num (void);
 static int lock_mutex (void);
 static int unlock_mutex (void);
-
-/* 
-** Specific to GPTpr
-*/
-
-static void fillstats (struct Stats *, struct node *);
-static void print_header (FILE *, int);
-static void print_stats_line (FILE *, struct Stats *);
+static int get_cpustamp (long *, long *);
 
 static long ticks_per_sec; /* clock ticks per second */
 
@@ -92,30 +53,32 @@ static long ticks_per_sec; /* clock ticks per second */
 ** Return value: 0 (success) or -1 (failure)
 */
 
-int GPTsetoption (OptionName option, Boolean val)
+int GPTsetoption (Option option,     // option name
+		  int val)           // whether to enable
 {
-  int n;
+  int n;   // loop index
 
   if (initialized)
     return (GPTerror ("GPTsetoption: Options must be set BEFORE GPTinitialize\n"));
-
-  for (n = 0; n < ncounter; n++) {
-    if (counter[n].name == option) {
-      counter[n].enabled = val;
-
-      if (val)
-	printf ("GPTsetoption: option enabled:  %s\n", counter[n].string);
-      else
-	printf ("GPTsetoption: option disabled: %s\n", counter[n].string);
-
-      return 0;
+  
+  for (n = 0; n < 2; n++) {
+    if (primary[n].option == option) {
+      primary[n].enabled = (bool) val;
+      break;
     }
   }
 
-  if (val)
-    return (GPTerror ("GPTsetoption: Option with enum index %d not available\n",
-		      option));
-
+  if (n == 2) {
+    for (n = 0; n < naux; n++) {
+      if (aux[n].option == option) {
+	aux[n].enabled = (bool) val;
+	break;
+      }
+    }
+    if (n == naux)
+      return GPTerror ("GPTsetoption: option %s not found\n", option);
+  }
+  printf ("Option %d enabled\n", (int) option);
   return 0;
 }
 
@@ -128,25 +91,14 @@ int GPTsetoption (OptionName option, Boolean val)
 ** return value: 0 (success) or -1 (failure)
 */
 
-int GPTinitialize ()
+int GPTinitialize (void)
 {
-#if ( defined THREADED_OMP )
-
-omp_lock_t lock;
-
-#elif ( defined THREADED_PTHREADS )
-
-pthread_mutex_t t_mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_t *threadid;
-
-#endif
-
   int n;             /* index */
   int nbytes;        /* number of bytes for malloc */
   int ret;           /* return code */
 
   if (initialized)
-    return GPTerror ("GPTinitialize has already been called\n");
+    return GPTerror ("GPTinitialize() has already been called\n");
 
 #if ( defined THREADED_OMP )
 
@@ -156,11 +108,7 @@ pthread_t *threadid;
 
   omp_init_lock (&lock);
 
-  numthreads = omp_get_max_threads();
-
-#elif ( defined THREADED_PTHREADS )
-
-  numthreads = MAX_THREADS;
+  nthreads = omp_get_max_threads ();
 
 #endif
 
@@ -168,170 +116,35 @@ pthread_t *threadid;
   ** Allocate space for global arrays
   */
 
-  nbytes = numthreads * sizeof (struct node *);
-  if ((timers = (struct node **) malloc (nbytes)) == 0)
-    return GPTerror ("malloc failure: %d items\n", numthreads);
-
-  if ((last = (struct node **) malloc (nbytes)) == 0)
-    return GPTerror ("malloc failure: %d items\n", numthreads);
-
-  nbytes = numthreads * sizeof (float);
-  if ((overhead = (float *) malloc (nbytes)) == 0)
-    return GPTerror ("malloc failure: %d items\n", numthreads);
-
-  nbytes = numthreads * sizeof (PCL_CNT_TYPE);
-  if ((overhead_pcl = (PCL_CNT_TYPE *) malloc (nbytes)) == 0)
-    return GPTerror ("malloc failure: %d items\n", numthreads);
-
-  nbytes = numthreads * sizeof (int);
-  if ((max_indent_level = (int *) malloc (nbytes)) == 0)
-    return GPTerror ("malloc failure for %d items\n", numthreads);
+  timers        = (Timer **) allocate (nthreads * sizeof (Timer *));
+  last          = (Timer **) allocate (nthreads * sizeof (Timer *));
+  current_depth = (int *)    allocate (nthreads * sizeof (int));
+  max_depth     = (int *)    allocate (nthreads * sizeof (int));
+  max_name_len  = (int *)    allocate (nthreads * sizeof (int));
 
   /*
   ** Initialize array values
   */
 
-  for (n = 0; n < numthreads; n++) {
+  for (n = 0; n < nthreads; n++) {
     timers[n] = 0;
-    last[n] = 0;
-    overhead[n] = 0.;
-    overhead_pcl[n] = 0;
-    max_indent_level[n] = 0;
+    current_depth[n] = 0;
+    max_depth[n]     = 0;
+    max_name_len[n]  = 0;
   }
-
-#ifdef THREADED_PTHREADS
-
-  /*
-  ** In the pthreads case, we must manage the threadid array which maps
-  ** physical thread id's to logical id's
-  */
-
-  nbytes = numthreads * sizeof (pthread_t);
-  if ((threadid = (pthread_t *) malloc (nbytes)) == 0)
-    return GPTerror ("malloc failure for %d items\n", numthreads);
-
-  /*
-  ** Reset numthreads to 1 and define the threadid array now that initialization 
-  ** is done.
-  */
-
-  threadid[0] = pthread_self ();
-  numthreads = 1;
-
-#endif
 
   if (get_thread_num () > 0) 
     return GPTerror ("GPTinitialize: should only be called by master thread\n");
 
-  for (n = 0; n < ncounter; n++) {
-    if (counter[n].enabled) {
-      if (counter[n].name == usrsys)
-	usrsysenabled = true;
+  // Set enabled flags for speed
 
-      if (counter[n].name == wall)
-	wallenabled = true;
+  wallenabled = primary[wallidx].enabled;
+  cpuenabled  = primary[cpuidx].enabled;
 
-#ifdef HAVE_PCL
+  if ((ticks_per_sec = sysconf (_SC_CLK_TCK)) == -1)
+    return GPTerror ("GPTinitialize: sysconf (_SC_CLK_TCK) failed\n");
 
-      /*
-      ** Set up PCL stuff based on what setoption has provided.
-      */
-
-      if (counter[n].name > pcl_start && counter[n].name < pcl_end) {
-
-	pclenabled = true;
-
-	switch (counter[n].name) {
-
-	case pcl_l1dcache_miss:
-	  counter_list[npcl++] = PCL_L1DCACHE_MISS;
-	  break;
-	  
-	case pcl_l2cache_miss: 
-	  counter_list[npcl++] = PCL_L2CACHE_MISS;
-	  break;
-	  
-	case pcl_cycles: 
-	  pcl_cyclesindex = npcl;
-	  pcl_cyclesenabled = true;
-	  counter_list[pcl++] = PCL_CYCLES;
-	  break;
-
-	case pcl_elapsed_cycles: 
-	  counter_list[npcl++] = PCL_ELAPSED_CYCLES;
-	  break;
-
-	case pcl_fp_instr: 
-	  counter_list[npcl++] = PCL_FP_INSTR;
-	  break;
-
-	case pcl_loadstore_instr: 
-	  counter_list[npcl++] = PCL_LOADSTORE_INSTR;
-	  break;
-
-	case pcl_instr: 
-	  counter_list[npcl++] = PCL_INSTR;
-	  break;
-
-	case pcl_stall: 
-	  counter_list[npcl++] = PCL_STALL;
-	  break;
-	
-	default:
-	  break;
-
-	}
-      }
-#endif
-    }
-  }
-
-#ifdef HAVE_PCL
-
-  if (ncpl > 0) {
-    int thread;         /* thread number */
-
-    nbytes = numthreads * sizeof (PCL_DESCR_TYPE);
-    if ((descr = (PCL_DESCR_TYPE *) malloc (nbytes)) == 0)
-      return GPTerror ("malloc failure: %d items\n", numthreads);
-
-    /*
-    ** PCLinit must be called on a per-thread basis.  Therefore must make the call here
-    ** rather than in GPTinitialize.  null timer list flags not initialized.
-    ** Also, the critical section is necessary because PCLstart appears not to be
-    ** thread-safe.
-    */
-
-#pragma omp parallel for
-    
-    for (thread = 0; thread < numthreads; thread++) {
-
-      unsigned int flags;           /* mode flags needed by PCL */
-
-#pragma omp critical
-
-      {
-	if ((ret = PCLinit (&descr[thread])) != PCL_SUCCESS)
-	  return GPTerror ("unable to allocate PCL handle for thread %d. %s\n",
-			  thread, pclstr (ret));
-
-	/*
-	** Always count user mode only
-	*/
-      
-	flags = PCL_MODE_USER;
-
-	if ((ret = PCLquery (descr[thread], counter_list, npcl, flags)) != PCL_SUCCESS)
-	  return GPTerror ("Bad return from PCLquery thread %d: %s\n", thread, pclstr (ret));
-
-	if ((ret = PCLstart (descr[thread], counter_list, npcl, flags)) != PCL_SUCCESS)
-	  return GPTerror ("PCLstart failed thread=%d: %s\n", thread, pclstr (ret));
-      }
-    }
-  }
-#endif
   initialized = true;
-
   return 0;
 }
 
@@ -344,26 +157,23 @@ pthread_t *threadid;
 ** Return value: 0 (success) or -1 (failure)
 */
 
-int GPTstart (char *name)        /* timer name */
+int GPTstart (char *name)       /* timer name */
 {
   struct timeval tp1, tp2;      /* argument to gettimeofday */
-  struct node *ptr;             /* linked list pointer */
+  Timer *ptr;                   /* linked list pointer */
 
-  int numchars;                 /* number of characters in timer */
+  int nchars;                   /* number of characters in timer */
   int mythread;                 /* thread index (of this thread) */
-  int indent_level = 0;         /* required indentation level for this timer */
+  int depth0;                   /* indentation level for this timer */
   int ret;                      /* return code */
-
-  PCL_CNT_TYPE i_pcl_result1[PCL_COUNTER_MAX];     /* init. output fm PCLread */
-  PCL_CNT_TYPE i_pcl_result2[PCL_COUNTER_MAX];     /* final output fm PCLread */
-  PCL_FP_CNT_TYPE fp_pcl_result[PCL_COUNTER_MAX];  /* required by PCLread */
+  int depth;                    // depth in tree of timers which are on
 
   /*
   ** 1st system timer call is solely for overhead timing
   */
 
   if (wallenabled)
-    gettimeofday (&tp1, NULL);
+    gettimeofday (&tp1, 0);
 
   if ( ! initialized)
     return GPTerror ("GPTstart: GPTinitialize has not been called\n");
@@ -371,54 +181,49 @@ int GPTstart (char *name)        /* timer name */
   if ((mythread = get_thread_num ()) < 0)
     return GPTerror ("GPTstart\n");
 
-  if (npcl > 0) {
-    ret = PCLread (descr[mythread], i_pcl_result1, fp_pcl_result, npcl);
-    if (ret != PCL_SUCCESS)
-      return GPTerror ("GPTstart: error from PCLread: %s\n", pclstr (ret));
-  }
-
   /*
   ** Look for the requested timer in the current list.  For those which don't
   ** match but are currently active, increase the indentation level by 1
   */
 
-  for (ptr = timers[mythread]; ptr != NULL && ! STRMATCH (name, ptr->name); 
-       ptr = ptr->next) {
-
-    if (ptr->onflg) 
-      indent_level++;
+  depth = 0;
+  for (ptr = timers[mythread]; ptr && ! STRMATCH (name, ptr->name); ptr = ptr->next) {
+    if (ptr->onflg)
+      ++depth;
   }
 
-  if (indent_level > max_indent_level[mythread])
-    max_indent_level[mythread] = indent_level;
-    
+  if (ptr && ptr->onflg)
+    return GPTerror ("GPTstart thread %d: timer %s was already on: "
+		     "not restarting.\n", mythread, ptr->name);
+
+  ++current_depth[mythread];
+  if (current_depth[mythread] > max_depth[mythread])
+    max_depth[mythread] = current_depth[mythread];
+
   /* 
   ** If a new thing is being timed, add a new link and initialize 
   */
 
-  if (ptr == NULL) {
+  if ( ! ptr) {
+    ptr = (Timer *) allocate (sizeof (Timer));
+    memset (ptr, 0, sizeof (Timer));
 
-    if ((ptr = (struct node *) malloc (sizeof (struct node))) == NULL)
-      return (GPTerror ("GPTstart: malloc failed\n"));
+    // Truncate input name if longer than MAX_CHARS characters 
 
-    memset (ptr, 0, sizeof (struct node));
-    ptr->indent_level = indent_level;
-    ptr->next = NULL;
+    nchars = MIN (strlen (name), MAX_CHARS);
+    max_name_len[mythread] = MAX (nchars, max_name_len[mythread]);
 
-    if (timers[mythread] == NULL)
-      timers[mythread] = ptr;
-    else
+    ptr->name = (char *) allocate (nchars+1);
+    strncpy (ptr->name, name, nchars);
+    ptr->name[nchars] = '\0';
+    ptr->depth = depth;
+
+    if (timers[mythread])
       last[mythread]->next = ptr;
+    else
+      timers[mythread] = ptr;
 
     last[mythread] = ptr;
-
-    /* 
-    ** Truncate input name if longer than MAX_CHARS characters 
-    */
-
-    numchars = MIN (strlen (name), MAX_CHARS);
-    strncpy (ptr->name, name, numchars);
-    ptr->name[numchars] = '\0';
 
   } else {
 
@@ -429,65 +234,31 @@ int GPTstart (char *name)        /* timer name */
     ** branch in the call tree.
     */
 
-    if (ptr->indent_level != indent_level) 
-      ptr->indent_level = AMBIGUOUS;
-
-    if (ptr->onflg)
-      return GPTerror ("GPTstart thread %d: timer %s was already on: "
-		       "not restarting.\n", mythread, ptr->name);
+    if (ptr->depth != depth)
+      ptr->depth = 0;
   }
 
   ptr->onflg = true;
 
-  if (usrsysenabled)
-    if (get_cpustamp (&ptr->last_utime, &ptr->last_stime) < 0)
-      return GPTerror ("GPTstart: get_cpustamp error");
-
+  if (cpuenabled && get_cpustamp (&ptr->cpu.last_utime, &ptr->cpu.last_stime) < 0)
+    return GPTerror ("GPTstart: get_cpustamp error");
+  
   /*
   ** The 2nd system timer call is used both for overhead estimation and
   ** the input timer
   */
-
+  
   if (wallenabled) {
-
-    gettimeofday (&tp2, NULL);
-    ptr->last_wtime_sec  = tp2.tv_sec;
-    ptr->last_wtime_usec = tp2.tv_usec;
-    overhead[mythread] +=       (tp2.tv_sec  - tp1.tv_sec) + 
+    
+    gettimeofday (&tp2, 0);
+    ptr->wall.last_sec  = tp2.tv_sec;
+    ptr->wall.last_usec = tp2.tv_usec;
+    ptr->wall.overhead +=       (tp2.tv_sec  - tp1.tv_sec) + 
                           1.e-6*(tp2.tv_usec - tp1.tv_usec);
   }
 
-  if (npcl > 0) {
-    int n;
-    int index;
-
-    ret = PCLread (descr[mythread], i_pcl_result2, fp_pcl_result, npcl); 
-    if (ret != PCL_SUCCESS)
-      return GPTerror ("GPTstart: error from PCLread: %s\n", pclstr (ret));
-
-    for (n = 0; n < npcl; n++) {
-      ptr->last_pcl_result[n] = i_pcl_result2[n];
-    }
-
-    if (pcl_cyclesenabled) {
-      index = pcl_cyclesindex;
-      overhead_pcl[mythread] += i_pcl_result2[index] - i_pcl_result1[index];
-    }
-  } 
-
   return (0);
 }
-
-/*
-** This stub should never actually be called
-*/
-
-#ifndef HAVE_PCL
-int PCLread (PCL_DESCR_TYPE descr, PCL_CNT_TYPE *i, PCL_CNT_TYPE *j, int k)
-{
-  return GPTerror ("PCLread called when library not there\n");
-}
-#endif
 
 /*
 ** GPTstop: stop a timer
@@ -504,7 +275,7 @@ int GPTstop (char *name)
   long delta_wtime_usec;    /* wallclock change fm GPTstart() to GPTstop() */
   float delta_wtime;        /* floating point wallclock change */
   struct timeval tp1, tp2;  /* argument to gettimeofday() */
-  struct node *ptr;         /* linked list pointer */
+  Timer *ptr;               /* linked list pointer */
 
   int mythread;             /* thread number for this process */
   int ret;                  /* return code */
@@ -512,41 +283,32 @@ int GPTstop (char *name)
   long usr;
   long sys;
 
-  PCL_CNT_TYPE i_pcl_result1[PCL_COUNTER_MAX];     /* init. output fm PCLread */
-  PCL_CNT_TYPE i_pcl_result2[PCL_COUNTER_MAX];     /* final output fm PCLread */
-  PCL_FP_CNT_TYPE fp_pcl_result[PCL_COUNTER_MAX];  /* required by PCLread */
-
-  if ( ! initialized)
-    return GPTerror ("GPTstop: GPTinitialize has not been called\n");
-
   /*
   ** The 1st system timer call is used both for overhead estimation and
   ** the input timer
   */
 
   if (wallenabled)
-    gettimeofday (&tp1, NULL);
+    gettimeofday (&tp1, 0);
 
-  if (usrsysenabled && get_cpustamp (&usr, &sys) < 0)
-    return GPTerror (NULL);
+  if (cpuenabled && get_cpustamp (&usr, &sys) < 0)
+    return GPTerror (0);
+
+  if ( ! initialized)
+    return GPTerror ("GPTstop: GPTinitialize has not been called\n");
 
   if ((mythread = get_thread_num ()) < 0)
     return GPTerror ("GPTstop\n");
 
-  if (npcl > 0) {
-    ret = PCLread (descr[mythread], i_pcl_result1, fp_pcl_result, npcl);
-    if (ret != PCL_SUCCESS)
-      return GPTerror ("GPTstop: error from PCLread: %s\n", pclstr (ret));
-  }
-  
-  for (ptr = timers[mythread]; ptr != NULL && ! STRMATCH (name, ptr->name); 
-       ptr = ptr->next);
+  for (ptr = timers[mythread]; ptr && ! STRMATCH (name, ptr->name); ptr = ptr->next);
 
-  if (ptr == NULL) 
+  if ( ! ptr) 
     return GPTerror ("GPTstop: timer for %s had not been started.\n", name);
 
   if ( ! ptr->onflg )
     return GPTerror ("GPTstop: timer %s was already off.\n",ptr->name);
+
+  --current_depth[mythread];
 
   ptr->onflg = false;
   ptr->count++;
@@ -558,93 +320,53 @@ int GPTstop (char *name)
 
   if (wallenabled) {
 
-    delta_wtime_sec  = tp1.tv_sec  - ptr->last_wtime_sec;
-    delta_wtime_usec = tp1.tv_usec - ptr->last_wtime_usec;
+    delta_wtime_sec  = tp1.tv_sec  - ptr->wall.last_sec;
+    delta_wtime_usec = tp1.tv_usec - ptr->wall.last_usec;
     delta_wtime      = delta_wtime_sec + 1.e-6*delta_wtime_usec;
 
     if (ptr->count == 1) {
-      ptr->max_wtime = delta_wtime;
-      ptr->min_wtime = delta_wtime;
+      ptr->wall.max = delta_wtime;
+      ptr->wall.min = delta_wtime;
       
     } else {
       
-      ptr->max_wtime = MAX (ptr->max_wtime, delta_wtime);
-      ptr->min_wtime = MIN (ptr->min_wtime, delta_wtime);
+      ptr->wall.max = MAX (ptr->wall.max, delta_wtime);
+      ptr->wall.min = MIN (ptr->wall.min, delta_wtime);
     }
 
-    ptr->accum_wtime_sec  += delta_wtime_sec;
-    ptr->accum_wtime_usec += delta_wtime_usec;
+    ptr->wall.accum_sec  += delta_wtime_sec;
+    ptr->wall.accum_usec += delta_wtime_usec;
 
     /*
     ** Adjust accumulated wallclock values to guard against overflow in the
     ** microsecond accumulator.
     */
 
-    if (ptr->accum_wtime_usec > 1000000) {
-      ptr->accum_wtime_usec -= 1000000;
-      ptr->accum_wtime_sec  += 1;
-      
-    } else if (ptr->accum_wtime_usec < -1000000) {
-      
-      ptr->accum_wtime_usec += 1000000;
-      ptr->accum_wtime_sec  -= 1;
+    if (ptr->wall.accum_usec > 1000000) {
+      ptr->wall.accum_sec  += 1;
+      ptr->wall.accum_usec -= 1000000;
+    } else if (ptr->wall.accum_usec < -1000000) {
+      ptr->wall.accum_sec  -= 1;
+      ptr->wall.accum_usec += 1000000;
     }
 
-    ptr->last_wtime_sec  = tp1.tv_sec;
-    ptr->last_wtime_usec = tp1.tv_usec;
+    ptr->wall.last_sec  = tp1.tv_sec;
+    ptr->wall.last_usec = tp1.tv_usec;
 
     /*
     ** 2nd system timer call is solely for overhead timing
     */
 
-    gettimeofday (&tp2, NULL);
-    overhead[mythread] +=       (tp2.tv_sec  - tp1.tv_sec) + 
+    gettimeofday (&tp2, 0);
+    ptr->wall.overhead +=       (tp2.tv_sec  - tp1.tv_sec) + 
                           1.e-6*(tp2.tv_usec - tp1.tv_usec);
   }
 
-  if (usrsysenabled) {
-    ptr->accum_utime += usr - ptr->last_utime;
-    ptr->accum_stime += sys - ptr->last_stime;
-    ptr->last_utime   = usr;
-    ptr->last_stime   = sys;
-  }
-
-  if (npcl > 0) {
-    int n;
-    PCL_CNT_TYPE delta;
-    int index;
-
-    for (n = 0; n < npcl; n++) {
-      delta = i_pcl_result1[n] - ptr->last_pcl_result[n];
-
-      /*
-      ** Accumulate results only for positive delta
-      */
-
-      if (delta < 0) 
-	printf ("GPTstop: negative delta => probable counter overflow. "
-		"Skipping accumulation this round\n"
-		"%ld - %ld = %ld\n", (long) i_pcl_result1[n], 
-		                     (long) ptr->last_pcl_result[n],
-		                     (long) delta);
-      else
-	ptr->accum_pcl_result[n] += delta;
-
-      ptr->last_pcl_result[n] = i_pcl_result1[n];
-    }
-
-    /*
-    ** Overhead estimate.  Currently no check for negative delta
-    */
-
-    ret = PCLread (descr[mythread], i_pcl_result2, fp_pcl_result, npcl);
-    if (ret != PCL_SUCCESS)
-      return GPTerror ("GPTstop: error from PCLread: %s\n", pclstr (ret));
-
-    if (pcl_cyclesenabled) {
-      index = pcl_cyclesindex;
-      overhead_pcl[mythread] += i_pcl_result2[index] - i_pcl_result1[index];
-    }
+  if (cpuenabled) {
+    ptr->cpu.accum_utime += usr - ptr->cpu.last_utime;
+    ptr->cpu.accum_stime += sys - ptr->cpu.last_stime;
+    ptr->cpu.last_utime   = usr;
+    ptr->cpu.last_stime   = sys;
   }
 
   return 0;
@@ -663,372 +385,263 @@ int GPTstop (char *name)
 
 int GPTstamp (double *wall, double *usr, double *sys)
 {
-  static long ticks_per_sec;
-  static Boolean first = true;
-
   struct timeval tp;         /* argument to gettimeofday */
   struct tms buf;            /* argument to times */
-
-  /*
-  ** Not strictly thread-safe
-  */
-
-  if (first) {
-    if ((ticks_per_sec = sysconf (_SC_CLK_TCK)) == -1)
-      return GPTerror ("GPTstamp: token _SC_CLK_TCK is not defined\n");
-
-    first = false;
-  }
 
   *usr = 0;
   *sys = 0;
 
-  if (usrsysenabled) {
+  if (times (&buf) == -1)
+    return GPTerror ("GPTstamp: times() failed. Timing bogus\n");
 
-    if (times (&buf) == -1)
-      return GPTerror ("GPTstamp: times() failed. Timing bogus\n");
+  *usr = buf.tms_utime / (double) ticks_per_sec;
+  *sys = buf.tms_stime / (double) ticks_per_sec;
 
-    *usr = buf.tms_utime / (double) ticks_per_sec;
-    *sys = buf.tms_stime / (double) ticks_per_sec;
-
-  } else {
-
-    *usr = 0;
-    *sys = 0;
-  }
-
-  gettimeofday (&tp, NULL);
+  gettimeofday (&tp, 0);
   *wall = tp.tv_sec + 1.e-6*tp.tv_usec;
 
   return 0;
 }
 
 /*
-** GPTpr: print stats for all known timers to a file
-**
-** Input arguments:
-**   procid: Designed for MPI jobs to give a unique output file name, 
-**     normally the MPI logical process id.
+** GPTreset: reset all known timers to 0
 **
 ** Return value: 0 (success) or -1 (failure)
 */
 
-
-int GPTpr (int procid)
+int GPTreset (void)
 {
-  static int mhz;          /* processor clock rate (from pcl library) */
-  char outfile[11];        /* name of output file: timing.xxx */
-			   
-  int indent;              /* index over number indentation levels */
-  int thread;              /* thread index */
-  int ilstart;             /* index over indentation level */
-  int n;
-
-  double gttdcost;         /* cost of a single gettimeofday call */
-  double deltat;           /* time difference between 2 calls to gettimeofday */
-  struct Stats stats;      /* per timer stats */
-  struct Stats threadsum;  /* timer sum over threads */
-			   
-  struct node *ptr, *tptr; /* linked list pointers */
-			   
-  FILE *fp;                /* output file pointer */
-
-  struct timeval tp1, tp2; /* input to gettimeofday() */
-  struct tms buf;          /* input to times() */
+  int n;             /* index over threads */
+  Timer *ptr;  /* linked list index */
 
   if ( ! initialized)
-    return GPTerror ("GPTpr: GPTinitialize has not been called\n");
-
-  if ((ticks_per_sec = sysconf (_SC_CLK_TCK)) == -1)
-    return GPTerror ("GPTpr: token _SC_CLK_TCK is not defined\n");
+    return GPTerror ("GPTreset: GPTinitialize has not been called\n");
 
   /*
-  ** Only allow the master thread to print stats
+  ** Only allow the master thread to reset timers
   */
 
   if (get_thread_num () != 0)
     return 0;
 
-  sprintf (outfile, "%s%d\0","timing.", procid);
-
-  if ((fp = fopen (outfile, "w")) == NULL)
-    fp = stderr;
-
-  fprintf (fp,"Procid = %d\n", procid);
-
-  /*
-  ** Estimate wallclock timer overhead: 4 times the cost of a call to gettimeofday
-  ** (since each start/stop pair involves 4 such calls).
-  */
-
-  gettimeofday (&tp1, NULL);
-  gettimeofday (&tp2, NULL);
-  gttdcost = 1.e6*(tp2.tv_sec  - tp1.tv_sec) + (tp2.tv_usec - tp1.tv_usec);
-
-  fprintf (fp, "Wallclock timer cost est.: %8.3g usec per start/stop pair\n", 
-	   gttdcost*4.);
-
-  /*
-  ** CPU cost estimate: 2 times the cost of a call to times().  Subtract the
-  ** cost of a single gettimeofday call to improve the estimate.
-  */
-
-  if (usrsysenabled) {
-
-    gettimeofday (&tp1, NULL);
-    (void) times (&buf);
-    gettimeofday (&tp2, NULL);
-
-    deltat = 1.e6*(tp2.tv_sec  - tp1.tv_sec) + (tp2.tv_usec - tp1.tv_usec);
-    fprintf (fp, "CPU timer cost est.:       %8.3g usec per start/stop pair\n", 
-	     2.*deltat - gttdcost);
-  }
-    
-  fprintf (fp, "CPU accumulation interval is %g seconds\n",
-           1./(float) ticks_per_sec);
-
-#ifdef HAVE_PCL
-  mhz = PCL_determine_mhz_rate();
-  fprintf (fp, "Clock speed is %d MHz\n", mhz);
-#endif
-
-  for (thread = 0; thread < numthreads; thread++) {
-
-    /*
-    ** Only print heading for threads that have 1 or more items to report
-    */
-
-    if (timers[thread] == NULL) continue;
-    fprintf (fp, "\nStats for thread %d:\n", thread);
-#ifdef THREADED_PTHREADS
-    fprintf (fp, "pthread id %d:\n", (int) threadid[thread]);
-#endif
-
-    print_header (fp, max_indent_level[thread]);
-
-    for (ptr = timers[thread]; ptr != NULL; ptr = ptr->next) {
-      if (ptr->onflg) {
-
-	fprintf (fp, "Timer %s was not off.  No stats will be printed\n",
-		 ptr->name);
-
-      } else {
-
-	fillstats (&stats, ptr);
-
-	/*
-	** Print stats indented.  If indent_level = AMBIGUOUS (a negative 
-	** number) the name will be printed with no indentation.
-	*/
-
-	for (indent = 0; indent < ptr->indent_level; indent++)
-	  fprintf (fp, "  ");
-	fprintf (fp, "%-15s", ptr->name);
-
-	/*
-	** If indent_level = AMBIGUOUS (a negative number) we want to loop 
-	** from 0
-	*/
-
-	ilstart = MAX (0, ptr->indent_level);
-	for (indent = ilstart; indent < max_indent_level[thread]; indent++)
-	  fprintf (fp, "  ");
-
-	print_stats_line (fp, &stats);
-      }
+  for (n = 0; n < nthreads; n++) {
+    for (ptr = timers[n]; ptr; ptr = ptr->next) {
+      memset (timers[n], 0, sizeof (Timer));
+      printf ("Reset accumulators for timer %s to zero\n", ptr->name);
     }
-
-    if (usrsysenabled || wallenabled)
-      fprintf (fp, "\nTIMER OVERHEAD (wallclock seconds) = %12.6f\n", 
-	       overhead[thread]);
-
-    if (pcl_cyclesenabled)
-      fprintf (fp, "TIMER OVERHEAD (cycles) = %12.6e\n", 
-	       (double) overhead_pcl[thread]);
   }
-
-  /*
-  ** Print a vertical summary if data exist for more than 1 thread.  The "2"
-  ** passed to print_header is so we'll get an extra 4 spaces of indentation
-  ** due to the thread number appended to the timer name.
-  */
-
-  if (numthreads > 0 && timers[1] != NULL) {
-    fprintf (fp, "\nSame stats sorted by timer with thread number appended:\n");
-    print_header (fp, 2);
-
-    /*
-    ** Print stats for slave threads that match master
-    */
-
-    for (ptr = timers[0]; ptr != NULL; ptr = ptr->next) {
-
-      char name[20];
-      Boolean found = false;
-
-      /*
-      ** Don't bother printing summation stats when only the master thread
-      ** invoked the timer
-      */
-
-      for (thread = 1; thread < numthreads; thread++)
-	for (tptr = timers[thread]; tptr != NULL; tptr = tptr->next) {
-	  if (STRMATCH (ptr->name, tptr->name))
-	    found = true;
-	}
-      if ( ! found) continue;
-
-      /*
-      ** Initialize stats which sum over threads
-      */
-
-      memset (&threadsum, 0, sizeof (threadsum));
-
-      if ( ! ptr->onflg) {
-	fillstats (&stats, ptr);
-	strcpy (name, ptr->name);
-	strcat (name, ".0");
-	fprintf (fp, "%-19s", name);
-	print_stats_line (fp, &stats);
-	threadsum = stats;
-      }
-
-      /*
-      ** loop over slave threads, printing stats for each and accumulating
-      ** sum over threads when the name matches
-      */
-
-      for (thread = 1; thread < numthreads; thread++) {
-	for (tptr = timers[thread]; tptr != NULL; tptr = tptr->next) {
-	  if (STRMATCH (ptr->name, tptr->name)) {
-	    if ( ! tptr->onflg) {
-	      char num[5];
-
-	      fillstats (&stats, tptr);
-	      strcpy (name, tptr->name);
-	      sprintf (num, ".%-3d", thread);
-	      strcat (name, num);
-	      fprintf (fp, "%-19s", name);
-	      print_stats_line (fp, &stats);
-
-	      threadsum.usr      += stats.usr;
-	      threadsum.sys      += stats.sys;
-	      threadsum.usrsys   += stats.usrsys;
-	      threadsum.elapse   += stats.elapse;
-	      threadsum.max_wtime = MAX (threadsum.max_wtime, stats.max_wtime);
-	      threadsum.min_wtime = MIN (threadsum.min_wtime, stats.min_wtime);
-	      threadsum.count    += stats.count;
-
-	      for (n = 0; n < npcl; n++)
-		threadsum.pcl_result[n] += stats.pcl_result[n];
-	    }
-	    break; /* Go to the next thread */
-	  }        /* if (STRMATCH (ptr->name, tptr->name) */
-	}          /* loop thru linked list of timers for this thread */
-      }            /* loop over slave threads */
-
-      strcpy (name, ptr->name);
-      strcat (name, ".sum");
-      fprintf (fp, "%-19s", name);
-      print_stats_line (fp, &threadsum);
-      fprintf (fp, "\n");
-
-    } /* loop through master timers */
-
-    for (thread = 0; thread < numthreads; thread++) {
-      if (usrsysenabled || wallenabled)
-	fprintf (fp, "OVERHEAD.%-3d (wallclock seconds) = %12.6f\n", 
-		 thread, overhead[thread]);
-
-      if (pcl_cyclesenabled)
-	fprintf (fp, "OVERHEAD.%-3d (cycles) = %12.6e\n", 
-		 thread, (double) overhead_pcl[thread]);
-    }
-
-  } /* if (numthreads > 0 && timers[1] != NULL */
-
   return 0;
 }
 
-void fillstats (struct Stats *stats, struct node *ptr)
+// GPTpr: Print values of all timers
+
+int GPTpr (int id)
 {
-  int n;
+  FILE *fp;                // file handle to write to
+  Timer *ptr;              // walk through master thread linked list
+  Timer *tptr;             // walk through slave threads linked lists
+  Timer sumstats;
+  int n, nn;               // indices
+  char outfile[11];        // name of output file: timing.xxx
+  float sum;               // sum of overhead values (per thread)
+  bool found;              // jump out of loop when name found
+  bool foundany;           // whether summation print necessary
+  bool first;              // flag 1st time entry found
 
-  stats->usr       = ptr->accum_utime / (float) ticks_per_sec;
-  stats->sys       = ptr->accum_stime / (float) ticks_per_sec;
-  stats->usrsys    = stats->usr + stats->sys;
-  stats->elapse    = ptr->accum_wtime_sec + 1.e-6 * ptr->accum_wtime_usec;
-  stats->max_wtime = ptr->max_wtime;
-  stats->min_wtime = ptr->min_wtime;
-  stats->count     = ptr->count;
+  if ( ! initialized)
+    return GPTerror ("GPTpr: GPTinitialize() has not been called\n");
 
-  for (n = 0; n < npcl; n++)
-    stats->pcl_result[n] = ptr->accum_pcl_result[n];
-}
+  if (id < 0 || id > 999)
+    return GPTerror ("GPTpr: id for output file must be >= 0 and < 1000\n");
 
-void print_stats_line (FILE *fp, struct Stats *stats)
-{
-  int index;
-  int n;
-  long long cycles;
-  long long instr;
-  long long flops;
-  long long loadstore;
-  long long l2cache;
-  long long jump;
+  sprintf (outfile, "timing.%d", id);
 
-  float mflops;
-  float ipc;
-  float memfp;
+  if ( ! (fp = fopen (outfile, "w")))
+    fp = stderr;
 
-  fprintf (fp, "%9ld ", stats->count);
+  for (n = 0; n < nthreads; ++n) {
+    fprintf (fp, "Stats for thread %d:\n", n);
 
-  if (usrsysenabled)
-    fprintf (fp, "%9.3f %9.3f %9.3f ", stats->usr, stats->sys, stats->usrsys);
+    for (nn = 0; nn < max_depth[n]; ++nn)    // max indent level (depth starts at 1)
+      fprintf (fp, "  ");
 
-  if (wallenabled)
-    fprintf (fp, "%9.3f %9.3f %9.3f ", stats->elapse, stats->max_wtime, 
-	     stats->min_wtime);
-  
-  for (n = 0; n < ncounter; n++) {
-    if (counter[n].enabled) {
-      if (counter[n].name > pcl_start && counter[n].name < pcl_end) {
-	index = counter[n].index;
-	if (stats->pcl_result[index] > 1.e6)
-	  fprintf (fp, "%9.3e ", (double) stats->pcl_result[index]);
-	else
-	  fprintf (fp, "%9ld ", (long) stats->pcl_result[index]);
+    for (nn = 0; nn < max_name_len[n]; ++nn) // longest timer name
+      fprintf (fp, " ");
+
+    fprintf (fp, "Called   ");
+
+    for (nn = 0; nn < 2; ++nn)
+      if (primary[nn].enabled)
+	fprintf (fp, "%s", primary[nn].str);
+
+    for (nn = 0; nn < naux; ++nn)
+      if (aux[nn].enabled)
+	fprintf (fp, "%s", aux[nn].str);
+
+    // Done with titles, go to next line
+
+    fprintf (fp, "\n");
+
+    for (ptr = timers[n]; ptr; ptr = ptr->next)
+      printstats (ptr, fp, n, true);
+
+    // Sum of overhead across timers is meaningful
+
+    sum = 0;
+    for (ptr = timers[n]; ptr; ptr = ptr->next)
+      sum += ptr->wall.overhead;
+    fprintf (fp, "Overhead sum = %9.3f wallclock seconds\n\n", sum);
+  }
+
+  // Print per-name stats for all threads
+
+  if (nthreads > 1) {
+    fprintf (fp, "\nSame stats sorted by timer for threaded regions:\n");
+    fprintf (fp, "Thd ");
+
+    for (nn = 0; nn < max_name_len[0]; ++nn) // longest timer name
+      fprintf (fp, " ");
+
+    fprintf (fp, "Called   ");
+
+    for (nn = 0; nn < 2; ++nn)
+      if (primary[nn].enabled)
+	fprintf (fp, "%s", primary[nn].str);
+
+    for (nn = 0; nn < naux; ++nn)
+      if (aux[nn].enabled)
+	fprintf (fp, "%s", aux[nn].str);
+
+    fprintf (fp, "\n");
+
+    for (ptr = timers[0]; ptr; ptr = ptr->next) {
+      
+      // To print sum stats, create a new timer, accumulate the
+      // stats using the public "add" method, then invoke the print method.  
+      // delete when done
+
+      foundany = false;
+      first = true;
+      for (n = 1; n < nthreads; ++n) {
+	found = false;
+	sumstats = *ptr;
+	for (tptr = timers[n]; tptr && ! found; tptr = tptr->next) {
+	  if (STRMATCH (ptr->name, tptr->name)) {
+
+	    // Only print thread 0 when this timer found for other threads
+
+	    if (first) {
+	      first = false;
+	      fprintf (fp, "%3.3d ", 0);
+	      printstats (ptr, fp, 0, false);
+	    }
+
+	    found = true;
+	    foundany = true;
+	    fprintf (fp, "%3.3d ", n);
+	    printstats (tptr, fp, 0, false);
+	    add (&sumstats, tptr);
+	  }
+	}
+      }
+
+      if (foundany) {
+	fprintf (fp, "SUM ");
+	printstats (&sumstats, fp, 0, false);
+	fprintf (fp, "\n");
       }
     }
   }
+  return 0;
+}
+
+// printstats: print a single timer
+
+static void printstats (Timer *timer,
+			FILE *fp,
+			int n,            // thread number
+			bool doindent)         // output stream
+{
+  int i;
+  int indent;
+  int extraspace;
+  long ticks_per_sec;
+  float usr;
+  float sys;
+  float usrsys;
+  float elapse;
+
+  if ((ticks_per_sec = sysconf (_SC_CLK_TCK)) == -1)
+    (void) GPTerror ("printstats: token _SC_CLK_TCK is not defined\n");
+
+  // Indent to depth of this timer
+
+  if (doindent)
+    for (indent = 0; indent < timer->depth; ++indent)  // depth starts at 1
+      fprintf (fp, "  ");
+
+  fprintf (fp, "%s", timer->name);
+
+  // Pad to length of longest name
+
+  extraspace = max_name_len[n] - strlen (timer->name);
+  for (i = 0; i < extraspace; ++i)
+    fprintf (fp, " ");
+
+  // Pad to max indent level
+
+  if (doindent)
+    for (indent = timer->depth; indent < max_depth[n]; ++indent)
+      fprintf (fp, "  ");
+
+  fprintf (fp, "%8ld", timer->count);
+
+  if (wallenabled) {
+    elapse = timer->wall.accum_sec + 1.e-6*timer->wall.accum_usec;
+    fprintf (fp, "%9.3f %9.3f %9.3f ", elapse, timer->wall.max, timer->wall.min);
+    fprintf (fp, "%9.3f", timer->wall.overhead);
+  }
+
+  if (cpuenabled) {
+    usr = timer->cpu.accum_utime / (float) ticks_per_sec;
+    sys = timer->cpu.accum_stime / (float) ticks_per_sec;
+    usrsys = usr + sys;
+    fprintf (fp, "%9.3f %9.3f %9.3f ", usr, sys, usrsys);
+  }
 
   fprintf (fp, "\n");
 }
 
-void print_header (FILE *fp, int indent_level)
+static void *allocate (int nbytes)
 {
-  int i;
-  int n;
+  void *ptr = 0;
 
-  fprintf (fp, "Name           ");
-  for (i = 0; i < indent_level; i++)
-    fprintf (fp, "  ");
-  fprintf (fp, "Called    ");
+  if ( ! (ptr = malloc (nbytes)))
+    (void) GPTerror ("allocate: malloc failed for %d bytes\n", nbytes);
 
-  if (usrsysenabled)
-    fprintf (fp, "Usr       Sys       Usr+Sys   ");
+  return ptr;
+}
 
-  if (wallenabled)
-    fprintf (fp, "Wallclock Max       Min       ");
-
-  for (n = 0; n < ncounter; n++) {
-    if (counter[n].enabled) {
-      if (counter[n].name > pcl_start && counter[n].name <= pcl_end)
-	fprintf (fp, counter[n].string);
+static void add (Timer *tout,   
+		 Timer *tin)
+{
+  if (wallenabled) {
+    tout->count           += tin->count;
+    tout->wall.accum_sec  += tin->wall.accum_sec;
+    tout->wall.accum_usec += tin->wall.accum_usec;
+    if (tout->wall.accum_usec > 1000000) {
+      tout->wall.accum_sec  += 1;
+      tout->wall.accum_usec -= 1000000;
     }
+    tout->wall.max       = MAX (tout->wall.max, tin->wall.max);
+    tout->wall.min       = MIN (tout->wall.min, tin->wall.min);
+    tout->wall.overhead += tin->wall.overhead;
   }
 
-  fprintf (fp, "\n");
+  if (cpuenabled) {
+    tout->cpu.accum_utime += tin->cpu.accum_utime;
+    tout->cpu.accum_stime += tin->cpu.accum_stime;
+  }
 }
 
 /*
@@ -1036,61 +649,15 @@ void print_header (FILE *fp, int indent_level)
 ** thread, adjust global variables.
 */
 
-int get_thread_num ()
+static int get_thread_num ()
 {
-  int mythread = 0 ;  /* return value: default zero for non-threaded case */
-
-#ifdef THREADED_PTHREADS
-  pthread_t mythreadid;  /* thread id from pthreads library */
-#endif
+  int mythread = 0;
 
 #if ( defined THREADED_OMP )
 
-  if ((mythread = omp_get_thread_num ()) >= numthreads)
-    return t_error ("get_thread_num: returned id %d exceed numthreads %d\n",
-		    mythread, numthreads);
-
-#elif ( defined THREADED_PTHREADS )
-
-  mythreadid = pthread_self ();
-
-  if (lock_mutex () < 0)
-    return t_error ("get_thread_num: mutex lock failure\n");
-
-  /*
-  ** Loop over known physical thread id's.  When my id is found, map it 
-  ** to logical thread id for indexing.  If not found return a negative 
-  ** number.
-  ** A critical region is necessary because acess to
-  ** the array threadid must be by only one thread at a time.
-  */
-
-  {
-    int n;              /* loop index over number of threads */
-    for (n = 0; n < numthreads; n++)
-      if (pthread_equal (mythreadid, threadid[n]))
-	break;
-
-  /*
-  ** If our thread id is not in the known list, add to it after checking that
-  ** we do not have too many threads.
-  */
-
-    if (n == numthreads) {
-      if (numthreads >= MAX_THREADS)
-	return t_error ("get_thread_num: numthreads=%d is too big Recompile "
-			"with larger value of MAX_THREADS\n", numthreads);
-
-      threadid[n] = mythreadid;
-      numthreads++;
-    }
-
-    if (unlock_mutex () < 0)
-      return t_error ("get_thread_num: mutex unlock failure\n");
-
-    mythread = n;
-  }
-
+  if ((mythread = omp_get_thread_num ()) >= nthreads)
+    return GPTerror ("get_thread_num: returned id %d exceed nthreads %d\n",
+		     mythread, nthreads);
 #endif
 
   return mythread;
@@ -1100,13 +667,10 @@ int get_thread_num ()
 ** lock_mutex: lock a mutex for entry into a critical region
 */
 
-static int lock_mutex ()
+static int lock_mutex (void)
 {
 #if ( defined THREADED_OMP )
   omp_set_lock (&lock);
-#elif ( defined THREADED_PTHREADS )
-  if (pthread_mutex_lock (&t_mutex) != 0)
-    return t_error ("pthread_mutex_lock failure\n");
 #endif
   return 0;
 }
@@ -1115,13 +679,10 @@ static int lock_mutex ()
 ** unlock_mutex: unlock a mutex for exit from a critical region
 */
 
-static int unlock_mutex ()
+static int unlock_mutex (void)
 {
 #if ( defined THREADED_OMP )
   omp_unset_lock (&lock);
-#elif ( defined THREADED_PTHREADS )
-  if (pthread_mutex_unlock (&t_mutex) != 0)
-    return t_error ("pthread_mutex_unlock failure\n");
 #endif
   return 0;
 }
@@ -1135,55 +696,14 @@ static int unlock_mutex ()
 ** Return value: 0 (success)
 */
 
-int get_cpustamp (long *usr, long *sys)
+static int get_cpustamp (long *usr, long *sys)
 {
   struct tms buf;
 
-  if (usrsysenabled) {
-
-    /*
-    ** Throw away the wallclock time from times: use gettimeofday instead
-    */
-
-    (void) times (&buf);
-    *usr = buf.tms_utime;
-    *sys = buf.tms_stime;
-
-  } else {
-
-    *usr = 0;
-    *sys = 0;
-  }
+  (void) times (&buf);
+  *usr = buf.tms_utime;
+  *sys = buf.tms_stime;
 
   return 0;
 }
 
-/*
-** t_reset: reset all known timers to 0
-**
-** Return value: 0 (success) or -1 (failure)
-*/
-
-int GPTreset ()
-{
-  int n;             /* index over threads */
-  struct node *ptr;  /* linked list index */
-
-  if ( ! initialized)
-    return GPTerror ("GPTreset: GPTinitialize has not been called\n");
-
-  /*
-  ** Only allow the master thread to reset timers
-  */
-
-  if (get_thread_num () != 0)
-    return 0;
-
-  for (n = 0; n < numthreads; n++) {
-    for (ptr = timers[n]; ptr != NULL; ptr = ptr->next) {
-      memset (timers[n], 0, sizeof (struct node));
-      printf ("Reset accumulators for timer %s to zero\n", ptr->name);
-    }
-  }
-  return 0;
-}
