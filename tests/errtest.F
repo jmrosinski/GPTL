@@ -1,7 +1,7 @@
       program errtest
       implicit none
 
-#include "../gpt.inc"
+#include "../gptl.inc"
 
       integer ret, iter
       integer val
@@ -21,31 +21,31 @@
       end if
 
       if (val .eq. 0) then
-        if (gptsetoption (7, 1) .lt. 0) write(6,*)'setoption failure'
-        if (gptinitialize () .lt. 0) write(6,*)'initialize failure'
+        if (gptlsetoption (7, 1) .lt. 0) write(6,*)'setoption failure'
+        if (gptlinitialize () .lt. 0) write(6,*)'initialize failure'
       else if (val .eq. 1) then
-        if (gptsetoption (gptcpu, 7) .lt. 0) then
+        if (gptlsetoption (gptlcpu, 7) .lt. 0) then
           write(6,*)'setoption failure'
         end if
-        if (gptinitialize () .lt. 0) write(6,*)'initialize failure'
+        if (gptlinitialize () .lt. 0) write(6,*)'initialize failure'
       else if (val .eq. 2) then
-        if (gptinitialize () .lt. 0) write(6,*)'initialize failure'
-        if (gptstart ('errtest') .lt. 0) write(6,*)'start failure'
-        if (gptstart ('errtest') .lt. 0) write(6,*)'start failure'
+        if (gptlinitialize () .lt. 0) write(6,*)'initialize failure'
+        if (gptlstart ('errtest') .lt. 0) write(6,*)'start failure'
+        if (gptlstart ('errtest') .lt. 0) write(6,*)'start failure'
       else if (val .eq. 3) then
-        if (gptinitialize () .lt. 0) write(6,*)'initialize failure'
-        if (gptstop ('errtest') .lt. 0) write(6,*)'stop failure'
+        if (gptlinitialize () .lt. 0) write(6,*)'initialize failure'
+        if (gptlstop ('errtest') .lt. 0) write(6,*)'stop failure'
       else if (val .eq. 4) then
-        if (gptinitialize () .lt. 0) write(6,*)'initialize failure'
-        if (gptstart ('errtest') .lt. 0) write(6,*)'start failure'
-        if (gptstop ('errtest') .lt. 0) write(6,*)'stop failure'
-        if (gptstop ('errtest') .lt. 0) write(6,*)'stop failure'
+        if (gptlinitialize () .lt. 0) write(6,*)'initialize failure'
+        if (gptlstart ('errtest') .lt. 0) write(6,*)'start failure'
+        if (gptlstop ('errtest') .lt. 0) write(6,*)'stop failure'
+        if (gptlstop ('errtest') .lt. 0) write(6,*)'stop failure'
       else if (val .eq. 5) then
-        if (gptstart ('errtest') .lt. 0) write(6,*)'start failure'
-        if (gptstop ('errtest') .lt. 0) write(6,*)'stop failure'
-        if (gptpr ('errtest') .lt. 0) write(6,*)'stop failure'
+        if (gptlstart ('errtest') .lt. 0) write(6,*)'start failure'
+        if (gptlstop ('errtest') .lt. 0) write(6,*)'stop failure'
+        if (gptlpr ('errtest') .lt. 0) write(6,*)'stop failure'
       end if
 
-      if (gptfinalize () .lt. 0) write(6,*)'gptfinalize error'
+      if (gptlfinalize () .lt. 0) write(6,*)'gptlfinalize error'
       stop 0
       end program errtest

@@ -1,21 +1,21 @@
-GPT is a general-purpose timing library.  By itself it can gather wallclock
+GPTL is a general-purpose timing library.  By itself it can gather wallclock
 and cpu timing statistics for a code instrumented with an aribtrary sequence
-of calls to the pair of routines "GPTstart" and "GPTstop" (more details
+of calls to the pair of routines "GPTLstart" and "GPTLstop" (more details
 below).  It is thread-safe, presuming either OpenMP or pthreads is available.
 
-GPT also provides hooks into the hardware counters library PAPI
+GPTL also provides hooks into the hardware counters library PAPI
 (http://icl.cs.utk.edu/papi/index.html).  If this option is enabled
-(./configure --enable-papi), the same "GPTstart" and "GPTstop" calls can be
+(./configure --enable-papi), the same "GPTLstart" and "GPTLstop" calls can be
 used to provide various low-level hardware counter info, such as total
 cycles, floating point ops, cache misses, and various other performance
 information depending on the target architecture.  PAPI must already be
 installed in order to enable this option.
 
 
-Building GPT
+Building GPTL
 -------- ---
 
-The simplest procedure for building GPT is:
+The simplest procedure for building GPTL is:
 
 ./configure
 make
@@ -37,7 +37,7 @@ Some important options to configure are:
                    effect on AIX and IRIX.
 --enable-debug     Turn on -g and turn off optimization compiler flags.
 --enable-opt       Turn on compiler optimization (recommended).
---prefix=<dir>     For installing GPT in a non-standard place.
+--prefix=<dir>     For installing GPTL in a non-standard place.
 
 configure also accepts CC= and F77= command line options to specify C and
 Fortran compilers, respectively.
@@ -46,39 +46,39 @@ Don't hesitate to edit the Makefile that configure produces if you like.  It
 is quite straightforward.
 
 
-Using GPT
+Using GPTL
 ----- ---
 
-Code instrumentation to utilize GPT involves an arbitrary number of calls to
-GPTsetoption(), then a single call to GPTinitialize(), then an arbitrary
-sequence of calls to GPTstart() and GPTstop(), and finally a call to GPTpr().
+Code instrumentation to utilize GPTL involves an arbitrary number of calls to
+GPTLsetoption(), then a single call to GPTLinitialize(), then an arbitrary
+sequence of calls to GPTLstart() and GPTLstop(), and finally a call to GPTLpr().
 See the man pages for details of arguments to these functions.  The man pages
-for GPTstart and GPTstop give an example complete sequence of GPT calls to
+for GPTLstart and GPTLstop give an example complete sequence of GPTL calls to
 instrument a code.  Also, various test codes are built in the tests/
 subdirectory of this distribution.
 
-The purpose of GPTsetoption is to enable or disable certain types of timing.
+The purpose of GPTLsetoption is to enable or disable certain types of timing.
 The default is to only gather wallclock timing stats.  If this is the
-desired bahavior then no calls to GPTsetoption are required.  If for example,
+desired bahavior then no calls to GPTLsetoption are required.  If for example,
 the PAPI counter for total cycles is also desired, then a call of the form:
 
-GPTsetoption (PAPI_TOT_CYC, 1)
+GPTLsetoption (PAPI_TOT_CYC, 1)
 
-is required.  The list of available GPT options is contained in gpt.h, and
+is required.  The list of available GPTL options is contained in gptl.h, and
 the list of possible PAPI options is contained in the file papiStdEventDefs.h 
 included with the PAPI distribution.
 
-GPTinitialize () initializes the GPT library for subsequent calls to GPTstart
-and GPTstop.  This is necessary for threading, and to initialize the PAPI
+GPTLinitialize () initializes the GPTL library for subsequent calls to GPTLstart
+and GPTLstop.  This is necessary for threading, and to initialize the PAPI
 library in case support for it was enabled at configure time.
 
-There can be an arbitrary number of start/stop pairs before GPTpr is called
+There can be an arbitrary number of start/stop pairs before GPTLpr is called
 to print the results.  And an arbitrary amount of nesting of timers is also
 allowed.  The printed results will be indented to indicate the level of
 nesting.
 
-GPTpr prints the results to a file named timing.<number>, where <number> is
-an input argument to GPTpr.
+GPTLpr prints the results to a file named timing.<number>, where <number> is
+an input argument to GPTLpr.
 
-GPTfinalize can be called to clean up the GPT environment.  All space
-malloc'ed by the GPT library will be freed by this call.
+GPTLfinalize can be called to clean up the GPTL environment.  All space
+malloc'ed by the GPTL library will be freed by this call.

@@ -1,7 +1,7 @@
       program hashtest
       implicit none
 
-#include "../gpt.inc"
+#include "../gptl.inc"
 
       integer niter
       integer ntpt
@@ -16,8 +16,8 @@
       read (5,*) ntimers
       ntpt = ntimers / niter
 
-      if (gptsetoption (gptabort_on_error, 1) .lt. 0) stop 99
-      if (gptinitialize () .lt. 0) stop 99
+      if (gptlsetoption (gptlabort_on_error, 1) .lt. 0) stop 99
+      if (gptlinitialize () .lt. 0) stop 99
 
 !$OMP PARALLEL DO PRIVATE (N, START)
 
@@ -33,15 +33,15 @@
         call sub (start, ntpt)
       end do
 
-      if (gptpr (0) .lt. 0) stop 77
-      if (gptfinalize () .lt. 0) stop 99
+      if (gptlpr (0) .lt. 0) stop 77
+      if (gptlfinalize () .lt. 0) stop 99
       stop
       end
 
       subroutine sub (start, ntpt)
       implicit none
 
-#include "../gpt.inc"
+#include "../gptl.inc"
 
       integer start
       integer ntpt
@@ -51,8 +51,8 @@
 
       do i=start,start+ntpt-1
         write (name,'(a5i4.4)') 'timer',i
-        if (gptstart (name) .lt. 0) stop 99
-        if (gptstop (name) .lt. 0) stop 99
+        if (gptlstart (name) .lt. 0) stop 99
+        if (gptlstop (name) .lt. 0) stop 99
       end do
 
       return

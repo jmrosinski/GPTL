@@ -1,9 +1,9 @@
 /*
-$Id: private.h,v 1.20 2004-11-17 04:00:31 rosinski Exp $
+$Id: private.h,v 1.21 2004-12-25 00:06:39 rosinski Exp $
 */
 
 #include <stdio.h>
-#include "gpt.h"
+#include "gptl.h"
 
 #ifndef MIN
 #define MIN(X,Y) ((X) < (Y) ? (X) : (Y))
@@ -66,22 +66,22 @@ typedef struct {
 
 /* Function prototypes */
 
-extern int GPTerror (const char *, ...);      /* print error msg and return */
-extern void GPTset_abort_on_error (bool val); /* set flag to abort on error */
-extern void *GPTallocate (const int);         /* malloc wrapper */
-extern int threadinit (int *, int *);         /* initialize threading environment */
-extern void threadfinalize (void);            /* finalize threading environment */
-extern int get_thread_num (int *, int *);     /* determine thread number */
+extern int GPTLerror (const char *, ...);      /* print error msg and return */
+extern void GPTLset_abort_on_error (bool val); /* set flag to abort on error */
+extern void *GPTLallocate (const int);         /* malloc wrapper */
+extern int threadinit (int *, int *);          /* initialize threading environment */
+extern void threadfinalize (void);             /* finalize threading environment */
+extern int get_thread_num (int *, int *);      /* determine thread number */
 
 #ifdef HAVE_PAPI
-extern int GPT_PAPIsetoption (const int, const int);
-extern int GPT_PAPIinitialize (const int);
-extern int GPT_PAPIstart (const int, Papistats *);
-extern int GPT_PAPIstop (const int, Papistats *);
-extern void GPT_PAPIprstr (FILE *);
-extern void GPT_PAPIpr (FILE *, const Papistats *);
-extern void GPT_PAPIadd (Papistats *, const Papistats *);
-extern int GPT_PAPIoverheadstart (const int);
-extern int GPT_PAPIoverheadstop (const int, Papistats *);
-extern void GPT_PAPIfinalize (int);
+extern int GPTL_PAPIsetoption (const int, const int);
+extern int GPTL_PAPIinitialize (const int);
+extern int GPTL_PAPIstart (const int, Papistats *);
+extern int GPTL_PAPIstop (const int, Papistats *);
+extern void GPTL_PAPIprstr (FILE *);
+extern void GPTL_PAPIpr (FILE *, const Papistats *);
+extern void GPTL_PAPIadd (Papistats *, const Papistats *);
+extern int GPTL_PAPIoverheadstart (const int);
+extern int GPTL_PAPIoverheadstop (const int, Papistats *);
+extern void GPTL_PAPIfinalize (int);
 #endif

@@ -1,23 +1,23 @@
       program papitest
       implicit none
 
-#include "../gpt.inc"
+#include "../gptl.inc"
 #ifdef HAVE_PAPI
 #include <f77papi.h>
 #endif
 
       integer ret, iter, niter
       integer papioption
-      integer gptoption
+      integer gptloption
       integer val
       logical done
       
-      if (gptsetoption (gptcpu, 0) .lt. 0) stop 99
-      if (gptsetoption (gptwall, 0) .lt. 0) stop 99
-      if (gptsetoption (gptabort_on_error, 1) .lt. 0) stop 99
+      if (gptlsetoption (gptlcpu, 0) .lt. 0) stop 99
+      if (gptlsetoption (gptlwall, 0) .lt. 0) stop 99
+      if (gptlsetoption (gptlabort_on_error, 1) .lt. 0) stop 99
 
 #ifdef HAVE_PAPI
-      call gptpapiprinttable ()
+      call gptlpapiprinttable ()
 #endif
 
       done = .false.
@@ -26,39 +26,39 @@
         write(6,*)'or positive number when done'
         read (5,*)papioption
         if (papioption .lt. 0) then
-          if (gptsetoption (papioption, 1) .lt. 0) then
-            write(6,*)'gptsetoption failure'
+          if (gptlsetoption (papioption, 1) .lt. 0) then
+            write(6,*)'gptlsetoption failure'
           end if
         else
           done = .true.
         end if
       end do
 
-      write(6,*)'GPTwall           = 1'
-      write(6,*)'GPTcpu            = 2'
-      write(6,*)'GPTabort_on_error = 3'
-      write(6,*)'GPToverhead       = 4'
+      write(6,*)'GPTLwall           = 1'
+      write(6,*)'GPTLcpu            = 2'
+      write(6,*)'GPTLabort_on_error = 3'
+      write(6,*)'GPTLoverhead       = 4'
 
       done = .false.
       do while (.not. done)
-        write(6,*)'Enter GPT option to set, then 0 (off) or 1 (on)'
+        write(6,*)'Enter GPTL option to set, then 0 (off) or 1 (on)'
         write(6,*)'   or negative numbers when done'
-        read (5,*)gptoption, val
-        if (gptoption > 0) then
-          if (gptsetoption (gptoption, val) .lt. 0) then
-            write(6,*)'gptsetoption failure'
+        read (5,*)gptloption, val
+        if (gptloption > 0) then
+          if (gptlsetoption (gptloption, val) .lt. 0) then
+            write(6,*)'gptlsetoption failure'
           end if
         else
           done = .true.
         end if
       end do
       
-      if (gptinitialize () .lt. 0) stop 99
+      if (gptlinitialize () .lt. 0) stop 99
 
       write(6,*)'Enter iteration count for threaded loop'
       read (5,*)niter
 
-      if (gptstart ('total') .lt. 0) stop 99
+      if (gptlstart ('total') .lt. 0) stop 99
 
 !$OMP PARALLEL DO PRIVATE (iter)
 
@@ -66,11 +66,11 @@
         call sub (iter)
       end do
 
-      if (gptstop ('total') .lt. 0) stop 99
-      if (gptpr (0) .lt. 0) call exit(99)
+      if (gptlstop ('total') .lt. 0) stop 99
+      if (gptlpr (0) .lt. 0) call exit(99)
 
-      if (gptreset () .lt. 0) stop 99
-      if (gptstart ('total') .lt. 0) stop 99
+      if (gptlreset () .lt. 0) stop 99
+      if (gptlstart ('total') .lt. 0) stop 99
 
 !$OMP PARALLEL DO PRIVATE (iter)
 
@@ -78,9 +78,9 @@
         call sub (iter)
       end do
 
-      if (gptstop ('total') .lt. 0) stop 99
-      if (gptpr (1) .lt. 0) call exit(99)
-      if (gptfinalize () .lt. 0) stop 99
+      if (gptlstop ('total') .lt. 0) stop 99
+      if (gptlpr (1) .lt. 0) call exit(99)
+      if (gptlfinalize () .lt. 0) stop 99
 
       stop
       end program
@@ -88,7 +88,7 @@
       subroutine sub (iter)
       implicit none
 
-#include "../gpt.inc"
+#include "../gptl.inc"
 
       integer iter
 
@@ -104,13 +104,13 @@
       sum1 = 0.
       sum2 = 0.
 
-      ret = gptstart (name)
+      ret = gptlstart (name)
       do i=1,iter*1000
         x = i
         sum1 = sum1 + 2.1*x
         sum2 = sum2 + 3.2*x
       end do
-      ret = gptstop (name)
+      ret = gptlstop (name)
       write(6,*)'sum1,sum2=',sum1,sum2
 
       write(name,'(i4.4,a7)') iter,'*2000_+'
@@ -118,13 +118,13 @@
       sum1 = 0.
       sum2 = 0.
 
-      ret = gptstart (name)
+      ret = gptlstart (name)
       do i=1,iter*1000
         x = i
         sum1 = sum1 + x
         sum2 = sum2 + x
       end do
-      ret = gptstop (name)
+      ret = gptlstop (name)
       write(6,*)'sum1,sum2=',sum1,sum2
 
       write(name,'(i4.4,a7)') iter,'*2000_*'
@@ -132,12 +132,12 @@
       sum1 = 1.
       sum2 = 1.
 
-      ret = gptstart (name)
+      ret = gptlstart (name)
       do i=1,iter*1000
         sum1 = sum1*1.00001
         sum2 = sum2*1.00002
       end do
-      ret = gptstop (name)
+      ret = gptlstop (name)
       write(6,*)'sum1,sum2=',sum1,sum2
 
       write(name,'(i4.4,a7)') iter,'*2000_/'
@@ -145,12 +145,12 @@
       sum1 = 1.
       sum2 = 1.
 
-      ret = gptstart (name)
+      ret = gptlstart (name)
       do i=1,iter*1000
         sum1 = sum1 / 1.00001
         sum2 = sum2 / 1.00002
       end do
-      ret = gptstop (name)
+      ret = gptlstop (name)
       write(6,*)'sum1,sum2=',sum1,sum2
 
       call badcache (1, arr1, arr2)
@@ -164,9 +164,9 @@
 
 ! hangs on IBM
 #ifndef AIX
-      ret = gptstart ('sleep1')
+      ret = gptlstart ('sleep1')
       call sleep(1)
-      ret = gptstop ('sleep1')
+      ret = gptlstop ('sleep1')
 #endif
 
       return
@@ -175,7 +175,7 @@
       subroutine badcache (stride, arrin, arrot)
       implicit none
 
-#include "../gpt.inc"
+#include "../gptl.inc"
 
       integer stride
       integer arrin(stride,1000), arrot(stride,1000)
@@ -185,19 +185,19 @@
 
       write(name,'(a11,i3.3)') 'stormiss1K_',stride
 
-      ret = gptstart (name)
+      ret = gptlstart (name)
       do i=1,1000
         arrot(1,i) = 7.
       end do
-      ret = gptstop (name)
+      ret = gptlstop (name)
 
       write(name,'(a11,i3.3)') 'loadmiss1K_',stride
 
-      ret = gptstart (name)
+      ret = gptlstart (name)
       do i=1,1000
         arrot(1,1) = arrin(1,i) 
       end do
-      ret = gptstop (name)
+      ret = gptlstop (name)
 
       return
       end subroutine badcache

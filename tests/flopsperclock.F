@@ -1,7 +1,7 @@
       program flopsperclock
       implicit none
 
-#include "../gpt.inc"
+#include "../gptl.inc"
 
       integer iter, ret, n
 
@@ -14,9 +14,9 @@
       real*8 y1,y2,y3,y4,y5,y6,y7,y8,y9,y10
       real*8 z1,z2,z3,z4,z5,z6,z7,z8,z9,z10
 
-      if (gptsetoption (gptcpu, 0) < 0) stop 99
+      if (gptlsetoption (gptlcpu, 0) < 0) stop 99
 
-      if (gptinitialize () < 0) stop 99
+      if (gptlinitialize () < 0) stop 99
 
       open (unit=7, file='junk', form='formatted')
 
@@ -26,17 +26,17 @@
 
       do iter=1,10
 
-        if (gptstamp (wall1, usr1, sys1) < 0) stop 99
+        if (gptlstamp (wall1, usr1, sys1) < 0) stop 99
         do n=1,1000000
           call sub
         end do
-        if (gptstamp (wall2, usr2, sys2) < 0) stop 99
+        if (gptlstamp (wall2, usr2, sys2) < 0) stop 99
 
         overhead = wall2 - wall1
 
         sum0 = 0.
 
-        if (gptstamp (wall1, usr1, sys1) < 0) stop 99
+        if (gptlstamp (wall1, usr1, sys1) < 0) stop 99
         do n=1,1000000
           call sub
 
@@ -51,14 +51,14 @@
           sum0 = sum0 + x9
           sum0 = sum0 + x10
         end do
-        if (gptstamp (wall2, usr2, sys2) < 0) stop 99
+        if (gptlstamp (wall2, usr2, sys2) < 0) stop 99
         t1 = wall2 - wall1
 
         write(7,*)'sum=',sum0
 
         sum1 = 0.
 
-        if (gptstamp (wall1, usr1, sys1) < 0) stop 99
+        if (gptlstamp (wall1, usr1, sys1) < 0) stop 99
         do n=1,1000000
           call sub
 
@@ -83,7 +83,7 @@
           sum0 = sum0 + 1.1*x10
           sum1 = sum1 + 1.1*y10
         end do
-        if (gptstamp (wall2, usr2, sys2) < 0) stop 99
+        if (gptlstamp (wall2, usr2, sys2) < 0) stop 99
         t2 = wall2 - wall1
 
         write(7,*)'sum=',sum0,sum1
@@ -102,7 +102,7 @@
      $                         overhead/t2*100.,'% of long loop'
       end do
 
-      if (gptfinalize () .lt. 0) stop 99
+      if (gptlfinalize () .lt. 0) stop 99
       stop
       end
 

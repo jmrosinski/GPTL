@@ -68,7 +68,7 @@ int main ()
       prvcounters[n][i] = 0;
   }
 
-  GPTPAPIprinttable ();
+  GPTLPAPIprinttable ();
 
   while (1) {
     printf ("Enter option to be enabled, or positive number when done:\n");
@@ -120,8 +120,8 @@ int main ()
 
   if ( ! started[mythread]) {
     if ((ret = PAPI_create_eventset (&EventSet[mythread])) != PAPI_OK) {
-      printf ("GPT_PAPIstart: failure creating eventset: %s\n", 
-		       PAPI_strerror (ret));
+      printf ("GPTL_PAPIstart: failure creating eventset: %s\n", 
+	      PAPI_strerror (ret));
       exit (1);
     }
 

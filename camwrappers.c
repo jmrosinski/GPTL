@@ -1,5 +1,5 @@
 /*
-** $Id: camwrappers.c,v 1.6 2004-10-25 03:27:10 rosinski Exp $
+** $Id: camwrappers.c,v 1.7 2004-12-25 00:06:39 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines as called from CAM
 */
@@ -44,28 +44,28 @@ int t_stopf (char *, int);
 
 int t_initializef ()
 {
-  return GPTinitialize ();
+  return GPTLinitialize ();
 }
 
 int t_prf (int *procid)
 {
-  return GPTpr (*procid);
+  return GPTLpr (*procid);
 }
 
 void t_resetf ()
 {
-  GPTreset();
+  GPTLreset();
   return;
 }
 
 int t_setoptionf (int *option, int *val)
 {
-  return GPTsetoption (*option, *val);
+  return GPTLsetoption (*option, *val);
 }
 
 int t_stampf (double *wall, double *usr, double *sys)
 {
-  return GPTstamp (wall, usr, sys);
+  return GPTLstamp (wall, usr, sys);
 }
 
 int t_startf (char *name, int nc1)
@@ -76,7 +76,7 @@ int t_startf (char *name, int nc1)
   numchars = MIN (nc1, MAX_CHARS);
   strncpy (cname, name, numchars);
   cname[numchars] = '\0';
-  return GPTstart (cname);
+  return GPTLstart (cname);
 }
 
 int t_stopf (char *name, int nc1)
@@ -87,5 +87,5 @@ int t_stopf (char *name, int nc1)
   numchars = MIN (nc1, MAX_CHARS);
   strncpy (cname, name, numchars);
   cname[numchars] = '\0';
-  return GPTstop (cname);
+  return GPTLstop (cname);
 }

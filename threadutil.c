@@ -19,7 +19,7 @@ int threadinit (int *nthreads, int *maxthreads)
   *maxthreads = omp_get_max_threads ();
   *nthreads = *maxthreads;
   if (get_thread_num (nthreads, maxthreads) > 0)
-    return GPTerror ("GPTthreadinit: MUST be called only by master thread");
+    return GPTLerror ("GPTLthreadinit: MUST be called only by master thread");
   return 0;
 }
 
@@ -38,7 +38,7 @@ void threadfinalize ()
 **   nthreads:   number of threads
 **   maxthreads: number of threads (unused in OpenMP case)
 **
-** Return value: thread number (success) or GPTerror (failure)
+** Return value: thread number (success) or GPTLerror (failure)
 */
 
 int get_thread_num (int *nthreads, int *maxthreads)
@@ -46,8 +46,8 @@ int get_thread_num (int *nthreads, int *maxthreads)
   int t;       /* thread number */
 
   if ((t = omp_get_thread_num ()) >= *nthreads)
-    return GPTerror ("get_thread_num: returned id %d exceed numthreads %d\n",
-		     t, *nthreads);
+    return GPTLerror ("get_thread_num: returned id %d exceed numthreads %d\n",
+		      t, *nthreads);
 
   return t;
 }
@@ -71,7 +71,7 @@ static pthread_t *threadid;
 **   nthreads:   number of threads
 **   maxthreads: number of threads (these don't differ under OpenMP)
 **
-** Return value: 0 (success) or GPTerror (failure)
+** Return value: 0 (success) or GPTLerror (failure)
 */
 
 int threadinit (int *nthreads, int *maxthreads)
@@ -82,7 +82,7 @@ int threadinit (int *nthreads, int *maxthreads)
 
   nbytes = MAX_THREADS * sizeof (pthread_t);
   if ( ! (threadid = (pthread_t *) malloc (nbytes)))
-    return GPTerror ("threadinit: malloc failure for %d items\n", MAX_THREADS);
+    return GPTLerror ("threadinit: malloc failure for %d items\n", MAX_THREADS);
 
   /*
   ** Initialize nthreads to 1 and define the threadid array now that initialization 
@@ -114,7 +114,7 @@ void threadfinalize ()
 ** Input/output args:
 **   maxthreads: max number of threads
 **
-** Return value: thread number (success) or GPTerror (failure)
+** Return value: thread number (success) or GPTLerror (failure)
 */
 
 int get_thread_num (int *nthreads, int *maxthreads)
@@ -125,7 +125,7 @@ int get_thread_num (int *nthreads, int *maxthreads)
   mythreadid = pthread_self ();
 
   if (lock_mutex () < 0)
-    return GPTerror ("get_thread_num: mutex lock failure\n");
+    return GPTLerror ("get_thread_num: mutex lock failure\n");
 
   /*
   ** Loop over known physical thread id's.  When my id is found, map it 
@@ -148,15 +148,15 @@ int get_thread_num (int *nthreads, int *maxthreads)
     if (*nthreads >= MAX_THREADS) {
       if (unlock_mutex () < 0)
 	printf ("get_thread_num: mutex unlock failure\n");
-      return GPTerror ("get_thread_num: nthreads=%d is too big Recompile "
-		       "with larger value of MAX_THREADS\n", *nthreads);
+      return GPTLerror ("get_thread_num: nthreads=%d is too big Recompile "
+			"with larger value of MAX_THREADS\n", *nthreads);
     }    
     threadid[n] = mythreadid;
     ++*nthreads;
   }
     
   if (unlock_mutex () < 0)
-    return GPTerror ("get_thread_num: mutex unlock failure\n");
+    return GPTLerror ("get_thread_num: mutex unlock failure\n");
 
   return n;
 }
@@ -168,7 +168,7 @@ int get_thread_num (int *nthreads, int *maxthreads)
 static int lock_mutex ()
 {
   if (pthread_mutex_lock (&t_mutex) != 0)
-    return GPTerror ("pthread_lock_mutex failure\n");
+    return GPTLerror ("pthread_lock_mutex failure\n");
   return 0;
 }
 
@@ -179,7 +179,7 @@ static int lock_mutex ()
 static int unlock_mutex ()
 {
   if (pthread_mutex_unlock (&t_mutex) != 0)
-    return GPTerror ("pthread_unlock_mutex failure\n");
+    return GPTLerror ("pthread_unlock_mutex failure\n");
   return 0;
 }
 

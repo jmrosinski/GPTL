@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "../gpt.h"
+#include "../gptl.h"
 
 #ifdef HAVE_PAPI
 #include <papiStdEventDefs.h>
@@ -18,47 +18,47 @@ int main ()
   scanf ("%d", &ntimers);
 
 #ifdef HAVE_PAPI
-  GPTsetoption (PAPI_TOT_CYC, 1);
+  GPTLsetoption (PAPI_TOT_CYC, 1);
 #endif
 
-  GPTinitialize ();
-  GPTstart ("basetimer1");
-  GPTstop ("basetimer1");
+  GPTLinitialize ();
+  GPTLstart ("basetimer1");
+  GPTLstop ("basetimer1");
   for (i = 0; i < ntimers/2; ++i) {
     sprintf (timername, "midtimer%4.4d", i);
-    GPTstart (timername);
-    GPTstop (timername);
+    GPTLstart (timername);
+    GPTLstop (timername);
   }
 
-  GPTstart ("basetimer2");
-  GPTstop ("basetimer2");
+  GPTLstart ("basetimer2");
+  GPTLstop ("basetimer2");
 
   for (i = ntimers/2+1; i < ntimers; ++i) {
     sprintf (timername, "midtimer%4.4d", i);
-    GPTstart (timername);
-    GPTstop (timername);
+    GPTLstart (timername);
+    GPTLstop (timername);
   }
 
   for (i = ntimers/2+1; i < ntimers; ++i) {
     sprintf (timername, "midtimer%4.4d", i);
-    GPTstart (timername);
-    GPTstop (timername);
+    GPTLstart (timername);
+    GPTLstop (timername);
   }
 
-  GPTstart ("basetimer3");
-  GPTstop ("basetimer3");
+  GPTLstart ("basetimer3");
+  GPTLstop ("basetimer3");
 
   for (i = 0; i < 1000; ++i) {
-    GPTstart ("basetimer1");
-    GPTstop ("basetimer1");
+    GPTLstart ("basetimer1");
+    GPTLstop ("basetimer1");
     
-    GPTstart ("basetimer2");
-    GPTstop ("basetimer2");
+    GPTLstart ("basetimer2");
+    GPTLstop ("basetimer2");
 
-    GPTstart ("basetimer3");
-    GPTstop ("basetimer3");
+    GPTLstart ("basetimer3");
+    GPTLstop ("basetimer3");
   }
 
-  GPTpr (0);
-  (void) GPTfinalize ();
+  GPTLpr (0);
+  (void) GPTLfinalize ();
 }

@@ -61,7 +61,7 @@ ARFLAGS="$ARFLAGS ruv";
 
 dnl Whether to include PAPI lib and how to do so
 AC_ARG_ENABLE([papi],[--enable-papi       Enable PAPI library interface],
-              [PAPI=YES;PAPIOBJS=gpt_papi.o],[PAPI=NO])
+              [PAPI=YES;PAPIOBJS=gptl_papi.o],[PAPI=NO])
 
 FORTDEFS=""
 if test "$PAPI" = YES ; then
@@ -168,7 +168,7 @@ AC_OUTPUT(Makefile tests/Makefile)
 
 dnl Print warnings if appropriate.
 if test "$OMP" = "NO" ; then
-  AC_MSG_WARN([GPT will be built WITHOUT the requested openmp threading. See config.log])
+  AC_MSG_WARN([GPTL will be built WITHOUT the requested openmp threading. See config.log])
 elif test "$PTHREADS" = "NO" ; then
-  AC_MSG_WARN([GPT will be built WITHOUT the requested pthreads threading. See config.log])
+  AC_MSG_WARN([GPTL will be built WITHOUT the requested pthreads threading. See config.log])
 fi

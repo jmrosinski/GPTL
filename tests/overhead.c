@@ -12,7 +12,7 @@
 #include <papi.h>
 #endif
 
-#include "../gpt.h"
+#include "../gptl.h"
 
 static void *getentry (char *, char *, int *);
 static void overhead (int, int);
@@ -23,32 +23,32 @@ int main ()
   int ompiter;
   int ninvoke;
   int papiopt;
-  int gptopt;
+  int gptlopt;
   int val;
 
 #ifdef HAVE_PAPI
-  GPTPAPIprinttable ();
+  GPTLPAPIprinttable ();
   while (1) {
     printf ("Enter PAPI option to enable, non-negative number when done\n");
     scanf ("%d", &papiopt);
     if (papiopt >= 0)
       break;
-    if (GPTsetoption (papiopt, 1) < 0)
-      printf ("gptsetoption failure\n");
+    if (GPTLsetoption (papiopt, 1) < 0)
+      printf ("gptlsetoption failure\n");
   }
 #endif
 
-  printf ("GPTwall           = 1\n");
-  printf ("GPTcpu            = 2\n");
-  printf ("GPTabort_on_error = 3\n");
-  printf ("GPToverhead       = 4\n");
+  printf ("GPTLwall           = 1\n");
+  printf ("GPTLcpu            = 2\n");
+  printf ("GPTLabort_on_error = 3\n");
+  printf ("GPTLoverhead       = 4\n");
   while (1) {
-    printf ("Enter GPT option and enable flag, negative numbers when done\n");
-    scanf ("%d %d", &gptopt, &val);
-    if (gptopt <= 0)
+    printf ("Enter GPTL option and enable flag, negative numbers when done\n");
+    scanf ("%d %d", &gptlopt, &val);
+    if (gptlopt <= 0)
       break;
-    if (GPTsetoption (gptopt, val) < 0)
-      printf ("gptsetoption failure\n");
+    if (GPTLsetoption (gptlopt, val) < 0)
+      printf ("gptlsetoption failure\n");
   }
 
   printf ("Enter number of iterations for threaded loop:\n");
@@ -57,8 +57,8 @@ int main ()
   scanf ("%d", &ninvoke);
   printf ("nompiter=%d ninvoke=%d\n", nompiter, ninvoke);
 
-  GPTinitialize ();
-  GPTstart ("total");
+  GPTLinitialize ();
+  GPTLstart ("total");
 
 #ifdef THREADED_OMP
 #pragma omp parallel for private (ompiter)
@@ -67,9 +67,9 @@ int main ()
   for (ompiter = 0; ompiter < nompiter; ++ompiter) {
     overhead (ompiter, ninvoke);
   }
-  GPTstop ("total");
-  GPTpr (0);
-  GPTfinalize ();
+  GPTLstop ("total");
+  GPTLpr (0);
+  GPTLfinalize ();
 }
 
 static void overhead (int iter, int ninvoke)
@@ -85,7 +85,7 @@ static void overhead (int iter, int ninvoke)
   struct tms buf;
   void *nothing;
 
-  GPTstart ("mallocstuff");
+  GPTLstart ("mallocstuff");
   strings1 = (char **) malloc (ninvoke * sizeof (char *));
   strings2 = (char **) malloc (ninvoke * sizeof (char *));
   for (i = 0; i < ninvoke; ++i) {
@@ -94,46 +94,46 @@ static void overhead (int iter, int ninvoke)
     sprintf (strings1[i], "str%3d", i);
     sprintf (strings2[i], "str%3d", i);
   }
-  GPTstop ("mallocstuff");
+  GPTLstop ("mallocstuff");
   
 #ifdef THREADED_OMP
-  GPTstart ("get_thread_num");
+  GPTLstart ("get_thread_num");
   for (i = 0; i < ninvoke; ++i) {
     tnum = omp_get_thread_num ();
   }
-  GPTstop ("get_thread_num");
+  GPTLstop ("get_thread_num");
 #endif
 
-  GPTstart ("gettimeofday");
+  GPTLstart ("gettimeofday");
   for (i = 0; i < ninvoke; ++i) {
     gettimeofday (&tp, 0);
   }
-  GPTstop ("gettimeofday");
+  GPTLstop ("gettimeofday");
 
-  GPTstart ("times");
+  GPTLstart ("times");
   for (i = 0; i < ninvoke; ++i) {
     (void) times (&buf);
   }
-  GPTstop ("times");
+  GPTLstop ("times");
   
-  GPTstart ("getentry");
+  GPTLstart ("getentry");
   for (i = 0; i < ninvoke; ++i) {
     nothing = getentry (strings1[i], strings2[i], &indx);
   }
-  GPTstop ("getentry");
+  GPTLstop ("getentry");
 
-  GPTstart ("freestuff");
+  GPTLstart ("freestuff");
   for (i = 0; i < ninvoke; ++i) {
     free (strings1[i]);
     free (strings2[i]);
   }
   free (strings1);
   free (strings2);
-  GPTstop ("freestuff");
+  GPTLstop ("freestuff");
 
   for (i = 0; i < ninvoke; ++i) {
-    GPTstart ("2or4PAPI_reads");
-    GPTstop ("2or4PAPI_reads");
+    GPTLstart ("2or4PAPI_reads");
+    GPTLstop ("2or4PAPI_reads");
   }
 }
 

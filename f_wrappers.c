@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.9 2004-10-30 17:16:16 rosinski Exp $
+** $Id: f_wrappers.c,v 1.10 2004-12-25 00:06:39 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines
 */
@@ -9,72 +9,72 @@
 
 #if ( defined FORTRANCAPS )
 
-#define gptinitialize GPTINITIALIZE
-#define gptfinalize GPTFINALIZE
-#define gptpr GPTPR
-#define gptreset GPTRESET
-#define gptstamp GPTSTAMP
-#define gptstart GPTSTART
-#define gptstop GPTSTOP
-#define gptsetoption GPTSETOPTION
-#define gptpapiprinttable GPTPAPIPRINTTABLE
+#define gptlinitialize GPTLINITIALIZE
+#define gptlfinalize GPTLFINALIZE
+#define gptlpr GPTLPR
+#define gptlreset GPTLRESET
+#define gptlstamp GPTLSTAMP
+#define gptlstart GPTLSTART
+#define gptlstop GPTLSTOP
+#define gptlsetoption GPTLSETOPTION
+#define gptlpapiprinttable GPTLPAPIPRINTTABLE
 
 #elif ( defined FORTRANUNDERSCORE )
 
-#define gptinitialize gptinitialize_
-#define gptfinalize gptfinalize_
-#define gptpr gptpr_
-#define gptreset gptreset_
-#define gptstamp gptstamp_
-#define gptstart gptstart_
-#define gptstop gptstop_
-#define gptsetoption gptsetoption_
-#define gptpapiprinttable gptpapiprinttable_
+#define gptlinitialize gptlinitialize_
+#define gptlfinalize gptlfinalize_
+#define gptlpr gptlpr_
+#define gptlreset gptlreset_
+#define gptlstamp gptlstamp_
+#define gptlstart gptlstart_
+#define gptlstop gptlstop_
+#define gptlsetoption gptlsetoption_
+#define gptlpapiprinttable gptlpapiprinttable_
 
 #elif ( defined FORTRANDOUBLEUNDERSCORE )
 
-#define gptinitialize gptinitialize__
-#define gptfinalize gptfinalize__
-#define gptpr gptpr__
-#define gptreset gptreset__
-#define gptstamp gptstamp__
-#define gptstart gptstart__
-#define gptstop gptstop__
-#define gptsetoption gptsetoption__
-#define gptpapiprinttable gptpapiprinttable__
+#define gptlinitialize gptlinitialize__
+#define gptlfinalize gptlfinalize__
+#define gptlpr gptlpr__
+#define gptlreset gptlreset__
+#define gptlstamp gptlstamp__
+#define gptlstart gptlstart__
+#define gptlstop gptlstop__
+#define gptlsetoption gptlsetoption__
+#define gptlpapiprinttable gptlpapiprinttable__
 
 #endif
 
-int gptstart (char *, int);
-int gptstop (char *, int);
+int gptlstart (char *, int);
+int gptlstop (char *, int);
 
-int gptinitialize ()
+int gptlinitialize ()
 {
-  return GPTinitialize ();
+  return GPTLinitialize ();
 }
 
-int gptfinalize ()
+int gptlfinalize ()
 {
-  return GPTfinalize ();
+  return GPTLfinalize ();
 }
 
-int gptpr (int *procid)
+int gptlpr (int *procid)
 {
-  return GPTpr (*procid);
+  return GPTLpr (*procid);
 }
 
-void gptreset ()
+void gptlreset ()
 {
-  GPTreset();
+  GPTLreset();
   return;
 }
 
-int gptstamp (double *wall, double *usr, double *sys)
+int gptlstamp (double *wall, double *usr, double *sys)
 {
-  return GPTstamp (wall, usr, sys);
+  return GPTLstamp (wall, usr, sys);
 }
 
-int gptstart (char *name, int nc1)
+int gptlstart (char *name, int nc1)
 {
   char cname[MAX_CHARS+1];
   int numchars;
@@ -82,10 +82,10 @@ int gptstart (char *name, int nc1)
   numchars = MIN (nc1, MAX_CHARS);
   strncpy (cname, name, numchars);
   cname[numchars] = '\0';
-  return GPTstart (cname);
+  return GPTLstart (cname);
 }
 
-int gptstop (char *name, int nc1)
+int gptlstop (char *name, int nc1)
 {
   char cname[MAX_CHARS+1];
   int numchars;
@@ -93,18 +93,18 @@ int gptstop (char *name, int nc1)
   numchars = MIN (nc1, MAX_CHARS);
   strncpy (cname, name, numchars);
   cname[numchars] = '\0';
-  return GPTstop (cname);
+  return GPTLstop (cname);
 }
 
-int gptsetoption (int *option, int *val)
+int gptlsetoption (int *option, int *val)
 {
-  return GPTsetoption (*option, (bool) *val);
+  return GPTLsetoption (*option, (bool) *val);
 }
 
 #ifdef HAVE_PAPI
-void gptpapiprinttable ()
+void gptlpapiprinttable ()
 {
-  GPTPAPIprinttable ();
+  GPTLPAPIprinttable ();
   return;
 }
 #endif
