@@ -25,6 +25,7 @@ int main ()
   printf ("nompiter=%d ninvoke=%d", nompiter, ninvoke);
 
   GPTinitialize ();
+  GPTstart ("total");
 
 #ifdef THREADED_OMP
 #pragma omp parallel for private (ompiter)
@@ -33,6 +34,7 @@ int main ()
   for (ompiter = 0; ompiter < nompiter; ++ompiter) {
     overhead (ompiter, ninvoke);
   }
+  GPTstop ("total");
   GPTpr (0);
 }
 

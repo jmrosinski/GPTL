@@ -3,11 +3,11 @@ AC_INIT(private.h)
 AC_LANG(C)
 
 dnl Checks for programs.
-AC_PROG_CC(pgcc cc xlc_r cc_r xlc g++ gcc icc)
+AC_PROG_CC(xlc_r cc_r xlc pgcc icc cc gcc g++)
 
 dnl Added by me:
 dnl What fortran compiler to use:
-AC_PROG_F77(pgf90 xlf90_r f90 lf95 g95 ifort g77 f77)
+AC_PROG_F77(xlf90_r xlf90 pgf90 ifort lf95 f90 g95 g77 f77)
 
 dnl Whether to enable debugging
 AC_ARG_ENABLE(debug,[--enable-debug],CFLAGS=-g;FFLAGS=-g,)

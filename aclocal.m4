@@ -8,13 +8,13 @@ AC_DEFUN(UD_SET_OMP_C,
   AC_MSG_CHECKING([C flags for openmp])
 
   if test "$OMP" = "NO" ; then
-    THREADFLAGS="-mp"
+    THREADFLAGS="-qsmp=omp"
     CFLAGS="$OLDFLAGS $THREADFLAGS"
     AC_TRY_LINK([#include <omp.h>],[(void) omp_get_max_threads();],OMP="YES",)
   fi
 
   if test "$OMP" = "NO" ; then
-    THREADFLAGS="-qsmp=omp"
+    THREADFLAGS="-mp"
     CFLAGS="$OLDFLAGS $THREADFLAGS"
     AC_TRY_LINK([#include <omp.h>],[(void) omp_get_max_threads();],OMP="YES",)
   fi
