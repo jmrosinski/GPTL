@@ -1,12 +1,8 @@
 #include "private.h"
 
-static int lock_mutex (void);      /* lock a mutex for entry into a critical region */
-static int unlock_mutex (void);    /* unlock a mutex for exit from a critical region */
-
 #if ( defined THREADED_OMP )
 
 #include <omp.h>
-static omp_lock_t lock;
 
 /*
 ** threadinit: Initialize locking capability and set number of threads
@@ -18,10 +14,6 @@ static omp_lock_t lock;
 
 int threadinit (int *nthreads, int *maxthreads)
 {
-  /* Must call init_lock before using the lock (get_thread_num()) */
-
-  omp_init_lock (&lock);
-
   /* In OMP case, maxthreads and nthreads are the same number */
 
   *maxthreads = omp_get_max_threads ();
@@ -44,40 +36,20 @@ void threadfinalize ()
 **
 ** Input args:
 **   nthreads:   number of threads
-**   maxthreads: number of threads (unused on OpenMP case)
+**   maxthreads: number of threads (unused in OpenMP case)
 **
 ** Return value: thread number (success) or GPTerror (failure)
 */
 
 int get_thread_num (int *nthreads, int *maxthreads)
 {
-  int mythread;
+  int t;       /* thread number */
 
-  if ((mythread = omp_get_thread_num ()) >= *nthreads)
+  if ((t = omp_get_thread_num ()) >= *nthreads)
     return GPTerror ("get_thread_num: returned id %d exceed numthreads %d\n",
-		     mythread, *nthreads);
+		     t, *nthreads);
 
-  return mythread;
-}
-
-/*
-** lock_mutex: lock a mutex for private access
-*/
-
-int lock_mutex (void)
-{
-  omp_set_lock (&lock);
-  return 0;
-}
-
-/*
-** unlock_mutex: unlock a mutex from private access
-*/
-
-static int unlock_mutex (void)
-{
-  omp_unset_lock (&lock);
-  return 0;
+  return t;
 }
 
 #elif ( defined THREADED_PTHREADS )
@@ -85,6 +57,9 @@ static int unlock_mutex (void)
 #define MAX_THREADS 128
 
 #include <pthread.h>
+
+static int lock_mutex (void);      /* lock a mutex for entry into a critical region */
+static int unlock_mutex (void);    /* unlock a mutex for exit from a critical region */
 
 static pthread_mutex_t t_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_t *threadid;

@@ -227,10 +227,10 @@ int GPT_PAPIinitialize (const int maxthreads)  /* number of threads */
   papicounters = (long_long **) GPTallocate (maxthreads * sizeof (long_long *));
   lastoverhead = (long_long *)  GPTallocate (maxthreads * sizeof (long_long));
 
-  for (n = 0; n < maxthreads; n++) {
-    EventSet[n] = PAPI_NULL;
-    papicounters[n] = (long_long *) GPTallocate (MAX_AUX * sizeof (long_long));
-    lastoverhead[n] = -1;
+  for (t = 0; t < maxthreads; t++) {
+    EventSet[t] = PAPI_NULL;
+    papicounters[t] = (long_long *) GPTallocate (MAX_AUX * sizeof (long_long));
+    lastoverhead[t] = -1;
   }
 
   /* 
@@ -333,7 +333,7 @@ static int create_and_start_events (const int t)  /* thread number */
 **   Called from GPTstart.
 **
 ** Input args:  
-**   mythread: thread number
+**   t: thread number
 **
 ** Output args: 
 **   aux: struct containing the counters
@@ -341,7 +341,7 @@ static int create_and_start_events (const int t)  /* thread number */
 ** Return value: 0 (success) or GPTerror (failure)
 */
 
-int GPT_PAPIstart (const int mythread,   /* thread number */
+int GPT_PAPIstart (const int t,          /* thread number */
 		   Papistats *aux)       /* struct containing PAPI stats */
 {
   int ret;  /* return code from PAPI lib calls */
@@ -354,7 +354,7 @@ int GPT_PAPIstart (const int mythread,   /* thread number */
 
   /* Read the counters */
 
-  if ((ret = PAPI_read (EventSet[mythread], papicounters[mythread])) != PAPI_OK)
+  if ((ret = PAPI_read (EventSet[t], papicounters[t])) != PAPI_OK)
     return GPTerror ("GPT_PAPIstart: %s\n", PAPI_strerror (ret));
 
   /* 
@@ -363,7 +363,7 @@ int GPT_PAPIstart (const int mythread,   /* thread number */
   */
 
   for (n = 0; n < nevents; n++)
-    aux->last[n] = papicounters[mythread][n];
+    aux->last[n] = papicounters[t][n];
   
   return 0;
 }
@@ -373,7 +373,7 @@ int GPT_PAPIstart (const int mythread,   /* thread number */
 **   Called from GPTstop.
 **
 ** Input args:
-**   mythread: thread number
+**   t: thread number
 **
 ** Input/output args: 
 **   aux: struct containing the counters
@@ -381,7 +381,7 @@ int GPT_PAPIstart (const int mythread,   /* thread number */
 ** Return value: 0 (success) or GPTerror (failure)
 */
 
-int GPT_PAPIstop (const int mythread,  /* thread number */
+int GPT_PAPIstop (const int t,         /* thread number */
 		  Papistats *aux)      /* struct containing PAPI stats */
 {
   int ret;          /* return code from PAPI lib calls */
@@ -395,7 +395,7 @@ int GPT_PAPIstop (const int mythread,  /* thread number */
 
   /* Read the counters */
 
-  if ((ret = PAPI_read (EventSet[mythread], papicounters[mythread])) != PAPI_OK)
+  if ((ret = PAPI_read (EventSet[t], papicounters[t])) != PAPI_OK)
     return GPTerror ("GPT_PAPIstop: %s\n", PAPI_strerror (ret));
   
   /* 
@@ -405,7 +405,7 @@ int GPT_PAPIstop (const int mythread,  /* thread number */
   */
 
   for (n = 0; n < nevents; n++) {
-    delta = papicounters[mythread][n] - aux->last[n];
+    delta = papicounters[t][n] - aux->last[n];
     if (delta < 0)
       aux->accum[n] = BADCOUNT;
     else if (aux->accum[n] != BADCOUNT)
@@ -421,12 +421,12 @@ int GPT_PAPIstop (const int mythread,  /* thread number */
 **   aux timer is not yet available.
 ** 
 ** Input args: 
-**   mythread: thread number
+**   t: thread number
 **
 ** Return value: 0 (success) or GPTerror (failure)
 */
 
-int GPT_PAPIoverheadstart (const int mythread)  /* thread number */
+int GPT_PAPIoverheadstart (const int t)  /* thread number */
 {
   int ret;  /* return code from PAPI lib routine */
 
@@ -435,10 +435,10 @@ int GPT_PAPIoverheadstart (const int mythread)  /* thread number */
   if (GPToverheadindx < 0)
     return -1;
 
-  if ((ret = PAPI_read (EventSet[mythread], papicounters[mythread])) != PAPI_OK)
+  if ((ret = PAPI_read (EventSet[t], papicounters[t])) != PAPI_OK)
     return GPTerror ("GPT_PAPIoverheadstart: %s\n", PAPI_strerror (ret));
 
-  lastoverhead[mythread] = papicounters[mythread][GPToverheadindx];
+  lastoverhead[t] = papicounters[t][GPToverheadindx];
 
   return 0;
 }
@@ -448,7 +448,7 @@ int GPT_PAPIoverheadstart (const int mythread)  /* thread number */
 **   possible if total cycles are being counted). Called from GPTstart and GPTstop.
 **
 ** Input args:
-**   mythread: thread number
+**   t: thread number
 **
 ** Input/output args:
 **   aux: struct containing the overhead accumulator
@@ -456,7 +456,7 @@ int GPT_PAPIoverheadstart (const int mythread)  /* thread number */
 ** Return value: 0 (success) or GPTerror (failure)
 */
     
-int GPT_PAPIoverheadstop (const int mythread,  /* thread number */               
+int GPT_PAPIoverheadstop (const int t,         /* thread number */               
 			  Papistats *aux)      /* struct containing PAPI stats */
 {
   int ret;         /* return code from PAPI_read */
@@ -467,12 +467,12 @@ int GPT_PAPIoverheadstop (const int mythread,  /* thread number */
   if (GPToverheadindx < 0)
     return -1;
 
-  if ((ret = PAPI_read (EventSet[mythread], papicounters[mythread])) != PAPI_OK)
+  if ((ret = PAPI_read (EventSet[t], papicounters[t])) != PAPI_OK)
     return GPTerror ("GPT_PAPIoverheadstart: %s\n", PAPI_strerror (ret));
 
   /* Accumulate the overhead cycles.  Check for a negative increment */
 
-  diff = papicounters[mythread][GPToverheadindx] - lastoverhead[mythread];
+  diff = papicounters[t][GPToverheadindx] - lastoverhead[t];
   if (diff < 0)
     aux->accum_cycles = BADCOUNT;
   else
@@ -581,10 +581,10 @@ void GPT_PAPIadd (Papistats *auxout,      /* output struct */
 
 void GPT_PAPIfinalize (int maxthreads)
 {
-  int n;
+  int t;
 
-  for (n = 0; n < maxthreads; n++)
-    free (papicounters[n]);
+  for (t = 0; t < maxthreads; t++)
+    free (papicounters[t]);
 
   free (EventSet);
   free (papicounters);
