@@ -32,7 +32,6 @@ fi
 AC_PROG_CC($CCLIST)
 AC_PROG_F77($FCLIST)
 
-AC_MSG_WARN([setting bitmode])
 AC_ARG_WITH(bitmode,
             [  --with-bitmode=64       Specify to build 64 bit mode library],
 	    bitmode=YES,bitmode=NO)
@@ -53,8 +52,6 @@ if test "$bitmode" = YES; then
      ARFLAGS="-X 64";
   fi
 fi
-
-echo "bitflags=$BITFLAGS"
 
 dnl Whether to include PAPI lib
 AC_ARG_ENABLE([papi],[--enable-papi],[PAPI=YES;PAPIOBJS=gpt_papi.o],[PAPI=NO])
