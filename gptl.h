@@ -1,7 +1,8 @@
 /*
-$Id: gptl.h,v 1.1 2004-12-25 00:13:18 rosinski Exp $
+$Id: gptl.h,v 1.2 2005-06-15 05:52:25 rosinski Exp $
 */
-
+#ifndef GPTL_H
+#define GPTL_H
 typedef enum {
   GPTLwall           = 1,
   GPTLcpu            = 2,
@@ -25,3 +26,4 @@ extern int GPTLreset (void);
 extern void GPTLPAPIprinttable (void);
 #endif
 
+#endif

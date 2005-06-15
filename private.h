@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.21 2004-12-25 00:06:39 rosinski Exp $
+$Id: private.h,v 1.22 2005-06-15 05:52:25 rosinski Exp $
 */
 
 #include <stdio.h>
@@ -21,7 +21,9 @@ $Id: private.h,v 1.21 2004-12-25 00:06:39 rosinski Exp $
 /* max allowable number of PAPI counters (though most machines allow fewer */
 #define MAX_AUX 8
 
+#ifndef __cplusplus
 typedef enum {false = 0, true = 1} bool;  /* mimic C++ */
+#endif
 
 typedef struct {
   long last_utime;          /* saved usr time from "start" */

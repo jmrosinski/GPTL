@@ -11,7 +11,6 @@
 static Timer **timers = 0;       /* linked list of timers */
 static Timer **last = 0;         /* last element in list */
 static int *max_depth;           /* maximum indentation level encountered */
-static int *max_name_len;        /* max length of timer name */
 
 typedef struct {
   unsigned int depth;            /* depth in calling tree */
@@ -134,7 +133,6 @@ int GPTLinitialize (void)
   last          = (Timer **)     GPTLallocate (maxthreads * sizeof (Timer *));
   current_depth = (Nofalse *)    GPTLallocate (maxthreads * sizeof (Nofalse));
   max_depth     = (int *)        GPTLallocate (maxthreads * sizeof (int));
-  max_name_len  = (int *)        GPTLallocate (maxthreads * sizeof (int));
   hashtable     = (Hashentry **) GPTLallocate (maxthreads * sizeof (Hashentry *));
 #ifdef DIAG
   novfl         = (unsigned int *) GPTLallocate (maxthreads * sizeof (unsigned int));
@@ -146,7 +144,6 @@ int GPTLinitialize (void)
     timers[t] = 0;
     current_depth[t].depth = 0;
     max_depth[t]     = 0;
-    max_name_len[t]  = 0;
     hashtable[t] = (Hashentry *) GPTLallocate (tablesize * sizeof (Hashentry));
 #ifdef DIAG
     novfl[t] = 0;
@@ -199,7 +196,6 @@ int GPTLfinalize (void)
   free (timers);
   free (current_depth);
   free (max_depth);
-  free (max_name_len);
   free (hashtable);
 #ifdef DIAG
   free (novfl);
@@ -291,7 +287,6 @@ int GPTLstart (const char *name)       /* timer name */
     /* Truncate input name if longer than MAX_CHARS characters  */
 
     nchars = MIN (strlen (name), MAX_CHARS);
-    max_name_len[t] = MAX (nchars, max_name_len[t]);
 
     strncpy (ptr->name, name, nchars);
     ptr->name[nchars] = '\0';
@@ -307,7 +302,7 @@ int GPTLstart (const char *name)       /* timer name */
     ++hashtable[t][indx].nument;
     nument = hashtable[t][indx].nument;
 
-    eptr = realloc (hashtable[t][indx].entries, nument * sizeof (Timer *));
+    eptr = (Timer **) realloc (hashtable[t][indx].entries, nument * sizeof (Timer *));
     if ( ! eptr)
       return GPTLerror ("GPTLstart: realloc error\n");
 
@@ -457,7 +452,7 @@ int GPTLstop (const char *name) /* timer name */
     if (overheadstats.enabled) {
       gettimeofday (&tp2, 0);
       ptr->wall.overhead +=       (tp2.tv_sec  - tp1.tv_sec) + 
-	1.e-6*(tp2.tv_usec - tp1.tv_usec);
+	                    1.e-6*(tp2.tv_usec - tp1.tv_usec);
     }
   }
 
@@ -593,7 +588,7 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
   if ( ! (fp = fopen (outfile, "w")))
     fp = stderr;
 
-  sum = GPTLallocate (nthreads * sizeof (float));
+  sum = (float *) GPTLallocate (nthreads * sizeof (float));
 
   for (t = 0; t < nthreads; ++t) {
     if (t > 0)
@@ -602,7 +597,7 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
 
     for (n = 0; n < max_depth[t]; ++n)    /* max indent level (depth starts at 1) */
       fprintf (fp, "  ");
-    for (n = 0; n < max_name_len[t]; ++n) /* longest timer name */
+    for (n = 0; n < MAX_CHARS; ++n)       /* longest possible timer name */
       fprintf (fp, " ");
 
     fprintf (fp, "Called   ");
@@ -642,7 +637,7 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
     fprintf (fp, "\nSame stats sorted by timer for threaded regions:\n");
     fprintf (fp, "Thd ");
 
-    for (n = 0; n < max_name_len[0]; ++n) /* longest timer name */
+    for (n = 0; n < MAX_CHARS; ++n)     /* longest possible timer name */
       fprintf (fp, " ");
 
     fprintf (fp, "Called   ");
@@ -780,7 +775,7 @@ static void printstats (const Timer *timer,     /* timer to print */
 
   /* Pad to length of longest name */
 
-  extraspace = max_name_len[t] - strlen (timer->name);
+  extraspace = MAX_CHARS - strlen (timer->name);
   for (i = 0; i < extraspace; ++i)
     fprintf (fp, " ");
 

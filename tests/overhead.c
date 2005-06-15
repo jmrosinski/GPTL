@@ -89,8 +89,8 @@ static void overhead (int iter, int ninvoke)
   strings1 = (char **) malloc (ninvoke * sizeof (char *));
   strings2 = (char **) malloc (ninvoke * sizeof (char *));
   for (i = 0; i < ninvoke; ++i) {
-    strings1[i] = malloc (8);
-    strings2[i] = malloc (8);
+    strings1[i] = (char *) malloc (8);
+    strings2[i] = (char *) malloc (8);
     sprintf (strings1[i], "str%3d", i);
     sprintf (strings2[i], "str%3d", i);
   }
