@@ -120,7 +120,11 @@ static Papientry papitable [] = {
   {PAPI_FDV_INS,"FD ins          ", "FD ins"},
   {PAPI_FSQ_INS,"FSq ins         ", "FSq ins"},
   {PAPI_FNV_INS,"Finv ins        ", "Finv ins"},
+#ifdef PAPI_FP_OPS
   {PAPI_FP_OPS, "FP ops executed ", "Floating point operations executed"}};
+#else
+  };
+#endif
 
 static const int nentries = sizeof (papitable) / sizeof (Papientry);
 static Papientry eventlist[MAX_AUX];     /* list of PAPI events to be counted */

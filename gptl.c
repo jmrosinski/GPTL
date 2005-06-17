@@ -11,6 +11,7 @@
 static Timer **timers = 0;       /* linked list of timers */
 static Timer **last = 0;         /* last element in list */
 static int *max_depth;           /* maximum indentation level encountered */
+static int *max_name_len;        /* max length of timer name */
 
 typedef struct {
   unsigned int depth;            /* depth in calling tree */
@@ -133,6 +134,7 @@ int GPTLinitialize (void)
   last          = (Timer **)     GPTLallocate (maxthreads * sizeof (Timer *));
   current_depth = (Nofalse *)    GPTLallocate (maxthreads * sizeof (Nofalse));
   max_depth     = (int *)        GPTLallocate (maxthreads * sizeof (int));
+  max_name_len  = (int *)        GPTLallocate (maxthreads * sizeof (int));
   hashtable     = (Hashentry **) GPTLallocate (maxthreads * sizeof (Hashentry *));
 #ifdef DIAG
   novfl         = (unsigned int *) GPTLallocate (maxthreads * sizeof (unsigned int));
@@ -144,6 +146,7 @@ int GPTLinitialize (void)
     timers[t] = 0;
     current_depth[t].depth = 0;
     max_depth[t]     = 0;
+    max_name_len[t]  = 0;
     hashtable[t] = (Hashentry *) GPTLallocate (tablesize * sizeof (Hashentry));
 #ifdef DIAG
     novfl[t] = 0;
@@ -196,6 +199,7 @@ int GPTLfinalize (void)
   free (timers);
   free (current_depth);
   free (max_depth);
+  free (max_name_len);
   free (hashtable);
 #ifdef DIAG
   free (novfl);
@@ -229,6 +233,8 @@ int GPTLstart (const char *name)       /* timer name */
   int indx;                     /* hash table index */
   int nument;                   /* number of entries for a hash collision */
 
+  char locname[MAX_CHARS+1];    /* "name" truncated to max allowed number of chars */
+
 #ifdef DISABLE_TIMERS
   return 0;
 #endif
@@ -250,12 +256,17 @@ int GPTLstart (const char *name)       /* timer name */
     return GPTLerror ("GPTLstart: GPTLinitialize has not been called\n");
 
   /* Look for the requested timer in the current list. */
+  /* Truncate input name if longer than MAX_CHARS characters  */
+
+  nchars = MIN (strlen (name), MAX_CHARS);
+  strncpy (locname, name, nchars);
+  locname[nchars] = '\0';
 
 #ifdef HASH
-  ptr = getentry (hashtable[t], name, &indx);
+  ptr = getentry (hashtable[t], locname, &indx);
   assert (indx < tablesize);
 #else
-  for (ptr = timers[t]; ptr && ! STRMATCH (name, ptr->name); ptr = ptr->next);
+  for (ptr = timers[t]; ptr && ! STRMATCH (locname, ptr->name); ptr = ptr->next);
 #endif
 
   if (ptr && ptr->onflg)
@@ -284,12 +295,9 @@ int GPTLstart (const char *name)       /* timer name */
     ptr = (Timer *) GPTLallocate (sizeof (Timer));
     memset (ptr, 0, sizeof (Timer));
 
-    /* Truncate input name if longer than MAX_CHARS characters  */
+    max_name_len[t] = MAX (nchars, max_name_len[t]);
 
-    nchars = MIN (strlen (name), MAX_CHARS);
-
-    strncpy (ptr->name, name, nchars);
-    ptr->name[nchars] = '\0';
+    strcpy (ptr->name, locname);
     ptr->depth = current_depth[t].depth;
 
     if (timers[t])
@@ -352,17 +360,20 @@ int GPTLstart (const char *name)       /* timer name */
 
 int GPTLstop (const char *name) /* timer name */
 {
-  long delta_wtime_sec;     /* wallclock sec change fm GPTLstart() to GPTLstop() */    
-  long delta_wtime_usec;    /* wallclock usec change fm GPTLstart() to GPTLstop() */
-  float delta_wtime;        /* floating point wallclock change */
-  struct timeval tp1, tp2;  /* argument to gettimeofday() */
-  Timer *ptr;               /* linked list pointer */
+  long delta_wtime_sec;       /* wallclock sec change fm GPTLstart() to GPTLstop() */    
+  long delta_wtime_usec;      /* wallclock usec change fm GPTLstart() to GPTLstop() */
+  float delta_wtime;          /* floating point wallclock change */
+  struct timeval tp1, tp2;    /* argument to gettimeofday() */
+  Timer *ptr;                 /* linked list pointer */
 
-  int t;                    /* thread number for this process */
-  int indx;                 /* index into hash table */
+  int nchars;                 /* number of characters in timer */
+  int t;                      /* thread number for this process */
+  int indx;                   /* index into hash table */
 
-  long usr;                 /* user time (returned from get_cpustamp) */
-  long sys;                 /* system time (returned from get_cpustamp) */
+  long usr;                   /* user time (returned from get_cpustamp) */
+  long sys;                   /* system time (returned from get_cpustamp) */
+
+  char locname[MAX_CHARS+1];  /* "name" truncated to max allowed number of chars */
 
 #ifdef DISABLE_TIMERS
   return 0;
@@ -390,14 +401,18 @@ int GPTLstop (const char *name) /* timer name */
   if ( ! initialized)
     return GPTLerror ("GPTLstop: GPTLinitialize has not been called\n");
 
+  nchars = MIN (strlen (name), MAX_CHARS);
+  strncpy (locname, name, nchars);
+  locname[nchars] = '\0';
+
 #ifdef HASH
-  ptr = getentry (hashtable[t], name, &indx);
+  ptr = getentry (hashtable[t], locname, &indx);
 #else
-  for (ptr = timers[t]; ptr && ! STRMATCH (name, ptr->name); ptr = ptr->next);
+  for (ptr = timers[t]; ptr && ! STRMATCH (locname, ptr->name); ptr = ptr->next);
 #endif
 
   if ( ! ptr) 
-    return GPTLerror ("GPTLstop: timer for %s had not been started.\n", name);
+    return GPTLerror ("GPTLstop: timer for %s had not been started.\n", locname);
 
   if ( ! ptr->onflg )
     return GPTLerror ("GPTLstop: timer %s was already off.\n",ptr->name);
@@ -597,7 +612,7 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
 
     for (n = 0; n < max_depth[t]; ++n)    /* max indent level (depth starts at 1) */
       fprintf (fp, "  ");
-    for (n = 0; n < MAX_CHARS; ++n)       /* longest possible timer name */
+    for (n = 0; n < max_name_len[t]; ++n) /* longest timer name */
       fprintf (fp, " ");
 
     fprintf (fp, "Called   ");
@@ -637,7 +652,7 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
     fprintf (fp, "\nSame stats sorted by timer for threaded regions:\n");
     fprintf (fp, "Thd ");
 
-    for (n = 0; n < MAX_CHARS; ++n)     /* longest possible timer name */
+    for (n = 0; n < max_name_len[0]; ++n) /* longest timer name */
       fprintf (fp, " ");
 
     fprintf (fp, "Called   ");
@@ -775,7 +790,7 @@ static void printstats (const Timer *timer,     /* timer to print */
 
   /* Pad to length of longest name */
 
-  extraspace = MAX_CHARS - strlen (timer->name);
+  extraspace = max_name_len[t] - strlen (timer->name);
   for (i = 0; i < extraspace; ++i)
     fprintf (fp, " ");
 
