@@ -42,7 +42,7 @@ static long ticks_per_sec;       /* clock ticks per second */
 
 /* Local function prototypes */
 
-static void printstats (const Timer *, FILE *, const int, const bool);
+static void printstats (const Timer *, FILE *, const int, const bool, float);
 static void add (Timer *, const Timer *);
 static inline int get_cpustamp (long *, long *);
 static inline Timer *getentry (const Hashentry *, const char *, int *);
@@ -573,6 +573,7 @@ int GPTLreset (void)
 
 int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
 {
+  struct timeval tp1, tp2; /* argument returned from gettimeofday */
   FILE *fp;                /* file handle to write to */
   Timer *ptr;              /* walk through master thread linked list */
   Timer *tptr;             /* walk through slave threads linked lists */
@@ -581,6 +582,7 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
   char outfile[12];        /* name of output file: timing.xxxx */
   float *sum;              /* sum of overhead values (per thread) */
   float osum;              /* sum of overhead over threads */
+  float gtodoverhead;      /* overhead of calling gettimeofday */
   bool found;              /* jump out of loop when name found */
   bool foundany;           /* whether summation print necessary */
   bool first;              /* flag 1st time entry found */
@@ -604,6 +606,15 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
     fp = stderr;
 
   sum = (float *) GPTLallocate (nthreads * sizeof (float));
+  
+  /*
+  ** Determine gettimeofday() overhead to further refine per-timer overhead estimate
+  */
+
+  gettimeofday (&tp1, 0);
+  gettimeofday (&tp2, 0);
+  gtodoverhead = (tp2.tv_sec  - tp1.tv_sec) + 
+           1.e-6*(tp2.tv_usec - tp1.tv_usec);
 
   for (t = 0; t < nthreads; ++t) {
     if (t > 0)
@@ -634,14 +645,15 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
     fprintf (fp, "\n");        /* Done with titles, go to next line */
 
     for (ptr = timers[t]; ptr; ptr = ptr->next)
-      printstats (ptr, fp, t, true);
+      printstats (ptr, fp, t, true, gtodoverhead);
 
     /* Sum of overhead across timers is meaningful */
 
     if (wallstats.enabled && overheadstats.enabled) {
       sum[t] = 0;
-      for (ptr = timers[t]; ptr; ptr = ptr->next)
-	sum[t] += ptr->wall.overhead;
+      for (ptr = timers[t]; ptr; ptr = ptr->next) {
+	sum[t] += ptr->wall.overhead + ptr->count * 2 * gtodoverhead;
+      }
       fprintf (fp, "Overhead sum = %9.3f wallclock seconds\n", sum[t]);
     }
   }
@@ -691,13 +703,13 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
 	    if (first) {
 	      first = false;
 	      fprintf (fp, "%3.3d ", 0);
-	      printstats (ptr, fp, 0, false);
+	      printstats (ptr, fp, 0, false, gtodoverhead);
 	    }
 
 	    found = true;
 	    foundany = true;
 	    fprintf (fp, "%3.3d ", t);
-	    printstats (tptr, fp, 0, false);
+	    printstats (tptr, fp, 0, false, gtodoverhead);
 	    add (&sumstats, tptr);
 	  }
 	}
@@ -705,7 +717,7 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
 
       if (foundany) {
 	fprintf (fp, "SUM ");
-	printstats (&sumstats, fp, 0, false);
+	printstats (&sumstats, fp, 0, false, gtodoverhead);
 	fprintf (fp, "\n");
       }
     }
@@ -766,7 +778,8 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
 static void printstats (const Timer *timer,     /* timer to print */
 			FILE *fp,               /* file descriptor to write to */
 			const int t,            /* thread number */
-			const bool doindent)    /* whether indenting will be done */
+			const bool doindent,    /* whether indenting will be done */
+			float gtodoverhead)     /* gettimeofday overhead */
 {
   int i;               /* index */
   int indent;          /* index for indenting */
@@ -812,8 +825,15 @@ static void printstats (const Timer *timer,     /* timer to print */
   if (wallstats.enabled) {
     elapse = timer->wall.accum_sec + 1.e-6*timer->wall.accum_usec;
     fprintf (fp, "%9.3f %9.3f %9.3f ", elapse, timer->wall.max, timer->wall.min);
-    if (overheadstats.enabled)
-      fprintf (fp, "%9.3f ", timer->wall.overhead);
+
+    /*
+    ** Add cost of gettimeofday to overhead est.  Factor of 2 is because both 
+    ** start and stop were called.
+    */
+
+    if (overheadstats.enabled) {
+      fprintf (fp, "%9.3f ", timer->wall.overhead + timer->count * 2 * gtodoverhead);
+    }
   }
 
 #ifdef HAVE_PAPI

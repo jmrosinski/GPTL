@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>        /* gettimeofday */
 
 #ifdef THREADED_OMP
 #include <omp.h>
@@ -135,6 +136,46 @@ static void overhead (int iter, int ninvoke)
     GPTLstart ("2or4PAPI_reads");
     GPTLstop ("2or4PAPI_reads");
   }
+
+  struct timeval tp1, tp2;      /* argument returned from gettimeofday */
+  float overhead;
+
+  gettimeofday (&tp1, 0);
+  for (i = 0; i < ninvoke/10; ++i) {
+    GPTLstart ("overhead_est.");
+    GPTLstop ("overhead_est.");
+    GPTLstart ("overhead_est.");
+    GPTLstop ("overhead_est.");
+    GPTLstart ("overhead_est.");
+    GPTLstop ("overhead_est.");
+    GPTLstart ("overhead_est.");
+    GPTLstop ("overhead_est.");
+    GPTLstart ("overhead_est.");
+    GPTLstop ("overhead_est.");
+    GPTLstart ("overhead_est.");
+    GPTLstop ("overhead_est.");
+    GPTLstart ("overhead_est.");
+    GPTLstop ("overhead_est.");
+    GPTLstart ("overhead_est.");
+    GPTLstop ("overhead_est.");
+    GPTLstart ("overhead_est.");
+    GPTLstop ("overhead_est.");
+    GPTLstart ("overhead_est.");
+    GPTLstop ("overhead_est.");
+  }
+  gettimeofday (&tp2, 0);
+  overhead = (tp2.tv_sec  - tp1.tv_sec) + 
+       1.e-6*(tp2.tv_usec - tp1.tv_usec);
+  printf ("overhead = %f sec.  Compare to 'overhead_est' in timing output\n", overhead);
+  /*
+  for (i = 0; i < ninvoke/10; ++i) {
+    gettimeofday (&tp1, 0);
+    gettimeofday (&tp2, 0);
+    overhead = (tp2.tv_sec  - tp1.tv_sec) + 
+      1.e-6*(tp2.tv_usec - tp1.tv_usec);
+    printf ("tp2.tv_usec diff=%d\n", tp2.tv_usec - tp1.tv_usec);
+  }
+  */
 }
 
 static void *getentry (char *string,
