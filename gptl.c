@@ -33,7 +33,7 @@ typedef struct {
 
 static Settings cpustats =      {GPTLcpu,      "Usr       sys       usr+sys   ", false};
 static Settings wallstats =     {GPTLwall,     "Wallclock max       min       ", true };
-static Settings overheadstats = {GPTLoverhead, "Overhead  ",                     true };
+static Settings overheadstats = {GPTLoverhead, "Overhead  gtod part "          , true };
 
 static const int tablesize = 128*MAX_CHARS;  /* 128 is size of ASCII char set */
 static Hashentry **hashtable;    /* table of entries hashed by sum of chars */
@@ -242,7 +242,11 @@ int GPTLstart (const char *name)       /* timer name */
   if ((t = get_thread_num (&nthreads, &maxthreads)) < 0)
     return GPTLerror ("GPTLstart\n");
 
-  /* 1st calls to overheadstart and gettimeofday are solely for overhead timing */
+  /* 
+  ** 1st calls to overheadstart and gettimeofday are solely for overhead timing
+  ** Would prefer to start overhead calcs before get_thread_num, but the
+  ** thread number is required by PAPI counters
+  */
 
   if (overheadstats.enabled) {
 #ifdef HAVE_PAPI
@@ -789,6 +793,7 @@ static void printstats (const Timer *timer,     /* timer to print */
   float sys;           /* system time */
   float usrsys;        /* usr + sys */
   float elapse;        /* elapsed time */
+  float gtodportion;   /* timer overhead due to gettimeofday only */
 
   if ((ticks_per_sec = sysconf (_SC_CLK_TCK)) == -1)
     (void) GPTLerror ("printstats: token _SC_CLK_TCK is not defined\n");
@@ -828,16 +833,20 @@ static void printstats (const Timer *timer,     /* timer to print */
 
     /*
     ** Add cost of gettimeofday to overhead est.  Factor of 2 is because both 
-    ** start and stop were called.
+    ** start and stop were called.  Second factor of 2 is because gettimeofday
+    ** was called a total of 4 times for each start/stop pair.
     */
 
     if (overheadstats.enabled) {
-      fprintf (fp, "%9.3f ", timer->wall.overhead + timer->count * 2 * gtodoverhead);
+      gtodportion = timer->count * 2 * gtodoverhead;
+      fprintf (fp, "%9.3f %9.3f ", 
+	       timer->wall.overhead + gtodportion,
+	       2*gtodportion);
     }
   }
 
 #ifdef HAVE_PAPI
-  GPTL_PAPIpr (fp, &timer->aux);
+  GPTL_PAPIpr (fp, &timer->aux, t, timer->count);
 #endif
 
   fprintf (fp, "\n");

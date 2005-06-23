@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.22 2005-06-15 05:52:25 rosinski Exp $
+$Id: private.h,v 1.23 2005-06-23 07:18:29 rosinski Exp $
 */
 
 #include <stdio.h>
@@ -16,7 +16,7 @@ $Id: private.h,v 1.22 2005-06-15 05:52:25 rosinski Exp $
 #define STRMATCH(X,Y) (strcmp((X),(Y)) == 0)
 
 /* longest timer name allowed (probably safe to just change) */
-#define MAX_CHARS 15
+#define MAX_CHARS 31
 
 /* max allowable number of PAPI counters (though most machines allow fewer */
 #define MAX_AUX 8
@@ -81,7 +81,7 @@ extern int GPTL_PAPIinitialize (const int);
 extern int GPTL_PAPIstart (const int, Papistats *);
 extern int GPTL_PAPIstop (const int, Papistats *);
 extern void GPTL_PAPIprstr (FILE *);
-extern void GPTL_PAPIpr (FILE *, const Papistats *);
+extern void GPTL_PAPIpr (FILE *, const Papistats *, const int, const int);
 extern void GPTL_PAPIadd (Papistats *, const Papistats *);
 extern int GPTL_PAPIoverheadstart (const int);
 extern int GPTL_PAPIoverheadstop (const int, Papistats *);
