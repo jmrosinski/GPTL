@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.10 2004-12-25 00:06:39 rosinski Exp $
+** $Id: f_wrappers.c,v 1.11 2005-08-23 02:21:27 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines
 */
@@ -45,8 +45,13 @@
 
 #endif
 
+#ifdef NUMERIC_TIMERS
+int gptlstart (unsigned long);
+int gptlstop (unsigned long);
+#else
 int gptlstart (char *, int);
 int gptlstop (char *, int);
+#endif
 
 int gptlinitialize ()
 {
@@ -74,6 +79,20 @@ int gptlstamp (double *wall, double *usr, double *sys)
   return GPTLstamp (wall, usr, sys);
 }
 
+#ifdef NUMERIC_TIMERS
+
+int gptlstart (unsigned long tag)
+{
+  return GPTLstart (tag);
+}
+
+int gptlstop (unsigned long tag)
+{
+  return GPTLstop (tag);
+}
+
+#else
+
 int gptlstart (char *name, int nc1)
 {
   char cname[MAX_CHARS+1];
@@ -95,6 +114,8 @@ int gptlstop (char *name, int nc1)
   cname[numchars] = '\0';
   return GPTLstop (cname);
 }
+
+#endif
 
 int gptlsetoption (int *option, int *val)
 {

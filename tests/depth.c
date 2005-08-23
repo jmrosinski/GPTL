@@ -4,11 +4,15 @@
 #include <stdio.h>
 #include "../gptl.h"
 
-main()
+int main(int argc, char **argv)
 {
   int niter;
   int i;
 
+#ifdef NUMERIC_TIMERS
+  printf ("%s not enabled for NUMERIC_TIMERS\n", argv[0]);
+  exit (-1);
+#else
   GPTLsetoption (GPTLcpu, 0);
   GPTLsetoption (GPTLwall, 1);
   GPTLsetoption (GPTLabort_on_error, 1);
@@ -45,6 +49,6 @@ main()
 
   GPTLpr (0);
   GPTLfinalize ();
+#endif
   return 0;
 }
-

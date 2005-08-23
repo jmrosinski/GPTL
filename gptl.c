@@ -35,7 +35,6 @@ static Settings cpustats =      {GPTLcpu,      "Usr       sys       usr+sys   ",
 static Settings wallstats =     {GPTLwall,     "Wallclock max       min       ", true };
 static Settings overheadstats = {GPTLoverhead, "Overhead  gtod part "          , true };
 
-static const int tablesize = 128*MAX_CHARS;  /* 128 is size of ASCII char set */
 static Hashentry **hashtable;    /* table of entries hashed by sum of chars */
 static unsigned int *novfl;      /* microsecond overflow counter (only when DIAG set) */
 static long ticks_per_sec;       /* clock ticks per second */
@@ -45,7 +44,14 @@ static long ticks_per_sec;       /* clock ticks per second */
 static void printstats (const Timer *, FILE *, const int, const bool, float);
 static void add (Timer *, const Timer *);
 static inline int get_cpustamp (long *, long *);
+
+#ifdef NUMERIC_TIMERS
+static const int tablesize = 16*16*16;       /* use the last 3 hex digits of input name */
+static inline Timer *getentry (const Hashentry *, const unsigned long, int *);
+#else
+static const int tablesize = 128*MAX_CHARS;  /* 128 is size of ASCII char set */
 static inline Timer *getentry (const Hashentry *, const char *, int *);
+#endif
 
 /*
 ** GPTLsetoption: set option value to true or false.
@@ -162,6 +168,15 @@ int GPTLinitialize (void)
     return GPTLerror ("GPTLinitialize: GPTL_PAPIinitialize failure\n");
 #endif
 
+#ifdef NUMERIC_TIMERS
+  /* 
+  ** start/stop routines sprintf into a string. MAX_CHARS must be big enough
+  ** to handle the biggest address possible.
+  */
+
+  assert (MAX_CHARS >= 2*sizeof (long));
+#endif
+
   initialized = true;
   return 0;
 }
@@ -222,7 +237,11 @@ int GPTLfinalize (void)
 ** Return value: 0 (success) or GPTLerror (failure)
 */
 
-int GPTLstart (const char *name)       /* timer name */
+#ifdef NUMERIC_TIMERS
+int GPTLstart (const unsigned long tag)  /* timer tag */
+#else
+int GPTLstart (const char *name)         /* timer name */
+#endif
 {
   struct timeval tp1, tp2;      /* argument returned from gettimeofday */
   Timer *ptr;                   /* linked list pointer */
@@ -259,19 +278,25 @@ int GPTLstart (const char *name)       /* timer name */
   if ( ! initialized)
     return GPTLerror ("GPTLstart: GPTLinitialize has not been called\n");
 
-  /* Look for the requested timer in the current list. */
+#ifdef NUMERIC_TIMERS
+  ptr = getentry (hashtable[t], tag, &indx);
+#else
+
   /* Truncate input name if longer than MAX_CHARS characters  */
 
   nchars = MIN (strlen (name), MAX_CHARS);
   strncpy (locname, name, nchars);
   locname[nchars] = '\0';
 
-#ifdef HASH
+  /* 
+  ** ptr will point to the requested timer in the current list,
+  ** or NULL if this is a new entry 
+  */
+
   ptr = getentry (hashtable[t], locname, &indx);
-  assert (indx < tablesize);
-#else
-  for (ptr = timers[t]; ptr && ! STRMATCH (locname, ptr->name); ptr = ptr->next);
 #endif
+
+  assert (indx < tablesize);
 
   if (ptr && ptr->onflg)
     return GPTLerror ("GPTLstart thread %d: timer %s was already on: "
@@ -299,6 +324,18 @@ int GPTLstart (const char *name)       /* timer name */
     ptr = (Timer *) GPTLallocate (sizeof (Timer));
     memset (ptr, 0, sizeof (Timer));
 
+#ifdef NUMERIC_TIMERS
+
+    /* 
+    ** Convert tag to a string for printing.
+    ** nchars is guaranteed by assert in init. to be <= MAX_CHARS
+    */
+
+    sprintf (locname, "%lx", tag);
+    nchars = strlen (locname);
+    ptr->tag = tag;
+#endif
+
     max_name_len[t] = MAX (nchars, max_name_len[t]);
 
     strcpy (ptr->name, locname);
@@ -310,7 +347,6 @@ int GPTLstart (const char *name)       /* timer name */
       timers[t] = ptr;
 
     last[t] = ptr;
-#ifdef HASH
     ++hashtable[t][indx].nument;
     nument = hashtable[t][indx].nument;
 
@@ -320,7 +356,6 @@ int GPTLstart (const char *name)       /* timer name */
 
     hashtable[t][indx].entries           = eptr;
     hashtable[t][indx].entries[nument-1] = ptr;
-#endif
   }
 
   ptr->onflg = true;
@@ -362,7 +397,11 @@ int GPTLstart (const char *name)       /* timer name */
 ** Return value: 0 (success) or -1 (failure)
 */
 
-int GPTLstop (const char *name) /* timer name */
+#ifdef NUMERIC_TIMERS
+int GPTLstop (const unsigned long tag) /* timer tag */
+#else
+int GPTLstop (const char *name)        /* timer name */
+#endif
 {
   long delta_wtime_sec;       /* wallclock sec change fm GPTLstart() to GPTLstop() */    
   long delta_wtime_usec;      /* wallclock usec change fm GPTLstart() to GPTLstop() */
@@ -405,18 +444,19 @@ int GPTLstop (const char *name) /* timer name */
   if ( ! initialized)
     return GPTLerror ("GPTLstop: GPTLinitialize has not been called\n");
 
+#ifdef NUMERIC_TIMERS
+  ptr = getentry (hashtable[t], tag, &indx);
+  if ( ! ptr) 
+    return GPTLerror ("GPTLstop: timer for %lx had not been started.\n", tag);
+#else
   nchars = MIN (strlen (name), MAX_CHARS);
   strncpy (locname, name, nchars);
   locname[nchars] = '\0';
 
-#ifdef HASH
   ptr = getentry (hashtable[t], locname, &indx);
-#else
-  for (ptr = timers[t]; ptr && ! STRMATCH (locname, ptr->name); ptr = ptr->next);
-#endif
-
   if ( ! ptr) 
     return GPTLerror ("GPTLstop: timer for %s had not been started.\n", locname);
+#endif
 
   if ( ! ptr->onflg )
     return GPTLerror ("GPTLstop: timer %s was already off.\n",ptr->name);
@@ -746,7 +786,6 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
 
   /* Print hash table stats */
 
-#ifdef HASH  
   for (t = 0; t < nthreads; t++) {
     first = true;
     for (i = 0; i < tablesize; i++) {
@@ -763,7 +802,6 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
       }
     }
   }
-#endif
 
   free (sum);
   return 0;
@@ -912,6 +950,41 @@ static inline int get_cpustamp (long *usr, long *sys)
   return 0;
 }
 
+#ifdef NUMERIC_TIMERS
+/*
+** getentry: find the entry in the hash table and return a pointer to it.
+**
+** Input args:
+**   hashtable: the hashtable (array)
+**   tag:       value to be hashed on (keep only the last 3 hex digits)
+** Output args:
+**   indx:      hashtable index
+**
+** Return value: pointer to the entry, or NULL if not found
+*/
+
+static inline Timer *getentry (const Hashentry *hashtable, /* hash table */
+			       const unsigned long tag,    /* value to hash */
+			       int *indx)                  /* hash index */
+{
+  int i;                 /* loop index */
+
+  *indx = tag & 0xfff;   /* hash value is just the last 3 hex digits */
+
+  /* 
+  ** If nument exceeds 1 there was a hash collision and we must search
+  ** linearly through an array for a match
+  */
+
+  for (i = 0; i < hashtable[*indx].nument; i++)
+    if (tag == hashtable[*indx].entries[i]->tag)
+      return hashtable[*indx].entries[i];
+
+  return 0;
+}
+
+#else
+
 /*
 ** getentry: find the entry in the hash table and return a pointer to it.
 **
@@ -947,3 +1020,70 @@ static inline Timer *getentry (const Hashentry *hashtable, /* hash table */
 
   return 0;
 }
+#endif
+
+/*
+** These routines were moved from threadutil.c to here only to allow inlining.
+*/
+
+#if ( defined THREADED_OMP )
+#include <omp.h>
+
+/*
+** get_thread_num: determine thread number of the calling thread
+**
+** Input args:
+**   nthreads:   number of threads
+**   maxthreads: number of threads (unused in OpenMP case)
+**
+** Return value: thread number (success) or GPTLerror (failure)
+*/
+
+static inline int get_thread_num (int *nthreads, int *maxthreads)
+{
+  int t;       /* thread number */
+
+  if ((t = omp_get_thread_num ()) >= *nthreads)
+    return GPTLerror ("get_thread_num: returned id %d exceed numthreads %d\n",
+		      t, *nthreads);
+
+  return t;
+}
+
+#elif ( ! defined THREADED_PTHREADS )
+
+static inline int get_thread_num (int *nthreads, int *maxthreads)
+{
+  return 0;
+}
+
+#endif
+
+/*
+** Add entry points for when -finstrument-functions was set on gcc compile
+** line.  Currently only usable when GPTL compiled with NUMERIC_TIMERS
+** defined.  Could do an sprintf of "this_fn" to a char var though when
+** NUMERIC_TIMERS unset.  This way is much more efficient.
+*/
+
+#ifdef NUMERIC_TIMERS
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void __cyg_profile_func_enter (void *this_fn,
+                               void *call_site)
+{
+  GPTLstart ((unsigned long) this_fn);
+}
+
+void __cyg_profile_func_exit (void *this_fn,
+                              void *call_site)
+{
+  GPTLstop ((unsigned long) this_fn);
+}
+
+#ifdef __cplusplus
+};
+#endif
+#endif

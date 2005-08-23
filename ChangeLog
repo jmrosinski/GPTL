@@ -1,3 +1,15 @@
+gptl1_4: - Added NUMERIC_TIMERS (configure --enable-numeric) for speedup.
+	 If enabled, user args to start/stop MUST be numeric tags rather
+	 than character strings.  Intended primarily to be used with
+	 automatic code instrumentation (g++ -finstrument-functions), 
+	 and tests/jr-resolve.pl to back out a name.
+	 - Added "numeric" to tests/ in order to test --enable-numeric.
+	 - Remove HASH as an option (it is now assumed) for readability.
+	 - Moved some OMP code from threadutil.c to gptl.c strictly for
+	 efficiency (inlining).  Hated to do it because the code really
+	 doesn't belong there.
+	 - Added jr-resolve.pl to tests/ to back out symbol name from
+	 address. 
 gpt1_2: Changed GPT to GPTL to avoid overlap with other utilities named GPT...
 gpt1_1: Added README and man pages.  Better commenting.  Fixed bug in min
         calcs in GPTstop.

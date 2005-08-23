@@ -1,5 +1,5 @@
 /*
-** $Id: camwrappers.c,v 1.7 2004-12-25 00:06:39 rosinski Exp $
+** $Id: camwrappers.c,v 1.8 2005-08-23 02:21:27 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines as called from CAM
 */
@@ -39,8 +39,13 @@
 
 #endif
 
+#ifdef NUMERIC_TIMERS
+int t_startf (unsigned long);
+int t_stopf (unsigned long);
+#else
 int t_startf (char *, int);
 int t_stopf (char *, int);
+#endif
 
 int t_initializef ()
 {
@@ -68,6 +73,19 @@ int t_stampf (double *wall, double *usr, double *sys)
   return GPTLstamp (wall, usr, sys);
 }
 
+#ifdef NUMERIC_TIMERS
+int t_startf (unsigned long tag)
+{
+  return GPTLstart (tag);
+}
+
+int t_stopf (unsigned long tag)
+{
+  return GPTLstop (tag);
+}
+
+#else
+
 int t_startf (char *name, int nc1)
 {
   char cname[MAX_CHARS+1];
@@ -89,3 +107,4 @@ int t_stopf (char *name, int nc1)
   cname[numchars] = '\0';
   return GPTLstop (cname);
 }
+#endif

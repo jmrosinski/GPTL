@@ -18,7 +18,7 @@ int threadinit (int *nthreads, int *maxthreads)
 
   *maxthreads = omp_get_max_threads ();
   *nthreads = *maxthreads;
-  if (get_thread_num (nthreads, maxthreads) > 0)
+  if (omp_get_thread_num () > 0)
     return GPTLerror ("GPTLthreadinit: MUST be called only by master thread");
   return 0;
 }
@@ -29,27 +29,6 @@ int threadinit (int *nthreads, int *maxthreads)
 
 void threadfinalize ()
 {
-}
-
-/*
-** get_thread_num: determine thread number of the calling thread
-**
-** Input args:
-**   nthreads:   number of threads
-**   maxthreads: number of threads (unused in OpenMP case)
-**
-** Return value: thread number (success) or GPTLerror (failure)
-*/
-
-int get_thread_num (int *nthreads, int *maxthreads)
-{
-  int t;       /* thread number */
-
-  if ((t = omp_get_thread_num ()) >= *nthreads)
-    return GPTLerror ("get_thread_num: returned id %d exceed numthreads %d\n",
-		      t, *nthreads);
-
-  return t;
 }
 
 #elif ( defined THREADED_PTHREADS )
@@ -196,10 +175,6 @@ int threadinit (int *nthreads, int *maxthreads)
   return 0;
 }
 
-int get_thread_num (int *nthreads, int *maxthreads)
-{
-  return 0;
-}
 void threadfinalize ()
 {
 }

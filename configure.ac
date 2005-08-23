@@ -97,9 +97,23 @@ AC_ARG_ENABLE(debug,[--enable-debug      Enable debugging],
 	       LDFLAGS="$LDFLAGS -g"
 	       FLDFLAGS="$FLDFLAGS -g"],)
 
+dnl Add GNU-specific options
+
+if test "$CC" = gcc ; then
+  CFLAGS="$CFLAGS -finline-functions -Winline"
+fi
+
+if test "$CC" = g++ ; then
+  CFLAGS="$CFLAGS -finline-functions -Winline"
+fi
+
 dnl Whether to enable optimization
 AC_ARG_ENABLE(opt,[--enable-opt        Optimize for speed],
               [CFLAGS="$CFLAGS -O";FFLAGS="$FFLAGS -O"],)
+
+dnl Whether to use numeric rather than character timers
+AC_ARG_ENABLE(numeric,[--enable-numeric    Numeric rather than character timers],
+              [CFLAGS="$CFLAGS -DNUMERIC_TIMERS"],)
 
 dnl need to add -qfixed to FFLAGS for Fortran tests on AIX
 if test "$F77" = xlf90 ; then

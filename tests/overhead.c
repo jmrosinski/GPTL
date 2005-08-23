@@ -67,7 +67,7 @@ inline static void *getentry (const Hashentry *, const char *, int *);
 static void overhead (int, int);
 int gethashvalue (char *);
 
-int main ()
+int main (int argc, char **argv)
 {
   int nompiter;
   int ompiter;
@@ -75,6 +75,11 @@ int main ()
   int papiopt;
   int gptlopt;
   int val;
+
+#ifdef NUMERIC_TIMERS
+  printf ("%s not enabled for NUMERIC_TIMERS\n", argv[0]);
+  exit (-1);
+#else
 
 #ifdef HAVE_PAPI
   GPTLPAPIprinttable ();
@@ -120,8 +125,10 @@ int main ()
   GPTLstop ("total");
   GPTLpr (0);
   GPTLfinalize ();
+#endif
 }
 
+#ifndef NUMERIC_TIMERS
 static void overhead (int iter, int ninvoke)
 {
   int i;
@@ -290,6 +297,4 @@ int gethashvalue (char *name)
 
   return indx;
 }
-
-
-  
+#endif

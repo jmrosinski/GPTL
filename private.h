@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.23 2005-06-23 07:18:29 rosinski Exp $
+$Id: private.h,v 1.24 2005-08-23 02:21:27 rosinski Exp $
 */
 
 #include <stdio.h>
@@ -53,6 +53,7 @@ typedef struct TIMER {
   bool onflg;               /* timer currently on or off */
   unsigned int depth;       /* depth in "calling" tree */
   unsigned long count;      /* number of start/stop calls */
+  unsigned long tag;        /* used instead of "name" when NUMERIC_TIMERS set */
   Wallstats wall;           /* wallclock stats */
   Cpustats cpu;             /* cpu stats */
 #ifdef HAVE_PAPI
@@ -73,7 +74,11 @@ extern void GPTLset_abort_on_error (bool val); /* set flag to abort on error */
 extern void *GPTLallocate (const int);         /* malloc wrapper */
 extern int threadinit (int *, int *);          /* initialize threading environment */
 extern void threadfinalize (void);             /* finalize threading environment */
+#if ( defined THREADED_PTHREADS )
 extern int get_thread_num (int *, int *);      /* determine thread number */
+#else
+static inline int get_thread_num (int *, int *);      /* determine thread number */
+#endif
 
 #ifdef HAVE_PAPI
 extern int GPTL_PAPIsetoption (const int, const int);

@@ -116,7 +116,17 @@ int main ()
   int i, n;
   float sum;
 
+  /*
+  ** get_thread_num was inlined if OMP or no threading, so this code can't just call it
+  */
+
+#if ( defined THREADED_OMP )
+  mythread = omp_thread_num ();
+#elif ( defined THREADED_PTHREADS )
   mythread = get_thread_num (&nthreads, &maxthreads);
+#else
+  mythread = 0;
+#endif
 
   if ( ! started[mythread]) {
     if ((ret = PAPI_create_eventset (&EventSet[mythread])) != PAPI_OK) {

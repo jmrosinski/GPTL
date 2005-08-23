@@ -5,12 +5,16 @@
 #include <papiStdEventDefs.h>
 #endif
 
-int main ()
+int main (int argc, char **argv)
 {
   char timername[16];
   int i;
   int ntimers;
-  
+
+#ifdef NUMERIC_TIMERS
+  printf ("%s not enabled for NUMERIC_TIMERS\n", argv[0]);
+  exit (-1);
+#else
   printf ("Purpose: compare timings of basetimer1, basetimer2 and basetimer3.\n"
 	  "Difference is measure of cost of traversing linked list\n");
 
@@ -61,4 +65,5 @@ int main ()
 
   GPTLpr (0);
   (void) GPTLfinalize ();
+#endif
 }
