@@ -6,8 +6,8 @@ FC           = @F77@
 FFLAGS       = @PAPIPREP@ @FORTDEFS@ @FFLAGS@ @BITFLAGS@ @FTHREADFLAGS@
 FLDFLAGS     = @BITFLAGS@ @FTHREADFLAGS@ -L.. -lgptl @LDFLAGS@ @LIBS@
 
-COBJS = avail.o llcost.o depth.o overhead.o rawpapitest.o numeric.o
-CEXES = avail   llcost   depth   overhead   rawpapitest   numeric
+COBJS = avail.o llcost.o depth.o overhead.o rawpapitest.o numeric.o recursion.o subinline.o
+CEXES = avail   llcost   depth   overhead   rawpapitest   numeric   recursion subinline
 
 FOBJS = flopsperclock.o omptest.o errtest.o opscost.o \
         hashtest.o papitest.o
@@ -37,6 +37,14 @@ rawpapitest: rawpapitest.o
 
 numeric: numeric.o
 	$(CC) -o $@ numeric.o $(LDFLAGS)
+
+recursion: recursion.o
+	$(CC) -o $@ recursion.o $(LDFLAGS)
+
+subinline.o: subinline.c
+	$(CC) -c $(CFLAGS) -finstrument-functions subinline.c
+subinline: subinline.o
+	$(CC) -o $@ subinline.o $(LDFLAGS)
 
 flopsperclock: flopsperclock.o
 	$(FC) -o $@ flopsperclock.o $(FLDFLAGS)

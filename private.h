@@ -1,8 +1,9 @@
 /*
-$Id: private.h,v 1.24 2005-08-23 02:21:27 rosinski Exp $
+$Id: private.h,v 1.25 2005-08-30 06:27:20 rosinski Exp $
 */
 
 #include <stdio.h>
+#include <sys/time.h>
 #include "gptl.h"
 
 #ifndef MIN
@@ -32,11 +33,15 @@ typedef struct {
   long accum_stime;         /* accumulator for sys time */
 } Cpustats;
 
+#ifdef NANOTIME
+#define UTRtype long long
+#else
+#define UTRtype struct timeval
+#endif
+  
 typedef struct {
-  long last_sec;            /* saved seconds from "start" */
-  long last_usec;           /* saved usec from "start" */
-  long accum_sec;           /* accumulator for seconds */
-  long accum_usec;          /* accumulator for usec */
+  UTRtype last;
+  UTRtype accum;
   float max;                /* longest time for start/stop pair */
   float min;                /* shortest time for start/stop pair */
   float overhead;           /* estimate of wallclock overhead */
@@ -52,7 +57,10 @@ typedef struct TIMER {
   char name[MAX_CHARS+1];   /* timer name (user input) */
   bool onflg;               /* timer currently on or off */
   unsigned int depth;       /* depth in "calling" tree */
+  unsigned int recurselvl;  /* recursion level */
+  unsigned int max_recurse; /* max recursion level */
   unsigned long count;      /* number of start/stop calls */
+  unsigned long nrecurse;   /* number of recursive start/stop calls */
   unsigned long tag;        /* used instead of "name" when NUMERIC_TIMERS set */
   Wallstats wall;           /* wallclock stats */
   Cpustats cpu;             /* cpu stats */

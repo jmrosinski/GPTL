@@ -14,7 +14,7 @@ $(LIBNAME): $(OBJS)
 
 all: $(LIBNAME) tests/all
 
-install:
+install: $(LIBNAME)
 	cp $(LIBNAME) $(LIBDIR)
 	cp gptl.h gptl.inc $(INCDIR)
 	cp man/man3/*.3 $(MANDIR)

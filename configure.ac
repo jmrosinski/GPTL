@@ -41,6 +41,7 @@ AC_ARG_ENABLE(bit64,
 	    bit64=YES,bit64=NO)
 
 BITEXT=
+CFLAGS=
 
 if test "$bit64" = YES; then
   BITEXT=64;
@@ -97,6 +98,10 @@ AC_ARG_ENABLE(debug,[--enable-debug      Enable debugging],
 	       LDFLAGS="$LDFLAGS -g"
 	       FLDFLAGS="$FLDFLAGS -g"],)
 
+dnl Whether to enable debugging
+AC_ARG_ENABLE(nanotime,[--enable-nanotime   Replace gettimeofday with native Linux],
+              AC_DEFINE([NANOTIME]),)
+
 dnl Add GNU-specific options
 
 if test "$CC" = gcc ; then
@@ -109,7 +114,7 @@ fi
 
 dnl Whether to enable optimization
 AC_ARG_ENABLE(opt,[--enable-opt        Optimize for speed],
-              [CFLAGS="$CFLAGS -O";FFLAGS="$FFLAGS -O"],)
+              [CFLAGS="$CFLAGS -O3";FFLAGS="$FFLAGS -O"],)
 
 dnl Whether to use numeric rather than character timers
 AC_ARG_ENABLE(numeric,[--enable-numeric    Numeric rather than character timers],

@@ -11,7 +11,7 @@ int main(int argc, char **argv)
 
 #ifdef NUMERIC_TIMERS
   printf ("%s not enabled for NUMERIC_TIMERS\n", argv[0]);
-  exit (-1);
+  return (-1);
 #else
   GPTLsetoption (GPTLcpu, 0);
   GPTLsetoption (GPTLwall, 1);

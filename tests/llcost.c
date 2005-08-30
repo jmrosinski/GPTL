@@ -13,7 +13,7 @@ int main (int argc, char **argv)
 
 #ifdef NUMERIC_TIMERS
   printf ("%s not enabled for NUMERIC_TIMERS\n", argv[0]);
-  exit (-1);
+  return (-1);
 #else
   printf ("Purpose: compare timings of basetimer1, basetimer2 and basetimer3.\n"
 	  "Difference is measure of cost of traversing linked list\n");
