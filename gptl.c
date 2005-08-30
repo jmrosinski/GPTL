@@ -719,8 +719,8 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
     }
     if (wallstats.enabled && overheadstats.enabled)
       fprintf (fp, "Overhead sum          = %9.3f wallclock seconds\n", sum[t]);
-    fprintf (fp, "Total calls           = %ul\n", totcount);
-    fprintf (fp, "Total recursive calls = %ul\n", totrecurse);
+    fprintf (fp, "Total calls           = %u\n", totcount);
+    fprintf (fp, "Total recursive calls = %u\n", totrecurse);
     if (totrecurse > 0)
       fprintf (fp, "Note: overhead computed only for non-recursive calls\n");
   }
@@ -855,6 +855,9 @@ static void printstats (const Timer *timer,     /* timer to print */
 
   if ((ticks_per_sec = sysconf (_SC_CLK_TCK)) == -1)
     (void) GPTLerror ("printstats: token _SC_CLK_TCK is not defined\n");
+
+  if (timer->onflg)
+    fprintf (stderr, "GPTLpr: timer %s had not been turned off\n", timer->name);
 
   /* Indent to depth of this timer */
 
@@ -1132,16 +1135,22 @@ static inline unsigned long long nanotime (void)
 }
 #endif
 
+/* Call the underlying timing routine and return the info */
+
 static inline void utr_get (UTRtype *tp)
 {
   *tp = nanotime ();
 }
+
+/* Copy an underlying timing routine data value */
 
 static inline void utr_save (UTRtype *tpout,
 			     const UTRtype *tpin)
 {
   *tpout = *tpin;
 }
+
+/* Difference two underlying timing routine data structures */
 
 static inline void utr_get_delta (const UTRtype *tp1,
 				  const UTRtype *tp2,
@@ -1150,16 +1159,22 @@ static inline void utr_get_delta (const UTRtype *tp1,
   *delta = *tp2 - *tp1;
 }
 
+/* Convert an underlying timing routine data structure to a float */
+
 static inline float utr_tofloat (const UTRtype *val)
 {
   return (float) *val;
 }
+
+/* Sum one underlying timing routine data structure into another */
 
 static inline void utr_sum (UTRtype *tp1,
 			    const UTRtype *tp2)
 {
   *tp1 += *tp2;
 }
+
+/* Determine underlying timing routine overhead */
 
 static float utr_getoverhead ()
 {
@@ -1173,6 +1188,8 @@ static float utr_getoverhead ()
 
   return nano_overhead;
 }
+
+/* Normalize cycles to seconds */
 
 static float utr_norm (float val)
 {
