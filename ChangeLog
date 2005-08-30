@@ -1,3 +1,10 @@
+gptl1_5: - Fixed "install" target.  
+	 - Add NANOTIME (Linux only) option.
+	 - Replace gettimeofday with generic utr (underlying timing routine)
+	 option.  
+	 - Remove DIAG ifdef option.  
+	 - Interpret nested "start" calls as recursion.  
+	 - In NUMERIC mode, shift tag by 2 bits.
 gptl1_4: - Added NUMERIC_TIMERS (configure --enable-numeric) for speedup.
 	 If enabled, user args to start/stop MUST be numeric tags rather
 	 than character strings.  Intended primarily to be used with
