@@ -1123,7 +1123,12 @@ void __cyg_profile_func_exit (void *this_fn,
 static inline unsigned long long nanotime (void)
 {
     unsigned long long val;
-    __asm__ __volatile__("mov %0=ar.itc" : "=r"(val) :: "memory");
+    do {
+      unsigned int a,d;
+      asm volatile("rdtsc" : "=a" (a), "=d" (d));
+      (val) = ((unsigned long)a) | (((unsigned long)d)<<32);
+    } while(0);
+
     return (val);
 }
 #else

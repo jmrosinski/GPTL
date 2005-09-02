@@ -1,5 +1,5 @@
 /*
-$Id: gptl.h,v 1.3 2005-08-23 02:21:27 rosinski Exp $
+$Id: gptl.h,v 1.4 2005-09-02 00:09:28 rosinski Exp $
 */
 #ifndef GPTL_H
 #define GPTL_H
@@ -18,8 +18,8 @@ extern int GPTLsetoption (const int, const int);
 extern int GPTLinitialize (void);
 extern int GPTLfinalize (void);
 #ifdef NUMERIC_TIMERS
-extern int GPTLstart (const unsigned long);
-extern int GPTLstop (const unsigned long);
+extern inline int GPTLstart (const unsigned long);
+extern inline int GPTLstop (const unsigned long);
 #else
 extern int GPTLstart (const char *);
 extern int GPTLstop (const char *);

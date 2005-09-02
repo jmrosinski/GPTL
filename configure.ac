@@ -54,6 +54,8 @@ if test "$bit64" = YES; then
      CFLAGS="$CFLAGS $BITFLAGS";
      FFLAGS="$FFLAGS $BITFLAGS";
      ARFLAGS="-X 64";
+  elif test "x$OS" = xlinux ; then
+     CFLAGS="$CFLAGS -DBIT64";
   fi
 fi
 
