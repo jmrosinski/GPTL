@@ -992,12 +992,16 @@ static inline Timer *getentry (const Hashentry *hashtable, /* hash table */
   Timer *retval = 0;     /* value to be returned */
 
   /*
-  ** Hash value is 3 hex digits.  Shift off the trailing 2 binary digits
+  ** Hash value is 3 hex digits.  Shift off the trailing 2 (or 3) binary digits
   ** because "tag" is likely to be an address, which is means a multiple
   ** of 4 on 32-bit addressable machines, and 8 on 64-bit.
   */
 
+#ifdef BIT64
+  *indx = (tag >> 4) & 0xfff;
+#else
   *indx = (tag >> 2) & 0xfff;
+#endif
 
   /* 
   ** If nument exceeds 1 there was a hash collision and we must search
@@ -1120,6 +1124,7 @@ void __cyg_profile_func_exit (void *this_fn,
 
 #ifdef NANOTIME
 #ifdef BIT64
+/* 64-bit code copied from PAPI library */
 static inline unsigned long long nanotime (void)
 {
     unsigned long long val;

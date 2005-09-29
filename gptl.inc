@@ -25,6 +25,7 @@
       integer gptlpr
       integer gptlreset 
       integer gptlfinalize
+      integer get_memusage
 
       external gptlsetoption
       external gptlinitialize
@@ -34,3 +35,4 @@
       external gptlpr
       external gptlreset 
       external gptlfinalize
+      external get_memusage

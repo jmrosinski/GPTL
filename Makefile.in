@@ -5,7 +5,8 @@ LIBNAME  = libgptl.a
 LIBDIR   = @prefix@/lib
 INCDIR   = @prefix@/include
 MANDIR   = @prefix@/man/man3
-OBJS     = camwrappers.o f_wrappers.o gptl.o util.o threadutil.o @PAPIOBJS@
+OBJS     = camwrappers.o f_wrappers.o gptl.o util.o threadutil.o get_memusage.o \
+           print_memusage.o @PAPIOBJS@
 @SET_MAKE@
 
 $(LIBNAME): $(OBJS)
