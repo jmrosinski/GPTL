@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include "gptl.h"
 
+#ifdef FORTRAN
 #if ( defined FORTRANCAPS )
 #define print_memusage PRINT_MEMUSAGE
 #elif ( defined FORTRANUNDERSCORE )
@@ -17,8 +18,9 @@
 #elif ( defined FORTRANDOUBLEUNDERSCORE )
 #define print_memusage print_memusage__
 #endif
+#endif
 
-int print_memusage (char *str)
+int print_memusage (const char *str)
 {
   int size;
   int rss;

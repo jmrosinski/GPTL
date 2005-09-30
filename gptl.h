@@ -1,5 +1,5 @@
 /*
-$Id: gptl.h,v 1.5 2005-09-29 02:45:43 rosinski Exp $
+$Id: gptl.h,v 1.6 2005-09-30 00:07:03 rosinski Exp $
 */
 #ifndef GPTL_H
 #define GPTL_H
@@ -31,7 +31,7 @@ extern int GPTLreset (void);
 extern void GPTLPAPIprinttable (void);
 #endif
 
-extern int print_memusage (char *);
+extern int print_memusage (const char *);
 extern int get_memusage (int *, int *, int *, int *, int *);
 
 #endif

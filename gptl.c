@@ -36,7 +36,7 @@ static Settings cpustats =      {GPTLcpu,      "Usr       sys       usr+sys   ",
 static Settings wallstats =     {GPTLwall,     "Wallclock max       min       ", true };
 static Settings overheadstats = {GPTLoverhead, "Overhead  utr est.  "          , true };
 
-static Hashentry **hashtable;    /* table of entries hashed by sum of chars */
+static Hashentry **hashtable;    /* table of entries */
 static long ticks_per_sec;       /* clock ticks per second */
 
 /* Local function prototypes */
@@ -46,9 +46,9 @@ static void add (Timer *, const Timer *);
 static inline int get_cpustamp (long *, long *);
 
 #ifdef NANOTIME
-static float cpumhz = -1.;                   /* init to bad value */
-static unsigned inline long long nanotime (void);
-static float get_clockfreq (void);
+static float cpumhz = -1.;                        /* init to bad value */
+static unsigned inline long long nanotime (void); /* read counter (assembler) */
+static float get_clockfreq (void);                /* cycles/sec */
 #endif
 
 /* functions relating to the Underlying Timing Routine (e.g. gettimeofday) */
@@ -180,8 +180,10 @@ int GPTLinitialize (void)
 
 #ifdef NUMERIC_TIMERS
   /* 
-  ** start/stop routines sprintf into a string. MAX_CHARS must be big enough
-  ** to handle the biggest address possible.
+  ** start/stop routines sprintf an "unsigned long" into a string for later 
+  ** printing. The size of that string is MAX_CHARS (excluding null terminator). 
+  ** The following assert() ensures that this size is sufficient.
+  ** A single byte can hold 2 hex digits.
   */
 
   assert (MAX_CHARS >= 2*sizeof (long));
@@ -244,28 +246,29 @@ int GPTLfinalize (void)
 ** GPTLstart: start a timer
 **
 ** Input arguments:
-**   name: timer name
+**   name: timer name OR
+**   tag:  number (e.g. maybe an address)
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
 
 #ifdef NUMERIC_TIMERS
-inline int GPTLstart (const unsigned long tag)  /* timer tag */
+inline int GPTLstart (const unsigned long tag) /* timer tag */
 #else
-int GPTLstart (const char *name)         /* timer name */
+int GPTLstart (const char *name)               /* timer name */
 #endif
 {
-  UTRtype tp1, tp2;             /* argument returned from underlying timing routine */
-  UTRtype delta;
-  Timer *ptr;                   /* linked list pointer */
-  Timer **eptr;                 /* for realloc */
+  UTRtype tp1, tp2;          /* argument returned from underlying timing routine */
+  UTRtype delta;             /* diff between 2 UTRtypes */
+  Timer *ptr;                /* linked list pointer */
+  Timer **eptr;              /* for realloc */
 
-  int nchars;                   /* number of characters in timer */
-  int t;                        /* thread index (of this thread) */
-  int indx;                     /* hash table index */
-  int nument;                   /* number of entries for a hash collision */
+  int nchars;                /* number of characters in timer */
+  int t;                     /* thread index (of this thread) */
+  int indx;                  /* hash table index */
+  int nument;                /* number of entries for a hash collision */
 
-  char locname[MAX_CHARS+1];    /* "name" truncated to max allowed number of chars */
+  char locname[MAX_CHARS+1]; /* "name" truncated to max allowed number of chars */
 
 #ifdef DISABLE_TIMERS
   return 0;
@@ -356,7 +359,8 @@ int GPTLstart (const char *name)         /* timer name */
     ptr->tag = tag;
 #endif
 
-    max_name_len[t] = MAX (nchars, max_name_len[t]);
+    if (nchars > max_name_len[t])
+      max_name_len[t] = nchars;
 
     strcpy (ptr->name, locname);
     ptr->depth = current_depth[t].depth;
@@ -412,7 +416,8 @@ int GPTLstart (const char *name)         /* timer name */
 ** GPTLstop: stop a timer
 **
 ** Input arguments:
-**   name: timer name
+**   name: timer name OR
+**   tag:  number (e.g. maybe an address)
 **
 ** Return value: 0 (success) or -1 (failure)
 */
@@ -420,22 +425,22 @@ int GPTLstart (const char *name)         /* timer name */
 #ifdef NUMERIC_TIMERS
 inline int GPTLstop (const unsigned long tag) /* timer tag */
 #else
-int GPTLstop (const char *name)        /* timer name */
+int GPTLstop (const char *name)               /* timer name */
 #endif
 {
-  float delta_wtime;          /* floating point wallclock change */
-  UTRtype tp1, tp2;           /* argument to gettimeofday() */
-  UTRtype delta;
-  Timer *ptr;                 /* linked list pointer */
+  float delta_wtime;         /* floating point wallclock change */
+  UTRtype tp1, tp2;          /* argument to gettimeofday() */
+  UTRtype delta;             /* diff between 2 UTRtypes */
+  Timer *ptr;                /* linked list pointer */
 
-  int nchars;                 /* number of characters in timer */
-  int t;                      /* thread number for this process */
-  int indx;                   /* index into hash table */
+  int nchars;                /* number of characters in timer */
+  int t;                     /* thread number for this process */
+  int indx;                  /* index into hash table */
 
-  long usr;                   /* user time (returned from get_cpustamp) */
-  long sys;                   /* system time (returned from get_cpustamp) */
+  long usr;                  /* user time (returned from get_cpustamp) */
+  long sys;                  /* system time (returned from get_cpustamp) */
 
-  char locname[MAX_CHARS+1];  /* "name" truncated to max allowed number of chars */
+  char locname[MAX_CHARS+1]; /* "name" truncated to max allowed number of chars */
 
 #ifdef DISABLE_TIMERS
   return 0;
@@ -516,8 +521,10 @@ int GPTLstop (const char *name)        /* timer name */
       ptr->wall.max = delta_wtime;
       ptr->wall.min = delta_wtime;
     } else {
-      ptr->wall.max = MAX (ptr->wall.max, delta_wtime);
-      ptr->wall.min = MIN (ptr->wall.min, delta_wtime);
+      if (delta_wtime > ptr->wall.max)
+	ptr->wall.max = delta_wtime;
+      if (delta_wtime < ptr->wall.min)
+	ptr->wall.min = delta_wtime;
     }
 
     /* 2nd system timer call is solely for overhead timing */
@@ -992,15 +999,15 @@ static inline Timer *getentry (const Hashentry *hashtable, /* hash table */
   Timer *retval = 0;     /* value to be returned */
 
   /*
-  ** Hash value is 3 hex digits.  Shift off the trailing 2 (or 3) binary digits
+  ** Hash value is 3 hex digits.  Shift off the trailing 2 (or 3) bits
   ** because "tag" is likely to be an address, which is means a multiple
   ** of 4 on 32-bit addressable machines, and 8 on 64-bit.
   */
 
 #ifdef BIT64
-  *indx = (tag >> 4) & 0xfff;
+  *indx = (tag >> 3) & 0xFFF;
 #else
-  *indx = (tag >> 2) & 0xfff;
+  *indx = (tag >> 2) & 0xFFF;
 #endif
 
   /* 

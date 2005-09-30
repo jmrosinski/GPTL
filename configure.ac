@@ -18,6 +18,7 @@ dnl Embedding AC_PROG_XX inside the shell code failed on SGI
 if test "x$OS" = "xlinux"; then
   CCLIST="cc gcc g++ icc pgcc"
   FCLIST="g77 f77 pgf90 ifort lf95 g95"
+  AC_DEFINE([LINUX])
 elif test "x$OS" = "xirix"; then
   CCLIST="cc gcc g++"
   FCLIST="f90 g77 f77"
@@ -83,9 +84,10 @@ dnl AIX also passes defines through Fortran in a special way
   else
     FORTDEFS="-DHAVE_PAPI"
   fi
-dnl will add -lpapi if successful
+dnl will add -lpapi or -lpapi64 if successful
   AC_CHECK_LIB(papi$BITEXT, PAPI_library_init,,
-	       [AC_MSG_ERROR([[not found. Rebuild using --with-papi or w/o --enable-papi]])])
+               AC_CHECK_LIB(papi, PAPI_library_init,,
+	       [AC_MSG_ERROR([[not found. Rebuild using --with-papi or w/o --enable-papi]])]))
 fi
 
 dnl One of the Fortran tests has ifdef AIX and defines are funky on AIX Fortran
@@ -101,7 +103,7 @@ AC_ARG_ENABLE(debug,[--enable-debug      Enable debugging],
 	       FLDFLAGS="$FLDFLAGS -g"],)
 
 dnl Whether to enable debugging
-AC_ARG_ENABLE(nanotime,[--enable-nanotime   Replace gettimeofday with native Linux],
+AC_ARG_ENABLE(nanotime,[--enable-nanotime   Replace gettimeofday with native IA32 or IA64],
               AC_DEFINE([NANOTIME]),)
 
 dnl Add GNU-specific options
@@ -119,7 +121,7 @@ AC_ARG_ENABLE(opt,[--enable-opt        Optimize for speed],
               [CFLAGS="$CFLAGS -O3";FFLAGS="$FFLAGS -O"],)
 
 dnl Whether to use numeric rather than character timers
-AC_ARG_ENABLE(numeric,[--enable-numeric    Numeric rather than character timers],
+AC_ARG_ENABLE(numeric,[--enable-numeric    Numeric rather than character timers ALSO adds __cyg_profile_func auto-instrumentation capability],
               [CFLAGS="$CFLAGS -DNUMERIC_TIMERS"],)
 
 dnl need to add -qfixed to FFLAGS for Fortran tests on AIX
