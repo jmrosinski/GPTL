@@ -7,9 +7,9 @@ FFLAGS       = @PAPIPREP@ @FORTDEFS@ @FFLAGS@ @BITFLAGS@ @FTHREADFLAGS@
 FLDFLAGS     = @BITFLAGS@ @FTHREADFLAGS@ -L.. -lgptl @LDFLAGS@ @LIBS@
 
 COBJS = avail.o llcost.o depth.o overhead.o rawpapitest.o numeric.o recursion.o subinline.o \
-        exception.o memusage.o
+        exception.o memusage.o basic.o
 CEXES = avail   llcost   depth   overhead   rawpapitest   numeric   recursion subinline \
-        exception   memusage
+        exception   memusage basic
 FOBJS = flopsperclock.o omptest.o errtest.o opscost.o \
         hashtest.o papitest.o
 FEXES = flopsperclock   omptest   errtest   opscost \
@@ -52,6 +52,9 @@ exception: exception.o
 
 memusage: memusage.o
 	$(CC) -o $@ memusage.o $(LDFLAGS)
+
+basic: basic.o
+	$(CC) -o $@ basic.o $(LDFLAGS)
 
 flopsperclock: flopsperclock.o
 	$(FC) -o $@ flopsperclock.o $(FLDFLAGS)
