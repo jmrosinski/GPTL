@@ -1,3 +1,7 @@
+gptl1_6: - Fix (bogus) print occurring from PAPI when overheadstats disabled.
+	 - Add get_memusage and memusage test.
+	 - Add "basic" test.
+	 - Hack aclocal.m4 for openMP flags.
 gptl1_5: - Fixed "install" target.  
 	 - Add NANOTIME (Linux only) option.
 	 - Replace gettimeofday with generic utr (underlying timing routine)
