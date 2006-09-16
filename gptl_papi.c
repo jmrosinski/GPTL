@@ -487,7 +487,7 @@ int GPTL_PAPIoverheadstop (const int t,         /* thread number */
     return -1;
 
   if ((ret = PAPI_read (EventSet[t], papicounters[t])) != PAPI_OK)
-    return GPTLerror ("GPTL_PAPIoverheadstart: %s\n", PAPI_strerror (ret));
+    return GPTLerror ("GPTL_PAPIoverheadstop: %s\n", PAPI_strerror (ret));
 
   /* Accumulate the overhead cycles.  Check for a negative increment */
 
@@ -508,14 +508,15 @@ int GPTL_PAPIoverheadstop (const int t,         /* thread number */
 **   fp: file descriptor
 */
 
-void GPTL_PAPIprstr (FILE *fp)   /* file descriptor */
+void GPTL_PAPIprstr (FILE *fp,                          /* file descriptor */
+		     const bool overheadstatsenabled)   /* whether to print overhead stats*/
 {
   int n;
   
   for (n = 0; n < nevents; n++)
     fprintf (fp, "%16s ", eventlist[n].prstr);
 
-  if (GPTLoverheadindx > -1)
+  if (overheadstatsenabled)
     fprintf (fp, "Overhead (cyc)   PAPI_read part   ");
 }
 
@@ -528,10 +529,11 @@ void GPTL_PAPIprstr (FILE *fp)   /* file descriptor */
 **   aux: struct containing the counters
 */
 
-void GPTL_PAPIpr (FILE *fp,              /* file descriptor to write to */
-		  const Papistats *aux,  /* stats to write */
-		  const int t,           /* thread number */
-		  const int count)       /* number of invocations */
+void GPTL_PAPIpr (FILE *fp,                          /* file descriptor to write to */
+		  const Papistats *aux,              /* stats to write */
+		  const int t,                       /* thread number */
+		  const int count,                   /* number of invocations */
+		  const bool overheadstatsenabled)   /* whether to print overhead stats*/
 {
   int n;
   long_long papireadportion;  /* overhead due just to PAPI_read */
@@ -549,13 +551,13 @@ void GPTL_PAPIpr (FILE *fp,              /* file descriptor to write to */
   ** gettimeofday calc. in gptl.c.
   */
 
-  if (GPTLoverheadindx > -1) {
+  if (overheadstatsenabled) {
     papireadportion = count * 2 * readoverhead[t];
     overhead = aux->accum_cycles + papireadportion;
     if (aux->accum_cycles < 1000000)
-      fprintf (fp, "%16ld %16ld ", (long) overhead, (long) (2*papireadportion));
+      fprintf (fp, "%16ld %16ld ", (long) overhead, (long) (2 * papireadportion));
     else
-      fprintf (fp, "%16.10e %16.10e ", (double) overhead, (double) (2*papireadportion));
+      fprintf (fp, "%16.10e %16.10e ", (double) overhead, (double) (2 * papireadportion));
   }
 }
 

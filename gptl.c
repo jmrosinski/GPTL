@@ -706,7 +706,7 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
     }
 
 #ifdef HAVE_PAPI
-    GPTL_PAPIprstr (fp);
+    GPTL_PAPIprstr (fp, overheadstats.enabled);
 #endif
 
     fprintf (fp, "\n");        /* Done with titles, go to next line */
@@ -752,7 +752,7 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
     }
 
 #ifdef HAVE_PAPI
-    GPTL_PAPIprstr (fp);
+    GPTL_PAPIprstr (fp, overheadstats.enabled);
 #endif
 
     fprintf (fp, "\n");
@@ -920,7 +920,7 @@ static void printstats (const Timer *timer,     /* timer to print */
   }
 
 #ifdef HAVE_PAPI
-  GPTL_PAPIpr (fp, &timer->aux, t, timer->count);
+  GPTL_PAPIpr (fp, &timer->aux, t, timer->count, overheadstats.enabled);
 #endif
 
   fprintf (fp, "\n");

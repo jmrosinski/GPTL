@@ -9,13 +9,13 @@ AC_DEFUN(UD_SET_OMP_C,
   AC_MSG_CHECKING([C flags for openmp])
 
   if test "$OMP" = "NO" ; then
-    OMPCFLAGS="-qsmp=omp"
+    OMPCFLAGS="-mp"
     CFLAGS="$OLDFLAGS $OMPCFLAGS"
     AC_TRY_LINK([#include <omp.h>],[(void) omp_get_max_threads();],OMP="YES",)
   fi
 
   if test "$OMP" = "NO" ; then
-    OMPCFLAGS="-mp"
+    OMPCFLAGS="-qsmp=omp"
     CFLAGS="$OLDFLAGS $OMPCFLAGS"
     AC_TRY_LINK([#include <omp.h>],[(void) omp_get_max_threads();],OMP="YES",)
   fi

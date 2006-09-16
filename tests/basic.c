@@ -61,10 +61,10 @@ int main (int argc, char **argv)
 
   GPTLsetoption (PAPI_TOT_CYC, 1);
   GPTLsetoption (PAPI_FML_INS, 1);
-  GPTLsetoption (GPTLoverhead, 0);
+  GPTLsetoption (GPTLoverhead, 1);
 
   nompiter = 4;
-  ninvoke
+  ninvoke = 10000000;
 
   if ( ! (sum = malloc (ninvoke*sizeof (float))))
     exit (1);
