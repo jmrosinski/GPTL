@@ -10,17 +10,7 @@
 #include <stdio.h>
 #include "gptl.h"
 
-#ifdef FORTRAN
-#if ( defined FORTRANCAPS )
-#define print_memusage PRINT_MEMUSAGE
-#elif ( defined FORTRANUNDERSCORE )
-#define print_memusage print_memusage_
-#elif ( defined FORTRANDOUBLEUNDERSCORE )
-#define print_memusage print_memusage__
-#endif
-#endif
-
-int print_memusage (const char *str)
+int GPTLprint_memusage (const char *str)
 {
   int size;
   int rss;
@@ -28,7 +18,7 @@ int print_memusage (const char *str)
   int text;
   int datastack;
 
-  if (get_memusage (&size, &rss, &share, &text, &datastack) < 0)
+  if (GPTLget_memusage (&size, &rss, &share, &text, &datastack) < 0)
     return -1;
 
   printf ("%s size=%d rss=%d share=%d text=%d datastack=%d\n", 

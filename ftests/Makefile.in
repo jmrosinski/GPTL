@@ -1,0 +1,30 @@
+FC          = @F77@
+FFLAGS      = @PAPIPREP@ @FORTDEFS@ @FFLAGS@ @BITFLAGS@ @FTHREADFLAGS@
+LDFLAGS     = @BITFLAGS@ @FTHREADFLAGS@ -L.. -lgptl @LDFLAGS@ @LIBS@
+
+OBJS = flopsperclock.o omptest.o errtest.o opscost.o \
+       hashtest.o papitest.o
+EXES = flopsperclock   omptest   errtest   opscost \
+       hashtest   papitest
+
+all: $(EXES)
+clean:
+	rm $(OBJS) $(EXES)
+
+flopsperclock: flopsperclock.o
+	$(FC) -o $@ flopsperclock.o $(LDFLAGS)
+
+omptest: omptest.o
+	$(FC) -o $@ omptest.o $(LDFLAGS)
+
+errtest: errtest.o
+	$(FC) -o $@ errtest.o $(LDFLAGS)
+
+opscost: opscost.o
+	$(FC) -o $@ opscost.o $(LDFLAGS)
+
+hashtest: hashtest.o
+	$(FC) -o $@ hashtest.o $(LDFLAGS)
+
+papitest: papitest.o
+	$(FC) -o $@ papitest.o $(LDFLAGS)

@@ -27,17 +27,7 @@
 #include <unistd.h>
 #endif
 
-#ifdef FORTRAN
-#if ( defined FORTRANCAPS )
-#define get_memusage GET_MEMUSAGE
-#elif ( defined FORTRANUNDERSCORE )
-#define get_memusage get_memusage_
-#elif ( defined FORTRANDOUBLEUNDERSCORE )
-#define get_memusage get_memusage__
-#endif
-#endif
-
-int get_memusage (int *size, int *rss, int *share, int *text, int *datastack)
+int GPTLget_memusage (int *size, int *rss, int *share, int *text, int *datastack)
 {
 #ifdef LINUX
   FILE *fd;                       /* file descriptor for fopen */

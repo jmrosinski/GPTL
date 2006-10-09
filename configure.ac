@@ -162,12 +162,12 @@ dnl How to mangle Fortran names:
 AC_DEFINE(FDEFS)
 
 dnl This barfs when CC is pgcc and F77 pgf90
-dnl AC_F77_FUNC(zzz,zzz)
-dnl case $zzz in
-dnl     zzz__)     FDEFS=-DFORTRANDOUBLEUNDERSCORE ;;
-dnl     zzz_)      FDEFS=-DFORTRANUNDERSCORE ;;
-dnl     ZZZ)       FDEFS=-DFORTRANCAPS ;;
-dnl esac
+AC_F77_FUNC(z_zz,z_zz)
+case $z_zz in
+    z_zz__)     FDEFS=-DFORTRANDOUBLEUNDERSCORE ;;
+    z_zz_)      FDEFS=-DFORTRANUNDERSCORE ;;
+    Z_ZZ)       FDEFS=-DFORTRANCAPS ;;
+esac
 
 dnl Determine required Fortran load flags
 dnl Dont do this now because of the above name mangling exersize.
@@ -191,7 +191,7 @@ AC_SUBST(ARFLAGS)
 AC_SUBST(BITFLAGS)
 AC_SUBST(FORTDEFS)
 
-AC_OUTPUT(Makefile tests/Makefile)
+AC_OUTPUT(Makefile ctests/Makefile ftests/Makefile)
 
 dnl Print warnings if appropriate.
 if test "$OMP" = "NO" ; then

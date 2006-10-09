@@ -7,10 +7,10 @@ void do_nothing (char *);
 int main ()
 {
   char *stuff;
-  (void) print_memusage ("startup");
+  (void) GPTLprint_memusage ("startup");
   stuff = (char *) malloc (104857600);
   do_nothing (stuff);
-  (void) print_memusage ("after malloc 100 MB");
+  (void) GPTLprint_memusage ("after malloc 100 MB");
 }
 
 void do_nothing (char *stuff)

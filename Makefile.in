@@ -11,7 +11,7 @@ OBJS     = camwrappers.o f_wrappers.o gptl.o util.o threadutil.o get_memusage.o 
 
 $(LIBNAME): $(OBJS)
 	ar @ARFLAGS@ $@ $(OBJS)
-	rm -f tests/*.o
+	rm -f ctests/*.o ftests/*.o
 
 all: $(LIBNAME) tests/all
 
@@ -23,12 +23,16 @@ install: $(LIBNAME)
 uninstall:
 	rm $(LIBDIR)/$(LIBNAME) $(INCDIR)/gptl.h $(INCDIR)/gptl.inc
 
-tests/all:
-	(cd tests && $(MAKE) all)
+cests/all:
+	(cd ctests && $(MAKE) all)
+
+fests/all:
+	(cd ftests && $(MAKE) all)
 
 clean:
 	rm $(OBJS) gptl_papi.o $(LIBNAME)
-	(cd tests && $(MAKE) clean)
+	(cd ctests && $(MAKE) clean)
+	(cd ftests && $(MAKE) clean)
 
 camwrappers.o: gptl.h private.h
 f_wrappers.o: gptl.h private.h

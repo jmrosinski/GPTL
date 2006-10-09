@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.11 2005-08-23 02:21:27 rosinski Exp $
+** $Id: f_wrappers.c,v 1.12 2006-10-09 15:08:06 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines
 */
@@ -18,6 +18,8 @@
 #define gptlstop GPTLSTOP
 #define gptlsetoption GPTLSETOPTION
 #define gptlpapiprinttable GPTLPAPIPRINTTABLE
+#define gptlget_memusage GPTLGET_MEMUSAGE
+#define gptlprint_memusage GPTLPRINT_MEMUSAGE
 
 #elif ( defined FORTRANUNDERSCORE )
 
@@ -30,18 +32,22 @@
 #define gptlstop gptlstop_
 #define gptlsetoption gptlsetoption_
 #define gptlpapiprinttable gptlpapiprinttable_
+#define gptlget_memusage gptlget_memusage_
+#define gptlprint_memusage gptlprint_memusage_
 
 #elif ( defined FORTRANDOUBLEUNDERSCORE )
 
-#define gptlinitialize gptlinitialize__
-#define gptlfinalize gptlfinalize__
-#define gptlpr gptlpr__
-#define gptlreset gptlreset__
-#define gptlstamp gptlstamp__
-#define gptlstart gptlstart__
-#define gptlstop gptlstop__
-#define gptlsetoption gptlsetoption__
-#define gptlpapiprinttable gptlpapiprinttable__
+#define gptlinitialize gptlinitialize_
+#define gptlfinalize gptlfinalize_
+#define gptlpr gptlpr_
+#define gptlreset gptlreset_
+#define gptlstamp gptlstamp_
+#define gptlstart gptlstart_
+#define gptlstop gptlstop_
+#define gptlsetoption gptlsetoption_
+#define gptlpapiprinttable gptlpapiprinttable_
+#define gptlget_memusage gptlget_memusage__
+#define gptlprint_memusage gptlprint_memusage__
 
 #endif
 
@@ -129,3 +135,13 @@ void gptlpapiprinttable ()
   return;
 }
 #endif
+
+int gptlget_memusage (int *size, int *rss, int *share, int *text, int *datastack)
+{
+  return GPTLget_memusage (size, rss, share, text, datastack);
+}
+
+int gptlprint_memusage (const char *str)
+{
+  return GPTLprint_memusage (str);
+}

@@ -29,7 +29,6 @@ int main (int argc, char **argv)
   float *sum;
 
   GPTLPAPIprinttable ();
-  /*
   while (1) {
     printf ("Enter PAPI option to enable, non-negative number when done\n");
     scanf ("%d", &papiopt);
@@ -53,25 +52,28 @@ int main (int argc, char **argv)
   }
   printf ("Enter number of iterations for threaded loop:\n");
   scanf ("%d", &nompiter);
-  printf ("Enter number of invocations of overhead portion:\n");
+  printf ("Enter number of invocations of outer 'for' loop:\n");
   scanf ("%d", &ninvoke);
   printf ("nompiter=%d ninvoke=%d\n", nompiter, ninvoke);
 
-  */
-
+  /*
   GPTLsetoption (PAPI_TOT_CYC, 1);
   GPTLsetoption (PAPI_FML_INS, 1);
   GPTLsetoption (GPTLoverhead, 1);
-
   nompiter = 4;
   ninvoke = 10000000;
+
+  */
 
   if ( ! (sum = malloc (ninvoke*sizeof (float))))
     exit (1);
   for (i = 0; i < ninvoke; ++i)
     sum[i] = 0.;
 
-  GPTLinitialize ();
+  if (GPTLinitialize () < 0) {
+    printf ("Stopping due to failure from GPTLinitialize\n");
+    exit (1);
+  }
   GPTLstart ("total");
 
 #pragma omp parallel for private (iter)
@@ -96,7 +98,7 @@ void parsub (int iter,
   GPTLstart ("addition");
   for (n = 0; n < ninvoke; ++n) {
     for (i = 0; i < iter; ++i) {
-      *sum += i + n;
+      *sum += i;
     }
   }
   GPTLstop ("addition");
@@ -104,7 +106,7 @@ void parsub (int iter,
   GPTLstart ("FMA");
   for (n = 0; n < ninvoke; ++n) {
     for (i = 0; i < iter; ++i) {
-      *sum += n*(i*1.1 + 7.);
+      *sum += i*1.1;
     }
   }
   GPTLstop ("FMA");
@@ -112,7 +114,7 @@ void parsub (int iter,
   GPTLstart ("division");
   for (n = 0; n < ninvoke; ++n) {
     for (i = 0; i < iter; ++i) {
-      *sum /= i + n;
+      *sum /= i;
     }
   }
   GPTLstop ("division");

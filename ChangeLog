@@ -1,3 +1,7 @@
+gptl1_7: Split tests/ into ctests/ and ftests.
+	 Fix logic on Fortran underscoring.
+	 Return error when selected PAPI option not available.
+	 Further fix (1.6 was not complete) on PAPI overhead.
 gptl1_6: - Fix (bogus) print occurring from PAPI when overheadstats disabled.
 	 - Add get_memusage and memusage test.
 	 - Add "basic" test.

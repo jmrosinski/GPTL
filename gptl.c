@@ -907,7 +907,7 @@ static void printstats (const Timer *timer,     /* timer to print */
     /*
     ** Add cost of underlying timing routine to overhead est.  One factor of 2 
     ** is because both start and stop were called.  Other factor of 2 is because 
-    ** underllying timing routine was called twice in each of start and stop.
+    ** underlying timing routine was called twice in each of start and stop.
     ** Adding a utrportion to walloverhead is due to estimate that a
     ** single utr_overhead is missing from each of start and stop.
     */
@@ -1000,7 +1000,7 @@ static inline Timer *getentry (const Hashentry *hashtable, /* hash table */
 
   /*
   ** Hash value is 3 hex digits.  Shift off the trailing 2 (or 3) bits
-  ** because "tag" is likely to be an address, which is means a multiple
+  ** because "tag" is likely to be an address, which means a multiple
   ** of 4 on 32-bit addressable machines, and 8 on 64-bit.
   */
 

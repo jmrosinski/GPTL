@@ -250,11 +250,11 @@ int GPTL_PAPIinitialize (const int maxthreads)  /* number of threads */
     counter = propeventlist[n].counter;
     if (PAPI_query_event (counter) != PAPI_OK) {
       (void) PAPI_event_code_to_name (counter, papiname);
-      printf ("GPTL_PAPIinitialize: event %s not available on this arch\n", papiname);
+      return GPTLerror ("GPTL_PAPIinitialize: event %s not available on this arch\n", papiname);
     } else {
       if (nevents+1 > MAX_AUX) {
 	(void) PAPI_event_code_to_name (counter, papiname);
-	printf ("GPTL_PAPIinitialize: Event %s is too many\n", papiname);
+	return GPTLerror ("GPTL_PAPIinitialize: Event %s is too many\n", papiname);
       } else {
 	if (counter == PAPI_TOT_CYC)
 	  GPTLoverheadindx = nevents;
@@ -516,7 +516,7 @@ void GPTL_PAPIprstr (FILE *fp,                          /* file descriptor */
   for (n = 0; n < nevents; n++)
     fprintf (fp, "%16s ", eventlist[n].prstr);
 
-  if (overheadstatsenabled)
+  if (overheadstatsenabled && GPTLoverheadindx > -1)
     fprintf (fp, "Overhead (cyc)   PAPI_read part   ");
 }
 
@@ -551,7 +551,7 @@ void GPTL_PAPIpr (FILE *fp,                          /* file descriptor to write
   ** gettimeofday calc. in gptl.c.
   */
 
-  if (overheadstatsenabled) {
+  if (overheadstatsenabled && GPTLoverheadindx > -1) {
     papireadportion = count * 2 * readoverhead[t];
     overhead = aux->accum_cycles + papireadportion;
     if (aux->accum_cycles < 1000000)
