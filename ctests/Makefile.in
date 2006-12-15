@@ -2,9 +2,9 @@ CC           = @CC@
 CFLAGS       = @DEFS@ @PAPIPREP@ @THREADDEFS@ @CFLAGS@ @BITFLAGS@ @THREADFLAGS@
 LDFLAGS      = @BITFLAGS@ @THREADFLAGS@ -L.. -lgptl @LDFLAGS@ @LIBS@
 
-OBJS = avail.o llcost.o depth.o overhead.o rawpapitest.o numeric.o recursion.o subinline.o \
+OBJS = avail.o llcost.o depth.o overhead.o overhead2.o rawpapitest.o numeric.o recursion.o subinline.o \
        exception.o memusage.o basic.o
-EXES = avail   llcost   depth   overhead   rawpapitest   numeric   recursion subinline \
+EXES = avail   llcost   depth   overhead   overhead2   rawpapitest   numeric   recursion subinline \
        exception   memusage basic
 
 all: $(EXES)
@@ -22,6 +22,9 @@ depth: depth.o
 
 overhead: overhead.o
 	$(CC) -o $@ overhead.o $(LDFLAGS)
+
+overhead2: overhead2.o
+	$(CC) -o $@ overhead2.o $(LDFLAGS)
 
 rawpapitest: rawpapitest.o
 	$(CC) -o $@ rawpapitest.o $(LDFLAGS)
