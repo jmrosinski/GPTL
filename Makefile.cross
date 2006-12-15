@@ -1,0 +1,43 @@
+CC       = scpathcc
+CFLAGS   = -DHASH  -finline-functions -Winline  -DFORTRANUNDERSCORE  -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DLINUX=1 -DFDEFS=1 -DHAVE_VPRINTF=1 -DHAVE_GETTIMEOFDAY=1 -DHAVE_TIMES=1 -DHAVE_PAPI=1 -I/home/phil/TOOLS/usr/include
+AR       = scar
+
+LIBNAME  = libgptl.a
+LIBDIR   = /home/jrosinski/lib
+INCDIR   = /home/jrosinski/include
+MANDIR   = /home/jrosinski/man/man3
+OBJS     = camwrappers.o f_wrappers.o gptl.o util.o threadutil.o get_memusage.o \
+           print_memusage.o gptl_papi.o
+
+
+$(LIBNAME): $(OBJS)
+	$(AR) ruv $@ $(OBJS)
+	rm -f ctests/*.o ftests/*.o
+
+all: $(LIBNAME) tests/all
+
+install: $(LIBNAME)
+	cp $(LIBNAME) $(LIBDIR)
+	cp gptl.h gptl.inc $(INCDIR)
+	cp man/man3/*.3 $(MANDIR)
+
+uninstall:
+	rm $(LIBDIR)/$(LIBNAME) $(INCDIR)/gptl.h $(INCDIR)/gptl.inc
+
+cests/all:
+	(cd ctests && $(MAKE) all)
+
+fests/all:
+	(cd ftests && $(MAKE) all)
+
+clean:
+	rm $(OBJS) gptl_papi.o $(LIBNAME)
+	(cd ctests && $(MAKE) clean)
+	(cd ftests && $(MAKE) clean)
+
+camwrappers.o: gptl.h private.h
+f_wrappers.o: gptl.h private.h
+gptl.o: gptl.h private.h
+util.o: gptl.h private.h
+threadutil.o: gptl.h private.h
+gptl_papi.o: gptl.h private.h

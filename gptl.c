@@ -7,6 +7,14 @@
 #include <ctype.h>         /* isdigit */
 #include <assert.h>
 
+#ifdef UNICOSMP
+#include <intrinsics.h>    /* rtc */
+#endif
+
+#ifdef USE_MPIWTIME
+#include <mpi.h>
+#endif
+
 #include "private.h"
 
 static Timer **timers = 0;       /* linked list of timers */
@@ -22,6 +30,7 @@ static Nofalse *current_depth;
 
 static int nthreads    = -1;     /* num threads. Init to bad value */
 static int maxthreads  = -1;     /* max threads (=nthreads for OMP). Init to bad value */
+static bool disabled = false;    /* Timers disabled? */
 static bool initialized = false; /* GPTLinitialize has been called */
 
 typedef struct {
@@ -41,25 +50,25 @@ static long ticks_per_sec;       /* clock ticks per second */
 
 /* Local function prototypes */
 
-static void printstats (const Timer *, FILE *, const int, const bool, float);
+static void printstats (const Timer *, FILE *, const int, const bool, double);
 static void add (Timer *, const Timer *);
 static inline int get_cpustamp (long *, long *);
 
 #ifdef NANOTIME
 static float cpumhz = -1.;                        /* init to bad value */
+static double cyc2sec = -1;                       /* init to bad value */
 static unsigned inline long long nanotime (void); /* read counter (assembler) */
 static float get_clockfreq (void);                /* cycles/sec */
 #endif
 
+#ifdef UNICOSMP
+static double ticks2sec = -1;                     /* init to bad value */
+#endif
+
 /* functions relating to the Underlying Timing Routine (e.g. gettimeofday) */
 
-static inline void utr_get (UTRtype *);
-static inline void utr_save (UTRtype *, const UTRtype *tpin);
-static inline void utr_get_delta (const UTRtype *, const UTRtype *, UTRtype *);
-static inline float utr_tofloat (const UTRtype *);
-static inline void utr_sum (UTRtype *, const UTRtype *);
-static float utr_getoverhead (void);
-static float utr_norm (float);
+static inline double utr_get (void);
+static double utr_getoverhead (void);
 
 #ifdef NUMERIC_TIMERS
 static const int tablesize = 16*16*16;       /* 3 hex digits of input name */
@@ -82,11 +91,6 @@ static inline Timer *getentry (const Hashentry *, const char *, int *);
 int GPTLsetoption (const int option,  /* option */
 		   const int val)     /* whether to enable */
 {
-
-#ifdef DISABLE_TIMERS
-  return 0;
-#endif
-
   if (initialized)
     return GPTLerror ("GPTLsetoption: must be called BEFORE GPTLinitialize\n");
 
@@ -134,8 +138,8 @@ int GPTLinitialize (void)
   int i;          /* loop index */
   int t;          /* thread index */
 
-#ifdef DISABLE_TIMERS
-  return 0;
+#ifdef UNICOSMP
+  extern long long rtc_rate_();
 #endif
 
   if (initialized)
@@ -192,6 +196,11 @@ int GPTLinitialize (void)
 #ifdef NANOTIME
   if ((cpumhz = get_clockfreq ()) < 0)
     return GPTLerror ("Can't get clock freq\n");
+  cyc2sec = 1./(cpumhz * 1.e6);
+#endif
+
+#ifdef UNICOSMP
+  ticks2sec = 1./rtc_rate_();
 #endif
 
   initialized = true;
@@ -209,10 +218,6 @@ int GPTLfinalize (void)
 {
   int t;                /* thread index */
   Timer *ptr, *ptrnext; /* ll indices */
-
-#ifdef DISABLE_TIMERS
-  return 0;
-#endif
 
   if ( ! initialized)
     return GPTLerror ("GPTLfinalize: GPTLinitialize() has not been called\n");
@@ -258,8 +263,8 @@ inline int GPTLstart (const unsigned long tag) /* timer tag */
 int GPTLstart (const char *name)               /* timer name */
 #endif
 {
-  UTRtype tp1, tp2;          /* argument returned from underlying timing routine */
-  UTRtype delta;             /* diff between 2 UTRtypes */
+  double tp1, tp2;           /* argument returned from underlying timing routine */
+  double delta;              /* diff between 2 time stamps */
   Timer *ptr;                /* linked list pointer */
   Timer **eptr;              /* for realloc */
 
@@ -268,17 +273,22 @@ int GPTLstart (const char *name)               /* timer name */
   int indx;                  /* hash table index */
   int nument;                /* number of entries for a hash collision */
 
+#ifdef UNICOSMP
+#ifndef SSP
+  if (__streaming() == 0) return 0;  /* timers don't work in this situation so disable */
+#endif
+#endif
+
   char locname[MAX_CHARS+1]; /* "name" truncated to max allowed number of chars */
 
-#ifdef DISABLE_TIMERS
-  return 0;
-#endif
+  if (disabled)
+    return 0;
 
   if ((t = get_thread_num (&nthreads, &maxthreads)) < 0)
     return GPTLerror ("GPTLstart\n");
 
   /* 
-  ** 1st calls to overheadstart and gettimeofday are solely for overhead timing
+  ** 1st calls to overheadstart and utr_get are solely for overhead timing
   ** Would prefer to start overhead calcs before get_thread_num, but the
   ** thread number is required by PAPI counters
   */
@@ -288,7 +298,7 @@ int GPTLstart (const char *name)               /* timer name */
     (void) GPTL_PAPIoverheadstart (t);
 #endif
     if (wallstats.enabled)
-      utr_get (&tp1);
+      tp1 = utr_get ();
   }
 
   if ( ! initialized)
@@ -393,11 +403,11 @@ int GPTLstart (const char *name)               /* timer name */
   */
   
   if (wallstats.enabled) {
-    utr_get (&tp2);
-    utr_save (&ptr->wall.last, &tp2);
+    tp2 = utr_get ();
+    ptr->wall.last = tp2;
     if (overheadstats.enabled) {
-      utr_get_delta (&tp1, &tp2, &delta);
-      ptr->wall.overhead += utr_tofloat (&delta);
+      delta = tp2 - tp1;
+      ptr->wall.overhead += delta;
     }
   }
 
@@ -428,9 +438,8 @@ inline int GPTLstop (const unsigned long tag) /* timer tag */
 int GPTLstop (const char *name)               /* timer name */
 #endif
 {
-  float delta_wtime;         /* floating point wallclock change */
-  UTRtype tp1, tp2;          /* argument to gettimeofday() */
-  UTRtype delta;             /* diff between 2 UTRtypes */
+  double tp1, tp2;           /* time stamps */
+  double delta;              /* diff between 2 time stamps */
   Timer *ptr;                /* linked list pointer */
 
   int nchars;                /* number of characters in timer */
@@ -440,11 +449,16 @@ int GPTLstop (const char *name)               /* timer name */
   long usr;                  /* user time (returned from get_cpustamp) */
   long sys;                  /* system time (returned from get_cpustamp) */
 
+#ifdef UNICOSMP
+#ifndef SSP
+  if (__streaming() == 0) return 0;  /* timers don't work in this situation so disable */
+#endif
+#endif
+
   char locname[MAX_CHARS+1]; /* "name" truncated to max allowed number of chars */
 
-#ifdef DISABLE_TIMERS
-  return 0;
-#endif
+  if (disabled)
+    return 0;
 
   if ((t = get_thread_num (&nthreads, &maxthreads)) < 0)
     return GPTLerror ("GPTLstop\n");
@@ -460,7 +474,7 @@ int GPTLstop (const char *name)               /* timer name */
   */
     
   if (wallstats.enabled)
-    utr_get (&tp1);
+    tp1 = utr_get ();
 
   if (cpustats.enabled && get_cpustamp (&usr, &sys) < 0)
     return GPTLerror (0);
@@ -513,26 +527,25 @@ int GPTLstop (const char *name)               /* timer name */
 
   if (wallstats.enabled) {
 
-    utr_get_delta (&ptr->wall.last, &tp1, &delta);
-    delta_wtime = utr_tofloat (&delta);
-    utr_sum (&ptr->wall.accum, &delta);
+    delta = tp1 - ptr->wall.last;
+    ptr->wall.accum += delta;
 
     if (ptr->count == 1) {
-      ptr->wall.max = delta_wtime;
-      ptr->wall.min = delta_wtime;
+      ptr->wall.max = delta;
+      ptr->wall.min = delta;
     } else {
-      if (delta_wtime > ptr->wall.max)
-	ptr->wall.max = delta_wtime;
-      if (delta_wtime < ptr->wall.min)
-	ptr->wall.min = delta_wtime;
+      if (delta > ptr->wall.max)
+	ptr->wall.max = delta;
+      if (delta < ptr->wall.min)
+	ptr->wall.min = delta;
     }
 
     /* 2nd system timer call is solely for overhead timing */
 
     if (overheadstats.enabled) {
-      utr_get (&tp2);
-      utr_get_delta (&tp1, &tp2, &delta);
-      ptr->wall.overhead += utr_tofloat (&delta);
+      tp2 = utr_get ();
+      delta = tp2 - tp1;
+      ptr->wall.overhead += delta;
     }
   }
 
@@ -552,6 +565,30 @@ int GPTLstop (const char *name)               /* timer name */
 }
 
 /*
+** GPTLenable: enable timers
+**
+** Return value: 0 (success) 
+*/
+
+int GPTLenable (void)
+{
+  disabled = false;
+  return (0);
+}
+
+/*
+** GPTLdisable: disable timers
+**
+** Return value: 0 (success) 
+*/
+
+int GPTLdisable (void)
+{
+  disabled = true;
+  return (0);
+}
+
+/*
 ** GPTLstamp: Compute timestamp of usr, sys, and wallclock time (seconds)
 **
 ** Output arguments:
@@ -566,10 +603,6 @@ int GPTLstamp (double *wall, double *usr, double *sys)
 {
   struct timeval tp;         /* argument to gettimeofday */
   struct tms buf;            /* argument to times */
-
-#ifdef DISABLE_TIMERS
-  return 0;
-#endif
 
   if ( ! initialized)
     return GPTLerror ("GPTLstamp: GPTLinitialize has not been called\n");
@@ -599,10 +632,6 @@ int GPTLreset (void)
 {
   int t;             /* index over threads */
   Timer *ptr;        /* linked list index */
-
-#ifdef DISABLE_TIMERS
-  return 0;
-#endif
 
   if ( ! initialized)
     return GPTLerror ("GPTLreset: GPTLinitialize has not been called\n");
@@ -648,14 +677,10 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
   char outfile[12];         /* name of output file: timing.xxxx */
   float *sum;               /* sum of overhead values (per thread) */
   float osum;               /* sum of overhead over threads */
-  float utr_overhead;       /* overhead of calling underlying timing routine */
+  double utr_overhead;      /* overhead of calling underlying timing routine */
   bool found;               /* jump out of loop when name found */
   bool foundany;            /* whether summation print necessary */
   bool first;               /* flag 1st time entry found */
-
-#ifdef DISABLE_TIMERS
-  return 0;
-#endif
 
   if ( ! initialized)
     return GPTLerror ("GPTLpr: GPTLinitialize() has not been called\n");
@@ -674,7 +699,7 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
 #ifdef NANOTIME
   fprintf (fp, "Clock rate = %f MHz\n", cpumhz);
 #endif
-  sum        = (float *) GPTLallocate (nthreads * sizeof (float));
+  sum = (float *) GPTLallocate (nthreads * sizeof (float));
   
   /*
   ** Determine underlying timing routine overhead to further refine per-timer 
@@ -720,7 +745,7 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
     totcount   = 0;
     totrecurse = 0;
     for (ptr = timers[t]; ptr; ptr = ptr->next) {
-      sum[t]     += utr_norm (ptr->wall.overhead + ptr->count * 2 * utr_overhead);
+      sum[t]     += ptr->wall.overhead + ptr->count * 2 * utr_overhead;
       totcount   += ptr->count;
       totrecurse += ptr->nrecurse;
     }
@@ -845,7 +870,7 @@ static void printstats (const Timer *timer,     /* timer to print */
 			FILE *fp,               /* file descriptor to write to */
 			const int t,            /* thread number */
 			const bool doindent,    /* whether indenting will be done */
-			float utr_overhead)     /* underlying timing routine overhead */
+			double utr_overhead)    /* underlying timing routine overhead */
 {
   int i;               /* index */
   int indent;          /* index for indenting */
@@ -857,7 +882,7 @@ static void printstats (const Timer *timer,     /* timer to print */
   float elapse;        /* elapsed time */
   float wallmax;       /* max wall time */
   float wallmin;       /* min wall time */
-  float utrportion;    /* timer overhead due to gettimeofday only */
+  float utrportion;    /* est. timer overhead due to underlying timing routine only */
   float walloverhead;  /* wallclock overhead (sec) */
 
   if ((ticks_per_sec = sysconf (_SC_CLK_TCK)) == -1)
@@ -899,9 +924,9 @@ static void printstats (const Timer *timer,     /* timer to print */
   }
 
   if (wallstats.enabled) {
-    elapse = utr_norm (utr_tofloat (&timer->wall.accum));
-    wallmax = utr_norm (timer->wall.max);
-    wallmin = utr_norm (timer->wall.min);
+    elapse = timer->wall.accum;
+    wallmax = timer->wall.max;
+    wallmin = timer->wall.min;
     fprintf (fp, "%9.3f %9.3f %9.3f ", elapse, wallmax, wallmin);
 
     /*
@@ -913,8 +938,8 @@ static void printstats (const Timer *timer,     /* timer to print */
     */
 
     if (overheadstats.enabled) {
-      utrportion = utr_norm (timer->count * 2 * utr_overhead);
-      walloverhead = utr_norm (timer->wall.overhead);
+      utrportion = timer->count * 2 * utr_overhead;
+      walloverhead = timer->wall.overhead;
       fprintf (fp, "%9.3f %9.3f ", walloverhead + utrportion, 2*utrportion);
     }
   }
@@ -939,8 +964,8 @@ static void add (Timer *tout,
 		 const Timer *tin)
 {
   if (wallstats.enabled) {
-    tout->count       += tin->count;
-    utr_sum (&tout->wall.accum, &tin->wall.accum);
+    tout->count      += tin->count;
+    tout->wall.accum += tin->wall.accum;
     
     tout->wall.max = MAX (tout->wall.max, tin->wall.max);
     tout->wall.min = MIN (tout->wall.min, tin->wall.min);
@@ -1154,63 +1179,22 @@ static inline unsigned long long nanotime (void)
 
 /* Call the underlying timing routine and return the info */
 
-static inline void utr_get (UTRtype *tp)
+static inline double utr_get ()
 {
-  *tp = nanotime ();
-}
-
-/* Copy an underlying timing routine data value */
-
-static inline void utr_save (UTRtype *tpout,
-			     const UTRtype *tpin)
-{
-  *tpout = *tpin;
-}
-
-/* Difference two underlying timing routine data structures */
-
-static inline void utr_get_delta (const UTRtype *tp1,
-				  const UTRtype *tp2,
-				  UTRtype *delta)
-{
-  *delta = *tp2 - *tp1;
-}
-
-/* Convert an underlying timing routine data structure to a float */
-
-static inline float utr_tofloat (const UTRtype *val)
-{
-  return (float) *val;
-}
-
-/* Sum one underlying timing routine data structure into another */
-
-static inline void utr_sum (UTRtype *tp1,
-			    const UTRtype *tp2)
-{
-  *tp1 += *tp2;
+  return nanotime () * cyc2sec;
 }
 
 /* Determine underlying timing routine overhead */
 
-static float utr_getoverhead ()
+static double utr_getoverhead ()
 {
-  float nano_overhead;
   unsigned long long nanotime1;
   unsigned long long nanotime2;
 
   nanotime1 = nanotime ();
   nanotime2 = nanotime ();
-  nano_overhead = nanotime2 - nanotime1;
 
-  return nano_overhead;
-}
-
-/* Normalize cycles to seconds */
-
-static float utr_norm (float val)
-{
-  return val / (cpumhz * 1.e6);
+  return (nanotime2 - nanotime1) * cyc2sec;
 }
 
 #define LEN 4096
@@ -1237,56 +1221,59 @@ static float get_clockfreq ()
   return -1.;
 }
 
+#elif ( defined UNICOSMP )
+
+static inline double utr_get ()
+{
+  return _rtc () * ticks2sec;
+}
+
+/* Determine underlying timing routine overhead */
+
+static double utr_getoverhead ()
+{
+  long long ticks1;
+  long long ticks2;
+
+  ticks1 = _rtc ();
+  ticks2 = _rtc ();
+
+  return (ticks2 - ticks1) * ticks2sec;
+}
+
+#elif ( defined USE_MPIWTIME )
+
+static inline double utr_get ()
+{
+  return MPI_Wtime ();
+}
+
+/* Determine underlying timing routine overhead */
+
+static double utr_getoverhead ()
+{
+  double time1;
+  double time2;
+
+  time1 = MPI_Wtime ();
+  time2 = MPI_Wtime ();
+
+  return (time2 - time1);
+}
+
 #else
 
-static inline void utr_get (UTRtype *tp)
+static inline double utr_get ()
 {
-  (void) gettimeofday (tp, 0);
+  struct timeval tp;
+
+  (void) gettimeofday (&tp, 0);
+  return tp.tv_sec + 1.e-6*tp.tv_usec;
 }
 
-static inline void utr_save (UTRtype *tpout,
-			     const UTRtype *tpin)
+static double utr_getoverhead ()
 {
-  tpout->tv_sec  = tpin->tv_sec;
-  tpout->tv_usec = tpin->tv_usec;
-}
-
-static inline void utr_get_delta (const UTRtype *tp1,
-				  const UTRtype *tp2,
-				  UTRtype *delta)
-{
-  delta->tv_sec  = tp2->tv_sec - tp1->tv_sec;
-  delta->tv_usec = tp2->tv_usec - tp1->tv_usec;
-}
-
-static inline float utr_tofloat (const UTRtype *val)
-{
-  return (float) val->tv_sec + 1.e-6*val->tv_usec;
-}
-
-static inline void utr_sum (UTRtype *tp1,
-			    const UTRtype *tp2)
-{
-  tp1->tv_sec  += tp2->tv_sec;
-  tp1->tv_usec += tp2->tv_usec;
-
-    /*
-    ** Adjust accumulated wallclock values to guard against overflow in the
-    ** microsecond accumulator.
-    */
-
-  if (tp1->tv_usec > 10000000) {
-    tp1->tv_sec  += 10;
-    tp1->tv_usec -= 10000000;
-  } else if (tp1->tv_usec < -10000000) {
-    tp1->tv_sec  -= 10;
-    tp1->tv_usec += 10000000;
-  }
-}
-
-static float utr_getoverhead ()
-{
-  float overhead;
+  double overhead;
   struct timeval tp1;
   struct timeval tp2;
 
@@ -1297,9 +1284,5 @@ static float utr_getoverhead ()
   return overhead;
 }
 
-static float utr_norm (float val)
-{
-  return val;
-}
-
 #endif
+

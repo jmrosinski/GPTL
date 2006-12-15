@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.26 2006-09-16 01:09:21 rosinski Exp $
+$Id: private.h,v 1.27 2006-12-15 01:23:29 rosinski Exp $
 */
 
 #include <stdio.h>
@@ -33,18 +33,12 @@ typedef struct {
   long accum_stime;         /* accumulator for sys time */
 } Cpustats;
 
-#ifdef NANOTIME
-#define UTRtype long long
-#else
-#define UTRtype struct timeval
-#endif
-  
 typedef struct {
-  UTRtype last;
-  UTRtype accum;
+  double last;              /* timestamp from last call */
+  double accum;             /* accumulated time */
+  double overhead;          /* estimate of wallclock overhead */
   float max;                /* longest time for start/stop pair */
   float min;                /* shortest time for start/stop pair */
-  float overhead;           /* estimate of wallclock overhead */
 } Wallstats;
 
 typedef struct {

@@ -5,17 +5,25 @@
       real*8 sum(10)
       real*8 x
 
-#include "../gptl.inc"
+! Header file for GPTL
+      include "../gptl.inc"
 
+! setoption calls: 0=off, non-zero=on
+! Turn on CPU timing (off by default)
       if (gptlsetoption (gptlcpu, 1) .lt. 0) stop 99
+
+! Turn on wallclock timing (that is the default)
       if (gptlsetoption (gptlwall, 1) .lt. 0) stop 99
 
+! Initialize: call this before start or stop, and preferably
+! outside of any threaded regions
       if (gptlinitialize () .lt. 0) stop 99
 
       do n=1,10
         sum(n) = n
       end do
 
+! Start a timer
       if (gptlstart ('multiplication') .lt. 0) stop 99
       do n=1,100000
         x = 1.1 + 0.0001*n
@@ -30,6 +38,8 @@
         sum(9) = sum(9) * x
         sum(10) = sum(10) * x
       end do
+
+! Stop a timer that has been started
       if (gptlstop ('multiplication') .lt. 0) stop 99
 
       if (gptlstart ('addition') .lt. 0) stop 99
@@ -100,7 +110,11 @@
       end do
       if (gptlstop ('power') .lt. 0) stop 99
 
+! Create timing output file. It will be named "timing.0", where
+! the "0" comes from the integer arg to gptlpr
       if (gptlpr(0) .lt. 0) stop 99
+
+! Clean up
       if (gptlfinalize () .lt. 0) stop 99
       stop
       end program

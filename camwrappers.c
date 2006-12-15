@@ -1,5 +1,5 @@
 /*
-** $Id: camwrappers.c,v 1.8 2005-08-23 02:21:27 rosinski Exp $
+** $Id: camwrappers.c,v 1.9 2006-12-15 01:23:29 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines as called from CAM
 */
@@ -16,6 +16,8 @@
 #define t_startf T_STARTF
 #define t_stopf T_STOPF
 #define t_setoptionf T_SETOPTIONF
+#define t_enablef T_ENABLEF
+#define t_disablef T_DISABLEF
 
 #elif ( defined FORTRANUNDERSCORE )
 
@@ -26,6 +28,8 @@
 #define t_startf t_startf_
 #define t_stopf t_stopf_
 #define t_setoptionf t_setoptionf_
+#define t_enablef t_enablef_
+#define t_disablef t_disablef_
 
 #elif ( defined FORTRANDOUBLEUNDERSCORE )
 
@@ -36,6 +40,8 @@
 #define t_startf t_startf__
 #define t_stopf t_stopf__
 #define t_setoptionf t_setoptionf__
+#define t_enablef t_enablef__
+#define t_disablef t_disablef__
 
 #endif
 
@@ -108,3 +114,13 @@ int t_stopf (char *name, int nc1)
   return GPTLstop (cname);
 }
 #endif
+
+void t_enablef ()
+{
+  GPTLenable ();
+}
+
+void t_disablef ()
+{
+  GPTLdisable ();
+}

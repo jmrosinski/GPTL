@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.12 2006-10-09 15:08:06 rosinski Exp $
+** $Id: f_wrappers.c,v 1.13 2006-12-15 01:23:29 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines
 */
@@ -20,6 +20,8 @@
 #define gptlpapiprinttable GPTLPAPIPRINTTABLE
 #define gptlget_memusage GPTLGET_MEMUSAGE
 #define gptlprint_memusage GPTLPRINT_MEMUSAGE
+#define gptlenable GPTLENABLE
+#define gptldisable GPTLDISABLE
 
 #elif ( defined FORTRANUNDERSCORE )
 
@@ -34,6 +36,8 @@
 #define gptlpapiprinttable gptlpapiprinttable_
 #define gptlget_memusage gptlget_memusage_
 #define gptlprint_memusage gptlprint_memusage_
+#define gptlenable gptlenable_
+#define gptldisable gptldisable_
 
 #elif ( defined FORTRANDOUBLEUNDERSCORE )
 
@@ -48,6 +52,8 @@
 #define gptlpapiprinttable gptlpapiprinttable_
 #define gptlget_memusage gptlget_memusage__
 #define gptlprint_memusage gptlprint_memusage__
+#define gptlenable gptlenable_
+#define gptldisable gptldisable_
 
 #endif
 
@@ -144,4 +150,14 @@ int gptlget_memusage (int *size, int *rss, int *share, int *text, int *datastack
 int gptlprint_memusage (const char *str)
 {
   return GPTLprint_memusage (str);
+}
+
+void gptlenable ()
+{
+  GPTLenable ();
+}
+
+void gptldisable ()
+{
+  GPTLdisable ();
 }
