@@ -1,7 +1,7 @@
 #include <stdlib.h>        /* malloc */
 #include <sys/time.h>      /* gettimeofday */
 #include <sys/times.h>     /* times */
-#include <unistd.h>        /* gettimeofday */
+#include <unistd.h>        /* gettimeofday, syscall */
 #include <stdio.h>
 #include <string.h>        /* memset, strcmp (via STRMATCH) */
 #include <ctype.h>         /* isdigit */
@@ -11,8 +11,12 @@
 #include <intrinsics.h>    /* rtc */
 #endif
 
-#ifdef USE_MPIWTIME
+#ifdef HAVE_MPI
 #include <mpi.h>
+#endif
+
+#ifdef HAVE_CLOCK_GETTIME
+#include <time.h>
 #endif
 
 #include "private.h"
@@ -54,7 +58,29 @@ static void printstats (const Timer *, FILE *, const int, const bool, double);
 static void add (Timer *, const Timer *);
 static inline int get_cpustamp (long *, long *);
 
-#ifdef NANOTIME
+/* These are the (possibly) supported underlying wallclock timers */
+
+static inline double utr_nanotime ();
+static inline double utr_rtc ();
+static inline double utr_mpiwtime ();
+static inline double utr_clock_gettime ();
+static inline double utr_gettimeofday ();
+static double (*ptr2wtimefunc)() = utr_gettimeofday; /* default */
+
+typedef struct {
+  const Funcoption option;
+  double (*func)();
+  const char *name;
+} Funcentry;
+
+static Funcentry funclist[] = {{GPTLnanotime,     utr_nanotime,      "utr_nanotime"},
+			       {GPTLrtc,          utr_rtc,           "utr_rtc"},
+			       {GPTLmpiwtime,     utr_mpiwtime,      "utr_mpiwtime"},
+			       {GPTLclockgettime, utr_clock_gettime, "utr_clock_gettime"},
+			       {GPTLgettimeofday, utr_gettimeofday,  "utr_gettimeofday"}};
+static const int nfuncentries = sizeof (funclist) / sizeof (Funcentry);
+
+#ifdef HAVE_NANOTIME
 static float cpumhz = -1.;                        /* init to bad value */
 static double cyc2sec = -1;                       /* init to bad value */
 static unsigned inline long long nanotime (void); /* read counter (assembler) */
@@ -65,9 +91,6 @@ static float get_clockfreq (void);                /* cycles/sec */
 static double ticks2sec = -1;                     /* init to bad value */
 #endif
 
-/* functions relating to the Underlying Timing Routine (e.g. gettimeofday) */
-
-static inline double utr_get (void);
 static double utr_getoverhead (void);
 
 #ifdef NUMERIC_TIMERS
@@ -122,6 +145,30 @@ int GPTLsetoption (const int option,  /* option */
     return 0;
 #endif
   return GPTLerror ("GPTLsetoption: option %d not found\n", option);
+}
+
+int GPTLsetutr (const Funcoption option)
+{
+  int i;
+  double t1;
+  double t2;
+
+  for (i = 0; i < nfuncentries; i++) {
+    if (option == funclist[i].option) {
+      printf ("GPTLsetutr: testing %s\n", funclist[i].name);
+      if ((t1 = (*funclist[i].func) ()) < 0)
+	return GPTLerror ("GPTLsetutr: bad return from %s\n", funclist[i].name);
+      if ((t2 = (*funclist[i].func) ()) < 0)
+	return GPTLerror ("GPTLsetutr: bad return from %s\n", funclist[i].name);
+      if (t1 > t2)
+	return GPTLerror ("GPTLsetutr: bad t1=%f t2=%f\n", t1, t2);
+      printf ("t2-t1=%g should be near zero\n", t2-t1);
+      printf ("Using %s\n", funclist[i].name);
+      ptr2wtimefunc = funclist[i].func;
+      return 0;
+    }
+  }
+  return GPTLerror ("GPTLsetutr: unknown option %d\n", option);
 }
 
 /*
@@ -193,7 +240,7 @@ int GPTLinitialize (void)
   assert (MAX_CHARS >= 2*sizeof (long));
 #endif
 
-#ifdef NANOTIME
+#ifdef HAVE_NANOTIME
   if ((cpumhz = get_clockfreq ()) < 0)
     return GPTLerror ("Can't get clock freq\n");
   cyc2sec = 1./(cpumhz * 1.e6);
@@ -288,7 +335,7 @@ int GPTLstart (const char *name)               /* timer name */
     return GPTLerror ("GPTLstart\n");
 
   /* 
-  ** 1st calls to overheadstart and utr_get are solely for overhead timing
+  ** 1st calls to overheadstart and (*ptr2wtimefunc)()  are solely for overhead timing
   ** Would prefer to start overhead calcs before get_thread_num, but the
   ** thread number is required by PAPI counters
   */
@@ -298,7 +345,7 @@ int GPTLstart (const char *name)               /* timer name */
     (void) GPTL_PAPIoverheadstart (t);
 #endif
     if (wallstats.enabled)
-      tp1 = utr_get ();
+      tp1 = (*ptr2wtimefunc) ();
   }
 
   if ( ! initialized)
@@ -403,7 +450,7 @@ int GPTLstart (const char *name)               /* timer name */
   */
   
   if (wallstats.enabled) {
-    tp2 = utr_get ();
+    tp2 = (*ptr2wtimefunc) ();
     ptr->wall.last = tp2;
     if (overheadstats.enabled) {
       delta = tp2 - tp1;
@@ -474,7 +521,7 @@ int GPTLstop (const char *name)               /* timer name */
   */
     
   if (wallstats.enabled)
-    tp1 = utr_get ();
+    tp1 = (*ptr2wtimefunc) ();
 
   if (cpustats.enabled && get_cpustamp (&usr, &sys) < 0)
     return GPTLerror (0);
@@ -543,7 +590,7 @@ int GPTLstop (const char *name)               /* timer name */
     /* 2nd system timer call is solely for overhead timing */
 
     if (overheadstats.enabled) {
-      tp2 = utr_get ();
+      tp2 = (*ptr2wtimefunc) ();
       delta = tp2 - tp1;
       ptr->wall.overhead += delta;
     }
@@ -696,7 +743,7 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
   if ( ! (fp = fopen (outfile, "w")))
     fp = stderr;
 
-#ifdef NANOTIME
+#ifdef HAVE_NANOTIME
   fprintf (fp, "Clock rate = %f MHz\n", cpumhz);
 #endif
   sum = (float *) GPTLallocate (nthreads * sizeof (float));
@@ -1154,7 +1201,7 @@ void __cyg_profile_func_exit (void *this_fn,
 #endif
 #endif
 
-#ifdef NANOTIME
+#ifdef HAVE_NANOTIME
 #ifdef BIT64
 /* 64-bit code copied from PAPI library */
 static inline unsigned long long nanotime (void)
@@ -1176,26 +1223,6 @@ static inline unsigned long long nanotime (void)
   return (val);
 }
 #endif
-
-/* Call the underlying timing routine and return the info */
-
-static inline double utr_get ()
-{
-  return nanotime () * cyc2sec;
-}
-
-/* Determine underlying timing routine overhead */
-
-static double utr_getoverhead ()
-{
-  unsigned long long nanotime1;
-  unsigned long long nanotime2;
-
-  nanotime1 = nanotime ();
-  nanotime2 = nanotime ();
-
-  return (nanotime2 - nanotime1) * cyc2sec;
-}
 
 #define LEN 4096
 
@@ -1220,69 +1247,68 @@ static float get_clockfreq ()
 
   return -1.;
 }
+#endif
 
-#elif ( defined UNICOSMP )
+/*
+** The following are the set of underlying timing routines which may or may
+** not be available
+*/
 
-static inline double utr_get ()
+static inline double utr_nanotime ()
 {
-  return _rtc () * ticks2sec;
-}
-
-/* Determine underlying timing routine overhead */
-
-static double utr_getoverhead ()
-{
-  long long ticks1;
-  long long ticks2;
-
-  ticks1 = _rtc ();
-  ticks2 = _rtc ();
-
-  return (ticks2 - ticks1) * ticks2sec;
-}
-
-#elif ( defined USE_MPIWTIME )
-
-static inline double utr_get ()
-{
-  return MPI_Wtime ();
-}
-
-/* Determine underlying timing routine overhead */
-
-static double utr_getoverhead ()
-{
-  double time1;
-  double time2;
-
-  time1 = MPI_Wtime ();
-  time2 = MPI_Wtime ();
-
-  return (time2 - time1);
-}
-
+#ifdef HAVE_NANOTIME
+  return nanotime () * cyc2sec;
 #else
+  return GPTLerror ("utr_nanotime: not enabled\n");
+#endif
+}
 
-static inline double utr_get ()
+static inline double utr_rtc ()
+{
+#ifdef UNICOSMP
+  return _rtc () * ticks2sec;
+#else
+  return GPTLerror ("utr_rtc: not enabled\n");
+#endif
+}
+
+static inline double utr_mpiwtime ()
+{
+#ifdef HAVE_MPI
+  return MPI_Wtime ();
+#else
+  return GPTLerror ("utr_mpiwtime: not enabled\n");
+#endif
+}
+
+/* Probably need to load with -lrt for this one to work */
+
+static inline double utr_clock_gettime ()
+{
+#ifdef HAVE_CLOCK_GETTIME
+  struct timespec tp;
+  (void) clock_gettime (CLOCK_REALTIME, &tp);
+  return tp.tv_sec + 1.e-9*tp.tv_nsec;
+#else
+  return GPTLerror ("utr_clock_gettime: not enabled\n");
+#endif
+}
+
+static inline double utr_gettimeofday ()
 {
   struct timeval tp;
-
   (void) gettimeofday (&tp, 0);
   return tp.tv_sec + 1.e-6*tp.tv_usec;
 }
 
+/* Determine underlying timing routine overhead */
+
 static double utr_getoverhead ()
 {
-  double overhead;
-  struct timeval tp1;
-  struct timeval tp2;
+  double val1;
+  double val2;
 
-  gettimeofday (&tp1, 0);
-  gettimeofday (&tp2, 0);
-  overhead = (tp2.tv_sec  - tp1.tv_sec) + 
-       1.e-6*(tp2.tv_usec - tp1.tv_usec);
-  return overhead;
+  val1 = (*ptr2wtimefunc)();
+  val2 = (*ptr2wtimefunc)();
+  return val2 - val1;
 }
-
-#endif
-

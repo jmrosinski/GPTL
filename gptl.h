@@ -1,5 +1,5 @@
 /*
-$Id: gptl.h,v 1.7 2006-10-09 15:08:06 rosinski Exp $
+$Id: gptl.h,v 1.8 2006-12-21 02:40:03 rosinski Exp $
 */
 #ifndef GPTL_H
 #define GPTL_H
@@ -10,11 +10,20 @@ typedef enum {
   GPTLoverhead       = 4
 } Option;
 
+typedef enum {
+  GPTLnanotime       = 5,
+  GPTLrtc            = 6,
+  GPTLmpiwtime       = 7,
+  GPTLclockgettime   = 8,
+  GPTLgettimeofday   = 9
+} Funcoption;
+
 /*
 ** Function prototypes
 */
 
 extern int GPTLsetoption (const int, const int);
+extern int GPTLsetutr (const Funcoption);
 extern int GPTLinitialize (void);
 extern int GPTLfinalize (void);
 #ifdef NUMERIC_TIMERS
