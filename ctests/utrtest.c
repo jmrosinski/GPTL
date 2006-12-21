@@ -10,12 +10,12 @@ int main ()
   GPTLsetutr (GPTLrtc);
   GPTLsetutr (GPTLmpiwtime);
   GPTLsetutr (GPTLclockgettime);
-  GPTLsetutr (GPTLgettimeofday);
+  //  GPTLsetutr (GPTLgettimeofday);
 
   GPTLinitialize ();
 
   GPTLstart ("total");
-  sub (10000000, 1, "1e7x1", &sum);
+  sub (1000000, 1, "1e6x1", &sum);
   GPTLstop ("total");
 
   GPTLpr (0);
