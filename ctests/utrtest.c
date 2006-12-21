@@ -1,16 +1,18 @@
 #include <stdio.h>
 #include "../gptl.h"
+#include <mpi.h>
 
-int main ()
+int main (int argc, char **argv)
 {
   double sum;
   extern void sub (int, int, char *, double *);
 
-  GPTLsetutr (GPTLnanotime);
+  MPI_Init (&argc, &argv);
   GPTLsetutr (GPTLrtc);
-  GPTLsetutr (GPTLmpiwtime);
+  GPTLsetutr (GPTLnanotime);
   GPTLsetutr (GPTLclockgettime);
-  //  GPTLsetutr (GPTLgettimeofday);
+  GPTLsetutr (GPTLmpiwtime);
+  GPTLsetutr (GPTLgettimeofday);
 
   GPTLinitialize ();
 
