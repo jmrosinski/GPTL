@@ -9,15 +9,15 @@ int main (int argc, char **argv)
 
   MPI_Init (&argc, &argv);
   GPTLsetutr (GPTLrtc);
-  GPTLsetutr (GPTLnanotime);
-  GPTLsetutr (GPTLclockgettime);
-  GPTLsetutr (GPTLmpiwtime);
   GPTLsetutr (GPTLgettimeofday);
+  GPTLsetutr (GPTLnanotime);
+  GPTLsetutr (GPTLmpiwtime);
+  GPTLsetutr (GPTLclockgettime);
 
   GPTLinitialize ();
 
   GPTLstart ("total");
-  sub (1000000, 1, "1e6x1", &sum);
+  sub (10000000, 1, "1e7x1", &sum);
   GPTLstop ("total");
 
   GPTLpr (0);

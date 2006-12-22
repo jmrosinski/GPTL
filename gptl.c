@@ -63,22 +63,22 @@ static inline int get_cpustamp (long *, long *);
 
 /* These are the (possibly) supported underlying wallclock timers */
 
-static double utr_nanotime ();
-static double utr_rtc ();
-static double utr_mpiwtime ();
-static double utr_clock_gettime ();
-static double utr_gettimeofday ();
+static inline double utr_nanotime (void);
+static inline double utr_rtc (void);
+static inline double utr_mpiwtime (void);
+static inline double utr_clock_gettime (void);
+static inline double utr_gettimeofday (void);
 
-static int init_nanotime ();
-static int init_rtc ();
-static int init_mpiwtime ();
-static int init_clock_gettime ();
-static int init_gettimeofday ();
+static int init_nanotime (void);
+static int init_rtc (void);
+static int init_mpiwtime (void);
+static int init_clock_gettime (void);
+static int init_gettimeofday (void);
 
 typedef struct {
   const Funcoption option;
-  double (*func)();
-  int (*funcinit)();
+  double (*func)(void);
+  int (*funcinit)(void);
   const char *name;
 } Funcentry;
 
@@ -253,7 +253,8 @@ int GPTLinitialize (void)
   ** A single byte can hold 2 hex digits.
   */
 
-  assert (MAX_CHARS >= 2*sizeof (long));
+  if (2*sizeof (long) < MAX_CHARS)
+    return GPTLerror ("GPTLinitialize: MAX_CHARS is too small\n");
 #endif
 
   /* 
@@ -360,7 +361,6 @@ int GPTLstart (const char *name)               /* timer name */
 #endif
     if (wallstats.enabled) {
       tp1 = (*ptr2wtimefunc) ();
-//      printf ("start1 tp1=%g\n", tp1);
     }
   }
 
@@ -385,7 +385,8 @@ int GPTLstart (const char *name)               /* timer name */
   ptr = getentry (hashtable[t], locname, &indx);
 #endif
 
-  assert (indx < tablesize);
+  if (indx >= tablesize)
+    return GPTLerror ("GPTLstart: indx=%d must be < tablesize=%d\n", indx, tablesize);
 
   /* 
   ** Recursion => increment depth in recursion and return.  We need to return 
@@ -424,7 +425,7 @@ int GPTLstart (const char *name)               /* timer name */
 
     /* 
     ** Convert tag to a string for printing.
-    ** nchars is guaranteed by assert in init. to be <= MAX_CHARS
+    ** nchars is guaranteed to be <= MAX_CHARS
     */
 
     sprintf (locname, "%lx", tag);
@@ -470,11 +471,8 @@ int GPTLstart (const char *name)               /* timer name */
     ptr->wall.last = tp2;
     if (overheadstats.enabled) {
       delta = tp2 - tp1;
-//      if (tp2 < tp1) {
-//	printf ("start2 tp1=%g tp2=%g\n", tp1, tp2);
-//	assert (0);
-//      }
       ptr->wall.overhead += delta;
+      assert (delta >= 0.);
     }
   }
 
@@ -542,7 +540,6 @@ int GPTLstop (const char *name)               /* timer name */
     
   if (wallstats.enabled) {
     tp1 = (*ptr2wtimefunc) ();
-//    printf ("stop1 tp1=%g\n", tp1);
   }
 
   if (cpustats.enabled && get_cpustamp (&usr, &sys) < 0)
@@ -597,11 +594,8 @@ int GPTLstop (const char *name)               /* timer name */
   if (wallstats.enabled) {
 
     delta = tp1 - ptr->wall.last;
-//    if (tp1 < ptr->wall.last) {
-//      printf ("stop2 tp1=%g ptr->wall.last=%g\n", tp1, ptr->wall.last);
-//      assert (0);
-//    }
     ptr->wall.accum += delta;
+    assert (delta >= 0.);
 
     if (ptr->count == 1) {
       ptr->wall.max = delta;
@@ -618,11 +612,8 @@ int GPTLstop (const char *name)               /* timer name */
     if (overheadstats.enabled) {
       tp2 = (*ptr2wtimefunc) ();
       delta = tp2 - tp1;
-//      if (tp2 < tp1) {
-//	printf ("stop3 tp1=%g tp2=%g\n", tp1, tp2);
-//	assert (0);
-//      }
       ptr->wall.overhead += delta;
+      assert (delta >= 0.);
     }
   }
 
@@ -776,17 +767,17 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
 #ifdef HAVE_NANOTIME
   fprintf (fp, "Clock rate = %f MHz\n", cpumhz);
 #endif
-  fprintf (fp, "Underlying timing routine was %s\n", funclist[funcidx].name);
 
-  sum = (float *) GPTLallocate (nthreads * sizeof (float));
-  
   /*
-  ** Determine underlying timing routine overhead to further refine per-timer 
-  ** overhead estimate 
+  ** Estimate underlying timing routine overhead
   */
 
   utr_overhead = utr_getoverhead ();
+  fprintf (fp, "Underlying timing routine was %s\n", funclist[funcidx].name);
+  fprintf (fp, "Per-call utr overhead est: %g sec\n", utr_overhead);
 
+  sum = (float *) GPTLallocate (nthreads * sizeof (float));
+  
   for (t = 0; t < nthreads; ++t) {
     if (t > 0)
       fprintf (fp, "\n");
@@ -1018,7 +1009,7 @@ static void printstats (const Timer *timer,     /* timer to print */
 
     if (overheadstats.enabled) {
       utrportion = timer->count * 2 * utr_overhead;
-      fprintf (fp, "%9.3f %9.3f ", timer->wall.overhead, 2*utrportion);
+      fprintf (fp, "%9.3f %9.3f ", timer->wall.overhead, utrportion);
     }
   }
 
@@ -1299,12 +1290,15 @@ static int init_nanotime ()
 #endif
 }
 
-static double utr_nanotime ()
+static inline double utr_nanotime ()
 {
+  double timestamp;
 #ifdef HAVE_NANOTIME
-  return nanotime () * cyc2sec;
+  timestamp = nanotime () * cyc2sec;
+  return timestamp;
 #else
-  return GPTLerror ("utr_nanotime: not enabled\n");
+  (void) GPTLerror ("utr_nanotime: not enabled\n");
+  return -1.;
 #endif
 }
 
@@ -1320,12 +1314,15 @@ static int init_rtc ()
 #endif
 }
   
-static double utr_rtc ()
+static inline double utr_rtc ()
 {
+  double timestamp;
 #ifdef UNICOSMP
-  return _rtc () * ticks2sec;
+  timestamp = _rtc () * ticks2sec;
+  return timestamp;
 #else
-  return GPTLerror ("utr_rtc: not enabled\n");
+  (void) GPTLerror ("utr_rtc: not enabled\n");
+  return -1.;
 #endif
 }
 
@@ -1338,12 +1335,15 @@ static int init_mpiwtime ()
 #endif
 }
 
-static double utr_mpiwtime ()
+static inline double utr_mpiwtime ()
 {
+  double timestamp;
 #ifdef HAVE_MPI
-  return MPI_Wtime ();
+  timestamp = MPI_Wtime ();
+  return timestamp;
 #else
-  return GPTLerror ("utr_mpiwtime: not enabled\n");
+  (void) GPTLerror ("utr_mpiwtime: not enabled\n");
+  return -1.;
 #endif
 }
 
@@ -1362,14 +1362,17 @@ static int init_clock_gettime ()
 #endif
 }
 
-static double utr_clock_gettime ()
+static inline double utr_clock_gettime ()
 {
+  double timestamp;
 #ifdef HAVE_CLOCK_GETTIME
   struct timespec tp;
   (void) clock_gettime (CLOCK_REALTIME, &tp);
-  return (tp.tv_sec - ref_clock_gettime) + 1.e-9*tp.tv_nsec;
+  timestamp = (tp.tv_sec - ref_clock_gettime) + 1.e-9*tp.tv_nsec;
+  return timestamp;
 #else
-  return GPTLerror ("utr_clock_gettime: not enabled\n");
+  (void) GPTLerror ("utr_clock_gettime: not enabled\n");
+  return -1.;
 #endif
 }
 
@@ -1382,19 +1385,13 @@ static int init_gettimeofday ()
   return 0;
 }
 
-static double utr_gettimeofday ()
+static inline double utr_gettimeofday ()
 {
   double timestamp;
   struct timeval tp;
   (void) gettimeofday (&tp, 0);
   timestamp = (tp.tv_sec - ref_gettimeofday) + 1.e-6*tp.tv_usec;
-//  if (timestamp < 0.) {
-//    printf ("%ld %ld %ld\n", tp.tv_sec, ref_gettimeofday, tp.tv_usec);
-//    assert (0);
-//  }
-//  printf ("vals %g %ld %ld %ld\n", timestamp, ref_gettimeofday, tp.tv_sec, tp.tv_usec);
   return timestamp;
-//  return (tp.tv_sec - ref_gettimeofday) + 1.e-6*tp.tv_usec;
 }
 
 /* Determine underlying timing routine overhead */
@@ -1403,8 +1400,20 @@ static double utr_getoverhead ()
 {
   double val1;
   double val2;
+  int i;
 
   val1 = (*ptr2wtimefunc)();
-  val2 = (*ptr2wtimefunc)();
-  return val2 - val1;
+  for (i = 0; i < 10; ++i) {
+    val2 = (*ptr2wtimefunc)();
+    val2 = (*ptr2wtimefunc)();
+    val2 = (*ptr2wtimefunc)();
+    val2 = (*ptr2wtimefunc)();
+    val2 = (*ptr2wtimefunc)();
+    val2 = (*ptr2wtimefunc)();
+    val2 = (*ptr2wtimefunc)();
+    val2 = (*ptr2wtimefunc)();
+    val2 = (*ptr2wtimefunc)();
+    val2 = (*ptr2wtimefunc)();
+  }
+  return 0.01 * (val2 - val1);
 }
