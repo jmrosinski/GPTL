@@ -3,9 +3,9 @@ CFLAGS       = @DEFS@ @PAPIPREP@ @THREADDEFS@ @CFLAGS@ @BITFLAGS@ @THREADFLAGS@
 LDFLAGS      = @BITFLAGS@ @THREADFLAGS@ -L.. -lgptl @LDFLAGS@ @LIBS@
 
 OBJS = avail.o llcost.o depth.o overhead.o overhead2.o rawpapitest.o numeric.o recursion.o subinline.o \
-       exception.o memusage.o basic.o utrtest.o
+       exception.o memusage.o basic.o utrtest.o papiomptest
 EXES = avail   llcost   depth   overhead   overhead2   rawpapitest   numeric   recursion subinline \
-       exception   memusage basic utrtest
+       exception   memusage basic utrtest papiomptest
 
 all: $(EXES)
 clean:
@@ -51,3 +51,6 @@ basic: basic.o
 
 utrtest: utrtest.o
 	$(CC) -o $@ utrtest.o $(LDFLAGS)
+
+papiomptest: papiomptest.o
+	$(CC) $(THREADFLAGS) -o $@ papiomptest.o $(LDFLAGS)
