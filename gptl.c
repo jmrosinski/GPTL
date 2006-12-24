@@ -186,7 +186,7 @@ int GPTLsetutr (const Funcoption option)
 	return GPTLerror ("GPTLsetutr: bad return from %s\n", funclist[i].name);
       if (t1 > t2)
 	return GPTLerror ("GPTLsetutr: bad t1=%f t2=%f\n", t1, t2);
-      printf ("t2-t1=%g should be near zero\n", t2-t1);
+      printf ("Per call overhead est. t2-t1=%g should be near zero\n", t2-t1);
       printf ("Wallclock timing routine set to %s\n", funclist[i].name);
       funcidx = i;
       ptr2wtimefunc = funclist[i].func;
@@ -350,11 +350,11 @@ int GPTLstart (const char *name)               /* timer name */
   if (disabled)
     return 0;
 
-  if ((t = get_thread_num (&nthreads, &maxthreads)) < 0)
-    return GPTLerror ("GPTLstart\n");
-
   if ( ! initialized)
     return GPTLerror ("GPTLstart: GPTLinitialize has not been called\n");
+
+  if ((t = get_thread_num (&nthreads, &maxthreads)) < 0)
+    return GPTLerror ("GPTLstart\n");
 
 #ifdef NUMERIC_TIMERS
   ptr = getentry (hashtable[t], tag, &indx);
@@ -447,10 +447,10 @@ int GPTLstart (const char *name)               /* timer name */
 
   ptr->onflg = true;
 
+  /* Get timestamp */
+  
   if (cpustats.enabled && get_cpustamp (&ptr->cpu.last_utime, &ptr->cpu.last_stime) < 0)
     return GPTLerror ("GPTLstart: get_cpustamp error");
-  
-  /* Get timestamp */
   
   if (wallstats.enabled) {
     tp2 = (*ptr2wtimefunc) ();
@@ -503,9 +503,6 @@ int GPTLstop (const char *name)               /* timer name */
   if (disabled)
     return 0;
 
-  if ((t = get_thread_num (&nthreads, &maxthreads)) < 0)
-    return GPTLerror ("GPTLstop\n");
-
   /* Get the timestamp */
     
   if (wallstats.enabled) {
@@ -517,6 +514,9 @@ int GPTLstop (const char *name)               /* timer name */
 
   if ( ! initialized)
     return GPTLerror ("GPTLstop: GPTLinitialize has not been called\n");
+
+  if ((t = get_thread_num (&nthreads, &maxthreads)) < 0)
+    return GPTLerror ("GPTLstop\n");
 
 #ifdef NUMERIC_TIMERS
   ptr = getentry (hashtable[t], tag, &indx);
@@ -534,11 +534,6 @@ int GPTLstop (const char *name)               /* timer name */
 
   if ( ! ptr->onflg )
     return GPTLerror ("GPTLstop: timer %s was already off.\n",ptr->name);
-
-#ifdef HAVE_PAPI
-  if (GPTL_PAPIstop (t, &ptr->aux) < 0)
-    return GPTLerror ("GPTLstop: error from GPTL_PAPIstop\n");
-#endif
 
   ++ptr->count;
 
@@ -560,6 +555,11 @@ int GPTLstop (const char *name)               /* timer name */
       return GPTLerror ("GPTLstop: tree depth has become negative.\n");
     }
   }
+
+#ifdef HAVE_PAPI
+  if (GPTL_PAPIstop (t, &ptr->aux) < 0)
+    return GPTLerror ("GPTLstop: error from GPTL_PAPIstop\n");
+#endif
 
   if (wallstats.enabled) {
 
@@ -590,7 +590,7 @@ int GPTLstop (const char *name)               /* timer name */
 /*
 ** GPTLenable: enable timers
 **
-** Return value: 0 (success) 
+** Return value: 0 (success)
 */
 
 int GPTLenable (void)
@@ -602,7 +602,7 @@ int GPTLenable (void)
 /*
 ** GPTLdisable: disable timers
 **
-** Return value: 0 (success) 
+** Return value: 0 (success)
 */
 
 int GPTLdisable (void)

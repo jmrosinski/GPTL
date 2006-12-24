@@ -49,6 +49,7 @@ void sub (int depth)
 
   for (i = 0; i < depth; i++)
     sum += depth*(1. + sum);
+
   GPTLstop (LOOP);
 
   printf ("sum=%f\n", sum);

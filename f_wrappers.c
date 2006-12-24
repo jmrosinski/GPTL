@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.13 2006-12-15 01:23:29 rosinski Exp $
+** $Id: f_wrappers.c,v 1.14 2006-12-24 21:25:10 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines
 */
@@ -22,6 +22,7 @@
 #define gptlprint_memusage GPTLPRINT_MEMUSAGE
 #define gptlenable GPTLENABLE
 #define gptldisable GPTLDISABLE
+#define gptlsetutr GPTLSETUTR
 
 #elif ( defined FORTRANUNDERSCORE )
 
@@ -38,6 +39,7 @@
 #define gptlprint_memusage gptlprint_memusage_
 #define gptlenable gptlenable_
 #define gptldisable gptldisable_
+#define gptlsetutr gptlsetutr_
 
 #elif ( defined FORTRANDOUBLEUNDERSCORE )
 
@@ -54,6 +56,7 @@
 #define gptlprint_memusage gptlprint_memusage__
 #define gptlenable gptlenable_
 #define gptldisable gptldisable_
+#define gptlsetutr gptlsetutr_
 
 #endif
 
@@ -152,12 +155,12 @@ int gptlprint_memusage (const char *str)
   return GPTLprint_memusage (str);
 }
 
-void gptlenable ()
+int gptlenable ()
 {
-  GPTLenable ();
+  return GPTLenable ();
 }
 
-void gptldisable ()
+int gptldisable ()
 {
-  GPTLdisable ();
+  return GPTLdisable ();
 }
