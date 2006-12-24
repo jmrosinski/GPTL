@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.27 2006-12-15 01:23:29 rosinski Exp $
+$Id: private.h,v 1.28 2006-12-24 18:50:54 rosinski Exp $
 */
 
 #include <stdio.h>
@@ -36,7 +36,6 @@ typedef struct {
 typedef struct {
   double last;              /* timestamp from last call */
   double accum;             /* accumulated time */
-  double overhead;          /* estimate of wallclock overhead */
   float max;                /* longest time for start/stop pair */
   float min;                /* shortest time for start/stop pair */
 } Wallstats;
@@ -90,7 +89,5 @@ extern int GPTL_PAPIstop (const int, Papistats *);
 extern void GPTL_PAPIprstr (FILE *, const bool);
 extern void GPTL_PAPIpr (FILE *, const Papistats *, const int, const int, const bool);
 extern void GPTL_PAPIadd (Papistats *, const Papistats *);
-extern int GPTL_PAPIoverheadstart (const int);
-extern int GPTL_PAPIoverheadstop (const int, Papistats *);
 extern void GPTL_PAPIfinalize (int);
 #endif

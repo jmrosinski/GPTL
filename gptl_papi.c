@@ -136,8 +136,7 @@ static long_long **papicounters;         /* counters return from PAPI */
 static char papiname[PAPI_MAX_STR_LEN];  /* returned from PAPI_event_code_to_name */
 static const int BADCOUNT = -999999;     /* Set counters to this when they are bad */
 static int GPTLoverheadindx = -1;        /* index into counters array */
-static long_long *lastoverhead;          /* needed because aux not available for overhead */
-static long_long *readoverhead;          /* overhead due solely to reading PAPI counters */
+static long_long *readoverhead;          /* overhead due to reading PAPI counters */
 
 /* Function prototypes */
 
@@ -230,13 +229,11 @@ int GPTL_PAPIinitialize (const int maxthreads)  /* number of threads */
 
   EventSet     = (int *)        GPTLallocate (maxthreads * sizeof (int));
   papicounters = (long_long **) GPTLallocate (maxthreads * sizeof (long_long *));
-  lastoverhead = (long_long *)  GPTLallocate (maxthreads * sizeof (long_long));
   readoverhead = (long_long *)  GPTLallocate (maxthreads * sizeof (long_long));
 
   for (t = 0; t < maxthreads; t++) {
     EventSet[t] = PAPI_NULL;
     papicounters[t] = (long_long *) GPTLallocate (MAX_AUX * sizeof (long_long));
-    lastoverhead[t] = -1;
     readoverhead[t] = -1;
   }
 
@@ -336,12 +333,31 @@ static int create_and_start_events (const int t)  /* thread number */
   if (GPTLoverheadindx > -1) {
     if ((ret = PAPI_read (EventSet[t], counters1)) != PAPI_OK)
       return GPTLerror ("create_and_start_events: %s\n", PAPI_strerror (ret));
-    if ((ret = PAPI_read (EventSet[t], counters1)) != PAPI_OK)
-      return GPTLerror ("create_and_start_events: %s\n", PAPI_strerror (ret));
-    if ((ret = PAPI_read (EventSet[t], counters2)) != PAPI_OK)
-      return GPTLerror ("create_and_start_events: %s\n", PAPI_strerror (ret));
+
+    for (i = 0; i < 10; ++i) {
+      if ((ret = PAPI_read (EventSet[t], counters2)) != PAPI_OK)
+	return GPTLerror ("create_and_start_events: %s\n", PAPI_strerror (ret));
+      if ((ret = PAPI_read (EventSet[t], counters2)) != PAPI_OK)
+	return GPTLerror ("create_and_start_events: %s\n", PAPI_strerror (ret));
+      if ((ret = PAPI_read (EventSet[t], counters2)) != PAPI_OK)
+	return GPTLerror ("create_and_start_events: %s\n", PAPI_strerror (ret));
+      if ((ret = PAPI_read (EventSet[t], counters2)) != PAPI_OK)
+	return GPTLerror ("create_and_start_events: %s\n", PAPI_strerror (ret));
+      if ((ret = PAPI_read (EventSet[t], counters2)) != PAPI_OK)
+	return GPTLerror ("create_and_start_events: %s\n", PAPI_strerror (ret));
+      if ((ret = PAPI_read (EventSet[t], counters2)) != PAPI_OK)
+	return GPTLerror ("create_and_start_events: %s\n", PAPI_strerror (ret));
+      if ((ret = PAPI_read (EventSet[t], counters2)) != PAPI_OK)
+	return GPTLerror ("create_and_start_events: %s\n", PAPI_strerror (ret));
+      if ((ret = PAPI_read (EventSet[t], counters2)) != PAPI_OK)
+	return GPTLerror ("create_and_start_events: %s\n", PAPI_strerror (ret));
+      if ((ret = PAPI_read (EventSet[t], counters2)) != PAPI_OK)
+	return GPTLerror ("create_and_start_events: %s\n", PAPI_strerror (ret));
+      if ((ret = PAPI_read (EventSet[t], counters2)) != PAPI_OK)
+	return GPTLerror ("create_and_start_events: %s\n", PAPI_strerror (ret));
+    }
     
-    readoverhead[t] = counters2[GPTLoverheadindx] - counters1[GPTLoverheadindx];
+    readoverhead[t] = 0.01 * (counters2[GPTLoverheadindx] - counters1[GPTLoverheadindx]);
   }
 
   return 0;
@@ -433,73 +449,6 @@ int GPTL_PAPIstop (const int t,         /* thread number */
   return 0;
 }
 
-/* 
-** GPTL_PAPIoverheadstart: Read the PAPI counters for overhead calcs (only
-**   possible if total cycles are being counted). Called from GPTLstart and GPTLstop.
-**   Have to set the static variable lastoverhead because a pointer to the correct 
-**   aux timer is not yet available.
-** 
-** Input args: 
-**   t: thread number
-**
-** Return value: 0 (success) or GPTLerror (failure)
-*/
-
-int GPTL_PAPIoverheadstart (const int t)  /* thread number */
-{
-  int ret;  /* return code from PAPI lib routine */
-
-  /* If the overhead index hasn't been set we can't do anything */
-
-  if (GPTLoverheadindx < 0)
-    return -1;
-
-  if ((ret = PAPI_read (EventSet[t], papicounters[t])) != PAPI_OK)
-    return GPTLerror ("GPTL_PAPIoverheadstart: %s\n", PAPI_strerror (ret));
-
-  lastoverhead[t] = papicounters[t][GPTLoverheadindx];
-
-  return 0;
-}
-
-/*
-** GPTL_PAPIoverheadstop: Read the PAPI counters and record overhead (only
-**   possible if total cycles are being counted). Called from GPTLstart and GPTLstop.
-**
-** Input args:
-**   t: thread number
-**
-** Input/output args:
-**   aux: struct containing the overhead accumulator
-**
-** Return value: 0 (success) or GPTLerror (failure)
-*/
-    
-int GPTL_PAPIoverheadstop (const int t,         /* thread number */               
-			   Papistats *aux)      /* struct containing PAPI stats */
-{
-  int ret;         /* return code from PAPI_read */
-  long_long diff;  /* difference in cycle count from when started */
-
-  /* overheadindx <= 0 means cycle counting was not enabled */
-
-  if (GPTLoverheadindx < 0)
-    return -1;
-
-  if ((ret = PAPI_read (EventSet[t], papicounters[t])) != PAPI_OK)
-    return GPTLerror ("GPTL_PAPIoverheadstop: %s\n", PAPI_strerror (ret));
-
-  /* Accumulate the overhead cycles.  Check for a negative increment */
-
-  diff = papicounters[t][GPTLoverheadindx] - lastoverhead[t];
-  if (diff < 0)
-    aux->accum_cycles = BADCOUNT;
-  else
-    aux->accum_cycles += diff;
-
-  return 0;
-}
-
 /*
 ** GPTL_PAPIprstr: Print the descriptive string for all enabled PAPI events.
 **   Called from GPTLpr.
@@ -517,7 +466,7 @@ void GPTL_PAPIprstr (FILE *fp,                          /* file descriptor */
     fprintf (fp, "%16s ", eventlist[n].prstr);
 
   if (overheadstatsenabled && GPTLoverheadindx > -1)
-    fprintf (fp, "Overhead (cyc)   PAPI_read part   ");
+    fprintf (fp, "Overhead (cyc)   ");
 }
 
 /*
@@ -536,8 +485,7 @@ void GPTL_PAPIpr (FILE *fp,                          /* file descriptor to write
 		  const bool overheadstatsenabled)   /* whether to print overhead stats*/
 {
   int n;
-  long_long papireadportion;  /* overhead due just to PAPI_read */
-  long_long overhead       ;  /* overhead including PAPI_read */
+  long_long overhead;  /* overhead due to PAPI_read */
   
   for (n = 0; n < nevents; n++) {
     if (aux->accum[n] < 1000000)
@@ -546,18 +494,17 @@ void GPTL_PAPIpr (FILE *fp,                          /* file descriptor to write
       fprintf (fp, "%16.10e ", (double) aux->accum[n]);
   }
 
-  /* Print overhead estimate. The check on lastoverhead > -1 determines
-  ** whether it was ever set.  Note similarity of overhead calc. to
-  ** gettimeofday calc. in gptl.c.
+  /* 
+  ** Print overhead estimate. Note similarity of overhead calc. to
+  ** overhead calc. in gptl.c.
   */
 
   if (overheadstatsenabled && GPTLoverheadindx > -1) {
-    papireadportion = count * 2 * readoverhead[t];
-    overhead = aux->accum_cycles + papireadportion;
-    if (aux->accum_cycles < 1000000)
-      fprintf (fp, "%16ld %16ld ", (long) overhead, (long) (2 * papireadportion));
+    overhead = count * 2 * readoverhead[t];
+    if (overhead < 1000000)
+      fprintf (fp, "%16ld ", (long) overhead);
     else
-      fprintf (fp, "%16.10e %16.10e ", (double) overhead, (double) (2 * papireadportion));
+      fprintf (fp, "%16.10e ", (double) overhead);
   }
 }
 
@@ -619,5 +566,4 @@ void GPTL_PAPIfinalize (int maxthreads)
 
   free (EventSet);
   free (papicounters);
-  free (lastoverhead);
 }

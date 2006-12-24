@@ -50,7 +50,7 @@ typedef struct {
 
 static Settings cpustats =      {GPTLcpu,      "Usr       sys       usr+sys   ", false};
 static Settings wallstats =     {GPTLwall,     "Wallclock max       min       ", true };
-static Settings overheadstats = {GPTLoverhead, "Overhead  plus utr  "          , true };
+static Settings overheadstats = {GPTLoverhead, "UTR Overhead "                 , true };
 
 static Hashentry **hashtable;    /* table of entries */
 static long ticks_per_sec;       /* clock ticks per second */
@@ -330,15 +330,14 @@ inline int GPTLstart (const unsigned long tag) /* timer tag */
 int GPTLstart (const char *name)               /* timer name */
 #endif
 {
-  double tp1, tp2;           /* argument returned from underlying timing routine */
-  double delta;              /* diff between 2 time stamps */
-  Timer *ptr;                /* linked list pointer */
-  Timer **eptr;              /* for realloc */
+  double tp2;      /* time stamp */
+  Timer *ptr;      /* linked list pointer */
+  Timer **eptr;    /* for realloc */
 
-  int nchars;                /* number of characters in timer */
-  int t;                     /* thread index (of this thread) */
-  int indx;                  /* hash table index */
-  int nument;                /* number of entries for a hash collision */
+  int nchars;      /* number of characters in timer */
+  int t;           /* thread index (of this thread) */
+  int indx;        /* hash table index */
+  int nument;      /* number of entries for a hash collision */
 
 #ifdef UNICOSMP
 #ifndef SSP
@@ -353,21 +352,6 @@ int GPTLstart (const char *name)               /* timer name */
 
   if ((t = get_thread_num (&nthreads, &maxthreads)) < 0)
     return GPTLerror ("GPTLstart\n");
-
-  /* 
-  ** 1st calls to overheadstart and (*ptr2wtimefunc)()  are solely for overhead timing
-  ** Would prefer to start overhead calcs before get_thread_num, but the
-  ** thread number is required by PAPI counters
-  */
-
-  if (overheadstats.enabled) {
-#ifdef HAVE_PAPI
-    (void) GPTL_PAPIoverheadstart (t);
-#endif
-    if (wallstats.enabled) {
-      tp1 = (*ptr2wtimefunc) ();
-    }
-  }
 
   if ( ! initialized)
     return GPTLerror ("GPTLstart: GPTLinitialize has not been called\n");
@@ -466,27 +450,16 @@ int GPTLstart (const char *name)               /* timer name */
   if (cpustats.enabled && get_cpustamp (&ptr->cpu.last_utime, &ptr->cpu.last_stime) < 0)
     return GPTLerror ("GPTLstart: get_cpustamp error");
   
-  /*
-  ** The 2nd system timer call is used both for overhead estimation and
-  ** the input timer
-  */
+  /* Get timestamp */
   
   if (wallstats.enabled) {
     tp2 = (*ptr2wtimefunc) ();
     ptr->wall.last = tp2;
-    if (overheadstats.enabled) {
-      delta = tp2 - tp1;
-      ptr->wall.overhead += delta;
-      assert (delta >= 0.);
-    }
   }
 
 #ifdef HAVE_PAPI
   if (GPTL_PAPIstart (t, &ptr->aux) < 0)
     return GPTLerror ("GPTLstart: error from GPTL_PAPIstart\n");
-
-  if (overheadstats.enabled)
-    (void) GPTL_PAPIoverheadstop (t, &ptr->aux);
 #endif
 
   return (0);
@@ -508,7 +481,7 @@ inline int GPTLstop (const unsigned long tag) /* timer tag */
 int GPTLstop (const char *name)               /* timer name */
 #endif
 {
-  double tp1, tp2;           /* time stamps */
+  double tp1;                /* time stamp */
   double delta;              /* diff between 2 time stamps */
   Timer *ptr;                /* linked list pointer */
 
@@ -533,15 +506,7 @@ int GPTLstop (const char *name)               /* timer name */
   if ((t = get_thread_num (&nthreads, &maxthreads)) < 0)
     return GPTLerror ("GPTLstop\n");
 
-#ifdef HAVE_PAPI
-  if (overheadstats.enabled)
-    (void) GPTL_PAPIoverheadstart (t);
-#endif
-
-  /*
-  ** The 1st system timer call is used both for overhead estimation and
-  ** the input timer
-  */
+  /* Get the timestamp */
     
   if (wallstats.enabled) {
     tp1 = (*ptr2wtimefunc) ();
@@ -611,15 +576,6 @@ int GPTLstop (const char *name)               /* timer name */
       if (delta < ptr->wall.min)
 	ptr->wall.min = delta;
     }
-
-    /* 2nd system timer call is solely for overhead timing */
-
-    if (overheadstats.enabled) {
-      tp2 = (*ptr2wtimefunc) ();
-      delta = tp2 - tp1;
-      ptr->wall.overhead += delta;
-      assert (delta >= 0.);
-    }
   }
 
   if (cpustats.enabled) {
@@ -628,12 +584,6 @@ int GPTLstop (const char *name)               /* timer name */
     ptr->cpu.last_utime   = usr;
     ptr->cpu.last_stime   = sys;
   }
-
-#ifdef HAVE_PAPI
-  if (overheadstats.enabled)
-    (void) GPTL_PAPIoverheadstop (t, &ptr->aux);
-#endif
-
   return 0;
 }
 
@@ -782,7 +732,9 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
 
   utr_overhead = utr_getoverhead ();
   fprintf (fp, "Underlying timing routine was %s\n", funclist[funcidx].name);
-  fprintf (fp, "Per-call utr overhead est: %g sec\n", utr_overhead);
+  fprintf (fp, "Per-call utr overhead est: %g sec\n\n", utr_overhead);
+  fprintf (fp, "If overhead stats are printed, roughly half the estimated number is\n");
+  fprintf (fp, "embedded in the wallclock (and/or PAPI counter) stats for each timer\n\n");
 
   sum = (float *) GPTLallocate (nthreads * sizeof (float));
   
@@ -817,22 +769,23 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
     for (ptr = timers[t]; ptr; ptr = ptr->next)
       printstats (ptr, fp, t, true, utr_overhead);
 
-    /* Sum of overhead across timers is meaningful */
+    /* 
+    ** Sum of overhead across timers is meaningful.
+    ** Factor of 2 is because there are 2 utr calls per start/stop pair.
+    */
 
     sum[t]     = 0;
     totcount   = 0;
     totrecurse = 0;
     for (ptr = timers[t]; ptr; ptr = ptr->next) {
-      sum[t]     += ptr->wall.overhead;
+      sum[t]     += ptr->count * 2 * utr_overhead;
       totcount   += ptr->count;
       totrecurse += ptr->nrecurse;
     }
     if (wallstats.enabled && overheadstats.enabled)
       fprintf (fp, "Overhead sum          = %9.3f wallclock seconds\n", sum[t]);
-    fprintf (fp, "Total calls           = %u\n", totcount);
-    fprintf (fp, "Total recursive calls = %u\n", totrecurse);
-    if (totrecurse > 0)
-      fprintf (fp, "Note: overhead computed only for non-recursive calls\n");
+    fprintf (fp, "Total calls           = %lu\n", totcount);
+    fprintf (fp, "Total recursive calls = %lu\n", totrecurse);
   }
 
   /* Print per-name stats for all threads */
@@ -960,7 +913,6 @@ static void printstats (const Timer *timer,     /* timer to print */
   float elapse;        /* elapsed time */
   float wallmax;       /* max wall time */
   float wallmin;       /* min wall time */
-  float utrportion;    /* est. timer overhead due to underlying timing routine only */
 
   if ((ticks_per_sec = sysconf (_SC_CLK_TCK)) == -1)
     (void) GPTLerror ("printstats: token _SC_CLK_TCK is not defined\n");
@@ -1007,17 +959,11 @@ static void printstats (const Timer *timer,     /* timer to print */
     fprintf (fp, "%9.3f %9.3f %9.3f ", elapse, wallmax, wallmin);
 
     /*
-    ** Do not add cost of underlying timing routine to overhead est (the latter)
-    ** is too uncertain).  One factor of 2 in the estimate
-    ** is because both start and stop were called.  Other factor of 2 is because 
-    ** underlying timing routine was called twice in each of start and stop.
-    ** Adding a utrportion to walloverhead is due to estimate that a
-    ** single utr_overhead is missing from each of start and stop.
+    ** Factor of 2 is because there are 2 utr calls per start/stop pair.
     */
 
     if (overheadstats.enabled) {
-      utrportion = timer->count * 2 * utr_overhead;
-      fprintf (fp, "%9.3f %9.3f ", timer->wall.overhead, utrportion);
+      fprintf (fp, "%13.3f ", timer->count * 2 * utr_overhead);
     }
   }
 
@@ -1046,8 +992,6 @@ static void add (Timer *tout,
     
     tout->wall.max = MAX (tout->wall.max, tin->wall.max);
     tout->wall.min = MIN (tout->wall.min, tin->wall.min);
-    if (overheadstats.enabled)
-      tout->wall.overhead += tin->wall.overhead;
   }
 
   if (cpustats.enabled) {
@@ -1303,8 +1247,8 @@ static int init_nanotime ()
 
 static inline double utr_nanotime ()
 {
-  double timestamp;
 #ifdef HAVE_NANOTIME
+  double timestamp;
   timestamp = nanotime () * cyc2sec;
   return timestamp;
 #else
@@ -1327,10 +1271,8 @@ static int init_rtc ()
   
 static inline double utr_rtc ()
 {
-  double timestamp;
 #ifdef UNICOSMP
-  timestamp = _rtc () * ticks2sec;
-  return timestamp;
+  return _rtc () * ticks2sec;
 #else
   (void) GPTLerror ("utr_rtc: not enabled\n");
   return -1.;
@@ -1348,10 +1290,8 @@ static int init_mpiwtime ()
 
 static inline double utr_mpiwtime ()
 {
-  double timestamp;
 #if ( defined HAVE_LIBMPI ) || ( defined HAVE_LIBMPICH )
-  timestamp = MPI_Wtime ();
-  return timestamp;
+  return MPI_Wtime ();
 #else
   (void) GPTLerror ("utr_mpiwtime: not enabled\n");
   return -1.;
@@ -1375,12 +1315,10 @@ static int init_clock_gettime ()
 
 static inline double utr_clock_gettime ()
 {
-  double timestamp;
 #ifdef HAVE_LIBRT
   struct timespec tp;
   (void) clock_gettime (CLOCK_REALTIME, &tp);
-  timestamp = (tp.tv_sec - ref_clock_gettime) + 1.e-9*tp.tv_nsec;
-  return timestamp;
+  return (tp.tv_sec - ref_clock_gettime) + 1.e-9*tp.tv_nsec;
 #else
   (void) GPTLerror ("utr_clock_gettime: not enabled\n");
   return -1.;
@@ -1403,11 +1341,9 @@ static int init_gettimeofday ()
 static inline double utr_gettimeofday ()
 {
 #ifdef HAVE_GETTIMEOFDAY
-  double timestamp;
   struct timeval tp;
   (void) gettimeofday (&tp, 0);
-  timestamp = (tp.tv_sec - ref_gettimeofday) + 1.e-6*tp.tv_usec;
-  return timestamp;
+  return (tp.tv_sec - ref_gettimeofday) + 1.e-6*tp.tv_usec;
 #else
   return GPTLerror ("utr_gettimeofday: not enabled\n");
 #endif
