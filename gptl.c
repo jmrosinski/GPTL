@@ -11,11 +11,11 @@
 #include <intrinsics.h>    /* rtc */
 #endif
 
-#ifdef HAVE_MPI
+#if ( defined HAVE_LIBMPI ) || ( defined HAVE_LIBMPICH )
 #include <mpi.h>
 #endif
 
-#ifdef HAVE_CLOCK_GETTIME
+#ifdef HAVE_LIBRT
 #include <time.h>
 #endif
 
@@ -142,9 +142,14 @@ int GPTLsetoption (const int option,  /* option */
   }
 
   switch (option) {
-  case GPTLcpu:      
+  case GPTLcpu:
+#ifdef HAVE_TIMES
     cpustats.enabled = (bool) val; 
     printf ("GPTLsetoption: set cpustats to %d\n", val);
+#else
+    if (val)
+      return GPTLerror ("GPTLsetoption: times() not available\n");
+#endif
     return 0;
   case GPTLwall:     
     wallstats.enabled = (bool) val; 
@@ -182,7 +187,7 @@ int GPTLsetutr (const Funcoption option)
       if (t1 > t2)
 	return GPTLerror ("GPTLsetutr: bad t1=%f t2=%f\n", t1, t2);
       printf ("t2-t1=%g should be near zero\n", t2-t1);
-      printf ("Using %s\n", funclist[i].name);
+      printf ("Wallclock timing routine set to %s\n", funclist[i].name);
       funcidx = i;
       ptr2wtimefunc = funclist[i].func;
       return 0;
@@ -675,6 +680,7 @@ int GPTLstamp (double *wall, double *usr, double *sys)
   if ( ! initialized)
     return GPTLerror ("GPTLstamp: GPTLinitialize has not been called\n");
 
+#ifdef HAVE_TIMES
   *usr = 0;
   *sys = 0;
 
@@ -686,8 +692,10 @@ int GPTLstamp (double *wall, double *usr, double *sys)
 
   gettimeofday (&tp, 0);
   *wall = tp.tv_sec + 1.e-6*tp.tv_usec;
-
   return 0;
+#else
+  return GPTLerror ("GPTLstamp: times() not available\n");
+#endif
 }
 
 /*
@@ -1063,13 +1071,16 @@ static void add (Timer *tout,
 
 static inline int get_cpustamp (long *usr, long *sys)
 {
+#ifdef HAVE_TIMES
   struct tms buf;
 
   (void) times (&buf);
   *usr = buf.tms_utime;
   *sys = buf.tms_stime;
-
   return 0;
+#else
+  return GPTLerror ("get_cpustamp: times() not available\n");
+#endif
 }
 
 #ifdef NUMERIC_TIMERS
@@ -1328,7 +1339,7 @@ static inline double utr_rtc ()
 
 static int init_mpiwtime ()
 {
-#ifdef HAVE_MPI
+#if ( defined HAVE_LIBMPI ) || ( defined HAVE_LIBMPICH )
   return 0;
 #else
   return GPTLerror ("utr_mpiwtime: not enabled\n");
@@ -1338,7 +1349,7 @@ static int init_mpiwtime ()
 static inline double utr_mpiwtime ()
 {
   double timestamp;
-#ifdef HAVE_MPI
+#if ( defined HAVE_LIBMPI ) || ( defined HAVE_LIBMPICH )
   timestamp = MPI_Wtime ();
   return timestamp;
 #else
@@ -1351,7 +1362,7 @@ static inline double utr_mpiwtime ()
 
 static int init_clock_gettime ()
 {
-#ifdef HAVE_CLOCK_GETTIME
+#ifdef HAVE_LIBRT
   struct timespec tp;
   (void) clock_gettime (CLOCK_REALTIME, &tp);
   ref_clock_gettime = tp.tv_sec;
@@ -1365,7 +1376,7 @@ static int init_clock_gettime ()
 static inline double utr_clock_gettime ()
 {
   double timestamp;
-#ifdef HAVE_CLOCK_GETTIME
+#ifdef HAVE_LIBRT
   struct timespec tp;
   (void) clock_gettime (CLOCK_REALTIME, &tp);
   timestamp = (tp.tv_sec - ref_clock_gettime) + 1.e-9*tp.tv_nsec;
@@ -1378,20 +1389,28 @@ static inline double utr_clock_gettime ()
 
 static int init_gettimeofday ()
 {
+#ifdef HAVE_GETTIMEOFDAY
   struct timeval tp;
   (void) gettimeofday (&tp, 0);
   ref_gettimeofday = tp.tv_sec;
   printf ("init_gettimeofday: ref_gettimeofday=%ld\n", (long) ref_gettimeofday);
   return 0;
+#else
+  return GPTLerror ("init_gettimeofday: not enabled\n");
+#endif
 }
 
 static inline double utr_gettimeofday ()
 {
+#ifdef HAVE_GETTIMEOFDAY
   double timestamp;
   struct timeval tp;
   (void) gettimeofday (&tp, 0);
   timestamp = (tp.tv_sec - ref_gettimeofday) + 1.e-6*tp.tv_usec;
   return timestamp;
+#else
+  return GPTLerror ("utr_gettimeofday: not enabled\n");
+#endif
 }
 
 /* Determine underlying timing routine overhead */

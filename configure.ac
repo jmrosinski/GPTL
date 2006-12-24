@@ -90,6 +90,12 @@ dnl will add -lpapi or -lpapi64 if successful
 	       [AC_MSG_ERROR([[not found. Rebuild using --with-papi or w/o --enable-papi]])]))
 fi
 
+dnl Check for various underlying timing routines
+AC_CHECK_LIB(rt, clock_gettime)
+AC_CHECK_LIB(mpi, MPI_Wtime,,
+		  AC_CHECK_LIB(mpich, MPI_Wtime))
+AC_CHECK_FUNCS(gettimeofday times,,)
+
 dnl One of the Fortran tests has ifdef AIX and defines are funky on AIX Fortran
 if test "x$OS" = xaix ; then
   FORTDEFS="$FORTDEFS -WF,-DAIX"
@@ -179,7 +185,6 @@ AC_C_INLINE
 
 dnl Checks for library functions.
 AC_FUNC_VPRINTF
-AC_CHECK_FUNCS(gettimeofday times,,AC_MSG_ERROR([not found. giving up]))
 
 AC_SUBST(FDEFS)
 AC_SUBST(THREADDEFS)
