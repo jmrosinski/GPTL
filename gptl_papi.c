@@ -304,6 +304,7 @@ static int create_and_start_events (const int t)  /* thread number */
 {
   int ret;
   int n;
+  int i;
   long_long counters1[MAX_AUX];  /* Temp counter for estimating PAPI_read overhead  */
   long_long counters2[MAX_AUX];  /* Temp counter for estimating PAPI_read overhead  */
 
@@ -561,9 +562,19 @@ void GPTL_PAPIfinalize (int maxthreads)
 {
   int t;
 
-  for (t = 0; t < maxthreads; t++)
+  for (t = 0; t < maxthreads; t++) {
+    free (EventSet[t]);
     free (papicounters[t]);
+    free (readoverhead[t]);
+  }
 
   free (EventSet);
   free (papicounters);
+  free (readoverhead);
+
+  /* Reset initial values */
+
+  nevents = 0;
+  nprop = 0;
+  GPTLoverheadindx = -1;
 }

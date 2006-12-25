@@ -50,7 +50,7 @@ typedef struct {
 
 static Settings cpustats =      {GPTLcpu,      "Usr       sys       usr+sys   ", false};
 static Settings wallstats =     {GPTLwall,     "Wallclock max       min       ", true };
-static Settings overheadstats = {GPTLoverhead, "UTR Overhead "                 , true };
+static Settings overheadstats = {GPTLoverhead, "UTR Overhead  "                , true };
 
 static Hashentry **hashtable;    /* table of entries */
 static long ticks_per_sec;       /* clock ticks per second */
@@ -287,7 +287,7 @@ int GPTLfinalize (void)
   Timer *ptr, *ptrnext; /* ll indices */
 
   if ( ! initialized)
-    return GPTLerror ("GPTLfinalize: GPTLinitialize() has not been called\n");
+    return GPTLerror ("GPTLfinalize: initialization was not completed\n");
 
   if (get_thread_num (&nthreads, &maxthreads) > 0) 
     return GPTLerror ("GPTLfinalize: must only be called by master thread\n");
@@ -307,10 +307,21 @@ int GPTLfinalize (void)
   free (hashtable);
 
   threadfinalize ();
+
 #ifdef HAVE_PAPI
   GPTL_PAPIfinalize (maxthreads);
 #endif
+
+  /* Reset initial values set in GPTLinitialize */
+
+  timers = 0;
+  last = 0;
+  nthreads = -1;
+  maxthreads = -1;
   initialized = false;
+  ref_gettimeofday = -1;
+  ref_clock_gettime = -1;
+
   return 0;
 }
 

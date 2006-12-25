@@ -3,16 +3,17 @@
 #include <papi.h>
 #include "../gptl.h"
 
+float add (int);
+float multiply (int);
+float multadd (int);
+float divide (int);
+
 int main ()
 {
   char cmd[256];
   int iter;
   int n;
   const int niter = 128;
-  float add (int);
-  float mult (int);
-  float fma (int);
-  float div (int);
   typedef struct {
     int counter;
     float (*funcptr)();
@@ -20,10 +21,10 @@ int main ()
   } Counter;
 
   Counter tests[] = {
-    {PAPI_FAD_INS, add,  "addition"},
-    {PAPI_FM_INS,  mult, "multiplication"},
-    {PAPI_FMA_INS, fma,  "mult-add"},
-    {PAPI_FDV_INS, fdiv, "division"}
+    {PAPI_FAD_INS, add,      "addition"},
+    {PAPI_FML_INS, multiply, "multiplication"},
+    {PAPI_FMA_INS, multadd,  "mult-add"},
+    {PAPI_FDV_INS, divide,   "division"}
   };
 
   int numtests = sizeof (tests) / sizeof (Counter);
@@ -33,23 +34,27 @@ int main ()
       printf ("Skipping test %s: not available\n", tests[n].name);
       continue;
     }
-    if (GPTLsetoption (PAPI_TOT_INS, 1) < 0)
+    if (GPTLsetoption (PAPI_TOT_CYC, 1) < 0)
       printf ("Total instructions count not available\n");
 
-    if (GPTLinitialize () < 0)
-      exit 2;
-
+    if (GPTLinitialize () < 0) {
+      if (GPTLfinalize () < 0)
+	exit (2);
+      
+      continue;
+    }
+      
 #pragma omp parallel for private (iter)
-
+      
     for (iter = 1; iter <= niter; iter++) {
-      (void) tests[n].funcptr (iter);
+      (void) tests[n].funcptr (0);
     }
 
     if (GPTLpr (0) < 0)
-      exit 3;
+      exit (3);
 
     if (GPTLfinalize () < 0)
-      exit 4;
+      exit (4);
 
     sprintf (cmd, "mv timing.0 timing.0.%s", tests[n].name);
     (void) system (cmd);
@@ -77,14 +82,14 @@ float add (int iter)
   return val;
 }
 
-float mult (int iter)
+float multiply (int iter)
 {
   int i;
   int looplen = iter * 1000000;
   float val = 1./(looplen * looplen);
   char string[16];
 
-  sprintf (string, "mult_%de6", iter);
+  sprintf (string, "multiply_%de6", iter);
   if (GPTLstart (string) < 0)
     exit (1);
 
@@ -97,14 +102,14 @@ float mult (int iter)
   return val;
 }
 
-float fma (int iter)
+float multadd (int iter)
 {
   int i;
   int looplen = iter * 1000000;
   float val = 1./(looplen * looplen);
   char string[16];
 
-  sprintf (string, "FMA_%de6", iter);
+  sprintf (string, "multadd_%de6", iter);
   if (GPTLstart (string) < 0)
     exit (1);
 
@@ -118,14 +123,14 @@ float fma (int iter)
 }
 
 
-float fdiv (int iter)
+float divide (int iter)
 {
   int i;
   int looplen = iter * 1000000;
   float val = looplen * looplen;
   char string[16];
 
-  sprintf (string, "DIV_%de6", iter);
+  sprintf (string, "divide_%de6", iter);
   if (GPTLstart (string) < 0)
     exit (1);
 
@@ -134,6 +139,6 @@ float fdiv (int iter)
 
   if (GPTLstop (string) < 0)
     exit (1);
-  
+
   return val;
 }
