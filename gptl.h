@@ -1,5 +1,5 @@
 /*
-$Id: gptl.h,v 1.8 2006-12-21 02:40:03 rosinski Exp $
+$Id: gptl.h,v 1.9 2006-12-25 04:15:30 rosinski Exp $
 */
 #ifndef GPTL_H
 #define GPTL_H
@@ -23,7 +23,7 @@ typedef enum {
 */
 
 extern int GPTLsetoption (const int, const int);
-extern int GPTLsetutr (const Funcoption);
+extern int GPTLsetutr (const int);
 extern int GPTLinitialize (void);
 extern int GPTLfinalize (void);
 #ifdef NUMERIC_TIMERS

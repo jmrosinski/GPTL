@@ -61,6 +61,10 @@ static void printstats (const Timer *, FILE *, const int, const bool, double);
 static void add (Timer *, const Timer *);
 static inline int get_cpustamp (long *, long *);
 
+#if ( ! defined THREADED_PTHREADS )
+static inline int get_thread_num (int *, int *);      /* determine thread number */
+#endif
+
 /* These are the (possibly) supported underlying wallclock timers */
 
 static inline double utr_nanotime (void);
@@ -170,14 +174,14 @@ int GPTLsetoption (const int option,  /* option */
   return GPTLerror ("GPTLsetoption: option %d not found\n", option);
 }
 
-int GPTLsetutr (const Funcoption option)
+int GPTLsetutr (const int option)
 {
   int i;
   double t1;
   double t2;
 
   for (i = 0; i < nfuncentries; i++) {
-    if (option == funclist[i].option) {
+    if (option == (int) funclist[i].option) {
       printf ("GPTLsetutr: testing %s\n", funclist[i].name);
       (*funclist[i].funcinit) ();
       if ((t1 = (*funclist[i].func) ()) < 0)

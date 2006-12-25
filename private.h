@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.28 2006-12-24 18:50:54 rosinski Exp $
+$Id: private.h,v 1.29 2006-12-25 04:15:30 rosinski Exp $
 */
 
 #include <stdio.h>
@@ -77,8 +77,6 @@ extern int threadinit (int *, int *);          /* initialize threading environme
 extern void threadfinalize (void);             /* finalize threading environment */
 #if ( defined THREADED_PTHREADS )
 extern int get_thread_num (int *, int *);      /* determine thread number */
-#else
-static inline int get_thread_num (int *, int *);      /* determine thread number */
 #endif
 
 #ifdef HAVE_PAPI

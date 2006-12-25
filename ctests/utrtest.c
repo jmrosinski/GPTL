@@ -8,11 +8,11 @@ int main (int argc, char **argv)
   extern void sub (int, int, char *, double *);
 
   MPI_Init (&argc, &argv);
-  GPTLsetutr (GPTLrtc);
-  GPTLsetutr (GPTLgettimeofday);
-  GPTLsetutr (GPTLnanotime);
-  GPTLsetutr (GPTLmpiwtime);
-  GPTLsetutr (GPTLclockgettime);
+//  GPTLsetutr (GPTLrtc);
+//  GPTLsetutr (GPTLgettimeofday);
+//  GPTLsetutr (GPTLnanotime);
+//  GPTLsetutr (GPTLmpiwtime);
+//  GPTLsetutr (GPTLclockgettime);
 
   GPTLinitialize ();
 
@@ -25,6 +25,15 @@ int main (int argc, char **argv)
   sub (10000, 1000, "1e4x1000", &sum);
   sub (100000, 100, "1e5x100", &sum);
   sub (1000000, 10, "1e6x10", &sum);
+  sub (10000000, 1, "1e7x1", &sum);
+  sub (10000000, 1, "1e7x1", &sum);
+  sub (10000000, 1, "1e7x1", &sum);
+  sub (10000000, 1, "1e7x1", &sum);
+  sub (10000000, 1, "1e7x1", &sum);
+  sub (10000000, 1, "1e7x1", &sum);
+  sub (10000000, 1, "1e7x1", &sum);
+  sub (10000000, 1, "1e7x1", &sum);
+  sub (10000000, 1, "1e7x1", &sum);
   sub (10000000, 1, "1e7x1", &sum);
   //  GPTLenable ();
   GPTLstop ("total");

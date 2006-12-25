@@ -17,7 +17,7 @@ dnl C and Fortran compilers
 dnl Embedding AC_PROG_XX inside the shell code failed on SGI
 if test "x$OS" = "xlinux"; then
   CCLIST="cc gcc g++ icc pgcc"
-  FCLIST="g77 f77 pgf90 ifort lf95 g95"
+  FCLIST="g77 f77 pgf90 ifort lf95 gfortran g95"
   AC_DEFINE([LINUX])
 elif test "x$OS" = "xirix"; then
   CCLIST="cc gcc g++"
