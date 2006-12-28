@@ -563,9 +563,7 @@ void GPTL_PAPIfinalize (int maxthreads)
   int t;
 
   for (t = 0; t < maxthreads; t++) {
-    free (EventSet[t]);
     free (papicounters[t]);
-    free (readoverhead[t]);
   }
 
   free (EventSet);

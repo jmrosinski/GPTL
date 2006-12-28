@@ -1,11 +1,12 @@
 CC           = @CC@
 CFLAGS       = @DEFS@ @PAPIPREP@ @THREADDEFS@ @CFLAGS@ @BITFLAGS@ @THREADFLAGS@
 LDFLAGS      = @BITFLAGS@ @THREADFLAGS@ -L.. -lgptl @LDFLAGS@ @LIBS@
+INSTRFLAGS   = -finstrument-functions
 
 OBJS = avail.o llcost.o depth.o overhead.o overhead2.o rawpapitest.o numeric.o recursion.o subinline.o \
-       exception.o memusage.o basic.o utrtest.o papiomptest
+       exception.o memusage.o basic.o utrtest.o papiomptest.o cygprofile.o cygprofilesubs.o 
 EXES = avail   llcost   depth   overhead   overhead2   rawpapitest   numeric   recursion subinline \
-       exception   memusage basic utrtest papiomptest
+       exception   memusage basic utrtest papiomptest cygprofile
 
 all: $(EXES)
 clean:
@@ -36,7 +37,7 @@ recursion: recursion.o
 	$(CC) -o $@ recursion.o $(LDFLAGS)
 
 subinline.o: subinline.c
-	$(CC) -c $(CFLAGS) -finstrument-functions subinline.c
+	$(CC) -c $(CFLAGS) $(INSTRFLAGS) subinline.c
 subinline: subinline.o
 	$(CC) -o $@ subinline.o $(LDFLAGS)
 
@@ -54,3 +55,8 @@ utrtest: utrtest.o
 
 papiomptest: papiomptest.o
 	$(CC) $(THREADFLAGS) -o $@ papiomptest.o $(LDFLAGS)
+
+cygprofile: cygprofile.o cygprofilesubs.o
+	$(CC) -o $@ cygprofile.o cygprofilesubs.o $(LDFLAGS)
+cygprofilesubs.o: cygprofilesubs.c
+	$(CC) -c $(INSTRFLAGS) -o $@ $<

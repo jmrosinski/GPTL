@@ -258,11 +258,11 @@ int GPTLinitialize (void)
   /* 
   ** start/stop routines sprintf an "unsigned long" into a string for later 
   ** printing. The size of that string is MAX_CHARS (excluding null terminator). 
-  ** The following assert() ensures that this size is sufficient.
+  ** The following ensures that this size is sufficient.
   ** A single byte can hold 2 hex digits.
   */
 
-  if (2*sizeof (long) < MAX_CHARS)
+  if (2*sizeof (long) > MAX_CHARS)
     return GPTLerror ("GPTLinitialize: MAX_CHARS is too small\n");
 #endif
 
