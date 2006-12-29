@@ -1,5 +1,6 @@
 #include <stdio.h>
-#include <stdlib.h>
+#include <stdlib.h>  /* atoi */
+#include <unistd.h>  /* getopt */
 #include <papi.h>
 #include "../gptl.h"
 
@@ -8,68 +9,82 @@ float multiply (int);
 float multadd (int);
 float divide (int);
 
-int main ()
+int main (int argc, char **argv)
 {
-  char cmd[256];
   int iter;
   int n;
-  const int niter = 128;
-  typedef struct {
-    int counter;
-    float (*funcptr)();
-    char *name;
-  } Counter;
+  int nompiter = 128;
+  int looplen = 1000000;
+  int papiopt;
+  float ret;
+  float zero = 0.;
 
-  Counter tests[] = {
-    {PAPI_FP_INS, add,      "addition"},
-    {PAPI_FP_INS, multiply, "multiplication"},
-    {PAPI_FP_INS, multadd,  "mult-add"},
-    {PAPI_FP_INS, divide,   "division"}
-  };
+  extern char *optarg;
 
-  int numtests = sizeof (tests) / sizeof (Counter);
+  int c;
 
-  for (n = 0; n < numtests; n++) {
-    if (GPTLsetoption (tests[n].counter, 1) < 0) {
-      printf ("Skipping test %s: not available\n", tests[n].name);
-      continue;
+  printf ("Purpose: test PAPI and (optionally) OpenMP\n");
+
+  while ((c = getopt (argc, argv, "l:n:p:")) != -1) {
+    switch (c) {
+	case 'l':
+	  looplen = atoi (optarg);
+	  printf ("Set looplen=%d\n", looplen);
+	  break;
+	case 'n':
+	  nompiter = atoi (optarg);
+	  printf ("Set nompiter=%d\n", nompiter);
+	  break;
+	case 'p':
+	  if ((papiopt = GPTL_PAPIname2str (optarg)) < 0) {
+	    printf ("Failure from GPTL_PAPIname2str\n");
+	    exit (1);
+	  }
+	  if (GPTLsetoption (papiopt, 1) < 0) {
+	    printf ("Failure from GPTLsetoption (%s,1)\n", optarg);
+	    exit (1);
+	  }
+	  break;
+	default:
+	  printf ("unknown option %c\n", c);
+	  exit (2);
     }
-    if (GPTLsetoption (PAPI_TOT_CYC, 1) < 0)
-      printf ("Total instructions count not available\n");
+  }
+  
+  printf ("Outer loop length (OMP)=%d\n", nompiter);
+  printf ("Inner loop length=%d\n", looplen);
 
-    if (GPTLinitialize () < 0) {
-      if (GPTLfinalize () < 0)
-	exit (2);
+  if (GPTLinitialize () < 0) 
+    exit (3);
+	 
+#pragma omp parallel for private (iter, zero)
       
-      continue;
-    }
-      
-#pragma omp parallel for private (iter)
-      
-    for (iter = 1; iter <= niter; iter++) {
-      (void) tests[n].funcptr (0);
+    for (iter = 1; iter <= nompiter; iter++) {
+      ret = add (looplen, &zero);
+      ret = multiply (looplen, &zero);
+      ret = multadd (looplen, &zero);
+      ret = divide (looplen, &zero);
     }
 
     if (GPTLpr (0) < 0)
-      exit (3);
-
-    if (GPTLfinalize () < 0)
       exit (4);
 
-    sprintf (cmd, "mv timing.0 timing.0.%s", tests[n].name);
-    (void) system (cmd);
-    printf ("Output file timing.0.%s complete\n", tests[n].name);
+    if (GPTLfinalize () < 0)
+      exit (5);
   }
 }
 
-float add (int iter)
+float add (int looplen, float *zero)
 {
   int i;
-  int looplen = iter * 1000000;
-  float val = 0.;
-  char string[16];
+  float val = *zero;
+  char string[128];
 
-  sprintf (string, "add_%de6", iter);
+  if (looplen < 1000000)
+    sprintf (string, "%dadditions", looplen);
+  else
+    sprintf (string, "%10.3gadditions", looplen);
+
   if (GPTLstart (string) < 0)
     exit (1);
 
@@ -78,18 +93,21 @@ float add (int iter)
 
   if (GPTLstop (string) < 0)
     exit (1);
-  
+
   return val;
 }
 
-float multiply (int iter)
+float multiply (int looplen, float *zero)
 {
   int i;
-  int looplen = iter * 1000000;
-  float val = 1./(looplen * looplen);
-  char string[16];
+  float val = *zero;
+  char string[128];
 
-  sprintf (string, "multiply_%de6", iter);
+  if (looplen < 1000000)
+    sprintf (string, "%dmultiplies", looplen);
+  else
+    sprintf (string, "%10.3gmultiplies", looplen);
+
   if (GPTLstart (string) < 0)
     exit (1);
 
@@ -98,39 +116,44 @@ float multiply (int iter)
 
   if (GPTLstop (string) < 0)
     exit (1);
-  
+
   return val;
 }
 
-float multadd (int iter)
+float multadd (int looplen, float *zero)
 {
   int i;
-  int looplen = iter * 1000000;
-  float val = 1./(looplen * looplen);
-  char string[16];
+  float val = *zero;
+  char string[128];
 
-  sprintf (string, "multadd_%de6", iter);
+  if (looplen < 1000000)
+    sprintf (string, "%dmultadds", looplen);
+  else
+    sprintf (string, "%10.3gmultadds", looplen);
+
   if (GPTLstart (string) < 0)
     exit (1);
 
   for (i = 1; i <= looplen; ++i)
-    val *= i - looplen;
+    val += i;
 
   if (GPTLstop (string) < 0)
     exit (1);
-  
+
   return val;
 }
 
-
-float divide (int iter)
+float divide (int looplen, float *zero)
 {
   int i;
-  int looplen = iter * 1000000;
-  float val = looplen * looplen;
-  char string[16];
+  float val = *zero;
+  char string[128];
 
-  sprintf (string, "divide_%de6", iter);
+  if (looplen < 1000000)
+    sprintf (string, "%ddivides", looplen);
+  else
+    sprintf (string, "%10.3gdivides", looplen);
+
   if (GPTLstart (string) < 0)
     exit (1);
 

@@ -11,6 +11,7 @@
 
 typedef struct {
   int counter;      /* PAPI counter */
+  char *counterstr; /* PAPI counter as string */
   char *prstr;      /* print string for output timers (16 chars) */
   char *str;        /* descriptive print string (more descriptive than prstr) */
 } Papientry;
@@ -18,110 +19,110 @@ typedef struct {
 /* Mapping of PAPI counters to short and long printed strings */
 
 static Papientry papitable [] = {
-  {PAPI_L1_DCM, "L1 Dcache miss  ", "Level 1 data cache misses"},
-  {PAPI_L1_ICM, "L1 Icache miss  ", "Level 1 instruction cache misses"},
-  {PAPI_L2_DCM, "L2 Dcache miss  ", "Level 2 data cache misses"},             
-  {PAPI_L2_ICM, "L2 Icache miss  ", "Level 2 instruction cache misses"},
-  {PAPI_L3_DCM, "L3 Dcache miss  ", "Level 3 data cache misses"},             
-  {PAPI_L3_ICM, "L3 Icache miss  ", "Level 3 instruction cache misses"},       
-  {PAPI_L1_TCM, "L1 cache miss   ", "Level 1 total cache misses"},             
-  {PAPI_L2_TCM, "L2 cache miss   ", "Level 2 total cache misses"},
-  {PAPI_L3_TCM, "L3 cache miss   ", "Level 3 total cache misses"},
-  {PAPI_CA_SNP, "Snoops          ", "Snoops          "},
-  {PAPI_CA_SHR, "PAPI_CA_SHR     ", "Request for shared cache line (SMP)"},
-  {PAPI_CA_CLN, "PAPI_CA_CLN     ", "Request for clean cache line (SMP)"},
-  {PAPI_CA_INV, "PAPI_CA_INV     ", "Request for cache line Invalidation (SMP)"},
-  {PAPI_CA_ITV, "PAPI_CA_ITV     ", "Request for cache line Intervention (SMP)"},
-  {PAPI_L3_LDM, "L3 load misses  ", "Level 3 load misses"},
-  {PAPI_L3_STM, "L3 store misses ", "Level 3 store misses"},
-  {PAPI_BRU_IDL,"PAPI_BRU_IDL    ", "Cycles branch units are idle"},
-  {PAPI_FXU_IDL,"PAPI_FXU_IDL    ", "Cycles integer units are idle"},
-  {PAPI_FPU_IDL,"PAPI_FPU_IDL    ", "Cycles floating point units are idle"},
-  {PAPI_LSU_IDL,"PAPI_LSU_IDL    ", "Cycles load/store units are idle"},
-  {PAPI_TLB_DM, "Data TLB misses ", "Data translation lookaside buffer misses"},
-  {PAPI_TLB_IM, "Inst TLB misses ", "Instr translation lookaside buffer misses"},
-  {PAPI_TLB_TL, "Tot TLB misses  ", "Total translation lookaside buffer misses"},
-  {PAPI_L1_LDM, "L1 load misses  ", "Level 1 load misses"},
-  {PAPI_L1_STM, "L1 store misses ", "Level 1 store misses"},
-  {PAPI_L2_LDM, "L2 load misses  ", "Level 2 load misses"},
-  {PAPI_L2_STM, "L2 store misses ", "Level 2 store misses"},
-  {PAPI_BTAC_M, "BTAC miss       ", "BTAC miss"},
-  {PAPI_PRF_DM, "PAPI_PRF_DM     ", "Prefetch data instruction caused a miss"},
-  {PAPI_L3_DCH, "L3 DCache Hit   ", "Level 3 Data Cache Hit"},
-  {PAPI_TLB_SD, "PAPI_TLB_SD     ", "Xlation lookaside buffer shootdowns (SMP)"},
-  {PAPI_CSR_FAL,"PAPI_CSR_FAL    ", "Failed store conditional instructions"},
-  {PAPI_CSR_SUC,"PAPI_CSR_SUC    ", "Successful store conditional instructions"},
-  {PAPI_CSR_TOT,"PAPI_CSR_TOT    ", "Total store conditional instructions"},
-  {PAPI_MEM_SCY,"Cyc Stalled Mem ", "Cycles Stalled Waiting for Memory Access"},
-  {PAPI_MEM_RCY,"Cyc Stalled MemR", "Cycles Stalled Waiting for Memory Read"},
-  {PAPI_MEM_WCY,"Cyc Stalled MemW", "Cycles Stalled Waiting for Memory Write"},
-  {PAPI_STL_ICY,"Cyc no InstrIss ", "Cycles with No Instruction Issue"},
-  {PAPI_FUL_ICY,"Cyc Max InstrIss", "Cycles with Maximum Instruction Issue"},
-  {PAPI_STL_CCY,"Cyc No InstrComp", "Cycles with No Instruction Completion"},
-  {PAPI_FUL_CCY,"Cyc Max InstComp", "Cycles with Maximum Instruction Completion"},
-  {PAPI_HW_INT, "HW interrupts   ", "Hardware interrupts"},
-  {PAPI_BR_UCN, "Uncond br instr ", "Unconditional branch instructions executed"},
-  {PAPI_BR_CN,  "Cond br instr ex", "Conditional branch instructions executed"},
-  {PAPI_BR_TKN, "Cond br instr tk", "Conditional branch instructions taken"},
-  {PAPI_BR_NTK, "Cond br instrNtk", "Conditional branch instructions not taken"},
-  {PAPI_BR_MSP, "Cond br instrMPR", "Conditional branch instructions mispred"},
-  {PAPI_BR_PRC, "Cond br instrCPR", "Conditional branch instructions corr. pred"},
-  {PAPI_FMA_INS,"FMA instr comp  ", "FMA instructions completed"},
-  {PAPI_TOT_IIS,"Total instr iss ", "Total instructions issued"},
-  {PAPI_TOT_INS,"Total instr ex  ", "Total instructions executed"},
-  {PAPI_INT_INS,"Int instr ex    ", "Integer instructions executed"},
-  {PAPI_FP_INS, "FP instr ex     ", "Floating point instructions executed"},
-  {PAPI_LD_INS, "Load instr ex   ", "Load instructions executed"},
-  {PAPI_SR_INS, "Store instr ex  ", "Store instructions executed"},
-  {PAPI_BR_INS, "br instr ex     ", "Total branch instructions executed"},
-  {PAPI_VEC_INS,"Vec/SIMD instrEx", "Vector/SIMD instructions executed"},
-  {PAPI_RES_STL,"Cyc proc stalled", "Cycles processor is stalled on resource"},
-  {PAPI_FP_STAL,"Cyc any FP stall", "Cycles any FP units are stalled"},
-  {PAPI_TOT_CYC,"Total cycles    ", "Total cycles"},
-  {PAPI_LST_INS,"Tot L/S inst ex ", "Total load/store inst. executed"},
-  {PAPI_SYC_INS,"Sync. inst. ex  ", "Sync. inst. executed"},
-  {PAPI_L1_DCH, "L1 D Cache Hit  ", "L1 D Cache Hit"},
-  {PAPI_L2_DCH, "L2 D Cache Hit  ", "L2 D Cache Hit"},
-  {PAPI_L1_DCA, "L1 D Cache Acc  ", "L1 D Cache Access"},
-  {PAPI_L2_DCA, "L2 D Cache Acc  ", "L2 D Cache Access"},
-  {PAPI_L3_DCA, "L3 D Cache Acc  ", "L3 D Cache Access"},
-  {PAPI_L1_DCR, "L1 D Cache Read ", "L1 D Cache Read"},
-  {PAPI_L2_DCR, "L2 D Cache Read ", "L2 D Cache Read"},
-  {PAPI_L3_DCR, "L3 D Cache Read ", "L3 D Cache Read"},
-  {PAPI_L1_DCW, "L1 D Cache Write", "L1 D Cache Write"},
-  {PAPI_L2_DCW, "L2 D Cache Write", "L2 D Cache Write"},
-  {PAPI_L3_DCW, "L3 D Cache Write", "L3 D Cache Write"},
-  {PAPI_L1_ICH, "L1 I cache hits ", "L1 instruction cache hits"},
-  {PAPI_L2_ICH, "L2 I cache hits ", "L2 instruction cache hits"},
-  {PAPI_L3_ICH, "L3 I cache hits ", "L3 instruction cache hits"},
-  {PAPI_L1_ICA, "L1 I cache acc  ", "L1 instruction cache accesses"},
-  {PAPI_L2_ICA, "L2 I cache acc  ", "L2 instruction cache accesses"},
-  {PAPI_L3_ICA, "L3 I cache acc  ", "L3 instruction cache accesses"},
-  {PAPI_L1_ICR, "L1 I cache reads", "L1 instruction cache reads"},
-  {PAPI_L2_ICR, "L2 I cache reads", "L2 instruction cache reads"},
-  {PAPI_L3_ICR, "L3 I cache reads", "L3 instruction cache reads"},
-  {PAPI_L1_ICW, "L1 I cache write", "L1 instruction cache writes"},
-  {PAPI_L2_ICW, "L2 I cache write", "L2 instruction cache writes"},
-  {PAPI_L3_ICW, "L3 I cache write", "L3 instruction cache writes"},
-  {PAPI_L1_TCH, "L1 cache hits   ", "L1 total cache hits"},
-  {PAPI_L2_TCH, "L2 cache hits   ", "L2 total cache hits"},
-  {PAPI_L3_TCH, "L3 cache hits   ", "L3 total cache hits"},
-  {PAPI_L1_TCA, "L1 cache access ", "L1 total cache accesses"},
-  {PAPI_L2_TCA, "L2 cache access ", "L2 total cache accesses"},
-  {PAPI_L3_TCA, "L3 cache access ", "L3 total cache accesses"},
-  {PAPI_L1_TCR, "L1 cache reads  ", "L1 total cache reads"},
-  {PAPI_L2_TCR, "L2 cache reads  ", "L2 total cache reads"},
-  {PAPI_L3_TCR, "L3 cache reads  ", "L3 total cache reads"},
-  {PAPI_L1_TCW, "L1 cache writes ", "L1 total cache writes"},
-  {PAPI_L2_TCW, "L2 cache writes ", "L2 total cache writes"},
-  {PAPI_L3_TCW, "L3 cache writes ", "L3 total cache writes"},
-  {PAPI_FML_INS,"FM ins          ", "FM ins"},
-  {PAPI_FAD_INS,"FA ins          ", "FA ins"},
-  {PAPI_FDV_INS,"FD ins          ", "FD ins"},
-  {PAPI_FSQ_INS,"FSq ins         ", "FSq ins"},
-  {PAPI_FNV_INS,"Finv ins        ", "Finv ins"},
+  {PAPI_L1_DCM, "PAPI_L1_DCM", "L1 Dcache miss  ", "Level 1 data cache misses"},
+  {PAPI_L1_ICM, "PAPI_L1_ICM", "L1 Icache miss  ", "Level 1 instruction cache misses"},
+  {PAPI_L2_DCM, "PAPI_L2_DCM", "L2 Dcache miss  ", "Level 2 data cache misses"},
+  {PAPI_L2_ICM, "PAPI_L2_ICM", "L2 Icache miss  ", "Level 2 instruction cache misses"},
+  {PAPI_L3_DCM, "PAPI_L3_DCM", "L3 Dcache miss  ", "Level 3 data cache misses"},
+  {PAPI_L3_ICM, "PAPI_L3_ICM", "L3 Icache miss  ", "Level 3 instruction cache misses"},
+  {PAPI_L1_TCM, "PAPI_L1_TCM", "L1 cache miss   ", "Level 1 total cache misses"},
+  {PAPI_L2_TCM, "PAPI_L2_TCM", "L2 cache miss   ", "Level 2 total cache misses"},
+  {PAPI_L3_TCM, "PAPI_L3_TCM", "L3 cache miss   ", "Level 3 total cache misses"},
+  {PAPI_CA_SNP, "PAPI_CA_SNP", "Snoops          ", "Snoops          "},
+  {PAPI_CA_SHR, "PAPI_CA_SHR", "PAPI_CA_SHR     ", "Request for shared cache line (SMP)"},
+  {PAPI_CA_CLN, "PAPI_CA_CLN", "PAPI_CA_CLN     ", "Request for clean cache line (SMP)"},
+  {PAPI_CA_INV, "PAPI_CA_INV", "PAPI_CA_INV     ", "Request for cache line Invalidation (SMP)"},
+  {PAPI_CA_ITV, "PAPI_CA_ITV", "PAPI_CA_ITV     ", "Request for cache line Intervention (SMP)"},
+  {PAPI_L3_LDM, "PAPI_L3_LDM", "L3 load misses  ", "Level 3 load misses"},
+  {PAPI_L3_STM, "PAPI_L3_STM", "L3 store misses ", "Level 3 store misses"},
+  {PAPI_BRU_IDL,"PAPI_BRU_IDL","PAPI_BRU_IDL    ", "Cycles branch units are idle"},
+  {PAPI_FXU_IDL,"PAPI_FXU_IDL","PAPI_FXU_IDL    ", "Cycles integer units are idle"},
+  {PAPI_FPU_IDL,"PAPI_FPU_IDL","PAPI_FPU_IDL    ", "Cycles floating point units are idle"},
+  {PAPI_LSU_IDL,"PAPI_LSU_IDL","PAPI_LSU_IDL    ", "Cycles load/store units are idle"},
+  {PAPI_TLB_DM,"PAPI_TLB_DM", "Data TLB misses ", "Data translation lookaside buffer misses"},
+  {PAPI_TLB_IM,"PAPI_TLB_IM", "Inst TLB misses ", "Instr translation lookaside buffer misses"},
+  {PAPI_TLB_TL,"PAPI_TLB_TL", "Tot TLB misses  ", "Total translation lookaside buffer misses"},
+  {PAPI_L1_LDM,"PAPI_L1_LDM", "L1 load misses  ", "Level 1 load misses"},
+  {PAPI_L1_STM,"PAPI_L1_STM", "L1 store misses ", "Level 1 store misses"},
+  {PAPI_L2_LDM,"PAPI_L2_LDM", "L2 load misses  ", "Level 2 load misses"},
+  {PAPI_L2_STM,"PAPI_L2_STM", "L2 store misses ", "Level 2 store misses"},
+  {PAPI_BTAC_M,"PAPI_BTAC_M", "BTAC miss       ", "BTAC miss"},
+  {PAPI_PRF_DM,"PAPI_PRF_DM", "PAPI_PRF_DM     ", "Prefetch data instruction caused a miss"},
+  {PAPI_L3_DCH,"PAPI_L3_DCH", "L3 DCache Hit   ", "Level 3 Data Cache Hit"},
+  {PAPI_TLB_SD,"PAPI_TLB_SD", "PAPI_TLB_SD     ", "Xlation lookaside buffer shootdowns (SMP)"},
+  {PAPI_CSR_FAL,"PAPI_CSR_FAL","PAPI_CSR_FAL    ", "Failed store conditional instructions"},
+  {PAPI_CSR_SUC,"PAPI_CSR_SUC","PAPI_CSR_SUC    ", "Successful store conditional instructions"},
+  {PAPI_CSR_TOT,"PAPI_CSR_TOT","PAPI_CSR_TOT    ", "Total store conditional instructions"},
+  {PAPI_MEM_SCY,"PAPI_MEM_SCY","Cyc Stalled Mem ", "Cycles Stalled Waiting for Memory Access"},
+  {PAPI_MEM_RCY,"PAPI_MEM_RCY","Cyc Stalled MemR", "Cycles Stalled Waiting for Memory Read"},
+  {PAPI_MEM_WCY,"PAPI_MEM_WCY","Cyc Stalled MemW", "Cycles Stalled Waiting for Memory Write"},
+  {PAPI_STL_ICY,"PAPI_STL_ICY","Cyc no InstrIss ", "Cycles with No Instruction Issue"},
+  {PAPI_FUL_ICY,"PAPI_FUL_ICY","Cyc Max InstrIss", "Cycles with Maximum Instruction Issue"},
+  {PAPI_STL_CCY,"PAPI_STL_CCY","Cyc No InstrComp", "Cycles with No Instruction Completion"},
+  {PAPI_FUL_CCY,"PAPI_FUL_CCY","Cyc Max InstComp", "Cycles with Maximum Instruction Completion"},
+  {PAPI_HW_INT,"PAPI_HW_INT", "HW interrupts   ", "Hardware interrupts"},
+  {PAPI_BR_UCN,"PAPI_BR_UCN", "Uncond br instr ", "Unconditional branch instructions executed"},
+  {PAPI_BR_CN,"PAPI_BR_CN",  "Cond br instr ex", "Conditional branch instructions executed"},
+  {PAPI_BR_TKN,"PAPI_BR_TKN", "Cond br instr tk", "Conditional branch instructions taken"},
+  {PAPI_BR_NTK,"PAPI_BR_NTK", "Cond br instrNtk", "Conditional branch instructions not taken"},
+  {PAPI_BR_MSP,"PAPI_BR_MSP", "Cond br instrMPR", "Conditional branch instructions mispred"},
+  {PAPI_BR_PRC,"PAPI_BR_PRC", "Cond br instrCPR", "Conditional branch instructions corr. pred"},
+  {PAPI_FMA_INS,"PAPI_FMA_INS","FMA instr comp  ", "FMA instructions completed"},
+  {PAPI_TOT_IIS,"PAPI_TOT_IIS","Total instr iss ", "Total instructions issued"},
+  {PAPI_TOT_INS,"PAPI_TOT_INS","Total instr ex  ", "Total instructions executed"},
+  {PAPI_INT_INS,"PAPI_INT_INS","Int instr ex    ", "Integer instructions executed"},
+  {PAPI_FP_INS, "PAPI_FP_INS", "FP instr ex     ", "Floating point instructions executed"},
+  {PAPI_LD_INS,"PAPI_LD_INS", "Load instr ex   ", "Load instructions executed"},
+  {PAPI_SR_INS,"PAPI_SR_INS", "Store instr ex  ", "Store instructions executed"},
+  {PAPI_BR_INS,"PAPI_BR_INS", "br instr ex     ", "Total branch instructions executed"},
+  {PAPI_VEC_INS,"PAPI_VEC_INS","Vec/SIMD instrEx", "Vector/SIMD instructions executed"},
+  {PAPI_RES_STL,"PAPI_RES_STL","Cyc proc stalled", "Cycles processor is stalled on resource"},
+  {PAPI_FP_STAL,"PAPI_FP_STAL","Cyc any FP stall", "Cycles any FP units are stalled"},
+  {PAPI_TOT_CYC,"PAPI_TOT_CYC","Total cycles    ", "Total cycles"},
+  {PAPI_LST_INS,"PAPI_LST_INS","Tot L/S inst ex ", "Total load/store inst. executed"},
+  {PAPI_SYC_INS,"PAPI_SYC_INS","Sync. inst. ex  ", "Sync. inst. executed"},
+  {PAPI_L1_DCH,"PAPI_L1_DCH", "L1 D Cache Hit  ", "L1 D Cache Hit"},
+  {PAPI_L2_DCH,"PAPI_L2_DCH", "L2 D Cache Hit  ", "L2 D Cache Hit"},
+  {PAPI_L1_DCA,"PAPI_L1_DCA", "L1 D Cache Acc  ", "L1 D Cache Access"},
+  {PAPI_L2_DCA,"PAPI_L2_DCA", "L2 D Cache Acc  ", "L2 D Cache Access"},
+  {PAPI_L3_DCA,"PAPI_L3_DCA", "L3 D Cache Acc  ", "L3 D Cache Access"},
+  {PAPI_L1_DCR,"PAPI_L1_DCR", "L1 D Cache Read ", "L1 D Cache Read"},
+  {PAPI_L2_DCR,"PAPI_L2_DCR", "L2 D Cache Read ", "L2 D Cache Read"},
+  {PAPI_L3_DCR,"PAPI_L3_DCR", "L3 D Cache Read ", "L3 D Cache Read"},
+  {PAPI_L1_DCW,"PAPI_L1_DCW", "L1 D Cache Write", "L1 D Cache Write"},
+  {PAPI_L2_DCW,"PAPI_L2_DCW", "L2 D Cache Write", "L2 D Cache Write"},
+  {PAPI_L3_DCW,"PAPI_L3_DCW", "L3 D Cache Write", "L3 D Cache Write"},
+  {PAPI_L1_ICH,"PAPI_L1_ICH", "L1 I cache hits ", "L1 instruction cache hits"},
+  {PAPI_L2_ICH,"PAPI_L2_ICH", "L2 I cache hits ", "L2 instruction cache hits"},
+  {PAPI_L3_ICH,"PAPI_L3_ICH", "L3 I cache hits ", "L3 instruction cache hits"},
+  {PAPI_L1_ICA,"PAPI_L1_ICA", "L1 I cache acc  ", "L1 instruction cache accesses"},
+  {PAPI_L2_ICA,"PAPI_L2_ICA", "L2 I cache acc  ", "L2 instruction cache accesses"},
+  {PAPI_L3_ICA,"PAPI_L3_ICA", "L3 I cache acc  ", "L3 instruction cache accesses"},
+  {PAPI_L1_ICR,"PAPI_L1_ICR", "L1 I cache reads", "L1 instruction cache reads"},
+  {PAPI_L2_ICR,"PAPI_L2_ICR", "L2 I cache reads", "L2 instruction cache reads"},
+  {PAPI_L3_ICR,"PAPI_L3_ICR", "L3 I cache reads", "L3 instruction cache reads"},
+  {PAPI_L1_ICW,"PAPI_L1_ICW", "L1 I cache write", "L1 instruction cache writes"},
+  {PAPI_L2_ICW,"PAPI_L2_ICW", "L2 I cache write", "L2 instruction cache writes"},
+  {PAPI_L3_ICW,"PAPI_L3_ICW", "L3 I cache write", "L3 instruction cache writes"},
+  {PAPI_L1_TCH,"PAPI_L1_TCH", "L1 cache hits   ", "L1 total cache hits"},
+  {PAPI_L2_TCH,"PAPI_L2_TCH", "L2 cache hits   ", "L2 total cache hits"},
+  {PAPI_L3_TCH,"PAPI_L3_TCH", "L3 cache hits   ", "L3 total cache hits"},
+  {PAPI_L1_TCA,"PAPI_L1_TCA", "L1 cache access ", "L1 total cache accesses"},
+  {PAPI_L2_TCA,"PAPI_L2_TCA", "L2 cache access ", "L2 total cache accesses"},
+  {PAPI_L3_TCA,"PAPI_L3_TCA", "L3 cache access ", "L3 total cache accesses"},
+  {PAPI_L1_TCR,"PAPI_L1_TCR", "L1 cache reads  ", "L1 total cache reads"},
+  {PAPI_L2_TCR,"PAPI_L2_TCR", "L2 cache reads  ", "L2 total cache reads"},
+  {PAPI_L3_TCR,"PAPI_L3_TCR", "L3 cache reads  ", "L3 total cache reads"},
+  {PAPI_L1_TCW,"PAPI_L1_TCW", "L1 cache writes ", "L1 total cache writes"},
+  {PAPI_L2_TCW,"PAPI_L2_TCW", "L2 cache writes ", "L2 total cache writes"},
+  {PAPI_L3_TCW,"PAPI_L3_TCW", "L3 cache writes ", "L3 total cache writes"},
+  {PAPI_FML_INS,"PAPI_FML_INS","FM ins          ", "FM ins"},
+  {PAPI_FAD_INS,"PAPI_FAD_INS","FA ins          ", "FA ins"},
+  {PAPI_FDV_INS,"PAPI_FDV_INS","FD ins          ", "FD ins"},
+  {PAPI_FSQ_INS,"PAPI_FSQ_INS","FSq ins         ", "FSq ins"},
+  {PAPI_FNV_INS,"PAPI_FNV_INS","Finv ins        ", "Finv ins"},
 #ifdef PAPI_FP_OPS
-  {PAPI_FP_OPS, "FP ops executed ", "Floating point operations executed"}};
+  {PAPI_FP_OPS,"PAPI_FP_OPS", "FP ops executed ", "Floating point operations executed"}};
 #else
   };
 #endif
@@ -141,6 +142,16 @@ static long_long *readoverhead;          /* overhead due to reading PAPI counter
 /* Function prototypes */
 
 static int create_and_start_events (const int);
+
+int GPTL_PAPIname2id (const char *name)
+{
+  int i;
+for (i = 0; i < nentries; i++) {
+if (strcmp (name, papitable[i].counterstr) == 0)
+return papitable[i].counter;
+}
+return GPTLerror ("GPTL_PAPIname2id: %s not found\n", name);
+}
 
 /*
 ** GPTL_PAPIsetoption: enable or disable PAPI event defined by "counter". Called 
@@ -510,13 +521,12 @@ void GPTL_PAPIpr (FILE *fp,                          /* file descriptor to write
 }
 
 /*
-** GPTLPAPIprinttable:  Print table of PAPI native counters. Not all are
+** GPTL_PAPIprinttable:  Print table of PAPI native counters. Not all are
 **   necessarily available on this architecture. This is the one routine 
-**   in this file which is user-visible. No underscores in GPTLPAPIprinttable 
-**   to avoid underscore weirdness of g77
+**   in this file which is user-visible.
 */
 
-void GPTLPAPIprinttable ()
+void GPTL_PAPIprinttable ()
 {
   int n;
 
