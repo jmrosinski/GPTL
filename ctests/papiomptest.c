@@ -21,10 +21,10 @@ int main ()
   } Counter;
 
   Counter tests[] = {
-    {PAPI_FAD_INS, add,      "addition"},
-    {PAPI_FML_INS, multiply, "multiplication"},
-    {PAPI_FMA_INS, multadd,  "mult-add"},
-    {PAPI_FDV_INS, divide,   "division"}
+    {PAPI_FP_INS, add,      "addition"},
+    {PAPI_FP_INS, multiply, "multiplication"},
+    {PAPI_FP_INS, multadd,  "mult-add"},
+    {PAPI_FP_INS, divide,   "division"}
   };
 
   int numtests = sizeof (tests) / sizeof (Counter);
