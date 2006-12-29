@@ -141,6 +141,10 @@ static void overhead (int iter, int ninvoke)
   struct timeval tp;
   struct tms buf;
   void *nothing;
+  struct timeval tp1, tp2;      /* argument returned from gettimeofday */
+  float overhead;
+  Timer **eptr;
+  int nument;
 
 #ifdef THREADED_OMP
   GPTLstart ("get_thread_num");
@@ -162,9 +166,6 @@ static void overhead (int iter, int ninvoke)
   }
   GPTLstop ("times");
   
-  struct timeval tp1, tp2;      /* argument returned from gettimeofday */
-  float overhead;
-
   gettimeofday (&tp1, 0);
   for (i = 0; i < ninvoke/10; ++i) {
     GPTLstart ("overhead_est.");
@@ -192,9 +193,6 @@ static void overhead (int iter, int ninvoke)
   overhead = (tp2.tv_sec  - tp1.tv_sec) + 
        1.e-6*(tp2.tv_usec - tp1.tv_usec);
   printf ("overhead = %f sec.  Compare to 'overhead_est' in timing output\n", overhead);
-
-  Timer **eptr;
-  int nument;
 
   for (i = 0; i < numstr; i++) {
     indx = gethashvalue (shortnames_diffhash[i].name);

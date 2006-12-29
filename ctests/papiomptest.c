@@ -4,15 +4,14 @@
 #include <papi.h>
 #include "../gptl.h"
 
-float add (int);
-float multiply (int);
-float multadd (int);
-float divide (int);
+float add (int, float *);
+float multiply (int, float *);
+float multadd (int, float *);
+float divide (int, float *);
 
 int main (int argc, char **argv)
 {
   int iter;
-  int n;
   int nompiter = 128;
   int looplen = 1000000;
   int papiopt;
@@ -36,8 +35,8 @@ int main (int argc, char **argv)
 	  printf ("Set nompiter=%d\n", nompiter);
 	  break;
 	case 'p':
-	  if ((papiopt = GPTL_PAPIname2str (optarg)) < 0) {
-	    printf ("Failure from GPTL_PAPIname2str\n");
+	  if ((papiopt = GPTL_PAPIname2id (optarg)) >= 0) {
+	    printf ("Failure from GPTL_PAPIname2id\n");
 	    exit (1);
 	  }
 	  if (GPTLsetoption (papiopt, 1) < 0) {
@@ -59,19 +58,18 @@ int main (int argc, char **argv)
 	 
 #pragma omp parallel for private (iter, zero)
       
-    for (iter = 1; iter <= nompiter; iter++) {
-      ret = add (looplen, &zero);
-      ret = multiply (looplen, &zero);
-      ret = multadd (looplen, &zero);
-      ret = divide (looplen, &zero);
-    }
-
-    if (GPTLpr (0) < 0)
-      exit (4);
-
-    if (GPTLfinalize () < 0)
-      exit (5);
+  for (iter = 1; iter <= nompiter; iter++) {
+    ret = add (looplen, &zero);
+    ret = multiply (looplen, &zero);
+    ret = multadd (looplen, &zero);
+    ret = divide (looplen, &zero);
   }
+
+  if (GPTLpr (0) < 0)
+    exit (4);
+
+  if (GPTLfinalize () < 0)
+    exit (5);
 }
 
 float add (int looplen, float *zero)
@@ -83,7 +81,7 @@ float add (int looplen, float *zero)
   if (looplen < 1000000)
     sprintf (string, "%dadditions", looplen);
   else
-    sprintf (string, "%10.3gadditions", looplen);
+    sprintf (string, "%10.3gadditions", (double) looplen);
 
   if (GPTLstart (string) < 0)
     exit (1);
@@ -106,7 +104,7 @@ float multiply (int looplen, float *zero)
   if (looplen < 1000000)
     sprintf (string, "%dmultiplies", looplen);
   else
-    sprintf (string, "%10.3gmultiplies", looplen);
+    sprintf (string, "%10.3gmultiplies", (double) looplen);
 
   if (GPTLstart (string) < 0)
     exit (1);
@@ -129,7 +127,7 @@ float multadd (int looplen, float *zero)
   if (looplen < 1000000)
     sprintf (string, "%dmultadds", looplen);
   else
-    sprintf (string, "%10.3gmultadds", looplen);
+    sprintf (string, "%10.3gmultadds", (double) looplen);
 
   if (GPTLstart (string) < 0)
     exit (1);
@@ -152,7 +150,7 @@ float divide (int looplen, float *zero)
   if (looplen < 1000000)
     sprintf (string, "%ddivides", looplen);
   else
-    sprintf (string, "%10.3gdivides", looplen);
+    sprintf (string, "%10.3gdivides", (double) looplen);
 
   if (GPTLstart (string) < 0)
     exit (1);

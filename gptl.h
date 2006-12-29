@@ -1,5 +1,5 @@
 /*
-$Id: gptl.h,v 1.10 2006-12-29 17:46:54 rosinski Exp $
+$Id: gptl.h,v 1.11 2006-12-29 18:09:55 rosinski Exp $
 */
 #ifndef GPTL_H
 #define GPTL_H
@@ -38,7 +38,7 @@ extern int GPTLpr (const int);
 extern int GPTLreset (void);
 #ifdef HAVE_PAPI
 extern void GPTL_PAPIprinttable (void);
-extern void GPTL_PAPIname2id (const char *);
+extern int GPTL_PAPIname2id (const char *);
 #endif
 
 extern int GPTLprint_memusage (const char *);

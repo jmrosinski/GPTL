@@ -12,19 +12,19 @@ clean:
 	rm $(OBJS) $(EXES)
 
 flopsperclock: flopsperclock.o
-	$(FC) -o $@ flopsperclock.o $(LDFLAGS)
+	$(FC) $(FFLAGS) -o $@ flopsperclock.o $(LDFLAGS)
 
 omptest: omptest.o
-	$(FC) -o $@ omptest.o $(LDFLAGS)
+	$(FC) $(FFLAGS) -o $@ omptest.o $(LDFLAGS)
 
 errtest: errtest.o
-	$(FC) -o $@ errtest.o $(LDFLAGS)
+	$(FC) $(FFLAGS) -o $@ errtest.o $(LDFLAGS)
 
 opscost: opscost.o
-	$(FC) -o $@ opscost.o $(LDFLAGS)
+	$(FC) $(FFLAGS) -o $@ opscost.o $(LDFLAGS)
 
 hashtest: hashtest.o
-	$(FC) -o $@ hashtest.o $(LDFLAGS)
+	$(FC) $(FFLAGS) -o $@ hashtest.o $(LDFLAGS)
 
 papitest: papitest.o
-	$(FC) -o $@ papitest.o $(LDFLAGS)
+	$(FC) $(FFLAGS) -o $@ papitest.o $(LDFLAGS)

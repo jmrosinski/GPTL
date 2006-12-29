@@ -146,11 +146,12 @@ static int create_and_start_events (const int);
 int GPTL_PAPIname2id (const char *name)
 {
   int i;
-for (i = 0; i < nentries; i++) {
-if (strcmp (name, papitable[i].counterstr) == 0)
-return papitable[i].counter;
-}
-return GPTLerror ("GPTL_PAPIname2id: %s not found\n", name);
+  for (i = 0; i < nentries; i++) {
+  if (strcmp (name, papitable[i].counterstr) == 0)
+    return papitable[i].counter;
+  }
+  printf ("GPTL_PAPIname2id: %s not found\n", name);
+  return 77; /* successful return is a negative number */
 }
 
 /*
