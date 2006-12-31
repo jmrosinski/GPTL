@@ -68,7 +68,7 @@ int main ()
       prvcounters[n][i] = 0;
   }
 
-  GPTLPAPIprinttable ();
+  GPTL_PAPIprinttable ();
 
   while (1) {
     printf ("Enter option to be enabled, or positive number when done:\n");

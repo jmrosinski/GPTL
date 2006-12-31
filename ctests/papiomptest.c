@@ -1,8 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>  /* atoi */
 #include <unistd.h>  /* getopt */
-#include <papi.h>
 #include "../gptl.h"
+
+#ifdef HAVE_PAPI
+#include <papi.h>
+#endif
 
 float add (int, float *);
 float multiply (int, float *);
@@ -11,10 +14,11 @@ float divide (int, float *);
 
 int main (int argc, char **argv)
 {
-  int iter;
   int nompiter = 128;
   int looplen = 1000000;
+  int iter;
   int papiopt;
+
   float ret;
   float zero = 0.;
 
@@ -22,7 +26,9 @@ int main (int argc, char **argv)
 
   int c;
 
-  printf ("Purpose: test PAPI and (optionally) OpenMP\n");
+  printf ("Purpose: test known-length loops with various floating point ops\n");
+  printf ("Include PAPI and OpenMP, respectively, if enabled\n");
+  printf ("Usage: %s [-l looplen] [-n nompiter] [-p papi_option_name]\n", argv[0]);
 
   while ((c = getopt (argc, argv, "l:n:p:")) != -1) {
     switch (c) {
@@ -53,8 +59,11 @@ int main (int argc, char **argv)
   printf ("Outer loop length (OMP)=%d\n", nompiter);
   printf ("Inner loop length=%d\n", looplen);
 
-  if (GPTLinitialize () < 0) 
+  if (GPTLsetoption (GPTLabort_on_error, 1) < 0)
     exit (3);
+
+  if (GPTLinitialize () < 0) 
+    exit (4);
 	 
 #pragma omp parallel for private (iter, zero)
       
@@ -66,10 +75,10 @@ int main (int argc, char **argv)
   }
 
   if (GPTLpr (0) < 0)
-    exit (4);
+    exit (5);
 
   if (GPTLfinalize () < 0)
-    exit (5);
+    exit (6);
 }
 
 float add (int looplen, float *zero)
@@ -133,7 +142,7 @@ float multadd (int looplen, float *zero)
     exit (1);
 
   for (i = 1; i <= looplen; ++i)
-    val += i;
+    val += i*1.1;
 
   if (GPTLstop (string) < 0)
     exit (1);

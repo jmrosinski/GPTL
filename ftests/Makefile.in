@@ -2,29 +2,22 @@ FC          = @F77@
 FFLAGS      = @PAPIPREP@ @FORTDEFS@ @FFLAGS@ @BITFLAGS@ @FTHREADFLAGS@
 LDFLAGS     = @BITFLAGS@ @FTHREADFLAGS@ -L.. -lgptl @LDFLAGS@ @LIBS@
 
-OBJS = flopsperclock.o omptest.o errtest.o opscost.o \
-       hashtest.o papitest.o
-EXES = flopsperclock   omptest   errtest   opscost \
-       hashtest   papitest
+OBJS = errtest.o papiomptest.o stride.o camtest.o
+EXES = errtest   papiomptest   stride   camtest
 
 all: $(EXES)
+
 clean:
-	rm $(OBJS) $(EXES)
-
-flopsperclock: flopsperclock.o
-	$(FC) $(FFLAGS) -o $@ flopsperclock.o $(LDFLAGS)
-
-omptest: omptest.o
-	$(FC) $(FFLAGS) -o $@ omptest.o $(LDFLAGS)
+	$(RM) $(OBJS) $(EXES)
 
 errtest: errtest.o
 	$(FC) $(FFLAGS) -o $@ errtest.o $(LDFLAGS)
 
-opscost: opscost.o
-	$(FC) $(FFLAGS) -o $@ opscost.o $(LDFLAGS)
+papiomptest: papiomptest.o
+	$(FC) $(FFLAGS) -o $@ papiomptest.o $(LDFLAGS)
 
-hashtest: hashtest.o
-	$(FC) $(FFLAGS) -o $@ hashtest.o $(LDFLAGS)
+stride: stride.o
+	$(FC) $(FFLAGS) -o $@ stride.o $(LDFLAGS)
 
-papitest: papitest.o
-	$(FC) $(FFLAGS) -o $@ papitest.o $(LDFLAGS)
+camtest: camtest.o
+	$(FC) $(FFLAGS) -o $@ camtest.o $(LDFLAGS)

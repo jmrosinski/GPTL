@@ -6,6 +6,8 @@ int main ()
   double sum = 0.;
   extern void sub (int, int, char *, double *);
 
+  printf ("Purpose: estimate overhead of GPTL\n");
+  GPTLsetoption (GPTLabort_on_error, 1);
   GPTLinitialize ();
 
   GPTLstart ("total");
@@ -33,8 +35,3 @@ void sub (int outer, int inner, char *name, double *sum)
     GPTLstop (name);
   }
 }
-
-
-
-
-

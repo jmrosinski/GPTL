@@ -1,3 +1,5 @@
+#ifdef HAVE_PAPI
+
 #include <papi.h>
 #include <stdlib.h>
 
@@ -121,11 +123,8 @@ static Papientry papitable [] = {
   {PAPI_FDV_INS,"PAPI_FDV_INS","FD ins          ", "FD ins"},
   {PAPI_FSQ_INS,"PAPI_FSQ_INS","FSq ins         ", "FSq ins"},
   {PAPI_FNV_INS,"PAPI_FNV_INS","Finv ins        ", "Finv ins"},
-#ifdef PAPI_FP_OPS
-  {PAPI_FP_OPS,"PAPI_FP_OPS", "FP ops executed ", "Floating point operations executed"}};
-#else
-  };
-#endif
+  {PAPI_FP_OPS,"PAPI_FP_OPS", "FP ops executed ", "Floating point operations executed"}
+};
 
 static const int nentries = sizeof (papitable) / sizeof (Papientry);
 static Papientry eventlist[MAX_AUX];     /* list of PAPI events to be counted */
@@ -142,17 +141,6 @@ static long_long *readoverhead;          /* overhead due to reading PAPI counter
 /* Function prototypes */
 
 static int create_and_start_events (const int);
-
-int GPTL_PAPIname2id (const char *name)
-{
-  int i;
-  for (i = 0; i < nentries; i++) {
-  if (strcmp (name, papitable[i].counterstr) == 0)
-    return papitable[i].counter;
-  }
-  printf ("GPTL_PAPIname2id: %s not found\n", name);
-  return 77; /* successful return is a negative number */
-}
 
 /*
 ** GPTL_PAPIsetoption: enable or disable PAPI event defined by "counter". Called 
@@ -522,20 +510,6 @@ void GPTL_PAPIpr (FILE *fp,                          /* file descriptor to write
 }
 
 /*
-** GPTL_PAPIprinttable:  Print table of PAPI native counters. Not all are
-**   necessarily available on this architecture. This is the one routine 
-**   in this file which is user-visible.
-*/
-
-void GPTL_PAPIprinttable ()
-{
-  int n;
-
-  for (n = 0; n < nentries; n++)
-    printf ("%d %s\n", papitable[n].counter, papitable[n].str);
-}
-
-/*
 ** GPTL_PAPIadd: Accumulate PAPI counters. Called from add.
 **
 ** Input/Output args: 
@@ -587,3 +561,61 @@ void GPTL_PAPIfinalize (int maxthreads)
   nprop = 0;
   GPTLoverheadindx = -1;
 }
+
+/*
+** The following functions are publicly available
+*/
+
+/*
+** GPTL_PAPIprinttable:  Print table of PAPI native counters. Not all are
+**   necessarily available on this architecture. This is the one routine 
+**   in this file which is user-visible.
+*/
+
+void GPTL_PAPIprinttable ()
+{
+  int n;
+
+  for (n = 0; n < nentries; n++)
+    printf ("%d %s\n", papitable[n].counter, papitable[n].str);
+}
+
+/*
+** GPTL_PAPIname2id: convert a PAPI event name in string form to an int
+**
+** Input args:
+**   name: PAPI event name
+**
+** Return value: event index (success) or 77 (error)
+*/
+
+int GPTL_PAPIname2id (const char *name)
+{
+  int i;
+  for (i = 0; i < nentries; i++) {
+  if (strcmp (name, papitable[i].counterstr) == 0)
+    return papitable[i].counter;
+  }
+  printf ("GPTL_PAPIname2id: %s not found\n", name);
+  return 77; /* successful return is a negative number */
+}
+
+#else
+
+/*
+** "Should not be called" entry points for publicly available GPTL_PAPI routines
+*/
+
+void GPTL_PAPIprinttable ()
+{
+  printf ("PAPI not enabled: GPTL_PAPIprinttable does nothing\n");
+  return;
+}
+
+int GPTL_PAPIname2id (const char *name, int nc)
+{
+  printf ("PAPI not enabled: GPTL_PAPIname2id should not be called\n");
+  return 77;
+}
+
+#endif  /* HAVE_PAPI */

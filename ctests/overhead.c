@@ -76,11 +76,6 @@ int main (int argc, char **argv)
   int gptlopt;
   int val;
 
-#ifdef NUMERIC_TIMERS
-  printf ("%s not enabled for NUMERIC_TIMERS\n", argv[0]);
-  exit (-1);
-#else
-
 #ifdef HAVE_PAPI
   GPTLPAPIprinttable ();
   while (1) {
@@ -115,9 +110,7 @@ int main (int argc, char **argv)
   GPTLinitialize ();
   GPTLstart ("total");
 
-#ifdef THREADED_OMP
 #pragma omp parallel for private (ompiter)
-#endif
 
   for (ompiter = 0; ompiter < nompiter; ++ompiter) {
     overhead (ompiter, ninvoke);
@@ -125,16 +118,12 @@ int main (int argc, char **argv)
   GPTLstop ("total");
   GPTLpr (0);
   GPTLfinalize ();
-#endif
 }
 
-#ifndef NUMERIC_TIMERS
 static void overhead (int iter, int ninvoke)
 {
   int i;
-#ifdef THREADED_OMP
   int tnum;
-#endif
   int indx;
   char **strings1;
   char **strings2;
@@ -146,13 +135,11 @@ static void overhead (int iter, int ninvoke)
   Timer **eptr;
   int nument;
 
-#ifdef THREADED_OMP
   GPTLstart ("get_thread_num");
   for (i = 0; i < ninvoke; ++i) {
     tnum = omp_get_thread_num ();
   }
   GPTLstop ("get_thread_num");
-#endif
 
   GPTLstart ("gettimeofday");
   for (i = 0; i < ninvoke; ++i) {
@@ -295,4 +282,3 @@ int gethashvalue (char *name)
 
   return indx;
 }
-#endif

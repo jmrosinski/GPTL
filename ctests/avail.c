@@ -18,8 +18,9 @@ int main ()
     printf (PAPI_strerror (ret));
     return -1;
   }
-  
-  printf("Name                Code        Description\n");
+
+  printf ("Purpose: print PAPI native events enabled on this arch\n");
+  printf ("Name                Code        Description\n");
   i = PAPI_PRESET_MASK;
 
   do {

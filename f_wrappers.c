@@ -1,11 +1,12 @@
 /*
-** $Id: f_wrappers.c,v 1.14 2006-12-24 21:25:10 rosinski Exp $
+** $Id: f_wrappers.c,v 1.15 2006-12-31 23:52:20 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines
 */
 
 #include <string.h>
-#include "private.h"
+#include "private.h" /* MAX_CHARS, bool */
+#include "gptl.h"    /* function prototypes */
 
 #if ( defined FORTRANCAPS )
 
@@ -17,12 +18,13 @@
 #define gptlstart GPTLSTART
 #define gptlstop GPTLSTOP
 #define gptlsetoption GPTLSETOPTION
-#define gptlpapiprinttable GPTLPAPIPRINTTABLE
-#define gptlget_memusage GPTLGET_MEMUSAGE
-#define gptlprint_memusage GPTLPRINT_MEMUSAGE
 #define gptlenable GPTLENABLE
 #define gptldisable GPTLDISABLE
 #define gptlsetutr GPTLSETUTR
+#define gptlget_memusage GPTLGET_MEMUSAGE
+#define gptlprint_memusage GPTLPRINT_MEMUSAGE
+#define gptl_papiprinttable GPTL_PAPIPRINTTABLE
+#define gptl_papiname2id GPTL_PAPINAME2ID
 
 #elif ( defined FORTRANUNDERSCORE )
 
@@ -34,12 +36,13 @@
 #define gptlstart gptlstart_
 #define gptlstop gptlstop_
 #define gptlsetoption gptlsetoption_
-#define gptlpapiprinttable gptlpapiprinttable_
-#define gptlget_memusage gptlget_memusage_
-#define gptlprint_memusage gptlprint_memusage_
 #define gptlenable gptlenable_
 #define gptldisable gptldisable_
 #define gptlsetutr gptlsetutr_
+#define gptlget_memusage gptlget_memusage_
+#define gptlprint_memusage gptlprint_memusage_
+#define gptl_papiprinttable gptl_papiprinttable_
+#define gptl_papiname2id gptl_papiname2id_
 
 #elif ( defined FORTRANDOUBLEUNDERSCORE )
 
@@ -51,21 +54,14 @@
 #define gptlstart gptlstart_
 #define gptlstop gptlstop_
 #define gptlsetoption gptlsetoption_
-#define gptlpapiprinttable gptlpapiprinttable_
-#define gptlget_memusage gptlget_memusage__
-#define gptlprint_memusage gptlprint_memusage__
 #define gptlenable gptlenable_
 #define gptldisable gptldisable_
 #define gptlsetutr gptlsetutr_
+#define gptlget_memusage gptlget_memusage__
+#define gptlprint_memusage gptlprint_memusage__
+#define gptl_papiprinttable gptl_papiprinttable__
+#define gptl_papiname2id gptl_papiname2id__
 
-#endif
-
-#ifdef NUMERIC_TIMERS
-int gptlstart (unsigned long);
-int gptlstop (unsigned long);
-#else
-int gptlstart (char *, int);
-int gptlstop (char *, int);
 #endif
 
 int gptlinitialize ()
@@ -134,25 +130,7 @@ int gptlstop (char *name, int nc1)
 
 int gptlsetoption (int *option, int *val)
 {
-  return GPTLsetoption (*option, (bool) *val);
-}
-
-#ifdef HAVE_PAPI
-void gptlpapiprinttable ()
-{
-  GPTLPAPIprinttable ();
-  return;
-}
-#endif
-
-int gptlget_memusage (int *size, int *rss, int *share, int *text, int *datastack)
-{
-  return GPTLget_memusage (size, rss, share, text, datastack);
-}
-
-int gptlprint_memusage (const char *str)
-{
-  return GPTLprint_memusage (str);
+  return GPTLsetoption (*option, *val);
 }
 
 int gptlenable ()
@@ -163,4 +141,40 @@ int gptlenable ()
 int gptldisable ()
 {
   return GPTLdisable ();
+}
+
+int gptlsetutr (int *option)
+{
+  return GPTLsetutr (*option);
+}
+
+int gptlget_memusage (int *size, int *rss, int *share, int *text, int *datastack)
+{
+  return GPTLget_memusage (size, rss, share, text, datastack);
+}
+
+int gptlprint_memusage (const char *str, int nc)
+{
+  char cname[128+1];
+  int numchars = MIN (nc, 128);
+
+  strncpy (cname, str, numchars);
+  cname[numchars] = '\0';
+  return GPTLprint_memusage (cname);
+}
+
+void gptl_papiprinttable ()
+{
+  GPTL_PAPIprinttable ();
+  return;
+}
+
+int gptl_papiname2id (const char *name, int nc)
+{
+  char cname[16+1];
+  int numchars = MIN (nc, 16);
+
+  strncpy (cname, name, numchars);
+  cname[numchars] = '\0';
+  return GPTL_PAPIname2id (cname);
 }

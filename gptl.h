@@ -1,5 +1,5 @@
 /*
-$Id: gptl.h,v 1.11 2006-12-29 18:09:55 rosinski Exp $
+$Id: gptl.h,v 1.12 2006-12-31 23:52:20 rosinski Exp $
 */
 #ifndef GPTL_H
 #define GPTL_H
@@ -23,9 +23,8 @@ typedef enum {
 */
 
 extern int GPTLsetoption (const int, const int);
-extern int GPTLsetutr (const int);
 extern int GPTLinitialize (void);
-extern int GPTLfinalize (void);
+
 #ifdef NUMERIC_TIMERS
 extern inline int GPTLstart (const unsigned long);
 extern inline int GPTLstop (const unsigned long);
@@ -33,15 +32,21 @@ extern inline int GPTLstop (const unsigned long);
 extern int GPTLstart (const char *);
 extern int GPTLstop (const char *);
 #endif
+
 extern int GPTLstamp (double *, double *, double *);
 extern int GPTLpr (const int);
 extern int GPTLreset (void);
-#ifdef HAVE_PAPI
-extern void GPTL_PAPIprinttable (void);
-extern int GPTL_PAPIname2id (const char *);
-#endif
-
+extern int GPTLfinalize (void);
 extern int GPTLprint_memusage (const char *);
 extern int GPTLget_memusage (int *, int *, int *, int *, int *);
+extern int GPTLsetutr (const int);
+extern int GPTLenable (void);
+extern int GPTLdisable (void);
 
+/* 
+** These are defined in gptl_papi.c 
+*/
+
+extern void GPTL_PAPIprinttable (void);
+extern int GPTL_PAPIname2id (const char *);
 #endif

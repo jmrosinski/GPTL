@@ -6,13 +6,9 @@
 
 int main(int argc, char **argv)
 {
-  int niter;
+  int niter = 1000;
   int i;
 
-#ifdef NUMERIC_TIMERS
-  printf ("%s not enabled for NUMERIC_TIMERS\n", argv[0]);
-  return (-1);
-#else
   GPTLsetoption (GPTLcpu, 0);
   GPTLsetoption (GPTLwall, 1);
   GPTLsetoption (GPTLabort_on_error, 1);
@@ -49,6 +45,6 @@ int main(int argc, char **argv)
 
   GPTLpr (0);
   GPTLfinalize ();
-#endif
+
   return 0;
 }

@@ -3,20 +3,18 @@ CFLAGS       = @DEFS@ @PAPIPREP@ @THREADDEFS@ @CFLAGS@ @BITFLAGS@ @THREADFLAGS@
 LDFLAGS      = @BITFLAGS@ @THREADFLAGS@ -L.. -lgptl @LDFLAGS@ @LIBS@
 INSTRFLAGS   = -finstrument-functions
 
-OBJS = avail.o llcost.o depth.o overhead.o overhead2.o rawpapitest.o numeric.o recursion.o subinline.o \
-       exception.o memusage.o basic.o utrtest.o papiomptest.o cygprofile.o cygprofilesubs.o 
-EXES = avail   llcost   depth   overhead   overhead2   rawpapitest   numeric   recursion subinline \
-       exception   memusage basic utrtest papiomptest cygprofile
+OBJS = avail.o depth.o overhead2.o rawpapitest.o recursion.o stride.o \
+       memusage.o utrtest.o papiomptest.o cygprofile.o cygprofilesubs.o 
+EXES = avail depth overhead2   rawpapitest recursion stride \
+       memusage utrtest papiomptest cygprofile
 
 all: $(EXES)
+
 clean:
 	rm $(OBJS) $(EXES)
 
 avail: avail.o
 	$(CC) -o $@ avail.o $(LDFLAGS)
-
-llcost: llcost.o
-	$(CC) -o $@ llcost.o $(LDFLAGS)
 
 depth: depth.o
 	$(CC) -o $@ depth.o $(LDFLAGS)
@@ -30,25 +28,14 @@ overhead2: overhead2.o
 rawpapitest: rawpapitest.o
 	$(CC) -o $@ rawpapitest.o $(LDFLAGS)
 
-numeric: numeric.o
-	$(CC) -o $@ numeric.o $(LDFLAGS)
-
 recursion: recursion.o
 	$(CC) -o $@ recursion.o $(LDFLAGS)
-
-subinline.o: subinline.c
-	$(CC) -c $(CFLAGS) $(INSTRFLAGS) subinline.c
-subinline: subinline.o
-	$(CC) -o $@ subinline.o $(LDFLAGS)
 
 exception: exception.o
 	$(CC) -o $@ exception.o $(LDFLAGS)
 
 memusage: memusage.o
 	$(CC) -o $@ memusage.o $(LDFLAGS)
-
-basic: basic.o
-	$(CC) -o $@ basic.o $(LDFLAGS)
 
 utrtest: utrtest.o
 	$(CC) -o $@ utrtest.o $(LDFLAGS)
@@ -60,3 +47,6 @@ cygprofile: cygprofile.o cygprofilesubs.o
 	$(CC) -o $@ cygprofile.o cygprofilesubs.o $(LDFLAGS)
 cygprofilesubs.o: cygprofilesubs.c
 	$(CC) -c $(INSTRFLAGS) -o $@ $<
+
+stride: stride.o
+	$(CC) -o $@ stride.o $(LDFLAGS)

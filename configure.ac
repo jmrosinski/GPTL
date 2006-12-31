@@ -68,7 +68,6 @@ FORTDEFS=""
 AC_ARG_WITH(papi,[--with-papi=<path>  Specify path to root of PAPI installation],
             [PAPI_ROOT="$withval";
              PAPI=YES;
-	     PAPIOBJS=gptl_papi.o;
              PAPIPREP="-I$withval/include";
 	     LDFLAGS="$LDFLAGS -L$PAPI_ROOT/lib"],
 
@@ -93,7 +92,7 @@ fi
 dnl Check for various underlying timing routines
 AC_CHECK_LIB(rt, clock_gettime)
 AC_CHECK_LIB(mpi, MPI_Wtime,,
-		  AC_CHECK_LIB(mpich, MPI_Wtime))
+		  AC_CHECK_LIB(mpich, MPI_Wtime,,))
 AC_CHECK_FUNCS(gettimeofday times,,)
 
 dnl One of the Fortran tests has ifdef AIX and defines are funky on AIX Fortran
@@ -191,7 +190,6 @@ AC_SUBST(THREADDEFS)
 AC_SUBST(THREADFLAGS)
 AC_SUBST(FTHREADFLAGS)
 AC_SUBST(PAPIPREP)
-AC_SUBST(PAPIOBJS)
 AC_SUBST(ARFLAGS)
 AC_SUBST(BITFLAGS)
 AC_SUBST(FORTDEFS)

@@ -20,13 +20,6 @@
       parameter (GPTLclockgettime   = 8)
       parameter (GPTLgettimeofday   = 9)
 
-! for compatibility with CAM entries
-
-      integer wall
-      integer usrsys
-      parameter (wall = GPTLwall)
-      parameter (usrsys = GPTLcpu)
-
 ! Externals
 
       integer gptlsetoption
@@ -42,6 +35,8 @@
       integer gptlsetutr
       integer gptlenable
       integer gptldisable
+      integer gptl_papiprinttable
+      integer gptl_papiname2id
 
       external gptlsetoption
       external gptlinitialize
@@ -56,3 +51,5 @@
       external gptlsetutr
       external gptlenable
       external gptldisable
+      external gptl_papiprinttable
+      external gptl_papiname2id

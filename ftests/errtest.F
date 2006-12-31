@@ -5,7 +5,9 @@
 
       integer ret, iter
       integer val
-      
+
+      write(6,*)'Purpose: test error conditions'
+
  1    write(6,*)'Enter number for error test:'
       write(6,*)'0: bad option'
       write(6,*)'1: bad option value'
