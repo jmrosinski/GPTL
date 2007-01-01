@@ -512,6 +512,9 @@ int GPTLstop (const char *name)               /* timer name */
   if ( ! initialized)
     return GPTLerror ("GPTLstop: GPTLinitialize has not been called\n");
 
+  if ((t = get_thread_num (&nthreads, &maxthreads)) < 0)
+    return GPTLerror ("GPTLstop\n");
+
   /*
   ** If current depth exceeds a user-specified limit for print, just
   ** decrement and return
@@ -521,9 +524,6 @@ int GPTLstop (const char *name)               /* timer name */
     --current_depth[t].depth;
     return 0;
   }
-
-  if ((t = get_thread_num (&nthreads, &maxthreads)) < 0)
-    return GPTLerror ("GPTLstop\n");
 
   nchars = MIN (strlen (name), MAX_CHARS);
   strncpy (locname, name, nchars);

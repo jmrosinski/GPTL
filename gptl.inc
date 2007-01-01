@@ -2,6 +2,7 @@
       integer GPTLcpu
       integer GPTLabort_on_error
       integer GPTLoverhead
+      integer GPTLdepthlimit
 
       integer GPTLnanotime
       integer GPTLrtc
@@ -13,12 +14,13 @@
       parameter (GPTLcpu            = 2)
       parameter (GPTLabort_on_error = 3)
       parameter (GPTLoverhead       = 4)
+      parameter (GPTLdepthlimit     = 5)
 
-      parameter (GPTLnanotime       = 5)
-      parameter (GPTLrtc            = 6)
-      parameter (GPTLmpiwtime       = 7)
-      parameter (GPTLclockgettime   = 8)
-      parameter (GPTLgettimeofday   = 9)
+      parameter (GPTLnanotime       = 6)
+      parameter (GPTLrtc            = 7)
+      parameter (GPTLmpiwtime       = 8)
+      parameter (GPTLclockgettime   = 9)
+      parameter (GPTLgettimeofday   = 10)
 
 ! Externals
 
