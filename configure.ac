@@ -33,7 +33,24 @@ else
   FCLIST=""
 fi
 
+FFLAGS=
+LDFLAGS
+INSTRFLAGS=
 AC_PROG_CC($CCLIST)
+dnl Whether to enable optimization
+AC_ARG_ENABLE(opt,[--enable-opt        Optimize for speed],
+              [CFLAGS="-O3";FFLAGS="-O"],)
+
+dnl Whether to enable debugging
+AC_ARG_ENABLE(debug,[--enable-debug      Enable debugging],
+              [CFLAGS="-g";FFLAGS="-g";LDFLAGS="-g"],)
+
+dnl For gcc only
+if test "x$GCC" = xyes; then
+   INSTRFLAGS="-finstrument-functions";
+   CFLAGS="$CFLAGS -finline-functions -Winline"
+fi
+
 AC_PROG_F77($FCLIST)
 
 dnl Whether to target 64-bit addressing
@@ -42,7 +59,6 @@ AC_ARG_ENABLE(bit64,
 	    bit64=YES,bit64=NO)
 
 BITEXT=
-CFLAGS=
 
 if test "$bit64" = YES; then
   BITEXT=64;
@@ -105,30 +121,9 @@ if test "x$OS" = xaix ; then
   FORTDEFS="$FORTDEFS -WF,-DAIX"
 fi
 
-dnl Whether to enable debugging
-AC_ARG_ENABLE(debug,[--enable-debug      Enable debugging],
-              [CFLAGS="$CFLAGS -g"
-	       FFLAGS="$FFLAGS -g"
-	       LDFLAGS="$LDFLAGS -g"
-	       FLDFLAGS="$FLDFLAGS -g"],)
-
-dnl Whether to enable debugging
+dnl check for nanotime
 AC_ARG_ENABLE(nanotime,[--enable-nanotime   Replace gettimeofday with native IA32 or IA64],
               AC_DEFINE([NANOTIME]),)
-
-dnl Add GNU-specific options
-
-if test "$CC" = gcc ; then
-  CFLAGS="$CFLAGS -finline-functions -Winline"
-fi
-
-if test "$CC" = g++ ; then
-  CFLAGS="$CFLAGS -finline-functions -Winline"
-fi
-
-dnl Whether to enable optimization
-AC_ARG_ENABLE(opt,[--enable-opt        Optimize for speed],
-              [CFLAGS="$CFLAGS -O3";FFLAGS="$FFLAGS -O"],)
 
 dnl need to add -qfixed to FFLAGS for Fortran tests on AIX
 if test "$F77" = xlf90 ; then
@@ -194,6 +189,7 @@ AC_SUBST(PAPIPREP)
 AC_SUBST(ARFLAGS)
 AC_SUBST(BITFLAGS)
 AC_SUBST(FORTDEFS)
+AC_SUBST(INSTRFLAGS)
 
 AC_OUTPUT(Makefile ctests/Makefile ftests/Makefile)
 

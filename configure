@@ -272,7 +272,7 @@ PACKAGE_STRING=
 PACKAGE_BUGREPORT=
 
 ac_unique_file="private.h"
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS SET_MAKE CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT F77 FFLAGS ac_ct_F77 FLDFLAGS FLIBS FDEFS THREADDEFS THREADFLAGS FTHREADFLAGS PAPIPREP ARFLAGS BITFLAGS FORTDEFS LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS SET_MAKE CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT F77 FFLAGS ac_ct_F77 FLIBS FDEFS THREADDEFS THREADFLAGS FTHREADFLAGS PAPIPREP ARFLAGS BITFLAGS FORTDEFS INSTRFLAGS LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -807,12 +807,12 @@ if test -n "$ac_init_help"; then
 Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
+--enable-opt        Optimize for speed
+--enable-debug      Enable debugging
 --enable-bit64      Build 64 bit library
 --enable-clock_gettime Check for clock_gettime in -lrt
 --enable-mpi           Check for MPI_Wtime in -lmpi and -lmpich
---enable-debug      Enable debugging
 --enable-nanotime   Replace gettimeofday with native IA32 or IA64
---enable-opt        Optimize for speed
 --enable-openmp     OpenMP threading (overrides pthreads)
 --enable-pthreads   pthreads threading
 
@@ -1335,6 +1335,9 @@ else
   FCLIST=""
 fi
 
+FFLAGS=
+LDFLAGS
+INSTRFLAGS=
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -2048,6 +2051,23 @@ ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
+# Check whether --enable-opt or --disable-opt was given.
+if test "${enable_opt+set}" = set; then
+  enableval="$enable_opt"
+  CFLAGS="-O3";FFLAGS="-O"
+fi;
+
+# Check whether --enable-debug or --disable-debug was given.
+if test "${enable_debug+set}" = set; then
+  enableval="$enable_debug"
+  CFLAGS="-g";FFLAGS="-g";LDFLAGS="-g"
+fi;
+
+if test "x$GCC" = xyes; then
+   INSTRFLAGS="-finstrument-functions";
+   CFLAGS="$CFLAGS -finline-functions -Winline"
+fi
+
 ac_ext=f
 ac_compile='$F77 -c $FFLAGS conftest.$ac_ext >&5'
 ac_link='$F77 -o conftest$ac_exeext $FFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
@@ -2140,7 +2160,7 @@ fi
 
 
 # Provide some information about the compiler.
-echo "$as_me:2143:" \
+echo "$as_me:2163:" \
      "checking for Fortran 77 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -2294,7 +2314,6 @@ else
 fi;
 
 BITEXT=
-CFLAGS=
 
 if test "$bit64" = YES; then
   BITEXT=64;
@@ -2835,15 +2854,6 @@ if test "x$OS" = xaix ; then
   FORTDEFS="$FORTDEFS -WF,-DAIX"
 fi
 
-# Check whether --enable-debug or --disable-debug was given.
-if test "${enable_debug+set}" = set; then
-  enableval="$enable_debug"
-  CFLAGS="$CFLAGS -g"
-	       FFLAGS="$FFLAGS -g"
-	       LDFLAGS="$LDFLAGS -g"
-	       FLDFLAGS="$FLDFLAGS -g"
-fi;
-
 # Check whether --enable-nanotime or --disable-nanotime was given.
 if test "${enable_nanotime+set}" = set; then
   enableval="$enable_nanotime"
@@ -2851,21 +2861,6 @@ if test "${enable_nanotime+set}" = set; then
 #define NANOTIME 1
 _ACEOF
 
-fi;
-
-
-if test "$CC" = gcc ; then
-  CFLAGS="$CFLAGS -finline-functions -Winline"
-fi
-
-if test "$CC" = g++ ; then
-  CFLAGS="$CFLAGS -finline-functions -Winline"
-fi
-
-# Check whether --enable-opt or --disable-opt was given.
-if test "${enable_opt+set}" = set; then
-  enableval="$enable_opt"
-  CFLAGS="$CFLAGS -O3";FFLAGS="$FFLAGS -O"
 fi;
 
 if test "$F77" = xlf90 ; then
@@ -3367,7 +3362,7 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   ac_status=$?
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); }; }; then
-  PTHREADS="YES";FLDFLAGS="$LDFLAGS"
+  PTHREADS="YES";
 else
   echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
@@ -3394,7 +3389,6 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
   LDFLAGS="$OLDLDFLAGS"
-
 
     FTHREADFLAGS="$PTHREADFFLAGS"
   fi
@@ -3456,7 +3450,7 @@ _ACEOF
 # flags.
 ac_save_FFLAGS=$FFLAGS
 FFLAGS="$FFLAGS $ac_verb"
-(eval echo $as_me:3459: \"$ac_link\") >&5
+(eval echo $as_me:3453: \"$ac_link\") >&5
 ac_f77_v_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 echo "$ac_f77_v_output" >&5
 FFLAGS=$ac_save_FFLAGS
@@ -3534,7 +3528,7 @@ _ACEOF
 # flags.
 ac_save_FFLAGS=$FFLAGS
 FFLAGS="$FFLAGS $ac_cv_prog_f77_v"
-(eval echo $as_me:3537: \"$ac_link\") >&5
+(eval echo $as_me:3531: \"$ac_link\") >&5
 ac_f77_v_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 echo "$ac_f77_v_output" >&5
 FFLAGS=$ac_save_FFLAGS
@@ -4570,6 +4564,7 @@ done
 
 
 
+
                               ac_config_files="$ac_config_files Makefile ctests/Makefile ftests/Makefile"
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -5218,7 +5213,6 @@ s,@OBJEXT@,$OBJEXT,;t t
 s,@F77@,$F77,;t t
 s,@FFLAGS@,$FFLAGS,;t t
 s,@ac_ct_F77@,$ac_ct_F77,;t t
-s,@FLDFLAGS@,$FLDFLAGS,;t t
 s,@FLIBS@,$FLIBS,;t t
 s,@FDEFS@,$FDEFS,;t t
 s,@THREADDEFS@,$THREADDEFS,;t t
@@ -5228,6 +5222,7 @@ s,@PAPIPREP@,$PAPIPREP,;t t
 s,@ARFLAGS@,$ARFLAGS,;t t
 s,@BITFLAGS@,$BITFLAGS,;t t
 s,@FORTDEFS@,$FORTDEFS,;t t
+s,@INSTRFLAGS@,$INSTRFLAGS,;t t
 s,@LIBOBJS@,$LIBOBJS,;t t
 s,@LTLIBOBJS@,$LTLIBOBJS,;t t
 CEOF

@@ -114,7 +114,7 @@ AC_DEFUN(UD_SET_PTHREADS_F77,
   PTHREADS="NO"
 
   AC_MSG_CHECKING([Fortran flags for pthreads])
-  AC_TRY_LINK(,[pthread_self()],PTHREADS="YES";FLDFLAGS="$LDFLAGS",)
+  AC_TRY_LINK(,[pthread_self()],PTHREADS="YES";,)
 
   if test "$PTHREADS" = "YES" ; then
     THREADDEFS=-DTHREADED_PTHREADS
@@ -126,5 +126,4 @@ AC_DEFUN(UD_SET_PTHREADS_F77,
   fi
   AC_LANG_POP(Fortran 77)
   LDFLAGS="$OLDLDFLAGS"
-  AC_SUBST(FLDFLAGS)
 ])

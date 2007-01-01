@@ -3,9 +3,9 @@ CFLAGS       = @DEFS@ @PAPIPREP@ @THREADDEFS@ @CFLAGS@ @BITFLAGS@ @THREADFLAGS@
 LDFLAGS      = @BITFLAGS@ @THREADFLAGS@ -L.. -lgptl @LDFLAGS@ @LIBS@
 INSTRFLAGS   = -finstrument-functions
 
-OBJS = avail.o depth.o overhead2.o rawpapitest.o recursion.o stride.o \
+OBJS = avail.o depth.o rawpapitest.o recursion.o stride.o \
        memusage.o utrtest.o papiomptest.o cygprofile.o cygprofilesubs.o 
-EXES = avail depth overhead2   rawpapitest recursion stride \
+EXES = avail depth     rawpapitest recursion stride \
        memusage utrtest papiomptest cygprofile
 
 all: $(EXES)
@@ -21,9 +21,6 @@ depth: depth.o
 
 overhead: overhead.o
 	$(CC) -o $@ overhead.o $(LDFLAGS)
-
-overhead2: overhead2.o
-	$(CC) -o $@ overhead2.o $(LDFLAGS)
 
 rawpapitest: rawpapitest.o
 	$(CC) -o $@ rawpapitest.o $(LDFLAGS)
