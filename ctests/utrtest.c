@@ -25,7 +25,7 @@ int main (int argc, char **argv)
   GPTLinitialize ();
 
   GPTLstart ("total");
-  //  GPTLdisable ();
+  /*  GPTLdisable (); */
   sub (1, 10000000, "1x1e7", &sum);
   sub (10, 1000000, "10x1e6", &sum);
   sub (100, 100000, "100x1e5", &sum);
@@ -34,7 +34,7 @@ int main (int argc, char **argv)
   sub (100000, 100, "1e5x100", &sum);
   sub (1000000, 10, "1e6x10", &sum);
   sub (10000000, 1, "1e7x1", &sum);
-  //  GPTLenable ();
+  /*  GPTLenable (); */
   GPTLstop ("total");
 
   GPTLpr (0);
