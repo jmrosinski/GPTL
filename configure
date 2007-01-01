@@ -811,7 +811,6 @@ Optional Features:
 --enable-debug      Enable debugging
 --enable-nanotime   Replace gettimeofday with native IA32 or IA64
 --enable-opt        Optimize for speed
---enable-numeric    Numeric rather than character timers ALSO adds __cyg_profile_func auto-instrumentation capability
 --enable-openmp     OpenMP threading (overrides pthreads)
 --enable-pthreads   pthreads threading
 
@@ -2139,7 +2138,7 @@ fi
 
 
 # Provide some information about the compiler.
-echo "$as_me:2142:" \
+echo "$as_me:2141:" \
      "checking for Fortran 77 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -2858,12 +2857,6 @@ if test "${enable_opt+set}" = set; then
   CFLAGS="$CFLAGS -O3";FFLAGS="$FFLAGS -O"
 fi;
 
-# Check whether --enable-numeric or --disable-numeric was given.
-if test "${enable_numeric+set}" = set; then
-  enableval="$enable_numeric"
-  CFLAGS="$CFLAGS -DNUMERIC_TIMERS"
-fi;
-
 if test "$F77" = xlf90 ; then
   FFLAGS="$FFLAGS -qfixed"
 fi
@@ -3452,7 +3445,7 @@ _ACEOF
 # flags.
 ac_save_FFLAGS=$FFLAGS
 FFLAGS="$FFLAGS $ac_verb"
-(eval echo $as_me:3455: \"$ac_link\") >&5
+(eval echo $as_me:3448: \"$ac_link\") >&5
 ac_f77_v_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 echo "$ac_f77_v_output" >&5
 FFLAGS=$ac_save_FFLAGS
@@ -3530,7 +3523,7 @@ _ACEOF
 # flags.
 ac_save_FFLAGS=$FFLAGS
 FFLAGS="$FFLAGS $ac_cv_prog_f77_v"
-(eval echo $as_me:3533: \"$ac_link\") >&5
+(eval echo $as_me:3526: \"$ac_link\") >&5
 ac_f77_v_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 echo "$ac_f77_v_output" >&5
 FFLAGS=$ac_save_FFLAGS

@@ -125,10 +125,6 @@ dnl Whether to enable optimization
 AC_ARG_ENABLE(opt,[--enable-opt        Optimize for speed],
               [CFLAGS="$CFLAGS -O3";FFLAGS="$FFLAGS -O"],)
 
-dnl Whether to use numeric rather than character timers
-AC_ARG_ENABLE(numeric,[--enable-numeric    Numeric rather than character timers ALSO adds __cyg_profile_func auto-instrumentation capability],
-              [CFLAGS="$CFLAGS -DNUMERIC_TIMERS"],)
-
 dnl need to add -qfixed to FFLAGS for Fortran tests on AIX
 if test "$F77" = xlf90 ; then
   FFLAGS="$FFLAGS -qfixed"

@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.29 2006-12-25 04:15:30 rosinski Exp $
+$Id: private.h,v 1.30 2007-01-01 03:44:02 rosinski Exp $
 */
 
 #include <stdio.h>
@@ -54,7 +54,6 @@ typedef struct TIMER {
   unsigned int max_recurse; /* max recursion level */
   unsigned long count;      /* number of start/stop calls */
   unsigned long nrecurse;   /* number of recursive start/stop calls */
-  unsigned long tag;        /* used instead of "name" when NUMERIC_TIMERS set */
   Wallstats wall;           /* wallclock stats */
   Cpustats cpu;             /* cpu stats */
 #ifdef HAVE_PAPI
