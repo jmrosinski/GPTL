@@ -1,0 +1,142 @@
+      program papioomptest
+      implicit none
+
+#include "../gptl.inc"
+
+#ifdef HAVE_PAPI
+#include <fpapi.h>
+#endif
+
+      real add
+      real multiply
+      real multadd
+      real divide
+
+      external add
+      external multiply
+      external multadd
+      external divide
+
+      integer nompiter
+      integer looplen
+      integer iter
+      integer papiopt
+
+      real ret
+      real zero
+
+      nompiter = 128
+      looplen = 1000000
+
+      write(6,*) 'Purpose: test known-length loops with various'
+      write(6,*) 'floating point ops'
+      write(6,*) 'Include PAPI and OpenMP, respectively, if enabled'
+
+      write(6,*) 'Outer loop length (OMP)=', nompiter
+      write(6,*) 'Inner loop length=', looplen
+
+      if (gptlsetoption (gptlabort_on_error, 1) .lt. 0) call exit(3)
+      if (gptlinitialize () .lt. 0) call exit(4)
+
+!$OMP PARALLEL DO PRIVATE (iter, zero)
+
+      do iter=1,nompiter
+        ret = add (looplen, zero)
+        ret = multiply (looplen, zero)
+        ret = multadd (looplen, zero)
+        ret = divide (looplen, zero)
+      end do
+
+      if (gptlpr (0) .lt. 0) call exit(5)
+      if (gptlfinalize () .lt. 0) call exit(6)
+
+      stop 0
+      end
+
+      real function add (looplen, zero)
+      integer looplen
+      real zero
+
+      integer i
+      character*128 string
+      real xlooplen
+      real val
+
+      val = zero
+      xlooplen = looplen
+      write (string,'(1p,e10.3,a)') xlooplen, 'additions'
+
+      if (gptlstart (string) < 0) call exit(1)
+      do i=1,looplen
+        val = val + i
+      end do
+      if (gptlstop (string) < 0) call exit(1)
+      add = val
+      return
+      end
+
+      real function multiply (looplen, zero)
+      integer looplen
+      real zero
+
+      integer i
+      character*128 string
+      real xlooplen
+      real val
+
+      val = zero
+      xlooplen = looplen
+      write (string,'(1p,e10.3,a)') xlooplen, 'multiplies'
+
+      if (gptlstart (string) < 0) call exit(1)
+      do i=1,looplen
+        val = val * i
+      end do
+      if (gptlstop (string) < 0) call exit(1)
+      multiply = val
+      return
+      end
+
+      real function multadd (looplen, zero)
+      integer looplen
+      real zero
+
+      integer i
+      character*128 string
+      real xlooplen
+      real val
+
+      val = zero
+      xlooplen = looplen
+      write (string,'(1p,e10.3,a)') xlooplen, 'multadds'
+
+      if (gptlstart (string) < 0) call exit(1)
+      do i=1,looplen
+        val = val + i*1.1
+      end do
+      if (gptlstop (string) < 0) call exit(1)
+      multadd = val
+      return
+      end
+
+      real function divide (looplen, zero)
+      integer looplen
+      real zero
+
+      integer i
+      character*128 string
+      real xlooplen
+      real val
+
+      val = zero
+      xlooplen = looplen
+      write (string,'(1p,e10.3,a)') xlooplen, 'divides'
+
+      if (gptlstart (string) < 0) call exit(1)
+      do i=1,looplen
+        val = val / i
+      end do
+      if (gptlstop (string) < 0) call exit(1)
+      divide = val
+      return
+      end

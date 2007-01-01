@@ -21,7 +21,7 @@ install: $(LIBNAME)
 	cp man/man3/*.3 $(MANDIR)
 
 uninstall:
-	rm $(LIBDIR)/$(LIBNAME) $(INCDIR)/gptl.h $(INCDIR)/gptl.inc
+	rm -f $(LIBDIR)/$(LIBNAME) $(INCDIR)/gptl.h $(INCDIR)/gptl.inc
 
 ctests/all:
 	(cd ctests && $(MAKE) all)
@@ -30,7 +30,7 @@ ftests/all:
 	(cd ftests && $(MAKE) all)
 
 clean:
-	rm $(OBJS) $(LIBNAME)
+	rm -f $(OBJS) $(LIBNAME)
 	(cd ctests && $(MAKE) clean)
 	(cd ftests && $(MAKE) clean)
 

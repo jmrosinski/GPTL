@@ -43,7 +43,7 @@ papiomptest: papiomptest.o
 cygprofile: cygprofile.o cygprofilesubs.o
 	$(CC) -o $@ cygprofile.o cygprofilesubs.o $(LDFLAGS)
 cygprofilesubs.o: cygprofilesubs.c
-	$(CC) -c $(INSTRFLAGS) -o $@ $<
+	$(CC) -c $(CFLAGS) $(INSTRFLAGS) -o $@ $<
 
 stride: stride.o
 	$(CC) -o $@ stride.o $(LDFLAGS)

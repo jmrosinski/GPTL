@@ -8,7 +8,7 @@ EXES = errtest   papiomptest   stride   camtest
 all: $(EXES)
 
 clean:
-	$(RM) $(OBJS) $(EXES)
+	rm -f $(OBJS) $(EXES)
 
 errtest: errtest.o
 	$(FC) $(FFLAGS) -o $@ errtest.o $(LDFLAGS)

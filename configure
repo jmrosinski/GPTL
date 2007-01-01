@@ -1336,7 +1336,7 @@ else
 fi
 
 FFLAGS=
-LDFLAGS
+LDFLAGS=
 INSTRFLAGS=
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'

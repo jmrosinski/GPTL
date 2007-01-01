@@ -34,7 +34,7 @@ else
 fi
 
 FFLAGS=
-LDFLAGS
+LDFLAGS=
 INSTRFLAGS=
 AC_PROG_CC($CCLIST)
 dnl Whether to enable optimization
