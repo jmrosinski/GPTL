@@ -35,6 +35,7 @@ static Nofalse *current_depth;
 
 static int nthreads    = -1;     /* num threads. Init to bad value */
 static int maxthreads  = -1;     /* max threads (=nthreads for OMP). Init to bad value */
+static int depthlimit  = 99999;  /* max depth for timers (99999 is effectively infinite) */
 static bool disabled = false;    /* Timers disabled? */
 static bool initialized = false; /* GPTLinitialize has been called */
 static time_t ref_gettimeofday = -1; /* reference start point for gettimeofday */
@@ -157,6 +158,10 @@ int GPTLsetoption (const int option,  /* option */
   case GPTLoverhead: 
     overheadstats.enabled = (bool) val; 
     printf ("GPTLsetoption: set overheadstats to %d\n", val);
+    return 0;
+  case GPTLdepthlimit: 
+    depthlimit = val; 
+    printf ("GPTLsetoption: set depthlimit to %d\n", val);
     return 0;
   default:
     break;
@@ -360,6 +365,16 @@ int GPTLstart (const char *name)               /* timer name */
   if ((t = get_thread_num (&nthreads, &maxthreads)) < 0)
     return GPTLerror ("GPTLstart\n");
 
+  /*
+  ** If current depth exceeds a user-specified limit for print, just
+  ** increment and return
+  */
+
+  if (current_depth[t].depth >= depthlimit) {
+    ++current_depth[t].depth;
+    return 0;
+  }
+
   /* Truncate input name if longer than MAX_CHARS characters  */
 
   nchars = MIN (strlen (name), MAX_CHARS);
@@ -496,6 +511,16 @@ int GPTLstop (const char *name)               /* timer name */
 
   if ( ! initialized)
     return GPTLerror ("GPTLstop: GPTLinitialize has not been called\n");
+
+  /*
+  ** If current depth exceeds a user-specified limit for print, just
+  ** decrement and return
+  */
+
+  if (current_depth[t].depth > depthlimit) {
+    --current_depth[t].depth;
+    return 0;
+  }
 
   if ((t = get_thread_num (&nthreads, &maxthreads)) < 0)
     return GPTLerror ("GPTLstop\n");
