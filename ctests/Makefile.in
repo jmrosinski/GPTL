@@ -1,7 +1,7 @@
 CC           = @CC@
 CFLAGS       = @DEFS@ @PAPIPREP@ @THREADDEFS@ @CFLAGS@ @BITFLAGS@ @THREADFLAGS@
 LDFLAGS      = @BITFLAGS@ @THREADFLAGS@ -L.. -lgptl @LDFLAGS@ @LIBS@
-INSTRFLAGS   = -finstrument-functions
+INSTRFLAGS   = @INSTRFLAGS@
 
 OBJS = avail.o depth.o rawpapitest.o recursion.o stride.o \
        memusage.o utrtest.o papiomptest.o cygprofile.o cygprofilesubs.o 

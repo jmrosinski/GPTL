@@ -116,7 +116,7 @@ void parsub (int iter)
   */
 
 #if ( defined THREADED_OMP )
-  mythread = omp_thread_num ();
+  mythread = omp_get_thread_num ();
 #elif ( defined THREADED_PTHREADS )
   mythread = get_thread_num (&nthreads, &maxthreads);
 #else
