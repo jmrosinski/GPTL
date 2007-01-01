@@ -62,8 +62,8 @@ int main (int argc, char **argv)
   if (GPTLsetoption (GPTLabort_on_error, 1) < 0)
     exit (3);
 
-  if (GPTLinitialize () < 0) 
-    exit (4);
+  GPTLinitialize ();
+  GPTLstart ("total");
 	 
 #pragma omp parallel for private (iter, zero, ret)
       
@@ -74,9 +74,8 @@ int main (int argc, char **argv)
     ret = divide (looplen, &zero);
   }
 
-  if (GPTLpr (0) < 0)
-    exit (5);
-
+  GPTLstop ("total");
+  GPTLpr (0);
   if (GPTLfinalize () < 0)
     exit (6);
 
