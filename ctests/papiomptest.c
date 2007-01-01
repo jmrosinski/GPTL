@@ -79,6 +79,8 @@ int main (int argc, char **argv)
 
   if (GPTLfinalize () < 0)
     exit (6);
+
+  return 0;
 }
 
 float add (int looplen, float *zero)

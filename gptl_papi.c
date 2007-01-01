@@ -2,6 +2,7 @@
 
 #include <papi.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #if ( defined THREADED_OMP )
 #include <omp.h>
@@ -605,6 +606,8 @@ int GPTL_PAPIname2id (const char *name)
 /*
 ** "Should not be called" entry points for publicly available GPTL_PAPI routines
 */
+
+#include <stdio.h>
 
 void GPTL_PAPIprinttable ()
 {

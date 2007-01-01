@@ -1116,7 +1116,7 @@ void __cyg_profile_func_enter (void *this_fn,
   /* 64 is big enough to hold a 128-bit address */
 
   char locname[64+1];
-  sprintf (locname, "%lx", this_fn);
+  sprintf (locname, "%px", this_fn);
   (void) GPTLstart (locname);
 }
 
@@ -1126,7 +1126,7 @@ void __cyg_profile_func_exit (void *this_fn,
   /* 64 is big enough to hold a 128-bit address */
 
   char locname[64+1];
-  sprintf (locname, "%lx", this_fn);
+  sprintf (locname, "%px", this_fn);
   (void) GPTLstop (locname);
 }
 

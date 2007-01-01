@@ -1,10 +1,10 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include "../private.h"
 
 #ifdef HAVE_PAPI
+
+#include <stdlib.h>
+#include "../private.h"
 #include <papi.h>
-#endif
 
 #if ( defined THREADED_OMP )
 #include <omp.h>
@@ -31,7 +31,6 @@ void parsub (int);
 
 int main ()
 {
-#ifdef HAVE_PAPI
   int ret;
   int counter;
   int n;
@@ -103,13 +102,9 @@ int main ()
     parsub (ompiter);
   }
   return 0;
-#else
-  printf ("PAPI not enabled so this code does nothing\n");
-#endif
 }
 
-#ifdef HAVE_PAPI
-  void parsub (int iter)
+void parsub (int iter)
 {
   int mythread;
   int ret;
@@ -169,4 +164,13 @@ int main ()
     }
   }
 }
+
+#else
+
+int main ()
+{
+  printf ("PAPI not enabled so this code does nothing\n");
+  return 0;
+}
+
 #endif

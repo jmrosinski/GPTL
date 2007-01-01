@@ -37,6 +37,7 @@ int main (int argc, char **argv)
 
   GPTLpr (0);
   (void) GPTLfinalize ();
+  return 0;
 }
 
 void sub (int depth)

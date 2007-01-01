@@ -5,8 +5,8 @@ int main ()
 {
 #define ARRLEN 10000000
 
-  void writesub (float *, int, int);
-  void readsub (float *, int, int);
+  void writesub (double *, int, int);
+  void readsub (double *, int, int);
 
   int nstride = 64;
   int looplen = ARRLEN / nstride;
@@ -16,7 +16,7 @@ int main ()
 
   /* Make arr static to keep off stack */
 
-  static float arr[ARRLEN];
+  static double arr[ARRLEN];
 
   printf ("Test strided reads/writes to memory\n");
 
@@ -43,7 +43,7 @@ int main ()
   return 0;
 }
 
-void writesub (float *arr, int n, int looplen)
+void writesub (double *arr, int n, int looplen)
 {
   int i;
   char string[128];
@@ -54,17 +54,19 @@ void writesub (float *arr, int n, int looplen)
   sprintf (string, "write_len%dstride%d", looplen, n);
   GPTLstart (string);
   for (i = 0; i < looplen; i++) {
-    arr[n*i] = i;
+    arr[n*i] = 0.1*(n*i);
   }
   GPTLstop (string);
   GPTLenable ();
 }
 
-void readsub (float *arr, int n, int looplen)
+void readsub (double *arr, int n, int looplen)
 {
   int i;
   char string[128];
-  float x = 0.;
+  double x = 0.;
+  double ref = 0.;
+  double relerr;
 
   if (n > 8 && n % 2 != 0)
     GPTLdisable ();
@@ -76,5 +78,12 @@ void readsub (float *arr, int n, int looplen)
   }
   GPTLstop (string);
   GPTLenable ();
-  arr[0] = x;
+
+  for (i = 0; i < looplen; i++) {
+    ref += 0.1*(n*i);
+  }
+
+  relerr = (ref - x) / (0.5*(ref + x));
+  printf ("Relative error stride=%d niter=%d is %g percent\n",
+	  n, looplen, relerr*100.);
 }

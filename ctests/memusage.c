@@ -11,6 +11,7 @@ int main ()
   stuff = (char *) malloc (104857600);
   do_nothing (stuff);
   (void) GPTLprint_memusage ("after malloc 100 MB");
+  return 0;
 }
 
 void do_nothing (char *stuff)

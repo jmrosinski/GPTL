@@ -32,4 +32,5 @@ int main ()
 #else
   printf ("PAPI not enabled so this code does nothing\n");
 #endif
+  return 0;
 }

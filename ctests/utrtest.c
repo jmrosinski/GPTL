@@ -6,12 +6,15 @@
 
 int main (int argc, char **argv)
 {
-  double sum;
+  double sum = 0.;
   extern void sub (int, int, char *, double *);
 
 #if ( defined HAVE_LIBMPI ) || ( defined HAVE_LIBMPICH )
   MPI_Init (&argc, &argv);
 #endif
+
+  printf ("Purpose: estimate overhead of GPTL\n");
+  GPTLsetoption (GPTLabort_on_error, 1);
 
   GPTLsetutr (GPTLmpiwtime);
   GPTLsetutr (GPTLrtc);
