@@ -808,6 +808,8 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
 --enable-bit64      Build 64 bit library
+--enable-clock_gettime Check for clock_gettime in -lrt
+--enable-mpi           Check for MPI_Wtime in -lmpi and -lmpich
 --enable-debug      Enable debugging
 --enable-nanotime   Replace gettimeofday with native IA32 or IA64
 --enable-opt        Optimize for speed
@@ -2138,7 +2140,7 @@ fi
 
 
 # Provide some information about the compiler.
-echo "$as_me:2141:" \
+echo "$as_me:2143:" \
      "checking for Fortran 77 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -2493,6 +2495,9 @@ fi
 
 fi
 
+# Check whether --enable-clock_gettime or --disable-clock_gettime was given.
+if test "${enable_clock_gettime+set}" = set; then
+  enableval="$enable_clock_gettime"
 
 echo "$as_me:$LINENO: checking for clock_gettime in -lrt" >&5
 echo $ECHO_N "checking for clock_gettime in -lrt... $ECHO_C" >&6
@@ -2567,6 +2572,11 @@ _ACEOF
 
 fi
 
+fi;
+
+# Check whether --enable-mpi or --disable-mpi was given.
+if test "${enable_mpi+set}" = set; then
+  enableval="$enable_mpi"
 
 echo "$as_me:$LINENO: checking for MPI_Wtime in -lmpi" >&5
 echo $ECHO_N "checking for MPI_Wtime in -lmpi... $ECHO_C" >&6
@@ -2716,6 +2726,7 @@ fi
 
 fi
 
+fi;
 
 
 for ac_func in gettimeofday times
@@ -3445,7 +3456,7 @@ _ACEOF
 # flags.
 ac_save_FFLAGS=$FFLAGS
 FFLAGS="$FFLAGS $ac_verb"
-(eval echo $as_me:3448: \"$ac_link\") >&5
+(eval echo $as_me:3459: \"$ac_link\") >&5
 ac_f77_v_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 echo "$ac_f77_v_output" >&5
 FFLAGS=$ac_save_FFLAGS
@@ -3523,7 +3534,7 @@ _ACEOF
 # flags.
 ac_save_FFLAGS=$FFLAGS
 FFLAGS="$FFLAGS $ac_cv_prog_f77_v"
-(eval echo $as_me:3526: \"$ac_link\") >&5
+(eval echo $as_me:3537: \"$ac_link\") >&5
 ac_f77_v_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 echo "$ac_f77_v_output" >&5
 FFLAGS=$ac_save_FFLAGS

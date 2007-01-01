@@ -65,7 +65,7 @@ int main (int argc, char **argv)
   if (GPTLinitialize () < 0) 
     exit (4);
 	 
-#pragma omp parallel for private (iter, zero)
+#pragma omp parallel for private (iter, zero, ret)
       
   for (iter = 1; iter <= nompiter; iter++) {
     ret = add (looplen, &zero);

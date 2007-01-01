@@ -90,9 +90,14 @@ dnl will add -lpapi or -lpapi64 if successful
 fi
 
 dnl Check for various underlying timing routines
-AC_CHECK_LIB(rt, clock_gettime)
-AC_CHECK_LIB(mpi, MPI_Wtime,,
-		  AC_CHECK_LIB(mpich, MPI_Wtime,,))
+AC_ARG_ENABLE(clock_gettime,
+            [--enable-clock_gettime Check for clock_gettime in -lrt],
+	    AC_CHECK_LIB(rt, clock_gettime),)
+
+AC_ARG_ENABLE(mpi,
+            [--enable-mpi           Check for MPI_Wtime in -lmpi and -lmpich],
+            AC_CHECK_LIB(mpi, MPI_Wtime,,
+		  AC_CHECK_LIB(mpich, MPI_Wtime)),)
 AC_CHECK_FUNCS(gettimeofday times,,)
 
 dnl One of the Fortran tests has ifdef AIX and defines are funky on AIX Fortran
