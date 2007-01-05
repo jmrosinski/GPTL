@@ -564,6 +564,31 @@ void GPTL_PAPIfinalize (int maxthreads)
 }
 
 /*
+** GPTL_PAPIquery: return current PAPI counter info. Return into a long for best
+**   compatibility possibilities with Fortran.
+**
+** Input args:
+**   aux:       struct containing the counters
+**   ncounters: max number of counters to return
+**
+** Output args:
+**   papicounters_out: current value of PAPI counters
+*/
+
+void GPTL_PAPIquery (const Papistats *aux,
+		     long *papicounters_out,
+		     int ncounters)
+{
+  int n;
+
+  if (ncounters > 0) {
+    for (n = 0; n < ncounters && n < nevents; n++) {
+      papicounters_out[n] = (long) aux->accum[n];
+    }
+  }
+}
+
+/*
 ** The following functions are publicly available
 */
 

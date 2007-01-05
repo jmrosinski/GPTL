@@ -1029,6 +1029,79 @@ static inline int get_cpustamp (long *usr, long *sys)
 }
 
 /*
+** GPTLquery: return current status info about a timer. If certain stats are not 
+** enabled, they should just have zeros in them. If PAPI is not enabled, input
+** counter info is ignored.
+** 
+** Input args:
+**   name:        timer name
+**   maxcounters: max number of PAPI counters to get info for
+**
+** Output args:
+**   t:                  thread number (if < 0, it will be OUTPUT as the actual thread number)
+**   count:              number of times this timer was called
+**   onflg:              whether timer is currently on
+**   wallclock:          accumulated wallclock time
+**   usr:                accumulated user CPU time
+**   sys:                accumulated system CPU time
+**   papicounters_accum: accumulated PAPI counters
+*/
+
+int GPTLquery (const char *name, 
+	       int *t,
+	       int *count,
+	       int *onflg,
+	       double *wallclock,
+	       double *usr,
+	       double *sys,
+	       long *papicounters_out,
+	       const int *maxcounters)
+{
+  Timer *ptr;                /* linked list pointer */
+  int nchars;                /* number of characters in timer */
+  int indx;
+  char locname[MAX_CHARS+1]; /* "name" truncated to max allowed number of chars */
+  
+  if ( ! initialized)
+    return GPTLerror ("GPTLquery: GPTLinitialize has not been called\n");
+  
+/*
+** If *t is < 0, assume the request is for the current thread
+*/
+  
+  if (*t < 0) {
+    if ((*t = get_thread_num (&nthreads, &maxthreads)) < 0)
+      return GPTLerror ("GPTLquery: get_thread_num failure\n");
+  } else {
+    if (*t >= maxthreads)
+      return GPTLerror ("GPTLquery: requested thread %d is too big\n", *t);
+  }
+  
+  /* Truncate input name if longer than MAX_CHARS characters  */
+
+  nchars = MIN (strlen (name), MAX_CHARS);
+  strncpy (locname, name, nchars);
+  locname[nchars] = '\0';
+
+  ptr = getentry (hashtable[*t], locname, &indx);
+  if ( !ptr)
+    return GPTLerror ("GPTLquery: requested timer %s does not exist\n", locname);
+
+  if (indx >= tablesize)
+    return GPTLerror ("GPTLstart: indx=%d must be < tablesize=%d\n", indx, tablesize);
+
+  *onflg     = ptr->onflg;
+  *count     = ptr->count;
+  *wallclock = ptr->wall.accum;
+  *usr       = ptr->cpu.accum_utime;
+  *sys       = ptr->cpu.accum_stime;
+#ifdef HAVE_PAPI
+  GPTL_PAPIquery (&ptr->aux, papicounters_out, *ncounters);
+#endif
+  return 0;
+}
+
+/*
 ** getentry: find the entry in the hash table and return a pointer to it.
 **
 ** Input args:

@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.16 2007-01-01 03:44:02 rosinski Exp $
+** $Id: f_wrappers.c,v 1.17 2007-01-05 22:35:09 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines
 */
@@ -21,6 +21,7 @@
 #define gptlenable GPTLENABLE
 #define gptldisable GPTLDISABLE
 #define gptlsetutr GPTLSETUTR
+#define gptlquery GPTLQUERY
 #define gptlget_memusage GPTLGET_MEMUSAGE
 #define gptlprint_memusage GPTLPRINT_MEMUSAGE
 #define gptl_papiprinttable GPTL_PAPIPRINTTABLE
@@ -39,6 +40,7 @@
 #define gptlenable gptlenable_
 #define gptldisable gptldisable_
 #define gptlsetutr gptlsetutr_
+#define gptlquery gptlquery_
 #define gptlget_memusage gptlget_memusage_
 #define gptlprint_memusage gptlprint_memusage_
 #define gptl_papiprinttable gptl_papiprinttable_
@@ -57,6 +59,7 @@
 #define gptlenable gptlenable_
 #define gptldisable gptldisable_
 #define gptlsetutr gptlsetutr_
+#define gptlquery gptlquery_
 #define gptlget_memusage gptlget_memusage__
 #define gptlprint_memusage gptlprint_memusage__
 #define gptl_papiprinttable gptl_papiprinttable__
@@ -130,6 +133,19 @@ int gptldisable ()
 int gptlsetutr (int *option)
 {
   return GPTLsetutr (*option);
+}
+
+int gptlquery (const char *name, int *t, int *count, int *onflg, double *wallclock, 
+	       double *usr, double *sys, long *papicounters_out, const int *maxcounters, 
+	       int nc)
+{
+  char cname[MAX_CHARS+1];
+  int numchars;
+
+  numchars = MIN (nc, MAX_CHARS);
+  strncpy (cname, name, numchars);
+  cname[numchars] = '\0';
+  return GPTLquery (cname, t, count, onflg, wallclock, usr, sys, papicounters_out, maxcounters);
 }
 
 int gptlget_memusage (int *size, int *rss, int *share, int *text, int *datastack)

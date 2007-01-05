@@ -2,9 +2,9 @@ CC       = scpathcc
 CFLAGS   = -g -O2 -Winline  -DFORTRANUNDERSCORE  -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DLINUX=1 -DHAVE_GETTIMEOFDAY=1 -DHAVE_TIMES=1 -DFDEFS=1 -DHAVE_VPRINTF=1   
 
 LIBNAME  = libgptl.a
-LIBDIR   = /usr/local/lib
-INCDIR   = /usr/local/include
-MANDIR   = /usr/local/man/man3
+LIBDIR   = /home/jrosinski/sim/lib
+INCDIR   = /home/jrosinski/sim/include
+MANDIR   = /home/jrosinski/man/man3
 OBJS     = camwrappers.o f_wrappers.o gptl.o util.o threadutil.o get_memusage.o \
            print_memusage.o gptl_papi.o
 

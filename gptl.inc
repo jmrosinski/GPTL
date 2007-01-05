@@ -34,9 +34,10 @@
       integer gptlfinalize
       integer gptlget_memusage
       integer gptlprint_memusage
-      integer gptlsetutr
       integer gptlenable
       integer gptldisable
+      integer gptlsetutr
+      integer gptlquery
       integer gptl_papiprinttable
       integer gptl_papiname2id
 
@@ -50,8 +51,9 @@
       external gptlfinalize
       external gptlget_memusage
       external gptlprint_memusage
-      external gptlsetutr
       external gptlenable
       external gptldisable
+      external gptlsetutr
+      external gptlquery
       external gptl_papiprinttable
       external gptl_papiname2id
