@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.17 2007-01-05 22:35:09 rosinski Exp $
+** $Id: f_wrappers.c,v 1.18 2007-01-07 00:36:38 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines
 */
@@ -136,7 +136,7 @@ int gptlsetutr (int *option)
 }
 
 int gptlquery (const char *name, int *t, int *count, int *onflg, double *wallclock, 
-	       double *usr, double *sys, long *papicounters_out, const int *maxcounters, 
+	       double *usr, double *sys, long *papicounters_out, int *maxcounters, 
 	       int nc)
 {
   char cname[MAX_CHARS+1];
@@ -145,7 +145,7 @@ int gptlquery (const char *name, int *t, int *count, int *onflg, double *wallclo
   numchars = MIN (nc, MAX_CHARS);
   strncpy (cname, name, numchars);
   cname[numchars] = '\0';
-  return GPTLquery (cname, t, count, onflg, wallclock, usr, sys, papicounters_out, maxcounters);
+  return GPTLquery (cname, *t, count, onflg, wallclock, usr, sys, papicounters_out, *maxcounters);
 }
 
 int gptlget_memusage (int *size, int *rss, int *share, int *text, int *datastack)

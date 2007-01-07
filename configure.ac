@@ -106,14 +106,9 @@ dnl will add -lpapi or -lpapi64 if successful
 fi
 
 dnl Check for various underlying timing routines
-AC_ARG_ENABLE(clock_gettime,
-            [--enable-clock_gettime Check for clock_gettime in -lrt],
-	    AC_CHECK_LIB(rt, clock_gettime),)
-
-AC_ARG_ENABLE(mpi,
-            [--enable-mpi           Check for MPI_Wtime in -lmpi and -lmpich],
-            AC_CHECK_LIB(mpi, MPI_Wtime,,
-		  AC_CHECK_LIB(mpich, MPI_Wtime)),)
+AC_CHECK_LIB(rt, clock_gettime,,)
+AC_CHECK_LIB(mpi, MPI_Wtime,,
+             AC_CHECK_LIB(mpich, MPI_Wtime,,))
 AC_CHECK_FUNCS(gettimeofday times,,)
 
 dnl One of the Fortran tests has ifdef AIX and defines are funky on AIX Fortran
@@ -123,7 +118,7 @@ fi
 
 dnl check for nanotime
 AC_ARG_ENABLE(nanotime,[--enable-nanotime   Replace gettimeofday with native IA32 or IA64],
-              AC_DEFINE([NANOTIME]),)
+              AC_DEFINE([HAVE_NANOTIME]),)
 
 dnl need to add -qfixed to FFLAGS for Fortran tests on AIX
 if test "$F77" = xlf90 ; then

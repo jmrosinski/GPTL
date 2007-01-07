@@ -4,9 +4,9 @@ LDFLAGS      = @BITFLAGS@ @THREADFLAGS@ -L.. -lgptl @LDFLAGS@ @LIBS@
 INSTRFLAGS   = @INSTRFLAGS@
 
 OBJS = avail.o depth.o rawpapitest.o recursion.o stride.o \
-       memusage.o utrtest.o papiomptest.o cygprofile.o cygprofilesubs.o 
+       memusage.o utrtest.o papiomptest.o cygprofile.o cygprofilesubs.o scale.o
 EXES = avail depth     rawpapitest recursion stride \
-       memusage utrtest papiomptest cygprofile
+       memusage utrtest papiomptest cygprofile scale
 
 all: $(EXES)
 
@@ -47,3 +47,6 @@ cygprofilesubs.o: cygprofilesubs.c
 
 stride: stride.o
 	$(CC) -o $@ stride.o $(LDFLAGS)
+
+scale: scale.o
+	$(CC) -o $@ scale.o $(LDFLAGS)

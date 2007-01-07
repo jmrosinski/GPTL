@@ -27,7 +27,6 @@ static int *max_depth;           /* maximum indentation level encountered */
 static int *max_name_len;        /* max length of timer name */
 
 typedef struct {
-
   int depth;                     /* depth in calling tree */
   int padding[31];               /* padding is to mitigate false cache sharing */
 } Nofalse; 
@@ -1048,14 +1047,14 @@ static inline int get_cpustamp (long *usr, long *sys)
 */
 
 int GPTLquery (const char *name, 
-	       int *t,
+	       int t,
 	       int *count,
 	       int *onflg,
 	       double *wallclock,
 	       double *usr,
 	       double *sys,
 	       long *papicounters_out,
-	       const int *maxcounters)
+	       const int maxcounters)
 {
   Timer *ptr;                /* linked list pointer */
   int nchars;                /* number of characters in timer */
@@ -1066,15 +1065,15 @@ int GPTLquery (const char *name,
     return GPTLerror ("GPTLquery: GPTLinitialize has not been called\n");
   
 /*
-** If *t is < 0, assume the request is for the current thread
+** If t is < 0, assume the request is for the current thread
 */
   
-  if (*t < 0) {
-    if ((*t = get_thread_num (&nthreads, &maxthreads)) < 0)
+  if (t < 0) {
+    if ((t = get_thread_num (&nthreads, &maxthreads)) < 0)
       return GPTLerror ("GPTLquery: get_thread_num failure\n");
   } else {
-    if (*t >= maxthreads)
-      return GPTLerror ("GPTLquery: requested thread %d is too big\n", *t);
+    if (t >= maxthreads)
+      return GPTLerror ("GPTLquery: requested thread %d is too big\n", t);
   }
   
   /* Truncate input name if longer than MAX_CHARS characters  */
@@ -1083,7 +1082,7 @@ int GPTLquery (const char *name,
   strncpy (locname, name, nchars);
   locname[nchars] = '\0';
 
-  ptr = getentry (hashtable[*t], locname, &indx);
+  ptr = getentry (hashtable[t], locname, &indx);
   if ( !ptr)
     return GPTLerror ("GPTLquery: requested timer %s does not exist\n", locname);
 
@@ -1096,7 +1095,7 @@ int GPTLquery (const char *name,
   *usr       = ptr->cpu.accum_utime;
   *sys       = ptr->cpu.accum_stime;
 #ifdef HAVE_PAPI
-  GPTL_PAPIquery (&ptr->aux, papicounters_out, *ncounters);
+  GPTL_PAPIquery (&ptr->aux, papicounters_out, maxcounters);
 #endif
   return 0;
 }

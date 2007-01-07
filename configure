@@ -810,8 +810,6 @@ Optional Features:
 --enable-opt        Optimize for speed
 --enable-debug      Enable debugging
 --enable-bit64      Build 64 bit library
---enable-clock_gettime Check for clock_gettime in -lrt
---enable-mpi           Check for MPI_Wtime in -lmpi and -lmpich
 --enable-nanotime   Replace gettimeofday with native IA32 or IA64
 --enable-openmp     OpenMP threading (overrides pthreads)
 --enable-pthreads   pthreads threading
@@ -2160,7 +2158,7 @@ fi
 
 
 # Provide some information about the compiler.
-echo "$as_me:2163:" \
+echo "$as_me:2161:" \
      "checking for Fortran 77 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -2514,9 +2512,6 @@ fi
 
 fi
 
-# Check whether --enable-clock_gettime or --disable-clock_gettime was given.
-if test "${enable_clock_gettime+set}" = set; then
-  enableval="$enable_clock_gettime"
 
 echo "$as_me:$LINENO: checking for clock_gettime in -lrt" >&5
 echo $ECHO_N "checking for clock_gettime in -lrt... $ECHO_C" >&6
@@ -2591,11 +2586,6 @@ _ACEOF
 
 fi
 
-fi;
-
-# Check whether --enable-mpi or --disable-mpi was given.
-if test "${enable_mpi+set}" = set; then
-  enableval="$enable_mpi"
 
 echo "$as_me:$LINENO: checking for MPI_Wtime in -lmpi" >&5
 echo $ECHO_N "checking for MPI_Wtime in -lmpi... $ECHO_C" >&6
@@ -2745,7 +2735,6 @@ fi
 
 fi
 
-fi;
 
 
 for ac_func in gettimeofday times
@@ -2858,7 +2847,7 @@ fi
 if test "${enable_nanotime+set}" = set; then
   enableval="$enable_nanotime"
   cat >>confdefs.h <<\_ACEOF
-#define NANOTIME 1
+#define HAVE_NANOTIME 1
 _ACEOF
 
 fi;
@@ -3450,7 +3439,7 @@ _ACEOF
 # flags.
 ac_save_FFLAGS=$FFLAGS
 FFLAGS="$FFLAGS $ac_verb"
-(eval echo $as_me:3453: \"$ac_link\") >&5
+(eval echo $as_me:3442: \"$ac_link\") >&5
 ac_f77_v_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 echo "$ac_f77_v_output" >&5
 FFLAGS=$ac_save_FFLAGS
@@ -3528,7 +3517,7 @@ _ACEOF
 # flags.
 ac_save_FFLAGS=$FFLAGS
 FFLAGS="$FFLAGS $ac_cv_prog_f77_v"
-(eval echo $as_me:3531: \"$ac_link\") >&5
+(eval echo $as_me:3520: \"$ac_link\") >&5
 ac_f77_v_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 echo "$ac_f77_v_output" >&5
 FFLAGS=$ac_save_FFLAGS
