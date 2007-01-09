@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>  /* atoi */
 #include <unistd.h>  /* getopt */
+#include <string.h>  /* memset */
 
 #include "../gptl.h"
 
@@ -8,11 +9,11 @@
 #include <papi.h>
 #endif
 
-float add (int, float *);
-float multiply (int, float *);
-float multadd (int, float *);
-float divide (int, float *);
-float compare (int, float *);
+void add (int, float *);
+void multiply (int, float *);
+void multadd (int, float *);
+void divide (int, float *);
+void compare (int, float *);
 
 int main (int argc, char **argv)
 {
@@ -22,7 +23,6 @@ int main (int argc, char **argv)
   int papiopt;
 
   float ret;
-  float zero = 0.;
   float *arr;
 
   extern char *optarg;
@@ -76,11 +76,16 @@ int main (int argc, char **argv)
 #pragma omp parallel for private (iter, zero, ret)
       
   for (iter = 1; iter <= nompiter; iter++) {
-    ret = add (looplen, &zero);
-    ret = multiply (looplen, &zero);
-    ret = multadd (looplen, &zero);
-    ret = divide (looplen, &zero);
-    ret = compare (looplen, arr);
+    memset (arr, 0, looplen * sizeof (float));
+    add (looplen, arr);
+    memset (arr, 0, looplen * sizeof (float));
+    multiply (looplen, arr);
+    memset (arr, 0, looplen * sizeof (float));
+    multadd (looplen, arr);
+    memset (arr, 0, looplen * sizeof (float));
+    divide (looplen, arr);
+    memset (arr, 0, looplen * sizeof (float));
+    compare (looplen, arr);
   }
 
   GPTLstop ("total");
@@ -91,10 +96,9 @@ int main (int argc, char **argv)
   return 0;
 }
 
-float add (int looplen, float *zero)
+void add (int looplen, float *arr)
 {
   int i;
-  float val = *zero;
   char string[128];
 
   if (looplen < 1000000)
@@ -106,18 +110,15 @@ float add (int looplen, float *zero)
     exit (1);
 
   for (i = 1; i <= looplen; ++i)
-    val += i;
+    arr[i] += (float) i;
 
   if (GPTLstop (string) < 0)
     exit (1);
-
-  return val;
 }
 
-float multiply (int looplen, float *zero)
+void multiply (int looplen, float *arr)
 {
   int i;
-  float val = *zero;
   char string[128];
 
   if (looplen < 1000000)
@@ -129,18 +130,15 @@ float multiply (int looplen, float *zero)
     exit (1);
 
   for (i = 1; i <= looplen; ++i)
-    val *= i;
+    arr[i] *= (float) i;
 
   if (GPTLstop (string) < 0)
     exit (1);
-
-  return val;
 }
 
-float multadd (int looplen, float *zero)
+void multadd (int looplen, float *arr)
 {
   int i;
-  float val = *zero;
   char string[128];
 
   if (looplen < 1000000)
@@ -152,18 +150,15 @@ float multadd (int looplen, float *zero)
     exit (1);
 
   for (i = 1; i <= looplen; ++i)
-    val += i*1.1;
+    arr[i] += ((float) i) * 1.1;
 
   if (GPTLstop (string) < 0)
     exit (1);
-
-  return val;
 }
 
-float divide (int looplen, float *zero)
+void divide (int looplen, float *arr)
 {
   int i;
-  float val = *zero;
   char string[128];
 
   if (looplen < 1000000)
@@ -175,15 +170,13 @@ float divide (int looplen, float *zero)
     exit (1);
 
   for (i = 1; i <= looplen; ++i)
-    val /= i;
+    arr[i] /= (float) i;
 
   if (GPTLstop (string) < 0)
     exit (1);
-
-  return val;
 }
 
-float compare (int looplen, float *arr)
+void compare (int looplen, float *arr)
 {
   int i;
   char string[128];
@@ -202,6 +195,4 @@ float compare (int looplen, float *arr)
 
   if (GPTLstop (string) < 0)
     exit (1);
-
-  return 0.;
 }
