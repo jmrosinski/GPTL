@@ -1,5 +1,7 @@
-#include "../gptl.h"
 #include <stdio.h>
+#include <stdlib.h>
+
+#include "../gptl.h"
 
 int main ()
 {

@@ -51,7 +51,7 @@ int main (int argc, char **argv)
   double usr;
   double sys;
   double rdiff;
-  double diam, dsendto, drecvfm, diter;
+  double diam, drecvfm, diter;
   double diampiter, drecvfmpiter;
 
   MPI_Status status;
@@ -87,7 +87,16 @@ int main (int argc, char **argv)
   sendbuf = (double *) malloc (nsendrecv * sizeof (double));
   recvbuf = (double *) malloc (nsendrecv * sizeof (double));
 
+  /*
+  ** Count floating point ops
+  */
+
   GPTLsetoption (PAPI_FP_OPS, 1);
+
+  /*
+  ** Try some different underlying timing routines
+  */
+
   GPTLsetutr (GPTLclockgettime);
   GPTLsetutr (GPTLmpiwtime);
   GPTLsetutr (GPTLnanotime);
@@ -95,18 +104,19 @@ int main (int argc, char **argv)
   if (GPTLinitialize () < 0)
     exit (1);
 
-  sendto = (iam + 1) % ntask;     /* right neighbor */
+  sendto = (iam + 1) % ntask;         /* right neighbor */
   recvfm = (iam + ntask - 1) % ntask; /* left neighbor */
 
   diam = iam;
-  dsendto = sendto;
   drecvfm = recvfm;
 
   /*
-  ** Loop over time
+  ** Loop over time doing the same thing over and over
   */
 
   for (iter = 0; iter < niter; iter++) {
+    ret = MPI_Barrier (MPI_COMM_WORLD);
+
     diter = iter;
     diampiter = diam + diter;
     drecvfmpiter = drecvfm + diter;
@@ -129,7 +139,17 @@ int main (int argc, char **argv)
     ret = GPTLstart ("FPops");
     for (i = 0; i < nsendrecv; i++) {
       expect = 0.1*(drecvfmpiter + (double) i);
+
+      /*
+      ** For some reason this counts as 3 FP ops
+      */
+
       diff = abs ((expect - recvbuf[i]));
+
+      /*
+      ** For some reason this counts as 2 FP ops
+      */
+
       if (diff > maxdiff)
 	maxdiff = diff;
     }
@@ -158,7 +178,7 @@ int main (int argc, char **argv)
   printf ("FPops: iam %d maxdiff=%9.3g\n", iam, maxdiff);
 
   ret = GPTLquery ("FPops", -1, &count, &onflg, &wall, &usr, &sys, papicounters, 2);
-  nexpect = niter*(nsendrecv*3 + nsendrecv*5);
+  nexpect = niter*nsendrecv*(3 + 8);
   rdiff = 100. * (nexpect - papicounters[0]) / (double) nexpect;
   printf ("FPops: iam %d expected %ld flops got %ld rdiff=%.2f%%\n",
 	  iam, nexpect, papicounters[0], rdiff);
