@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>  /* atoi */
 #include <unistd.h>  /* getopt */
+
 #include "../gptl.h"
 
 #ifdef HAVE_PAPI
@@ -11,6 +12,7 @@ float add (int, float *);
 float multiply (int, float *);
 float multadd (int, float *);
 float divide (int, float *);
+float compare (int, float *);
 
 int main (int argc, char **argv)
 {
@@ -21,6 +23,7 @@ int main (int argc, char **argv)
 
   float ret;
   float zero = 0.;
+  float *arr;
 
   extern char *optarg;
 
@@ -59,8 +62,13 @@ int main (int argc, char **argv)
   printf ("Outer loop length (OMP)=%d\n", nompiter);
   printf ("Inner loop length=%d\n", looplen);
 
-  if (GPTLsetoption (GPTLabort_on_error, 1) < 0)
+  if ( ! (arr = (float *) malloc (looplen * sizeof (float)))) {
+    printf ("malloc error\n");
     exit (3);
+  }
+
+  if (GPTLsetoption (GPTLabort_on_error, 1) < 0)
+    exit (4);
 
   GPTLinitialize ();
   GPTLstart ("total");
@@ -72,6 +80,7 @@ int main (int argc, char **argv)
     ret = multiply (looplen, &zero);
     ret = multadd (looplen, &zero);
     ret = divide (looplen, &zero);
+    ret = compare (looplen, arr);
   }
 
   GPTLstop ("total");
@@ -172,4 +181,27 @@ float divide (int looplen, float *zero)
     exit (1);
 
   return val;
+}
+
+float compare (int looplen, float *arr)
+{
+  int i;
+  char string[128];
+
+  if (looplen < 1000000)
+    sprintf (string, "%ddivides", looplen);
+  else
+    sprintf (string, "%10.3gcompares", (double) looplen);
+
+  if (GPTLstart (string) < 0)
+    exit (1);
+
+  for (i = 0; i < looplen; ++i)
+    if (arr[i] > 7.)
+      arr[i] = 0.;
+
+  if (GPTLstop (string) < 0)
+    exit (1);
+
+  return 0.;
 }
