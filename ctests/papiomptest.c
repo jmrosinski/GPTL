@@ -78,12 +78,16 @@ int main (int argc, char **argv)
   for (iter = 1; iter <= nompiter; iter++) {
     memset (arr, 0, looplen * sizeof (float));
     add (looplen, arr);
+
     memset (arr, 0, looplen * sizeof (float));
     multiply (looplen, arr);
+
     memset (arr, 0, looplen * sizeof (float));
     multadd (looplen, arr);
+
     memset (arr, 0, looplen * sizeof (float));
     divide (looplen, arr);
+
     memset (arr, 0, looplen * sizeof (float));
     compare (looplen, arr);
   }
@@ -104,7 +108,7 @@ void add (int looplen, float *arr)
   if (looplen < 1000000)
     sprintf (string, "%dadditions", looplen);
   else
-    sprintf (string, "%10.3gadditions", (double) looplen);
+    sprintf (string, "%-.3gadditions", (double) looplen);
 
   if (GPTLstart (string) < 0)
     exit (1);
@@ -124,7 +128,7 @@ void multiply (int looplen, float *arr)
   if (looplen < 1000000)
     sprintf (string, "%dmultiplies", looplen);
   else
-    sprintf (string, "%10.3gmultiplies", (double) looplen);
+    sprintf (string, "%-.3gmultiplies", (double) looplen);
 
   if (GPTLstart (string) < 0)
     exit (1);
@@ -144,7 +148,7 @@ void multadd (int looplen, float *arr)
   if (looplen < 1000000)
     sprintf (string, "%dmultadds", looplen);
   else
-    sprintf (string, "%10.3gmultadds", (double) looplen);
+    sprintf (string, "%-.3gmultadds", (double) looplen);
 
   if (GPTLstart (string) < 0)
     exit (1);
@@ -164,7 +168,7 @@ void divide (int looplen, float *arr)
   if (looplen < 1000000)
     sprintf (string, "%ddivides", looplen);
   else
-    sprintf (string, "%10.3gdivides", (double) looplen);
+    sprintf (string, "%-.3gdivides", (double) looplen);
 
   if (GPTLstart (string) < 0)
     exit (1);
@@ -184,7 +188,7 @@ void compare (int looplen, float *arr)
   if (looplen < 1000000)
     sprintf (string, "%ddivides", looplen);
   else
-    sprintf (string, "%10.3gcompares", (double) looplen);
+    sprintf (string, "%-.3gcompares", (double) looplen);
 
   if (GPTLstart (string) < 0)
     exit (1);
