@@ -42,9 +42,9 @@ static int depthlimit  = 99999;  /* max depth for timers (99999 is effectively i
 static bool disabled = false;    /* Timers disabled? */
 static bool initialized = false; /* GPTLinitialize has been called */
 
-static long long ref_papitime = -1;  /* ref start point for PAPI_get_real_usec */
 static time_t ref_gettimeofday = -1; /* ref start point for gettimeofday */
-static time_t ref_clock_gettime = -1;
+static time_t ref_clock_gettime = -1;/* ref start point for clock_gettime */
+static long long ref_papitime = -1;  /* ref start point for PAPI_get_real_usec */
 
 typedef struct {
   const Option option;           /* wall, cpu, etc. */
@@ -184,11 +184,7 @@ int GPTLsetoption (const int option,  /* option */
 }
 
 /*
-** GPTLsetutr: set underlying timing routine. Ideally want to ensure
-**   initialize = false on entry. But PAPI requires its init routine
-**   be called *before* any other stuff is done, which for GPTL means
-**   GPTLsetutr must be called *after* GPTLinitialize() when the PAPI
-**   wallclock timer is being used. 
+** GPTLsetutr: set underlying timing routine.
 **
 ** Input arguments:
 **   option: index which sets function
@@ -208,7 +204,6 @@ int GPTLsetutr (const int option)
       printf ("GPTLsetutr: Setting underlying wallclock timer to %s\n", 
 	      funclist[i].name);
       funcidx = i;
-      ptr2wtimefunc = funclist[i].func;
       return 0;
     }
   }
@@ -286,8 +281,13 @@ int GPTLinitialize (void)
   ** Call init routine for underlying timing routine.
   */
 
-  if ((*funclist[funcidx].funcinit)() < 0)
-    return  GPTLerror ("GPTLinitialize: failure in %s\n", funclist[funcidx].name);
+  if ((*funclist[funcidx].funcinit)() < 0) {
+    printf ("GPTLinitialize: failure initializing %s: reverting underlying timer"
+	    " to gettimeofday\n", funclist[funcidx].name);
+    funcidx = 0;
+  }
+
+  ptr2wtimefunc = funclist[funcidx].func;
 
   t1 = (*ptr2wtimefunc) ();
   t2 = (*ptr2wtimefunc) ();
@@ -349,6 +349,7 @@ int GPTLfinalize (void)
   initialized = false;
   ref_gettimeofday = -1;
   ref_clock_gettime = -1;
+  ref_papitime = -1;
 
   return 0;
 }
@@ -1283,6 +1284,7 @@ static float get_clockfreq ()
 /*
 ** The following are the set of underlying timing routines which may or may
 ** not be available. And their accompanying init routines.
+** NANOTIME is currently only available on x86.
 */
 
 static int init_nanotime ()
@@ -1311,6 +1313,10 @@ static inline double utr_nanotime ()
 #endif
 }
 
+/*
+** rtc is currently only available on UNICOSMP
+*/
+
 static int init_rtc ()
 {
 #ifdef UNICOSMP
@@ -1333,6 +1339,10 @@ static inline double utr_rtc ()
 #endif
 }
 
+/*
+** MPI_Wtime requires the MPI lib.
+*/
+
 static int init_mpiwtime ()
 {
 #if ( defined HAVE_LIBMPI ) || ( defined HAVE_LIBMPICH )
@@ -1351,6 +1361,10 @@ static inline double utr_mpiwtime ()
   return -1.;
 #endif
 }
+
+/*
+** PAPI_get_real_usec requires the PAPI lib.
+*/
 
 static int init_papitime ()
 {
@@ -1373,7 +1387,9 @@ static inline double utr_papitime ()
 #endif
 }
 
-/* Probably need to load with -lrt for this one to work */
+/* 
+** Probably need to load with -lrt for this one to work 
+*/
 
 static int init_clock_gettime ()
 {
@@ -1400,6 +1416,10 @@ static inline double utr_clock_gettime ()
 #endif
 }
 
+/*
+** Default available most places: gettimeofday
+*/
+
 static int init_gettimeofday ()
 {
 #ifdef HAVE_GETTIMEOFDAY
@@ -1424,7 +1444,9 @@ static inline double utr_gettimeofday ()
 #endif
 }
 
-/* Determine underlying timing routine overhead */
+/* 
+** Determine underlying timing routine overhead: call it 100 times.
+*/
 
 static double utr_getoverhead ()
 {
