@@ -7,6 +7,10 @@
 #include <ctype.h>         /* isdigit */
 #include <assert.h>
 
+#ifdef HAVE_PAPI
+#include <papi.h>
+#endif
+
 #ifdef UNICOSMP
 #include <intrinsics.h>    /* rtc */
 #endif
@@ -178,6 +182,19 @@ int GPTLsetoption (const int option,  /* option */
 #endif
   return GPTLerror ("GPTLsetoption: option %d not found\n", option);
 }
+
+/*
+** GPTLsetutr: set underlying timing routine. Ideally want to ensure
+**   initialize = false on entry. But PAPI requires its init routine
+**   be called *before* any other stuff is done, which for GPTL means
+**   GPTLsetutr must be called *after* GPTLinitialize() when the PAPI
+**   wallclock timer is being used. 
+**
+** Input arguments:
+**   option: index which sets function
+**
+** Return value: 0 (success) or GPTLerror (failure)
+*/
 
 int GPTLsetutr (const int option)
 {
@@ -1335,7 +1352,7 @@ static inline double utr_mpiwtime ()
 static int init_papitime ()
 {
 #ifdef HAVE_PAPI
-  ref_papitime = PAPI_get_real_usec (void);
+  ref_papitime = PAPI_get_real_usec ();
   printf ("init_papitime: ref_papitime=%ld\n", (long) ref_papitime);
   return 0;
 #else

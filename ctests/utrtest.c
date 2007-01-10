@@ -16,14 +16,14 @@ int main (int argc, char **argv)
   printf ("Purpose: estimate overhead of GPTL\n");
   GPTLsetoption (GPTLabort_on_error, 0);
 
+  GPTLinitialize ();
+
   GPTLsetutr (GPTLmpiwtime);
   GPTLsetutr (GPTLrtc);
-  GPTLsetutr (GPTLgettimeofday);
   GPTLsetutr (GPTLnanotime);
   GPTLsetutr (GPTLclockgettime);
   GPTLsetutr (GPTLpapitime);
-
-  GPTLinitialize ();
+  GPTLsetutr (GPTLgettimeofday);
 
   GPTLstart ("total");
   /*  GPTLdisable (); */

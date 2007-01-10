@@ -193,9 +193,11 @@ void compare (int looplen, float *arr)
   if (GPTLstart (string) < 0)
     exit (1);
 
+ loopblahnew:
   for (i = 0; i < looplen; ++i)
-    if (arr[i] > 7.)
-      arr[i] = 0.;
+ ifblahnew:
+  if ((int) arr[i] > 0)
+    arr[i] = 0.;
 
   if (GPTLstop (string) < 0)
     exit (1);
