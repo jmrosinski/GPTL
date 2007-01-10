@@ -9,6 +9,7 @@
       integer GPTLmpiwtime
       integer GPTLclockgettime
       integer GPTLgettimeofday
+      integer GPTLpapitime
 
       parameter (GPTLwall           = 1)
       parameter (GPTLcpu            = 2)
@@ -21,6 +22,7 @@
       parameter (GPTLmpiwtime       = 8)
       parameter (GPTLclockgettime   = 9)
       parameter (GPTLgettimeofday   = 10)
+      parameter (GPTLpapitime       = 11)
 
 ! Externals
 

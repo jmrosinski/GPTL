@@ -37,7 +37,9 @@ static int maxthreads  = -1;     /* max threads (=nthreads for OMP). Init to bad
 static int depthlimit  = 99999;  /* max depth for timers (99999 is effectively infinite) */
 static bool disabled = false;    /* Timers disabled? */
 static bool initialized = false; /* GPTLinitialize has been called */
-static time_t ref_gettimeofday = -1; /* reference start point for gettimeofday */
+
+static long long ref_papitime = -1;  /* ref start point for PAPI_get_real_usec */
+static time_t ref_gettimeofday = -1; /* ref start point for gettimeofday */
 static time_t ref_clock_gettime = -1;
 
 typedef struct {
@@ -71,12 +73,14 @@ static inline double utr_nanotime (void);
 static inline double utr_rtc (void);
 static inline double utr_mpiwtime (void);
 static inline double utr_clock_gettime (void);
+static inline double utr_papitime (void);
 static inline double utr_gettimeofday (void);
 
 static int init_nanotime (void);
 static int init_rtc (void);
 static int init_mpiwtime (void);
 static int init_clock_gettime (void);
+static int init_papitime (void);
 static int init_gettimeofday (void);
 
 static double utr_getoverhead (void);
@@ -94,7 +98,9 @@ static Funcentry funclist[] = {
   {GPTLnanotime,     utr_nanotime,      init_nanotime,      "nanotime"},
   {GPTLrtc,          utr_rtc,           init_rtc,           "_rtc"},
   {GPTLmpiwtime,     utr_mpiwtime,      init_mpiwtime,      "MPI_Wtime"},
-  {GPTLclockgettime, utr_clock_gettime, init_clock_gettime, "clock_gettime"}};
+  {GPTLpapitime,     utr_papitime,      init_papitime,      "PAPI_get_real_usec"},
+  {GPTLclockgettime, utr_clock_gettime, init_clock_gettime, "clock_gettime"}
+};
 static const int nfuncentries = sizeof (funclist) / sizeof (Funcentry);
 
 /* 
@@ -1322,6 +1328,27 @@ static inline double utr_mpiwtime ()
   return MPI_Wtime ();
 #else
   (void) GPTLerror ("utr_mpiwtime: not enabled\n");
+  return -1.;
+#endif
+}
+
+static int init_papitime ()
+{
+#ifdef HAVE_PAPI
+  ref_papitime = PAPI_get_real_usec (void);
+  printf ("init_papitime: ref_papitime=%ld\n", (long) ref_papitime);
+  return 0;
+#else
+  return GPTLerror ("init_papitime: not enabled\n");
+#endif
+}
+  
+static inline double utr_papitime ()
+{
+#ifdef HAVE_PAPI
+  return (PAPI_get_real_usec () - ref_papitime) * 1.e-6;
+#else
+  (void) GPTLerror ("utr_papitime: not enabled\n");
   return -1.;
 #endif
 }

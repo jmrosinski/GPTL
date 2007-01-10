@@ -100,6 +100,7 @@ int main (int argc, char **argv)
   GPTLsetutr (GPTLclockgettime);
   GPTLsetutr (GPTLmpiwtime);
   GPTLsetutr (GPTLnanotime);
+  GPTLsetutr (GPTLpapitime);
 
   if (GPTLinitialize () < 0)
     exit (1);

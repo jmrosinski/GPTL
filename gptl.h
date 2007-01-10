@@ -1,5 +1,5 @@
 /*
-$Id: gptl.h,v 1.16 2007-01-07 00:36:38 rosinski Exp $
+$Id: gptl.h,v 1.17 2007-01-10 00:07:20 rosinski Exp $
 */
 #ifndef GPTL_H
 #define GPTL_H
@@ -16,7 +16,8 @@ typedef enum {
   GPTLrtc            = 7,
   GPTLmpiwtime       = 8,
   GPTLclockgettime   = 9,
-  GPTLgettimeofday   = 10
+  GPTLgettimeofday   = 10,
+  GPTLpapitime       = 11
 } Funcoption;
 
 /*
