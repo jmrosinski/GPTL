@@ -200,6 +200,9 @@ int GPTLsetutr (const int option)
 {
   int i;
 
+  if (initialized)
+    return GPTLerror ("GPTLsetutr: must be called BEFORE GPTLinitialize\n");
+
   for (i = 0; i < nfuncentries; i++) {
     if (option == (int) funclist[i].option) {
       printf ("GPTLsetutr: Setting underlying wallclock timer to %s\n", 
