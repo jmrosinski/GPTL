@@ -199,21 +199,11 @@ int GPTLsetoption (const int option,  /* option */
 int GPTLsetutr (const int option)
 {
   int i;
-  double t1;
-  double t2;
 
   for (i = 0; i < nfuncentries; i++) {
     if (option == (int) funclist[i].option) {
-      printf ("GPTLsetutr: testing %s\n", funclist[i].name);
-      (*funclist[i].funcinit) ();
-      if ((t1 = (*funclist[i].func) ()) < 0)
-	return GPTLerror ("GPTLsetutr: bad return from %s\n", funclist[i].name);
-      if ((t2 = (*funclist[i].func) ()) < 0)
-	return GPTLerror ("GPTLsetutr: bad return from %s\n", funclist[i].name);
-      if (t1 > t2)
-	return GPTLerror ("GPTLsetutr: bad t1=%f t2=%f\n", t1, t2);
-      printf ("Per call overhead est. t2-t1=%g should be near zero\n", t2-t1);
-      printf ("Wallclock timing routine set to %s\n", funclist[i].name);
+      printf ("GPTLsetutr: Setting underlying wallclock timer to %s\n", 
+	      funclist[i].name);
       funcidx = i;
       ptr2wtimefunc = funclist[i].func;
       return 0;
@@ -235,6 +225,8 @@ int GPTLinitialize (void)
 {
   int i;          /* loop index */
   int t;          /* thread index */
+
+  double t1, t2;  /* returned from underlying timer */
 
   if (initialized)
     return GPTLerror ("GPTLinitialize: has already been called\n");
@@ -288,12 +280,20 @@ int GPTLinitialize (void)
   }
 
   /* 
-  ** Call init routine for underlying timing routine (actually only required if 
-  ** using the default timer (gettimeofday)
+  ** Call init routine for underlying timing routine.
   */
 
   if ((*funclist[funcidx].funcinit)() < 0)
     return  GPTLerror ("GPTLinitialize: failure in %s\n", funclist[funcidx].name);
+
+  t1 = (*ptr2wtimefunc) ();
+  t2 = (*ptr2wtimefunc) ();
+
+  if (t1 > t2)
+    return GPTLerror ("GPTLinitialize: bad t1=%f t2=%f\n", t1, t2);
+
+  printf ("Per call overhead est. t2-t1=%g should be near zero\n", t2-t1);
+  printf ("Underlying wallclock timing routine is %s\n", funclist[funcidx].name);
 
   initialized = true;
   return 0;

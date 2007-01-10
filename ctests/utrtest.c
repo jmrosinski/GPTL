@@ -22,8 +22,8 @@ int main (int argc, char **argv)
   GPTLsetutr (GPTLrtc);
   GPTLsetutr (GPTLnanotime);
   GPTLsetutr (GPTLclockgettime);
-  GPTLsetutr (GPTLpapitime);
   GPTLsetutr (GPTLgettimeofday);
+  GPTLsetutr (GPTLpapitime);
 
   GPTLstart ("total");
   /*  GPTLdisable (); */
