@@ -142,13 +142,13 @@ int main (int argc, char **argv)
       expect = 0.1*(drecvfmpiter + (double) i);
 
       /*
-      ** For some reason this counts as 3 FP ops
+      ** On some machines the following is 3 FP ops
       */
 
       diff = abs ((expect - recvbuf[i]));
 
       /*
-      ** For some reason this counts as 2 FP ops
+      ** On some machines the following is 2 FP ops
       */
 
       if (diff > maxdiff)

@@ -2,8 +2,8 @@ FC          = @F77@
 FFLAGS      = @PAPIPREP@ @FORTDEFS@ @FFLAGS@ @BITFLAGS@ @FTHREADFLAGS@
 LDFLAGS     = @BITFLAGS@ @FTHREADFLAGS@ -L.. -lgptl @LDFLAGS@ @LIBS@
 
-OBJS = errtest.o papiomptest.o stride.o camtest.o
-EXES = errtest   papiomptest   stride   camtest
+OBJS = errtest.o papiomptest.o stride.o camtest.o utrtest.o
+EXES = errtest   papiomptest   stride   camtest   utrtest
 
 all: $(EXES)
 
@@ -21,3 +21,6 @@ stride: stride.o
 
 camtest: camtest.o
 	$(FC) $(FFLAGS) -o $@ camtest.o $(LDFLAGS)
+
+utrtest: utrtest.o
+	$(FC) $(FFLAGS) -o $@ utrtest.o $(LDFLAGS)

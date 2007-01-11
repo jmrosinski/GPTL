@@ -36,7 +36,7 @@
       write(6,*) 'Inner loop length=', looplen
 
       if (gptlsetoption (gptlabort_on_error, 1) .lt. 0) call exit(3)
-      if (gptlinitialize () .lt. 0) call exit(4)
+      if (gptlinitialize () .lt. 0) call exit(1)
 
 !$OMP PARALLEL DO PRIVATE (iter, zero)
 
@@ -47,13 +47,14 @@
         ret = divide (looplen, zero)
       end do
 
-      if (gptlpr (0) .lt. 0) call exit(5)
-      if (gptlfinalize () .lt. 0) call exit(6)
+      if (gptlpr (0) .lt. 0) call exit(2)
+      if (gptlfinalize () .lt. 0) call exit(3)
 
       stop 0
       end
 
       real function add (looplen, zero)
+#include "../gptl.inc"
       integer looplen
       real zero
 
@@ -66,16 +67,17 @@
       xlooplen = looplen
       write (string,'(1p,e10.3,a)') xlooplen, 'additions'
 
-      if (gptlstart (string) < 0) call exit(1)
+      if (gptlstart (string) .lt. 0) call exit(4)
       do i=1,looplen
         val = val + i
       end do
-      if (gptlstop (string) < 0) call exit(1)
+      if (gptlstop (string) .lt. 0) call exit(5)
       add = val
       return
       end
 
       real function multiply (looplen, zero)
+#include "../gptl.inc"
       integer looplen
       real zero
 
@@ -88,16 +90,17 @@
       xlooplen = looplen
       write (string,'(1p,e10.3,a)') xlooplen, 'multiplies'
 
-      if (gptlstart (string) < 0) call exit(1)
+      if (gptlstart (string) .lt. 0) call exit(6)
       do i=1,looplen
         val = val * i
       end do
-      if (gptlstop (string) < 0) call exit(1)
+      if (gptlstop (string) .lt. 0) call exit(7)
       multiply = val
       return
       end
 
       real function multadd (looplen, zero)
+#include "../gptl.inc"
       integer looplen
       real zero
 
@@ -110,16 +113,17 @@
       xlooplen = looplen
       write (string,'(1p,e10.3,a)') xlooplen, 'multadds'
 
-      if (gptlstart (string) < 0) call exit(1)
+      if (gptlstart (string) .lt. 0) call exit(8)
       do i=1,looplen
         val = val + i*1.1
       end do
-      if (gptlstop (string) < 0) call exit(1)
+      if (gptlstop (string) .lt. 0) call exit(9)
       multadd = val
       return
       end
 
       real function divide (looplen, zero)
+#include "../gptl.inc"
       integer looplen
       real zero
 
@@ -132,11 +136,11 @@
       xlooplen = looplen
       write (string,'(1p,e10.3,a)') xlooplen, 'divides'
 
-      if (gptlstart (string) < 0) call exit(1)
+      if (gptlstart (string) .lt. 0) call exit(10)
       do i=1,looplen
         val = val / i
       end do
-      if (gptlstop (string) < 0) call exit(1)
+      if (gptlstop (string) .lt. 0) call exit(11)
       divide = val
       return
       end

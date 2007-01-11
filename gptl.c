@@ -102,8 +102,8 @@ static Funcentry funclist[] = {
   {GPTLnanotime,     utr_nanotime,      init_nanotime,      "nanotime"},
   {GPTLrtc,          utr_rtc,           init_rtc,           "_rtc"},
   {GPTLmpiwtime,     utr_mpiwtime,      init_mpiwtime,      "MPI_Wtime"},
-  {GPTLpapitime,     utr_papitime,      init_papitime,      "PAPI_get_real_usec"},
-  {GPTLclockgettime, utr_clock_gettime, init_clock_gettime, "clock_gettime"}
+  {GPTLclockgettime, utr_clock_gettime, init_clock_gettime, "clock_gettime"},
+  {GPTLpapitime,     utr_papitime,      init_papitime,      "PAPI_get_real_usec"}
 };
 static const int nfuncentries = sizeof (funclist) / sizeof (Funcentry);
 
@@ -283,7 +283,7 @@ int GPTLinitialize (void)
 
   if ((*funclist[funcidx].funcinit)() < 0) {
     printf ("GPTLinitialize: failure initializing %s: reverting underlying timer"
-	    " to gettimeofday\n", funclist[funcidx].name);
+	    " to default %s\n", funclist[funcidx].name, funclist[0].name);
     funcidx = 0;
   }
 

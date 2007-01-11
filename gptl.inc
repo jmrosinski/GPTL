@@ -17,11 +17,11 @@
       parameter (GPTLoverhead       = 4)
       parameter (GPTLdepthlimit     = 5)
 
-      parameter (GPTLnanotime       = 6)
-      parameter (GPTLrtc            = 7)
-      parameter (GPTLmpiwtime       = 8)
-      parameter (GPTLclockgettime   = 9)
-      parameter (GPTLgettimeofday   = 10)
+      parameter (GPTLgettimeofday   = 6)
+      parameter (GPTLnanotime       = 7)
+      parameter (GPTLrtc            = 8)
+      parameter (GPTLmpiwtime       = 9)
+      parameter (GPTLclockgettime   = 10)
       parameter (GPTLpapitime       = 11)
 
 ! Externals
