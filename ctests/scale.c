@@ -197,7 +197,7 @@ int main (int argc, char **argv)
 
 #ifdef HAVE_PAPI
   rdiff = 100. * (nexpect - papicounters[0]) / (double) nexpect;
-  printf ("FPops: iam %d expected %ld flops got %ld rdiff=%.2f%%\n",
+  printf ("FPops: iam %d expected %d flops got %ld rdiff=%.2f%%\n",
 	  iam, nexpect, papicounters[0], rdiff);
 #endif
   

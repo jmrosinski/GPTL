@@ -22,7 +22,6 @@ int main (int argc, char **argv)
   int iter;
   int papiopt;
 
-  float ret;
   float *arr;
 
   extern char *optarg;
