@@ -40,6 +40,7 @@ static int maxthreads  = -1;     /* max threads (=nthreads for OMP). Init to bad
 static int depthlimit  = 99999;  /* max depth for timers (99999 is effectively infinite) */
 static bool disabled = false;    /* Timers disabled? */
 static bool initialized = false; /* GPTLinitialize has been called */
+static bool dousepapi = false;   /* saves a function call if stays false */
 
 static time_t ref_gettimeofday = -1; /* ref start point for gettimeofday */
 static time_t ref_clock_gettime = -1;/* ref start point for clock_gettime */
@@ -176,8 +177,11 @@ int GPTLsetoption (const int option,  /* option */
   }
 
 #ifdef HAVE_PAPI
-  if (GPTL_PAPIsetoption (option, val) == 0)
+  if (GPTL_PAPIsetoption (option, val) == 0) {
+    if (val)
+      dousepapi = true;
     return 0;
+  }
 #endif
   return GPTLerror ("GPTLsetoption: option %d not found\n", option);
 }
@@ -485,7 +489,7 @@ int GPTLstart (const char *name)               /* timer name */
   }
 
 #ifdef HAVE_PAPI
-  if (GPTL_PAPIstart (t, &ptr->aux) < 0)
+  if (dousepapi && GPTL_PAPIstart (t, &ptr->aux) < 0)
     return GPTLerror ("GPTLstart: error from GPTL_PAPIstart\n");
 #endif
 
@@ -583,7 +587,7 @@ int GPTLstop (const char *name)               /* timer name */
   }
 
 #ifdef HAVE_PAPI
-  if (GPTL_PAPIstop (t, &ptr->aux) < 0)
+  if (dousepapi && GPTL_PAPIstop (t, &ptr->aux) < 0)
     return GPTLerror ("GPTLstop: error from GPTL_PAPIstop\n");
 #endif
 
