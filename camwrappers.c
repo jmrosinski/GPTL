@@ -1,11 +1,10 @@
 /*
-** $Id: camwrappers.c,v 1.12 2007-01-12 21:39:04 rosinski Exp $
+** $Id: camwrappers.c,v 1.13 2007-01-12 21:59:48 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines
 */
 
 #include <string.h>
-#include <cfort.h>
 #include "private.h" /* MAX_CHARS, bool */
 #include "gptl.h"    /* function prototypes */
 

@@ -18,43 +18,43 @@ int main (int argc, char **argv)
   extern char *optarg;
   void getmaxmin (const double *, int, double *, double *, int *, int *);
 
-  const int mega = 1024*1024;
-  int sendtag;
-  int recvtag;
-  const double tol = 1.e-12;
+  const int mega = 1024*1024; /* convert to mega whatever */
+  int sendtag;                /* tag for mpi */
+  int recvtag;                /* tag for mpi */
+  const double tol = 1.e-12;  /* tolerance (double precision) */
 
-  int nsendrecv = 1024;
-  int niter = 1024;
-  int iam, sendto, recvfm;
-  int ntask;
-  int c;
-  int i, iter;
-  int nexpect;
-  int onflg;
-  int count;
-  int taskmax, taskmin;
-  int ret;
+  int nsendrecv = 1024;       /* default number of doubles for send/receive */
+  int niter = 1024;           /* default number of repetitions */
+  int iam, sendto, recvfm;    /* mpi taskids */
+  int ntask;                  /* number of mpi tasks */
+  int c;                      /* for parsing argv */
+  int i, iter;                /* loop indices */
+  int nexpect;                /* expected return from PAPI */
+  int onflg;                  /* returned by GPTLquery */
+  int count;                  /* returned by GPTLquery */
+  int taskmax, taskmin;       /* which mpi task caused a max or min */
+  int ret;                    /* return code */
 
-  long bytes;
-  long papicounters[2];
+  long bytes;                 /* number of bytes */
+  long papicounters[2];       /* returned from PAPI via GPTL */
 
-  double *sendbuf;
-  double *recvbuf;
-  double diff;
-  double maxdiff = 0.;
-  double aggrate;
-  double rate, *rates;
-  double rmax, rmin;
-  double wmax, wmin;
-  double expect;
-  double wall, *walls;
-  double usr;
-  double sys;
-  double rdiff;
-  double diam, drecvfm, diter;
-  double diampiter, drecvfmpiter;
+  double *sendbuf;            /* send buffer for MPI_Sendrecv */
+  double *recvbuf;            /* recv buffer for MPI_Sendrecv */
+  double diff;                /* difference */
+  double maxdiff = 0.;        /* max difference */
+  double aggrate;             /* aggregate rate (summed over mpi tasks) */
+  double rate, *rates;        /* rate for 1 task, rates for all tasks */
+  double rmax, rmin;          /* max, min rates */
+  double wmax, wmin;          /* wallclock max, min */
+  double expect;              /* expected value */
+  double wall, *walls;        /* wallclock time for 1 task, all tasks */
+  double usr;                 /* usr CPU time returned by GPTLquery */
+  double sys;                 /* sys CPU time returned by GPTLquery */
+  double rdiff;               /* relative difference */
+  double diam, drecvfm, diter;    /* double prec. versions of integers */
+  double diampiter, drecvfmpiter; /* double prec. versions of integers */
 
-  MPI_Status status;
+  MPI_Status status;     /* required by MPI_Sendrecv */
 
   MPI_Init (&argc, &argv);
   ret = MPI_Comm_rank (MPI_COMM_WORLD, &iam);
@@ -64,7 +64,11 @@ int main (int argc, char **argv)
 
   walls = (double *) malloc (ntask * sizeof (double));
   rates = (double *) malloc (ntask * sizeof (double));
-
+  
+/* 
+** Parse arg list
+*/
+  
   if (iam == 0) {
     while ((c = getopt (argc, argv, "l:n:")) != -1) {
       switch (c) {
@@ -91,7 +95,9 @@ int main (int argc, char **argv)
   ** Count floating point ops
   */
 
+#ifdef HAVE_PAPI
   GPTLsetoption (PAPI_FP_OPS, 1);
+#endif
 
   /*
   ** Try some different underlying timing routines
@@ -110,7 +116,7 @@ int main (int argc, char **argv)
 
   diam = iam;
   drecvfm = recvfm;
-
+  
   /*
   ** Loop over time doing the same thing over and over
   */
@@ -125,9 +131,18 @@ int main (int argc, char **argv)
     recvtag = iter;
 
     ret = GPTLstart ("FPops");
+    
+    /*
+    ** Fill the send buffer with known values
+    */
+
     for (i = 0; i < nsendrecv; i++) 
       sendbuf[i] = 0.1*(diampiter + (double) i);
     ret = GPTLstop ("FPops");
+
+    /*
+    ** Synchronize, then Sendrecv
+    */
 
     ret = MPI_Barrier (MPI_COMM_WORLD);
 
@@ -180,9 +195,12 @@ int main (int argc, char **argv)
 
   ret = GPTLquery ("FPops", -1, &count, &onflg, &wall, &usr, &sys, papicounters, 2);
   nexpect = niter*nsendrecv*(3 + 8);
+
+#ifdef HAVE_PAPI
   rdiff = 100. * (nexpect - papicounters[0]) / (double) nexpect;
   printf ("FPops: iam %d expected %ld flops got %ld rdiff=%.2f%%\n",
 	  iam, nexpect, papicounters[0], rdiff);
+#endif
   
   ret = MPI_Gather (&wall, 1, MPI_DOUBLE, walls, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
