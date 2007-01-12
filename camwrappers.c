@@ -1,46 +1,55 @@
 /*
-** $Id: camwrappers.c,v 1.11 2007-01-01 03:44:02 rosinski Exp $
+** $Id: camwrappers.c,v 1.12 2007-01-12 21:39:04 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines
 */
 
 #include <string.h>
+#include <cfort.h>
 #include "private.h" /* MAX_CHARS, bool */
 #include "gptl.h"    /* function prototypes */
 
 #if ( defined FORTRANCAPS )
 
+#define gptlsetoption GPTLSETOPTION
+#define gptlinitialize GPTLINITIALIZE
 #define t_initializef T_INITIALIZEF
 #define t_prf T_PRF
 #define t_resetf T_RESETF
 #define t_stampf T_STAMPF
 #define t_startf T_STARTF
 #define t_stopf T_STOPF
-#define t_setoptionf T_SETOPTIONF
 
 #elif ( defined FORTRANUNDERSCORE )
 
+#define gptlsetoption gptlsetoption_
+#define gptlinitialize gptlinitialize_
 #define t_initializef t_initializef_
 #define t_prf t_prf_
 #define t_resetf t_resetf_
 #define t_stampf t_stampf_
 #define t_startf t_startf_
 #define t_stopf t_stopf_
-#define t_setoptionf t_setoptionf_
 
 #elif ( defined FORTRANDOUBLEUNDERSCORE )
 
+#define gptlsetoption gptlsetoption_
+#define gptlinitialize gptlinitialize_
 #define t_initializef t_initializef__
 #define t_prf t_prf__
 #define t_resetf t_resetf__
 #define t_stampf t_stampf__
 #define t_startf t_startf__
 #define t_stopf t_stopf__
-#define t_setoptionf t_setoptionf__
 
 #endif
 
-int t_initializef ()
+int gptlsetoption (int *option, int *val)
+{
+  return GPTLsetoption ( (Option) *option, *val);
+}
+
+int gptlinitialize ()
 {
   return GPTLinitialize ();
 }
@@ -83,7 +92,3 @@ int t_stopf (char *name, int nc1)
   return GPTLstop (cname);
 }
 
-int t_setoptionf (int *option, int *val)
-{
-  return GPTLsetoption (*option, *val);
-}
