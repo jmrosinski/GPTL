@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <string.h>        /* memset, strcmp (via STRMATCH) */
 #include <ctype.h>         /* isdigit */
-#include <assert.h>
 
 #ifdef HAVE_PAPI
 #include <papi.h>
@@ -592,7 +591,11 @@ int GPTLstop (const char *name)               /* timer name */
 
     delta = tp1 - ptr->wall.last;
     ptr->wall.accum += delta;
-    assert (delta >= 0.);
+
+    if (delta < 0.) {
+      printf ("GPTLstop: negative delta=%g reset to 0\n", delta);
+      delta = 0.;
+    }
 
     if (ptr->count == 1) {
       ptr->wall.max = delta;
