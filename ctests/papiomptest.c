@@ -73,7 +73,7 @@ int main (int argc, char **argv)
   GPTLinitialize ();
   GPTLstart ("total");
 	 
-#pragma omp parallel for private (iter, zero, ret)
+#pragma omp parallel for private (iter, arr)
       
   for (iter = 1; iter <= nompiter; iter++) {
     memset (arr, 0, looplen * sizeof (float));

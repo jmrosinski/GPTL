@@ -83,10 +83,9 @@ int main (int argc, char **argv)
 	exit (2);
       }
     }
+    printf ("Number of iterations  will be %d\n", niter);
+    printf ("Loop length will be           %d\n", nsendrecv);
   }
-
-  printf ("Number of iterations  will be %d\n", nsendrecv);
-  printf ("Loop length will be          %d\n", nsendrecv);
 
   sendbuf = (double *) malloc (nsendrecv * sizeof (double));
   recvbuf = (double *) malloc (nsendrecv * sizeof (double));
@@ -102,12 +101,12 @@ int main (int argc, char **argv)
   /*
   ** Try some different underlying timing routines
   */
-
+/*
   GPTLsetutr (GPTLclockgettime);
   GPTLsetutr (GPTLmpiwtime);
   GPTLsetutr (GPTLnanotime);
   GPTLsetutr (GPTLpapitime);
-
+*/
   if (GPTLinitialize () < 0)
     exit (1);
 
