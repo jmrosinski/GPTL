@@ -1,10 +1,13 @@
 /*
-** $Id: camwrappers.c,v 1.13 2007-01-12 21:59:48 rosinski Exp $
+** $Id: camwrappers.c,v 1.14 2007-01-15 21:56:25 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines
 */
 
 #include <string.h>
+/* Need to define the arch by hand for Fortran underscoring */
+#define AIX
+#include "cfort.h"
 #include "private.h" /* MAX_CHARS, bool */
 #include "gptl.h"    /* function prototypes */
 
