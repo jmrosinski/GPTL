@@ -12,6 +12,8 @@ CAMOBJS  = camwrappers.o gptl.o util.o threadutil.o get_memusage.o \
            print_memusage.o gptl_papi.o
 @SET_MAKE@
 
+all: $(LIBNAME) $(CAMLIB) ctests/all ftests/all
+
 $(LIBNAME): $(OBJS)
 	ar @ARFLAGS@ $@ $(OBJS)
 	rm -f ctests/*.o ftests/*.o
@@ -19,8 +21,6 @@ $(LIBNAME): $(OBJS)
 $(CAMLIB): $(CAMOBJS)
 	ar @ARFLAGS@ $@ $(CAMOBJS)
 	rm -f ctests/*.o ftests/*.o
-
-all: $(LIBNAME) $(CAMLIB) ctests/all ftests/all
 
 install: $(LIBNAME) $(CAMLIB)
 	cp $(LIBNAME) $(LIBDIR)
