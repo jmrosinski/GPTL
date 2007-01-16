@@ -1,5 +1,5 @@
 CC       = @CC@
-CFLAGS   = @CFLAGS@ @THREADFLAGS@ @FDEFS@ @THREADDEFS@ @DEFS@ @PAPIPREP@ @BITFLAGS@
+CFLAGS   = @CAMFLAGS@ @CFLAGS@ @THREADFLAGS@ @FDEFS@ @THREADDEFS@ @DEFS@ @PAPIPREP@ @BITFLAGS@
 
 LIBNAME  = libgptl.a
 CAMLIB   = libcamgptl.a
@@ -25,7 +25,7 @@ $(CAMLIB): $(CAMOBJS)
 install: $(LIBNAME) $(CAMLIB)
 	cp $(LIBNAME) $(LIBDIR)
 	cp $(CAMLIB) $(LIBDIR)
-	cp gptl.h gptl.inc $(INCDIR)
+	cp gptl.h gptl.inc camgptl.inc $(INCDIR)
 	cp man/man3/*.3 $(MANDIR)
 
 uninstall:
@@ -38,19 +38,14 @@ ftests/all:
 	(cd ftests && $(MAKE) all)
 
 clean:
-	rm -f $(OBJS) $(LIBNAME) $(CAMLIB)
+	rm -f $(OBJS) camwrappers.o $(CAMOBJS) $(LIBNAME) $(CAMLIB)
 	(cd ctests && $(MAKE) clean)
 	(cd ftests && $(MAKE) clean)
 
-camwrappers.o: gptl.h private.h cfort.h
-	$(CC) -c -o $@ $*.c
-f_wrappers.o: gptl.h private.h
-gptl.o: gptl.h private.h
-util.o: gptl.h private.h
-threadutil.o: gptl.h private.h
-gptl_papi.o: gptl.h private.h
-
-
-
-
-
+camwrappers.o: camwrappers.c gptl.h private.h cfort.h
+	$(CC) -c @BITFLAGS@ @CAMFLAGS@ -o $@ $*.c
+f_wrappers.o: f_wrappers.c gptl.h private.h
+gptl.o: gptl.c gptl.h private.h
+util.o: util.c gptl.h private.h
+threadutil.o: threadutil.c gptl.h private.h
+gptl_papi.o: gptl_papi.c gptl.h private.h

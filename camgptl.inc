@@ -30,7 +30,7 @@
       integer gptlinitialize
       integer t_startf
       integer t_stopf
-      integer gptlstamp 
+      integer t_stampf
       integer gptlpr
       integer gptlreset 
       integer gptlfinalize
@@ -47,7 +47,7 @@
       external gptlinitialize
       external t_startf
       external t_stopf
-      external gptlstamp 
+      external t_stampf
       external gptlpr
       external gptlreset 
       external gptlfinalize

@@ -12,7 +12,7 @@
       ret = gptlsetutr (gptlclockgettime)
 
       ret = gptlinitialize ()
-      ret = gptlstamp (wall, usr, sys)
+      ret = t_stampf (wall, usr, sys)
       write (6,*)'wall,usr,sys=', wall,usr,sys
       ret = t_startf ('total')
       ret =  gptldisable ()

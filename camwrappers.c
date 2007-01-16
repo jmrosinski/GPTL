@@ -1,11 +1,8 @@
 /*
-** $Id: camwrappers.c,v 1.16 2007-01-16 20:47:41 rosinski Exp $
+** $Id: camwrappers.c,v 1.17 2007-01-16 21:46:00 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines used by CAM
 */
-
-/* Need to define the arch by hand for Fortran underscoring */
-#define G95
 #include "cfort.h"
 
 #include <string.h>
@@ -18,7 +15,7 @@
 #define gptlfinalize GPTLFINALIZE
 #define gptlpr GPTLPR
 #define gptlreset GPTLRESET
-#define gptlstamp GPTLSTAMP
+#define t_stampf T_STAMPF
 #define t_startf T_STARTF
 #define t_stopf T_STOPF
 #define gptlsetoption GPTLSETOPTION
@@ -37,7 +34,7 @@
 #define gptlfinalize gptlfinalize_
 #define gptlpr gptlpr_
 #define gptlreset gptlreset_
-#define gptlstamp gptlstamp_
+#define t_stampf t_stampf_
 #define t_startf t_startf_
 #define t_stopf t_stopf_
 #define gptlsetoption gptlsetoption_
@@ -56,7 +53,7 @@
 #define gptlfinalize gptlfinalize_
 #define gptlpr gptlpr_
 #define gptlreset gptlreset_
-#define gptlstamp gptlstamp_
+#define t_stampf t_stampf__
 #define t_startf t_startf__
 #define t_stopf t_stopf__
 #define gptlsetoption gptlsetoption_
@@ -92,7 +89,7 @@ void gptlreset ()
   return;
 }
 
-int gptlstamp (double *wall, double *usr, double *sys)
+int t_stampf (double *wall, double *usr, double *sys)
 {
   return GPTLstamp (wall, usr, sys);
 }
