@@ -1304,7 +1304,7 @@ echo "${ECHO_T}no" >&6
 fi
 
 
-CAMOS="`uname`"
+OS="`uname | tr 'a-z' 'A-Z'`"
 CAMFLAGS="-D$CAMOS"
 OS="`uname | tr 'A-Z' 'a-z'`"
 case "$OS" in

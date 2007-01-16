@@ -5,7 +5,7 @@ AC_LANG(C)
 AC_PROG_MAKE_SET
 
 dnl Get the OS type
-CAMOS="`uname`"
+OS="`uname | tr '[a-z]' '[A-Z]'`"
 CAMFLAGS="-D$CAMOS"
 OS="`uname | tr '[A-Z]' '[a-z]'`"
 case "$OS" in
