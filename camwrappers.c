@@ -1,5 +1,5 @@
 /*
-** $Id: camwrappers.c,v 1.15 2007-01-16 20:28:16 rosinski Exp $
+** $Id: camwrappers.c,v 1.16 2007-01-16 20:47:41 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines used by CAM
 */
@@ -16,7 +16,7 @@
 
 #define gptlinitialize GPTLINITIALIZE
 #define gptlfinalize GPTLFINALIZE
-#define t_prf T_PRF
+#define gptlpr GPTLPR
 #define gptlreset GPTLRESET
 #define gptlstamp GPTLSTAMP
 #define t_startf T_STARTF
@@ -35,7 +35,7 @@
 
 #define gptlinitialize gptlinitialize_
 #define gptlfinalize gptlfinalize_
-#define t_prf t_prf_
+#define gptlpr gptlpr_
 #define gptlreset gptlreset_
 #define gptlstamp gptlstamp_
 #define t_startf t_startf_
@@ -54,7 +54,7 @@
 
 #define gptlinitialize gptlinitialize_
 #define gptlfinalize gptlfinalize_
-#define t_prf t_prf__
+#define gptlpr gptlpr_
 #define gptlreset gptlreset_
 #define gptlstamp gptlstamp_
 #define t_startf t_startf__
@@ -81,7 +81,7 @@ int gptlfinalize ()
   return GPTLfinalize ();
 }
 
-int t_prf (int *procid)
+int gptlpr (int *procid)
 {
   return GPTLpr (*procid);
 }

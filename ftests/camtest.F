@@ -21,7 +21,7 @@
       ret = t_stopf ('sub1')
       ret = gptlenable ()
       ret = t_stopf ('total')
-      ret = t_prf (0)
+      ret = gptlpr (0)
       ret = gptlreset ()
       ret = gptlfinalize ()
       ret = gptlget_memusage (size, rss, share, text, datastack)
