@@ -1,7 +1,7 @@
       program camtest
       implicit none
 
-      include "../gptl.inc"
+      include "../camgptl.inc"
       double precision wall, usr, sys
       integer size, rss, share, text, datastack
       integer id
@@ -14,14 +14,14 @@
       ret = gptlinitialize ()
       ret = gptlstamp (wall, usr, sys)
       write (6,*)'wall,usr,sys=', wall,usr,sys
-      call t_startf ('total')
+      ret = t_startf ('total')
       ret =  gptldisable ()
-      call t_startf ('sub1')
+      ret = t_startf ('sub1')
       call sub1 ()
-      call t_stopf ('sub1')
+      ret = t_stopf ('sub1')
       ret = gptlenable ()
-      call t_stopf ('total')
-      call t_prf (0)
+      ret = t_stopf ('total')
+      ret = t_prf (0)
       ret = gptlreset ()
       ret = gptlfinalize ()
       ret = gptlget_memusage (size, rss, share, text, datastack)
