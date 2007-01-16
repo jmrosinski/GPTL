@@ -6,7 +6,7 @@ AC_PROG_MAKE_SET
 
 dnl Get the OS type
 OS="`uname | tr '[a-z]' '[A-Z]'`"
-CAMFLAGS="-D$CAMOS"
+CAMFLAGS="-D$OS"
 OS="`uname | tr '[A-Z]' '[a-z]'`"
 case "$OS" in
   linux)  OS=linux;;
