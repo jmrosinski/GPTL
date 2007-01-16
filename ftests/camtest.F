@@ -7,12 +7,12 @@
       integer id
       integer ret
 
-      call t_setoptionf (gptlwall, 0)
-      call t_setoptionf (gptlcpu, 1)
+      ret = gptlsetoption (gptlwall, 0)
+      ret = gptlsetoption (gptlcpu, 1)
       ret = gptlsetutr (gptlclockgettime)
 
-      call t_initializef ()
-      call t_stampf (wall, usr, sys)
+      ret = gptlinitialize ()
+      ret = gptlstamp (wall, usr, sys)
       write (6,*)'wall,usr,sys=', wall,usr,sys
       call t_startf ('total')
       ret =  gptldisable ()
@@ -22,7 +22,7 @@
       ret = gptlenable ()
       call t_stopf ('total')
       call t_prf (0)
-      call t_resetf ()
+      ret = gptlreset ()
       ret = gptlfinalize ()
       ret = gptlget_memusage (size, rss, share, text, datastack)
       write (6,*) 'size,rss,share,text,datastack='

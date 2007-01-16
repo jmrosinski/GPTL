@@ -42,7 +42,8 @@ clean:
 	(cd ctests && $(MAKE) clean)
 	(cd ftests && $(MAKE) clean)
 
-camwrappers.o: gptl.h private.h
+camwrappers.o: gptl.h private.h cfort.h
+	$(CC) -c -o $@ $*.c
 f_wrappers.o: gptl.h private.h
 gptl.o: gptl.h private.h
 util.o: gptl.h private.h
