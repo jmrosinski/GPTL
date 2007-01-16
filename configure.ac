@@ -5,6 +5,7 @@ AC_LANG(C)
 AC_PROG_MAKE_SET
 
 dnl Get the OS type
+CAMOS="`uname`"
 OS="`uname | tr '[A-Z]' '[a-z]'`"
 case "$OS" in
   linux)  OS=linux;;
@@ -185,6 +186,7 @@ AC_SUBST(ARFLAGS)
 AC_SUBST(BITFLAGS)
 AC_SUBST(FORTDEFS)
 AC_SUBST(INSTRFLAGS)
+AC_SUBST(CAMOS)
 
 AC_OUTPUT(Makefile ctests/Makefile ftests/Makefile)
 
