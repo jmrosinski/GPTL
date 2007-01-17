@@ -34,8 +34,6 @@
       integer gptlpr
       integer gptlreset 
       integer gptlfinalize
-      integer gptlget_memusage
-      integer gptlprint_memusage
       integer gptlenable
       integer gptldisable
       integer gptlsetutr
@@ -51,8 +49,6 @@
       external gptlpr
       external gptlreset 
       external gptlfinalize
-      external gptlget_memusage
-      external gptlprint_memusage
       external gptlenable
       external gptldisable
       external gptlsetutr

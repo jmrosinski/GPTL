@@ -24,10 +24,6 @@
       ret = gptlpr (0)
       ret = gptlreset ()
       ret = gptlfinalize ()
-      ret = gptlget_memusage (size, rss, share, text, datastack)
-      write (6,*) 'size,rss,share,text,datastack='
-      write (6,*) size,rss,share,text,datastack
-      ret = gptlprint_memusage ('somewhere')
       ret = gptl_papiprinttable ()
       id = gptl_papiname2id ('PAPI_TOT_CYC')
       write(6,*)'id=',id
