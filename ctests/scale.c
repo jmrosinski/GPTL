@@ -15,6 +15,7 @@
 int main (int argc, char **argv)
 {
 #if ( defined HAVE_LIBMPI ) || ( defined HAVE_LIBMPICH )
+  FILE *filep;                /* file pointer for GNUplot */
   extern char *optarg;
   void getmaxmin (const double *, int, double *, double *, int *, int *);
 
@@ -212,6 +213,19 @@ int main (int argc, char **argv)
 	    "                      min    =%9.3g %d\n"
 	    "                      aggrate=%9.3g\n",
 	    rmax, taskmax, rmin, taskmin, aggrate);
+
+    if ((filep = fopen ("FPops_aggregate", "a")) {
+      fprintf (filep, "%d %9.3g\n", ntask, aggrate);
+      (void) fclose (filep);
+    }
+    if ((filep = fopen ("FPops_max", "a")) {
+      fprintf (filep, "%d %9.3g\n", ntask, rmax);
+      (void) fclose (filep);
+    }
+    if ((filep = fopen ("FPops_min", "a")) {
+      fprintf (filep, "%d %9.3g\n", ntask, rmin);
+      (void) fclose (filep);
+    }
   }
   
   /*
@@ -232,6 +246,19 @@ int main (int argc, char **argv)
 	    "                      min    =%9.3g %d\n"
 	    "                      aggrate=%9.3g\n",
 	    rmax, taskmax, rmin, taskmin, aggrate);
+
+    if ((filep = fopen ("MPI_Sendrecv_aggregate", "a")) {
+      fprintf (filep, "%d %9.3g\n", ntask, aggrate);
+      (void) fclose (filep);
+    }
+    if ((filep = fopen ("MPI_Sendrecv_max", "a")) {
+      fprintf (filep, "%d %9.3g\n", ntask, rmax);
+      (void) fclose (filep);
+    }
+    if ((filep = fopen ("MPI_Sendrecv_min", "a")) {
+      fprintf (filep, "%d %9.3g\n", ntask, rmin);
+      (void) fclose (filep);
+    }
   }
 
   /*
@@ -252,6 +279,19 @@ int main (int argc, char **argv)
 	    "                      min    =%9.3g %d\n"
 	    "                      aggrate=%9.3g\n",
 	    rmax, taskmax, rmin, taskmin, aggrate);
+
+    if ((filep = fopen ("MemBW_aggregate", "a")) {
+      fprintf (filep, "%d %9.3g\n", ntask, aggrate);
+      (void) fclose (filep);
+    }
+    if ((filep = fopen ("MemBW_max", "a")) {
+      fprintf (filep, "%d %9.3g\n", ntask, rmax);
+      (void) fclose (filep);
+    }
+    if ((filep = fopen ("MemBW_min", "a")) {
+      fprintf (filep, "%d %9.3g\n", ntask, rmin);
+      (void) fclose (filep);
+    }
   }
 
   GPTLpr (iam);
