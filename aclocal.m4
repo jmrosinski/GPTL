@@ -6,6 +6,8 @@ AC_DEFUN(UD_SET_OMP_C,
   OLDFLAGS="$CFLAGS"
   OMP="NO"
 
+  AC_MSG_CHECKING([C flags for openmp])
+
   if test "$OMP" = "NO" ; then
     OMPCFLAGS="-qsmp=omp"
     CFLAGS="$OLDFLAGS $OMPCFLAGS"
