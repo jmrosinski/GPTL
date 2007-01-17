@@ -2925,7 +2925,7 @@ rm -f conftest.err conftest.$ac_objext \
       conftest$ac_exeext conftest.$ac_ext
 
   if test "$OMP" = "NO" ; then
-    OMPCFLAGS="-mp"
+    OMPCFLAGS="-qsmp=omp"
     CFLAGS="$OLDFLAGS $OMPCFLAGS"
     cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
@@ -2975,7 +2975,7 @@ rm -f conftest.err conftest.$ac_objext \
   fi
 
   if test "$OMP" = "NO" ; then
-    OMPCFLAGS="-qsmp=omp"
+    OMPCFLAGS="-mp"
     CFLAGS="$OLDFLAGS $OMPCFLAGS"
     cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
