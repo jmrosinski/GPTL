@@ -7,7 +7,7 @@
 #include <ctype.h>         /* isdigit */
 
 #ifdef HAVE_PAPI
-#include <papi.h>
+#include <papi.h>          /* PAPI_get_real_usec */
 #endif
 
 #ifdef UNICOSMP
@@ -404,7 +404,11 @@ int GPTLstart (const char *name)               /* timer name */
     return 0;
   }
 
-  /* Truncate input name if longer than MAX_CHARS characters  */
+  /* 
+  ** Truncate input name if longer than MAX_CHARS characters.
+  ** This copy is unnecessary if called from Fortran because the
+  ** wrapper code already fixed the input name.
+  */
 
   nchars = MIN (strlen (name), MAX_CHARS);
   strncpy (locname, name, nchars);
@@ -553,6 +557,12 @@ int GPTLstop (const char *name)               /* timer name */
     --current_depth[t].depth;
     return 0;
   }
+
+  /* 
+  ** Truncate input name if longer than MAX_CHARS characters.
+  ** This copy is unnecessary if called from Fortran because the
+  ** wrapper code already fixed the input name.
+  */
 
   nchars = MIN (strlen (name), MAX_CHARS);
   strncpy (locname, name, nchars);
