@@ -36,6 +36,7 @@ foreach $nodecount (@nodecounts) {
 open (CMDFILE, ">$cmdfile") || die ("Can't open $cmdfile for writing\n");
 
 print (CMDFILE "set title \"$host\"\n");
+print (CMDFILE "set key left\n");
 print (CMDFILE "set style data linespoints\n");
 print (CMDFILE "set terminal postscript color\n");
 print (CMDFILE "set xrange [0:*]\n");

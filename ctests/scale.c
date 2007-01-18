@@ -91,6 +91,10 @@ int main (int argc, char **argv)
     printf ("Number of iterations  will be %d\n", niter);
     printf ("Loop length will be           %d\n", nsendrecv);
   }
+  
+  /*
+  ** All tasks need to know nsendrecv and niter
+  */
 
   ret = MPI_Bcast (&nsendrecv, 1, MPI_INT, 0, MPI_COMM_WORLD);
   ret = MPI_Bcast (&niter, 1, MPI_INT, 0, MPI_COMM_WORLD);
