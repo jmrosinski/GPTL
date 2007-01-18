@@ -1,17 +1,18 @@
 #!/usr/bin/perl
 
-use strict;
+use strict 'vars';
 use Sys::Hostname;
 
 my ($host) = hostname;
 my ($cmdfile) = "scale.gp";
 my ($cmd);
-our (@nodecounts) = (1,2,3,4);
+my (@nodecounts) = (2,3,4,6,8,9,10,11,12,13,14,16,18,22,26,30,32);
 my ($nodecount);
 my ($ret);
 my (@fpopsfiles) = ("FPops_aggregate","FPops_max","FPops_min");
 my (@membwfiles) = ("MemBW_aggregate","MemBW_max","MemBW_min");
 my (@mpisendrecvfiles) = ("MPI_Sendrecv_aggregate","MPI_Sendrecv_max","MPI_Sendrecv_min");
+my ($mpicmd) = "mpirun";
 
 # Remove old files
 
@@ -22,9 +23,13 @@ unlink (@mpisendrecvfiles);
 # Run the test cases
 
 foreach $nodecount (@nodecounts) {
-    $cmd = "mpiexec -n $nodecount ./scale";
+    $cmd = "$mpicmd -np $nodecount ./scale ";
     print (STDOUT "Running $cmd...\n");
     $ret = system ("$cmd");
+    if ($ret != 0) {
+	print (STDOUT "Bad return from $cmd: $ret: exiting\n");
+	exit ($ret);
+    }
 }
 
 # Build the base gnuplot command file
@@ -34,7 +39,9 @@ open (CMDFILE, ">$cmdfile") || die ("Can't open $cmdfile for writing\n");
 print (CMDFILE "set title \"$host\"\n");
 print (CMDFILE "set style data linespoints\n");
 print (CMDFILE "set terminal postscript color\n");
-print (CMDFILE "set xrange [1:*]\n");
+print (CMDFILE "set xrange [0:*]\n");
+print (CMDFILE "set xtics 10\n");
+print (CMDFILE "set mxtics 10\n");
 print (CMDFILE "set xlabel \"Number of MPI tasks\"\n");
 
 # Define linear speedup from first point
@@ -64,6 +71,7 @@ sub getlinear
     my ($linearfn) = $_[1];
     my ($max);
 
+    my (@nodecounts) = (2,3,4,6,8,9,10,11,12,13,14,16,18,22,26,30,32);
     my ($refline);
     my ($dum);
     my ($ref);

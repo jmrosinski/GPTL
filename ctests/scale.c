@@ -24,7 +24,7 @@ int main (int argc, char **argv)
   int recvtag;                /* tag for mpi */
   const double tol = 1.e-12;  /* tolerance (double precision) */
 
-  int nsendrecv = 1024;       /* default number of doubles for send/receive */
+  int nsendrecv = 10240;      /* default number of doubles for send/receive */
   int niter = 1024;           /* default number of repetitions */
   int iam, sendto, recvfm;    /* mpi taskids */
   int ntask;                  /* number of mpi tasks */
@@ -35,10 +35,14 @@ int main (int argc, char **argv)
   int count;                  /* returned by GPTLquery */
   int taskmax, taskmin;       /* which mpi task caused a max or min */
   int ret;                    /* return code */
+  int isave;
+  int ifirst;
+  int first;                  /* logical */
 
   long bytes;                 /* number of bytes */
   long papicounters[2];       /* returned from PAPI via GPTL */
 
+  double firstdiff;
   double *sendbuf;            /* send buffer for MPI_Sendrecv */
   double *recvbuf;            /* recv buffer for MPI_Sendrecv */
   double diff;                /* difference */
@@ -87,6 +91,9 @@ int main (int argc, char **argv)
     printf ("Number of iterations  will be %d\n", niter);
     printf ("Loop length will be           %d\n", nsendrecv);
   }
+
+  ret = MPI_Bcast (&nsendrecv, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  ret = MPI_Bcast (&niter, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
   sendbuf = (double *) malloc (nsendrecv * sizeof (double));
   recvbuf = (double *) malloc (nsendrecv * sizeof (double));
@@ -152,6 +159,7 @@ int main (int argc, char **argv)
 			MPI_COMM_WORLD, &status);
     ret = GPTLstop ("sendrecv");
     
+    first = 1;
     ret = GPTLstart ("FPops");
     for (i = 0; i < nsendrecv; i++) {
       expect = 0.1*(drecvfmpiter + (double) i);
@@ -166,13 +174,22 @@ int main (int argc, char **argv)
       ** On some machines the following is 2 FP ops
       */
 
-      if (diff > maxdiff)
+      if (diff > maxdiff) {
+	if (first) {
+	  firstdiff = diff;
+	  ifirst = i;
+	  first = 0;
+	}
 	maxdiff = diff;
+	isave = i;
+      }
     }
     ret = GPTLstop ("FPops");
 
     if (maxdiff / expect > tol) {
-      printf ("iter %d task %d diff %f exceeds tolerance=%f\n", iter, iam, diff, tol);
+      printf ("iter %d task %d worst diff %f at i=%d exceeds tolerance=%f\n", 
+	      iter, iam, diff, isave, tol);
+      printf ("    First diff exceeding tolerance is %f at i=%d\n", firstdiff, ifirst);
       exit (1);
     }
 
