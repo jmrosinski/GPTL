@@ -1,12 +1,11 @@
 #!/usr/bin/perl
 
-use strict 'vars';
 use Sys::Hostname;
 
 my ($host) = hostname;
 my ($cmdfile) = "scale.gp";
 my ($cmd);
-my (@nodecounts) = (2,3,4,6,8,9,10,11,12,13,14,16,18,22,26,30,32);
+@nodecounts = (2,3,4,6,8,9,10,11,12,13,14,16,18,22,26,30,32);
 my ($nodecount);
 my ($ret);
 my (@fpopsfiles) = ("FPops_aggregate","FPops_max","FPops_min");
@@ -71,7 +70,6 @@ sub getlinear
     my ($linearfn) = $_[1];
     my ($max);
 
-    my (@nodecounts) = (2,3,4,6,8,9,10,11,12,13,14,16,18,22,26,30,32);
     my ($refline);
     my ($dum);
     my ($ref);
