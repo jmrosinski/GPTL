@@ -211,7 +211,8 @@ int main (int argc, char **argv)
   ** FP ops
   */
 
-  printf ("FPops: iam %d maxdiff=%9.3g\n", iam, maxdiff);
+  if (maxdiff > 0.) 
+    printf ("FPops: iam %d maxdiff=%9.3g\n", iam, maxdiff);
 
   ret = GPTLquery ("FPops", -1, &count, &onflg, &wall, &usr, &sys, papicounters, 2);
     
