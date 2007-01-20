@@ -6,16 +6,19 @@ use Cwd;
 my ($host) = hostname;
 my ($cmdfile) = "scale.gp";
 my ($cmd);
-@nodecounts = (2,3,4,6,8,9,10,11,12,13,14,16,18,22,26,30,32);
+#@nodecounts = (2,3,4,6,8,9,10,11,12,13,14,16,18,22,26,30,32);
+@nodecounts = (1,2,4,6,12);
+my ($nodecountrange) = $nodecounts[$#nodecounts] - $nodecounts[0];
 my ($nodecount);
 my ($ret);
-my (@fpopsfiles) = ("FPops_aggregate","FPops_max","FPops_min");
-my (@membwfiles) = ("MemBW_aggregate","MemBW_max","MemBW_min");
-my (@mpisendrecvfiles) = ("MPI_Sendrecv_aggregate","MPI_Sendrecv_max","MPI_Sendrecv_min");
+my (@fpopsfiles) = ("FPops_max","FPops_min");
+my (@membwfiles) = ("MemBW_max","MemBW_min");
+my (@mpisendrecvfiles) = ("MPI_Sendrecv_max","MPI_Sendrecv_min");
 my ($mpicmd) = "mpirun";
 my ($rundir) = ".";
 my ($arg);
 my ($cwd);
+my ($xtics);
 
 # Remove old files
 
@@ -64,8 +67,19 @@ print (CMDFILE "set key left\n");
 print (CMDFILE "set style data linespoints\n");
 print (CMDFILE "set terminal postscript color\n");
 print (CMDFILE "set xrange [0:*]\n");
-print (CMDFILE "set xtics 10\n");
-print (CMDFILE "set mxtics 10\n");
+if ($nodecountrange < 10) {
+    $xtics = 1;
+} elsif ($nodecountrange < 100) {
+    $xtics = 10;
+} elsif ($nodecountrange < 1000) {
+    $xtics = 100;
+} else {
+    $xtics = 1000;
+}
+print (CMDFILE "set xtics $xtics\n");
+if ($xtics > 1) {
+    print (CMDFILE "set mxtics 10\n");
+}
 print (CMDFILE "set xlabel \"Number of MPI tasks\"\n");
 
 # Define linear speedup from first point
@@ -73,17 +87,17 @@ print (CMDFILE "set xlabel \"Number of MPI tasks\"\n");
 &getlinear ($fpopsfiles[0], "fpopslinear");
 print (CMDFILE "set ylabel \"MFlops/sec\"\n");
 print (CMDFILE "set output 'FPops.ps'\n");
-print (CMDFILE "plot '$fpopsfiles[0]' using 1:2, '$fpopsfiles[1]' using 1:2, '$fpopsfiles[2]' using 1:2, 'fpopslinear' using 1:2 with lines\n");
+print (CMDFILE "plot '$fpopsfiles[0]' using 1:2, '$fpopsfiles[1]' using 1:2, 'fpopslinear' using 1:2 with lines\n");
 
 &getlinear ($membwfiles[0], "membwlinear");
 print (CMDFILE "set ylabel \"MB/sec\"\n");
 print (CMDFILE "set output 'MemBW.ps'\n");
-print (CMDFILE "plot '$membwfiles[0]' using 1:2, '$membwfiles[1]' using 1:2, '$membwfiles[2]' using 1:2, 'membwlinear' using 1:2 with lines\n");
+print (CMDFILE "plot '$membwfiles[0]' using 1:2, '$membwfiles[1]' using 1:2, 'membwlinear' using 1:2 with lines\n");
 
 &getlinear ($mpisendrecvfiles[0], "mpisendrecvlinear");
 print (CMDFILE "set ylabel \"MB/sec\"\n");
 print (CMDFILE "set output 'MPI_Sendrecv.ps'\n");
-print (CMDFILE "plot '$mpisendrecvfiles[0]' using 1:2, '$mpisendrecvfiles[1]' using 1:2, '$mpisendrecvfiles[2]' using 1:2, 'mpisendrecvlinear' using 1:2 with lines\n");
+print (CMDFILE "plot '$mpisendrecvfiles[0]' using 1:2, '$mpisendrecvfiles[1]' using 1:2, 'mpisendrecvlinear' using 1:2 with lines\n");
 
 close (CMDFILE);
 

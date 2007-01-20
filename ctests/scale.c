@@ -47,8 +47,8 @@ int main (int argc, char **argv)
   double *recvbuf;            /* recv buffer for MPI_Sendrecv */
   double diff;                /* difference */
   double maxdiff = 0.;        /* max difference */
-  double aggrate;             /* aggregate rate (summed over mpi tasks) */
-  double rate, *rates;        /* rate for 1 task, rates for all tasks */
+  double aggratemax;          /* aggregate rate (summed over mpi tasks) */
+  double aggratemin;          /* aggregate rate (summed over mpi tasks) */
   double rmax, rmin;          /* max, min rates */
   double wmax, wmin;          /* wallclock max, min */
   double expect;              /* expected value */
@@ -63,12 +63,11 @@ int main (int argc, char **argv)
 
   MPI_Init (&argc, &argv);
   ret = MPI_Comm_rank (MPI_COMM_WORLD, &iam);
-  printf ("iam=%d\n", iam);
   ret = MPI_Comm_size (MPI_COMM_WORLD, &ntask);
-  printf ("ntask=%d\n", ntask);
+  if (iam == 0)
+    printf ("ntask=%d\n", ntask);
 
   walls = (double *) malloc (ntask * sizeof (double));
-  rates = (double *) malloc (ntask * sizeof (double));
   
 /* 
 ** Parse arg list
@@ -215,6 +214,7 @@ int main (int argc, char **argv)
   printf ("FPops: iam %d maxdiff=%9.3g\n", iam, maxdiff);
 
   ret = GPTLquery ("FPops", -1, &count, &onflg, &wall, &usr, &sys, papicounters, 2);
+    
   nexpect = niter*nsendrecv*(3 + 8);
 
 #ifdef HAVE_PAPI
@@ -227,24 +227,23 @@ int main (int argc, char **argv)
 
   if (iam == 0) {
     getmaxmin (walls, ntask, &wmax, &wmin, &taskmax, &taskmin);
-    rmax = nexpect / (mega*wmin);
-    rmin = nexpect / (mega*wmax);
-    aggrate = rmin * ntask; 
-    printf ("FPops (Mflop/s task): max    =%9.3g %d\n"
-	    "                      min    =%9.3g %d\n"
-	    "                      aggrate=%9.3g\n",
-	    rmax, taskmax, rmin, taskmin, aggrate);
+    rmax = nexpect / (mega * wmin);
+    rmin = nexpect / (mega * wmax);
+    aggratemax = rmax * ntask; 
+    aggratemin = rmin * ntask; 
+    printf ("wmin=%9.3g rmax=%9.3g\n", wmin, rmax);
+    printf ("FPops (Mflop/s task): max       =%9.3g %d\n"
+	    "                      min       =%9.3g %d\n"
+	    "                      aggratemax=%9.3g\n"
+	    "                      aggratemin=%9.3g\n",
+	    rmax, taskmax, rmin, taskmin, aggratemax, aggratemin);
 
-    if (filep = fopen ("FPops_aggregate", "a")) {
-      fprintf (filep, "%d %9.3g\n", ntask, aggrate);
-      (void) fclose (filep);
-    }
     if (filep = fopen ("FPops_max", "a")) {
-      fprintf (filep, "%d %9.3g\n", ntask, rmax);
+      fprintf (filep, "%d %9.3g\n", ntask, aggratemax);
       (void) fclose (filep);
     }
     if (filep = fopen ("FPops_min", "a")) {
-      fprintf (filep, "%d %9.3g\n", ntask, rmin);
+      fprintf (filep, "%d %9.3g\n", ntask, aggratemin);
       (void) fclose (filep);
     }
   }
@@ -255,29 +254,26 @@ int main (int argc, char **argv)
 
   ret = GPTLquery ("sendrecv", -1, &count, &onflg, &wall, &usr, &sys, papicounters, 0);
   bytes = sizeof (double) * niter * nsendrecv;
-  rate =  bytes / (wall*mega);
-  ret = MPI_Gather (&rate, 1, MPI_DOUBLE, rates, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
   ret = MPI_Gather (&wall, 1, MPI_DOUBLE, walls, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
   if (iam == 0) {
     getmaxmin (walls, ntask, &wmax, &wmin, &taskmax, &taskmin);
-    getmaxmin (rates, ntask, &rmax, &rmin, &taskmax, &taskmin);
-    aggrate = (bytes * ntask) / (wmax*mega);
-    printf ("sendrecv (MB/s task): max    =%9.3g %d\n"
-	    "                      min    =%9.3g %d\n"
-	    "                      aggrate=%9.3g\n",
-	    rmax, taskmax, rmin, taskmin, aggrate);
+    rmax = bytes / (wmin*mega);
+    rmin = bytes / (wmax*mega);
+    aggratemax = rmax * ntask;
+    aggratemin = rmin * ntask;
+    printf ("sendrecv (MB/s task): max       =%9.3g %d\n"
+	    "                      min       =%9.3g %d\n"
+	    "                      aggratemax=%9.3g\n"
+	    "                      aggratemin=%9.3g\n",
+	    rmax, taskmax, rmin, taskmin, aggratemax, aggratemin);
 
-    if (filep = fopen ("MPI_Sendrecv_aggregate", "a")) {
-      fprintf (filep, "%d %9.3g\n", ntask, aggrate);
-      (void) fclose (filep);
-    }
     if (filep = fopen ("MPI_Sendrecv_max", "a")) {
-      fprintf (filep, "%d %9.3g\n", ntask, rmax);
+      fprintf (filep, "%d %9.3g\n", ntask, aggratemax);
       (void) fclose (filep);
     }
     if (filep = fopen ("MPI_Sendrecv_min", "a")) {
-      fprintf (filep, "%d %9.3g\n", ntask, rmin);
+      fprintf (filep, "%d %9.3g\n", ntask, aggratemin);
       (void) fclose (filep);
     }
   }
@@ -288,29 +284,26 @@ int main (int argc, char **argv)
 
   ret = GPTLquery ("memBW", -1, &count, &onflg, &wall, &usr, &sys, papicounters, 0);
   bytes = sizeof (double) * niter * nsendrecv * 2;
-  rate =  bytes / (wall*mega);
-  ret = MPI_Gather (&rate, 1, MPI_DOUBLE, rates, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
   ret = MPI_Gather (&wall, 1, MPI_DOUBLE, walls, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
   if (iam == 0) {
     getmaxmin (walls, ntask, &wmax, &wmin, &taskmax, &taskmin);
-    getmaxmin (rates, ntask, &rmax, &rmin, &taskmax, &taskmin);
-    aggrate = (bytes * ntask) / (mega*wmax);
-    printf ("Mem BW   (MB/s task): max    =%9.3g %d\n"
-	    "                      min    =%9.3g %d\n"
-	    "                      aggrate=%9.3g\n",
-	    rmax, taskmax, rmin, taskmin, aggrate);
+    rmax = bytes / (wmin*mega);
+    rmin = bytes / (wmax*mega);
+    aggratemax = rmax * ntask;
+    aggratemin = rmin * ntask;
+    printf ("Mem BW   (MB/s task): max       =%9.3g %d\n"
+	    "                      min       =%9.3g %d\n"
+	    "                      aggratemax=%9.3g\n"
+	    "                      aggratemin=%9.3g\n",
+	    rmax, taskmax, rmin, taskmin, aggratemax, aggratemin);
 
-    if (filep = fopen ("MemBW_aggregate", "a")) {
-      fprintf (filep, "%d %9.3g\n", ntask, aggrate);
-      (void) fclose (filep);
-    }
     if (filep = fopen ("MemBW_max", "a")) {
-      fprintf (filep, "%d %9.3g\n", ntask, rmax);
+      fprintf (filep, "%d %9.3g\n", ntask, aggratemax);
       (void) fclose (filep);
     }
     if (filep = fopen ("MemBW_min", "a")) {
-      fprintf (filep, "%d %9.3g\n", ntask, rmin);
+      fprintf (filep, "%d %9.3g\n", ntask, aggratemin);
       (void) fclose (filep);
     }
   }
