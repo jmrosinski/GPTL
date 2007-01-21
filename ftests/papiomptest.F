@@ -36,6 +36,9 @@
       write(6,*) 'Inner loop length=', looplen
 
       if (gptlsetoption (gptlabort_on_error, 1) .lt. 0) call exit(3)
+#ifdef HAVE_PAPI
+      if (gptlsetoption (PAPI_FP_OPS, 1) .lt. 0) call exit (4)
+#endif
       if (gptlinitialize () .lt. 0) call exit(1)
 
 !$OMP PARALLEL DO PRIVATE (iter, zero)
