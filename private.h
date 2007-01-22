@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.32 2007-01-22 20:37:02 rosinski Exp $
+$Id: private.h,v 1.33 2007-01-22 20:48:41 rosinski Exp $
 */
 
 #include <stdio.h>
@@ -88,5 +88,5 @@ extern void GPTL_PAPIpr (FILE *, const Papistats *, const int, const int, const 
 extern void GPTL_PAPIadd (Papistats *, const Papistats *);
 extern void GPTL_PAPIfinalize (int);
 extern void GPTL_PAPIquery (const Papistats *, long *, int);
-extern void GPTL_PAPIismultiplexed (void);
+extern bool GPTL_PAPIi_smultiplexed (void);
 #endif

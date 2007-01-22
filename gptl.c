@@ -788,7 +788,7 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
 #endif
 
 #ifdef HAVE_PAPI
-  if (GPTL_PAPIismultiplexed ())
+  if (GPTL_PAPIis_multiplexed ())
     fprintf (fp, "PAPI event multiplexing was ON\n");
   else
     fprintf (fp, "PAPI event multiplexing was OFF\n");
