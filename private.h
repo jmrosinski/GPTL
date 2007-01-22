@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.31 2007-01-05 22:35:09 rosinski Exp $
+$Id: private.h,v 1.32 2007-01-22 20:37:02 rosinski Exp $
 */
 
 #include <stdio.h>
@@ -20,7 +20,7 @@ $Id: private.h,v 1.31 2007-01-05 22:35:09 rosinski Exp $
 #define MAX_CHARS 31
 
 /* max allowable number of PAPI counters (though most machines allow fewer */
-#define MAX_AUX 8
+#define MAX_AUX 16
 
 #ifndef __cplusplus
 typedef enum {false = 0, true = 1} bool;  /* mimic C++ */
@@ -88,4 +88,5 @@ extern void GPTL_PAPIpr (FILE *, const Papistats *, const int, const int, const 
 extern void GPTL_PAPIadd (Papistats *, const Papistats *);
 extern void GPTL_PAPIfinalize (int);
 extern void GPTL_PAPIquery (const Papistats *, long *, int);
+extern void GPTL_PAPIismultiplexed (void);
 #endif

@@ -138,6 +138,7 @@ static char papiname[PAPI_MAX_STR_LEN];  /* returned from PAPI_event_code_to_nam
 static const int BADCOUNT = -999999;     /* Set counters to this when they are bad */
 static int GPTLoverheadindx = -1;        /* index into counters array */
 static long_long *readoverhead;          /* overhead due to reading PAPI counters */
+static bool is_multiplexed = false;      /* whether events are multiplexed */
 
 /* Function prototypes */
 
@@ -327,8 +328,20 @@ static int create_and_start_events (const int t)  /* thread number */
 
   /* Start the event set.  It will only be read from now on--never stopped */
 
-  if ((ret = PAPI_start (EventSet[t])) != PAPI_OK)
-    return GPTLerror ("%s\n", PAPI_strerror (ret));
+  if ((ret = PAPI_start (EventSet[t])) != PAPI_OK) {
+    printf ("create_and_start_events: failed to start event set--trying multiplexing...\n");
+    if ((ret = PAPI_multiplex_init ()) != PAPI_OK)
+      return GPTLerror ("%s\n", PAPI_strerror (ret));
+
+    if ((ret = PAPI_set_multiplex (EventSet[t])) == PAPI_OK) {
+      if ((ret = PAPI_start (EventSet[t])) != PAPI_OK) {
+	return GPTLerror ("%s\n", PAPI_strerror (ret));
+      }
+      is_multiplexed = true;
+    } else {
+      return GPTLerror ("%s\n", PAPI_strerror (ret));
+    }
+  }
 
   /* Estimate overhead of calling PAPI_read, to be used later in printing */
 
@@ -586,6 +599,15 @@ void GPTL_PAPIquery (const Papistats *aux,
       papicounters_out[n] = (long) aux->accum[n];
     }
   }
+}
+
+/*
+** GPTL_PAPIis_multiplexed: return status of whether events are being multiplexed
+*/
+
+bool GPTL_PAPIis_multiplexed ()
+{
+  return is_multiplexed;
 }
 
 /*

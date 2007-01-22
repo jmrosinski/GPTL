@@ -15,6 +15,7 @@
 
       write(6,*) 'Purpose: estimate overhead of GPTL'
       ret = gptlsetoption (gptlabort_on_error, 0)
+      ret = gptlsetoption (gptlverbose, 0)
 
       ret = gptlsetutr (gptlmpiwtime)
       ret = gptlsetutr (gptlrtc)

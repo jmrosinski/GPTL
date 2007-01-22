@@ -41,6 +41,7 @@ static int depthlimit  = 99999;  /* max depth for timers (99999 is effectively i
 static bool disabled = false;    /* Timers disabled? */
 static bool initialized = false; /* GPTLinitialize has been called */
 static bool dousepapi = false;   /* saves a function call if stays false */
+static bool verbose = true;      /* output verbosity */
 
 static time_t ref_gettimeofday = -1; /* ref start point for gettimeofday */
 static time_t ref_clock_gettime = -1;/* ref start point for clock_gettime */
@@ -146,7 +147,8 @@ int GPTLsetoption (const int option,  /* option */
 
   if (option == GPTLabort_on_error) {
     GPTLset_abort_on_error ((bool) val);
-    printf ("GPTLsetoption: setting abort on error flag to %d\n", val);
+    if (verbose)
+      printf ("GPTLsetoption: setting abort on error flag to %d\n", val);
     return 0;
   }
 
@@ -154,7 +156,8 @@ int GPTLsetoption (const int option,  /* option */
   case GPTLcpu:
 #ifdef HAVE_TIMES
     cpustats.enabled = (bool) val; 
-    printf ("GPTLsetoption: set cpustats to %d\n", val);
+    if (verbose)
+      printf ("GPTLsetoption: set cpustats to %d\n", val);
 #else
     if (val)
       return GPTLerror ("GPTLsetoption: times() not available\n");
@@ -162,15 +165,23 @@ int GPTLsetoption (const int option,  /* option */
     return 0;
   case GPTLwall:     
     wallstats.enabled = (bool) val; 
-    printf ("GPTLsetoption: set wallstats to %d\n", val);
+    if (verbose)
+      printf ("GPTLsetoption: set wallstats to %d\n", val);
     return 0;
   case GPTLoverhead: 
     overheadstats.enabled = (bool) val; 
-    printf ("GPTLsetoption: set overheadstats to %d\n", val);
+    if (verbose)
+      printf ("GPTLsetoption: set overheadstats to %d\n", val);
     return 0;
   case GPTLdepthlimit: 
     depthlimit = val; 
-    printf ("GPTLsetoption: set depthlimit to %d\n", val);
+    if (verbose)
+      printf ("GPTLsetoption: set depthlimit to %d\n", val);
+    return 0;
+  case GPTLverbose: 
+    verbose = (bool) val; 
+    if (verbose)
+      printf ("GPTLsetoption: set verbose to %d\n", val);
     return 0;
   default:
     break;
@@ -204,8 +215,9 @@ int GPTLsetutr (const int option)
 
   for (i = 0; i < nfuncentries; i++) {
     if (option == (int) funclist[i].option) {
-      printf ("GPTLsetutr: Setting underlying wallclock timer to %s\n", 
-	      funclist[i].name);
+      if (verbose)
+	printf ("GPTLsetutr: Setting underlying wallclock timer to %s\n", 
+		funclist[i].name);
       funcidx = i;
       return 0;
     }
@@ -298,8 +310,10 @@ int GPTLinitialize (void)
   if (t1 > t2)
     return GPTLerror ("GPTLinitialize: bad t1=%f t2=%f\n", t1, t2);
 
-  printf ("Per call overhead est. t2-t1=%g should be near zero\n", t2-t1);
-  printf ("Underlying wallclock timing routine is %s\n", funclist[funcidx].name);
+  if (verbose) {
+    printf ("Per call overhead est. t2-t1=%g should be near zero\n", t2-t1);
+    printf ("Underlying wallclock timing routine is %s\n", funclist[funcidx].name);
+  }
 
   initialized = true;
   return 0;
@@ -722,7 +736,10 @@ int GPTLreset (void)
 #endif
     }
   }
-  printf ("GPTLreset: accumulators for all timers set to zero\n");
+
+  if (verbose)
+    printf ("GPTLreset: accumulators for all timers set to zero\n");
+
   return 0;
 }
 
@@ -768,6 +785,13 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
 
 #ifdef HAVE_NANOTIME
   fprintf (fp, "Clock rate = %f MHz\n", cpumhz);
+#endif
+
+#ifdef HAVE_PAPI
+  if (GPTL_PAPIismultiplexed ())
+    fprintf (fp, "PAPI event multiplexing was ON\n");
+  else
+    fprintf (fp, "PAPI event multiplexing was OFF\n");
 #endif
 
   /*
@@ -1310,7 +1334,8 @@ static int init_nanotime ()
   if ((cpumhz = get_clockfreq ()) < 0)
     return GPTLerror ("Can't get clock freq\n");
 
-  printf ("init_nanotime: Clock rate = %f MHz\n", cpumhz);
+  if (verbose)
+    printf ("init_nanotime: Clock rate = %f MHz\n", cpumhz);
   cyc2sec = 1./(cpumhz * 1.e6);
   return 0;
 #else
@@ -1339,7 +1364,8 @@ static int init_rtc ()
 #ifdef UNICOSMP
   extern long long rtc_rate_();
   ticks2sec = 1./rtc_rate_();
-  printf ("init_rtc: ticks per sec=%g\n", rtc_rate_();
+  if (verbose)
+    printf ("init_rtc: ticks per sec=%g\n", rtc_rate_();
   return 0;
 #else
   return GPTLerror ("init_rtc: not enabled\n");
@@ -1387,7 +1413,8 @@ static int init_papitime ()
 {
 #ifdef HAVE_PAPI
   ref_papitime = PAPI_get_real_usec ();
-  printf ("init_papitime: ref_papitime=%ld\n", (long) ref_papitime);
+  if (verbose)
+    printf ("init_papitime: ref_papitime=%ld\n", (long) ref_papitime);
   return 0;
 #else
   return GPTLerror ("init_papitime: not enabled\n");
@@ -1414,7 +1441,8 @@ static int init_clock_gettime ()
   struct timespec tp;
   (void) clock_gettime (CLOCK_REALTIME, &tp);
   ref_clock_gettime = tp.tv_sec;
-  printf ("init_clock_gettime: ref_clock_gettime=%ld\n", (long) ref_clock_gettime);
+  if (verbose)
+    printf ("init_clock_gettime: ref_clock_gettime=%ld\n", (long) ref_clock_gettime);
   return 0;
 #else
   return GPTLerror ("init_clock_gettime: not enabled\n");
@@ -1443,7 +1471,8 @@ static int init_gettimeofday ()
   struct timeval tp;
   (void) gettimeofday (&tp, 0);
   ref_gettimeofday = tp.tv_sec;
-  printf ("init_gettimeofday: ref_gettimeofday=%ld\n", (long) ref_gettimeofday);
+  if (verbose)
+    printf ("init_gettimeofday: ref_gettimeofday=%ld\n", (long) ref_gettimeofday);
   return 0;
 #else
   return GPTLerror ("init_gettimeofday: not enabled\n");
