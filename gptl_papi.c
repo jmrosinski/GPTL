@@ -138,7 +138,8 @@ static char papiname[PAPI_MAX_STR_LEN];  /* returned from PAPI_event_code_to_nam
 static const int BADCOUNT = -999999;     /* Set counters to this when they are bad */
 static int GPTLoverheadindx = -1;        /* index into counters array */
 static long_long *readoverhead;          /* overhead due to reading PAPI counters */
-static bool is_multiplexed = false;      /* whether events are multiplexed */
+static bool is_multiplexed = false;      /* whether multiplexed (always start false)*/
+const static bool enable_multiplexing = true; /* whether to try multiplexing */
 
 /* Function prototypes */
 
@@ -321,27 +322,51 @@ static int create_and_start_events (const int t)  /* thread number */
   for (n = 0; n < nevents; n++) {
     if ((ret = PAPI_add_event (EventSet[t], eventlist[n].counter)) != PAPI_OK) {
       printf ("%s\n", PAPI_strerror (ret));
-      return GPTLerror ("create_and_start_events: failure adding event: %s\n", 
-			eventlist[n].str);
+      printf ("create_and_start_events: failure adding event:%s\n", 
+	      eventlist[n].str);
+
+      if (enable_multiplexing) {
+	printf ("Trying multiplexing...\n");
+
+	/* Cleanup the eventset for multiplexing */
+
+	if ((ret = PAPI_cleanup_eventset (EventSet[t])) != PAPI_OK)
+	  return GPTLerror ("create_and_start_events: %s\n", PAPI_strerror (ret));
+
+	if ((ret = PAPI_destroy_eventset (&EventSet[t])) != PAPI_OK)
+	  return GPTLerror ("create_and_start_events: %s\n", PAPI_strerror (ret));
+
+	is_multiplexed = true;
+	break;
+      } else
+	return GPTLerror ("enable_multiplexing is false: giving up\n");
     }
   }
 
-  /* Start the event set.  It will only be read from now on--never stopped */
+  if (is_multiplexed) {
+    if ((ret = PAPI_create_eventset (&EventSet[t])) != PAPI_OK)
+      return GPTLerror ("create_and_start_events: failure creating eventset: %s\n", 
+			PAPI_strerror (ret));
 
-  if ((ret = PAPI_start (EventSet[t])) != PAPI_OK) {
-    printf ("create_and_start_events: failed to start event set--trying multiplexing...\n");
     if ((ret = PAPI_multiplex_init ()) != PAPI_OK)
-      return GPTLerror ("%s\n", PAPI_strerror (ret));
+      return GPTLerror ("create_and_start_events: failure from PAPI_multiplex_init%s\n", 
+			PAPI_strerror (ret));
 
-    if ((ret = PAPI_set_multiplex (EventSet[t])) == PAPI_OK) {
-      if ((ret = PAPI_start (EventSet[t])) != PAPI_OK) {
-	return GPTLerror ("%s\n", PAPI_strerror (ret));
-      }
-      is_multiplexed = true;
-    } else {
-      return GPTLerror ("%s\n", PAPI_strerror (ret));
+    if ((ret = PAPI_set_multiplex (EventSet[t])) != PAPI_OK)
+      return GPTLerror ("create_and_start_events: failure from PAPI_set_multiplex: %s\n", 
+			PAPI_strerror (ret));
+
+    for (n = 0; n < nevents; n++) {
+      if ((ret = PAPI_add_event (EventSet[t], eventlist[n].counter)) != PAPI_OK)
+	return GPTLerror ("create_and_start_events: failure adding event:%s\n"
+			  "  Error was: %s\n", PAPI_strerror (ret));
     }
   }
+
+    /* Start the event set.  It will only be read from now on--never stopped */
+
+  if ((ret = PAPI_start (EventSet[t])) != PAPI_OK)
+    return GPTLerror ("create_and_start_events: failed to start event set: %s\n", PAPI_strerror (ret));
 
   /* Estimate overhead of calling PAPI_read, to be used later in printing */
 
