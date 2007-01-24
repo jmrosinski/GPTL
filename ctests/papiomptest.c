@@ -9,11 +9,11 @@
 #include <papi.h>
 #endif
 
-void add (int);
-void multiply (int);
-void multadd (int);
-void divide (int);
-void compare (int);
+double add (int, int);
+double multiply (int, int, double);
+double multadd (int, int);
+double divide (int, int);
+double compare (int, int);
 
 int main (int argc, char **argv)
 {
@@ -68,11 +68,11 @@ int main (int argc, char **argv)
 #pragma omp parallel for private (iter)
       
   for (iter = 1; iter <= nompiter; iter++) {
-    add (looplen);
-    multiply (looplen);
-    multadd (looplen);
-    divide (looplen);
-    compare (looplen);
+    add (looplen, iter);
+    multiply (looplen, iter, 0.);
+    multadd (looplen, iter);
+    divide (looplen, iter);
+    compare (looplen, iter);
   }
 
   GPTLstop ("total");
@@ -83,18 +83,11 @@ int main (int argc, char **argv)
   return 0;
 }
 
-void add (int looplen)
+double add (int looplen, int iter)
 {
   int i;
   char string[128];
-  float *arr;
-
-  if ( ! (arr = (float *) malloc (looplen * sizeof (float)))) {
-    printf ("malloc error\n");
-    exit (3);
-  }
-
-  memset (arr, 0, looplen * sizeof (float));
+  double val = iter;
 
   if (looplen < 1000000)
     sprintf (string, "%dadditions", looplen);
@@ -105,27 +98,19 @@ void add (int looplen)
     exit (1);
 
   for (i = 1; i <= looplen; ++i)
-    arr[i] += (float) i;
+    val += (double) i;
 
   if (GPTLstop (string) < 0)
     exit (1);
 
-  free (arr);
+  return val;
 }
 
-void multiply (int looplen)
+double multiply (int looplen, int iter, double zero)
 {
   int i;
   char string[128];
-
-  float *arr;
-
-  if ( ! (arr = (float *) malloc (looplen * sizeof (float)))) {
-    printf ("malloc error\n");
-    exit (3);
-  }
-
-  memset (arr, 0, looplen * sizeof (float));
+  double val = iter;
 
   if (looplen < 1000000)
     sprintf (string, "%dmultiplies", looplen);
@@ -136,27 +121,19 @@ void multiply (int looplen)
     exit (1);
 
   for (i = 1; i <= looplen; ++i)
-    arr[i] *= (float) i;
+    val *= zero;
 
   if (GPTLstop (string) < 0)
     exit (1);
 
-  free (arr);
+  return val;
 }
 
-void multadd (int looplen)
+double multadd (int looplen, int iter)
 {
   int i;
   char string[128];
-
-  float *arr;
-
-  if ( ! (arr = (float *) malloc (looplen * sizeof (float)))) {
-    printf ("malloc error\n");
-    exit (3);
-  }
-
-  memset (arr, 0, looplen * sizeof (float));
+  double val = iter;
 
   if (looplen < 1000000)
     sprintf (string, "%dmultadds", looplen);
@@ -167,27 +144,19 @@ void multadd (int looplen)
     exit (1);
 
   for (i = 1; i <= looplen; ++i)
-    arr[i] += ((float) i) * 1.1;
+    val += ((double) i) * 0.00001;
 
   if (GPTLstop (string) < 0)
     exit (1);
 
-  free (arr);
+  return val;
 }
 
-void divide (int looplen)
+double divide (int looplen, int iter)
 {
   int i;
   char string[128];
-
-  float *arr;
-
-  if ( ! (arr = (float *) malloc (looplen * sizeof (float)))) {
-    printf ("malloc error\n");
-    exit (3);
-  }
-
-  memset (arr, 0, looplen * sizeof (float));
+  double val = iter;
 
   if (looplen < 1000000)
     sprintf (string, "%ddivides", looplen);
@@ -198,27 +167,19 @@ void divide (int looplen)
     exit (1);
 
   for (i = 1; i <= looplen; ++i)
-    arr[i] /= (float) i;
+    val /= (double) i;
 
   if (GPTLstop (string) < 0)
     exit (1);
 
-  free (arr);
+  return val;
 }
 
-void compare (int looplen)
+double compare (int looplen, int iter)
 {
   int i;
   char string[128];
-
-  float *arr;
-
-  if ( ! (arr = (float *) malloc (looplen * sizeof (float)))) {
-    printf ("malloc error\n");
-    exit (3);
-  }
-
-  memset (arr, 0, looplen * sizeof (float));
+  double val = iter;
 
   if (looplen < 1000000)
     sprintf (string, "%ddivides", looplen);
@@ -228,14 +189,12 @@ void compare (int looplen)
   if (GPTLstart (string) < 0)
     exit (1);
 
- loopblahnew:
   for (i = 0; i < looplen; ++i)
- ifblahnew:
-  if ((int) arr[i] > 0)
-    arr[i] = 0.;
+    if (val < i)
+      val = i;
 
   if (GPTLstop (string) < 0)
     exit (1);
 
-  free (arr);
+  return val;
 }
