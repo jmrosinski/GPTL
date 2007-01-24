@@ -139,7 +139,7 @@ static const int BADCOUNT = -999999;     /* Set counters to this when they are b
 static int GPTLoverheadindx = -1;        /* index into counters array */
 static long_long *readoverhead;          /* overhead due to reading PAPI counters */
 static bool is_multiplexed = false;      /* whether multiplexed (always start false)*/
-const static bool enable_multiplexing = true; /* whether to try multiplexing */
+const static bool enable_multiplexing = false; /* whether to try multiplexing */
 
 /* Function prototypes */
 
