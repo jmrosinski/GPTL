@@ -139,7 +139,7 @@ static const int BADCOUNT = -999999;     /* Set counters to this when they are b
 static int GPTLoverheadindx = -1;        /* index into counters array */
 static long_long *readoverhead;          /* overhead due to reading PAPI counters */
 static bool is_multiplexed = false;      /* whether multiplexed (always start false)*/
-const static bool enable_multiplexing = false; /* whether to try multiplexing */
+const static bool enable_multiplexing = true; /* whether to try multiplexing */
 
 /* Function prototypes */
 
@@ -327,15 +327,6 @@ static int create_and_start_events (const int t)  /* thread number */
 
       if (enable_multiplexing) {
 	printf ("Trying multiplexing...\n");
-
-	/* Cleanup the eventset for multiplexing */
-
-	if ((ret = PAPI_cleanup_eventset (EventSet[t])) != PAPI_OK)
-	  return GPTLerror ("create_and_start_events: %s\n", PAPI_strerror (ret));
-
-	if ((ret = PAPI_destroy_eventset (&EventSet[t])) != PAPI_OK)
-	  return GPTLerror ("create_and_start_events: %s\n", PAPI_strerror (ret));
-
 	is_multiplexed = true;
 	break;
       } else
@@ -344,6 +335,15 @@ static int create_and_start_events (const int t)  /* thread number */
   }
 
   if (is_multiplexed) {
+
+    /* Cleanup the eventset for multiplexing */
+
+    if ((ret = PAPI_cleanup_eventset (EventSet[t])) != PAPI_OK)
+      return GPTLerror ("create_and_start_events: %s\n", PAPI_strerror (ret));
+    
+    if ((ret = PAPI_destroy_eventset (&EventSet[t])) != PAPI_OK)
+      return GPTLerror ("create_and_start_events: %s\n", PAPI_strerror (ret));
+
     if ((ret = PAPI_create_eventset (&EventSet[t])) != PAPI_OK)
       return GPTLerror ("create_and_start_events: failure creating eventset: %s\n", 
 			PAPI_strerror (ret));
@@ -359,7 +359,7 @@ static int create_and_start_events (const int t)  /* thread number */
     for (n = 0; n < nevents; n++) {
       if ((ret = PAPI_add_event (EventSet[t], eventlist[n].counter)) != PAPI_OK)
 	return GPTLerror ("create_and_start_events: failure adding event:%s\n"
-			  "  Error was: %s\n", PAPI_strerror (ret));
+			  "  Error was: %s\n", eventlist[n].str, PAPI_strerror (ret));
     }
   }
 
