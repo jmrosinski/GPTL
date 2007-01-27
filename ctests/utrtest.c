@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>  /* exit */
+#include <unistd.h>  /* getopt */
 #include "../gptl.h"
 #if ( defined HAVE_LIBMPI ) || ( defined HAVE_LIBMPICH )
 #include <mpi.h>
@@ -6,14 +8,36 @@
 
 int main (int argc, char **argv)
 {
+  int c;
+  int papiopt;
   double sum = 0.;
   extern void sub (int, int, char *, double *);
+  extern char *optarg;
 
 #if ( defined HAVE_LIBMPI ) || ( defined HAVE_LIBMPICH )
   MPI_Init (&argc, &argv);
 #endif
 
   printf ("Purpose: estimate overhead of GPTL\n");
+
+  while ((c = getopt (argc, argv, "p:")) != -1) {
+    switch (c) {
+    case 'p':
+      if ((papiopt = GPTL_PAPIname2id (optarg)) >= 0) {
+	printf ("Failure from GPTL_PAPIname2id\n");
+	exit (1);
+      }
+      if (GPTLsetoption (papiopt, 1) < 0) {
+	printf ("Failure from GPTLsetoption (%s,1)\n", optarg);
+	exit (1);
+      }
+      break;
+    default:
+      printf ("unknown option %c\n", c);
+      exit (2);
+    }
+  }
+
   GPTLsetoption (GPTLabort_on_error, 0);
 
   GPTLsetutr (GPTLmpiwtime);
