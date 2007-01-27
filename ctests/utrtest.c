@@ -10,6 +10,7 @@ int main (int argc, char **argv)
 {
   int c;
   int papiopt;
+  int disable = 0; /* disable timers */
   double sum = 0.;
   extern void sub (int, int, char *, double *);
   extern char *optarg;
@@ -20,8 +21,11 @@ int main (int argc, char **argv)
 
   printf ("Purpose: estimate overhead of GPTL\n");
 
-  while ((c = getopt (argc, argv, "p:")) != -1) {
+  while ((c = getopt (argc, argv, "dp:")) != -1) {
     switch (c) {
+    case 'd':
+      disable = 1;
+      break;
     case 'p':
       if ((papiopt = GPTL_PAPIname2id (optarg)) >= 0) {
 	printf ("Failure from GPTL_PAPIname2id\n");
@@ -47,10 +51,14 @@ int main (int argc, char **argv)
   GPTLsetutr (GPTLgettimeofday);
   GPTLsetutr (GPTLpapitime);
 
-  GPTLinitialize ();
+  if (disable) {
+    printf ("Disabling timing\n");
+    GPTLdisable ();
+  }
 
+  GPTLinitialize ();
   GPTLstart ("total");
-  /*  GPTLdisable (); */
+
   sub (1, 10000000, "1x1e7", &sum);
   sub (10, 1000000, "10x1e6", &sum);
   sub (100, 100000, "100x1e5", &sum);
@@ -59,9 +67,9 @@ int main (int argc, char **argv)
   sub (100000, 100, "1e5x100", &sum);
   sub (1000000, 10, "1e6x10", &sum);
   sub (10000000, 1, "1e7x1", &sum);
-  /*  GPTLenable (); */
-  GPTLstop ("total");
 
+  GPTLstop ("total");
+  GPTLenable ();
   GPTLpr (0);
   return 0;
 }
