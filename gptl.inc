@@ -5,6 +5,8 @@
       integer GPTLdepthlimit
       integer GPTLverbose
 
+      integer GPTLnarrowprint
+
       integer GPTLnanotime
       integer GPTLrtc
       integer GPTLmpiwtime
@@ -18,6 +20,8 @@
       parameter (GPTLoverhead       = 4)
       parameter (GPTLdepthlimit     = 5)
       parameter (GPTLverbose        = 6)
+
+      parameter (GPTLnarrowprint    = -2)
 
       parameter (GPTLgettimeofday   = 7)
       parameter (GPTLnanotime       = 8)

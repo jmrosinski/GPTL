@@ -139,6 +139,7 @@ static const int BADCOUNT = -999999;     /* Set counters to this when they are b
 static int GPTLoverheadindx = -1;        /* index into counters array */
 static long_long *readoverhead;          /* overhead due to reading PAPI counters */
 static bool is_multiplexed = false;      /* whether multiplexed (always start false)*/
+static bool narrowprint = false;         /* only use 8 digits not 16 for counter prints */
 const static bool enable_multiplexing = true; /* whether to try multiplexing */
 
 /* Function prototypes */
@@ -157,7 +158,7 @@ static int create_and_start_events (const int);
 ** Return value: 0 (success) or GPTLerror (failure)
 */
 
-int GPTL_PAPIsetoption (const int counter,  /* PAPI counter */
+int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
 			const int val)      /* true or false for enable or disable */
 {
   int n;  /* loop index */
@@ -187,6 +188,15 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter */
       }
       return 0;
     }
+
+  /*
+  ** Check for option which is not an actual counter
+  */
+
+  if (counter == GPTLnarrowprint) {
+    narrowprint = (bool) val;
+    return 0;
+  }
 
   return GPTLerror ("GPTL_PAPIsetoption: counter %d does not exist\n", counter);
 }
@@ -502,11 +512,17 @@ void GPTL_PAPIprstr (FILE *fp,                          /* file descriptor */
 {
   int n;
   
-  for (n = 0; n < nevents; n++)
-    fprintf (fp, "%16s ", eventlist[n].prstr);
-
-  if (overheadstatsenabled && GPTLoverheadindx > -1)
-    fprintf (fp, "Overhead (cyc)   ");
+  if (narrowprint) {
+    for (n = 0; n < nevents; n++)
+      fprintf (fp, "%.8s ", eventlist[n].prstr);
+    if (overheadstatsenabled && GPTLoverheadindx > -1)
+      fprintf (fp, "OH (cyc) ");
+  } else {
+    for (n = 0; n < nevents; n++)
+      fprintf (fp, "%.16s ", eventlist[n].prstr);
+    if (overheadstatsenabled && GPTLoverheadindx > -1)
+      fprintf (fp, "Overhead (cyc)   ");
+  }
 }
 
 /*
@@ -528,10 +544,17 @@ void GPTL_PAPIpr (FILE *fp,                          /* file descriptor to write
   long_long overhead;  /* overhead due to PAPI_read */
   
   for (n = 0; n < nevents; n++) {
-    if (aux->accum[n] < 1000000)
-      fprintf (fp, "%16ld ", (long) aux->accum[n]);
-    else
-      fprintf (fp, "%16.10e ", (double) aux->accum[n]);
+    if (narrowprint) {
+      if (aux->accum[n] < 1000000)
+	fprintf (fp, "%8ld ", (long) aux->accum[n]);
+      else
+	fprintf (fp, "%8.2e ", (double) aux->accum[n]);
+    } else {
+      if (aux->accum[n] < 1000000)
+	fprintf (fp, "%16ld ", (long) aux->accum[n]);
+      else
+	fprintf (fp, "%16.10e ", (double) aux->accum[n]);
+    }
   }
 
   /* 
@@ -541,12 +564,36 @@ void GPTL_PAPIpr (FILE *fp,                          /* file descriptor to write
 
   if (overheadstatsenabled && GPTLoverheadindx > -1) {
     overhead = count * 2 * readoverhead[t];
-    if (overhead < 1000000)
-      fprintf (fp, "%16ld ", (long) overhead);
-    else
-      fprintf (fp, "%16.10e ", (double) overhead);
+    if (narrowprint) {
+      if (overhead < 1000000)
+	fprintf (fp, "%8ld ", (long) overhead);
+      else
+	fprintf (fp, "%8.2e ", (double) overhead);
+    } else {
+      if (overhead < 1000000)
+	fprintf (fp, "%8ld ", (long) overhead);
+      else
+	fprintf (fp, "%8.2e ", (double) overhead);
+    }
   }
 }
+
+/*
+** GPTL_PAPIprintenabled: Print list of enabled timers
+**
+** Input args:
+**   fp: file descriptor
+*/
+
+void GPTL_PAPIprintenabled (FILE *fp)
+{
+  int n;
+
+  fprintf (fp, "PAPI events enabled:\n");
+  for (n = 0; n < nevents; n++)
+    fprintf (fp, "  %s\n", eventlist[n].str);
+  fprintf (fp, "\n");
+}  
 
 /*
 ** GPTL_PAPIadd: Accumulate PAPI counters. Called from add.

@@ -1,5 +1,5 @@
 /*
-$Id: gptl.h,v 1.19 2007-01-22 20:37:02 rosinski Exp $
+$Id: gptl.h,v 1.20 2007-01-30 22:15:00 rosinski Exp $
 */
 #ifndef GPTL_H
 #define GPTL_H
@@ -9,7 +9,9 @@ typedef enum {
   GPTLabort_on_error = 3,
   GPTLoverhead       = 4,
   GPTLdepthlimit     = 5,
-  GPTLverbose        = 6
+  GPTLverbose        = 6,
+
+  GPTLnarrowprint    = -2 /* PAPI options are negative */
 } Option;
 
 typedef enum {

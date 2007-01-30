@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <stdlib.h>  /* atoi */
+#include <stdlib.h>  /* atoi,exit */
 #include <unistd.h>  /* getopt */
 #include <string.h>  /* memset */
 
@@ -21,10 +21,11 @@ int main (int argc, char **argv)
   int looplen = 1000000;
   int iter;
   int papiopt;
+  int c;
+
+  double ret;
 
   extern char *optarg;
-
-  int c;
 
   printf ("Purpose: test known-length loops with various floating point ops\n");
   printf ("Include PAPI and OpenMP, respectively, if enabled\n");
@@ -62,17 +63,23 @@ int main (int argc, char **argv)
   if (GPTLsetoption (GPTLabort_on_error, 1) < 0)
     exit (4);
 
+  if (GPTLsetoption (GPTLoverhead, 1) < 0)
+    exit (4);
+
+  if (GPTLsetoption (GPTLnarrowprint, 1) < 0)
+    exit (4);
+
   GPTLinitialize ();
   GPTLstart ("total");
 	 
-#pragma omp parallel for private (iter)
+#pragma omp parallel for private (iter, ret)
       
   for (iter = 1; iter <= nompiter; iter++) {
-    add (looplen, iter);
-    multiply (looplen, iter, 0.);
-    multadd (looplen, iter);
-    divide (looplen, iter);
-    compare (looplen, iter);
+    ret = add (looplen, iter);
+    ret = multiply (looplen, iter, 0.);
+    ret = multadd (looplen, iter);
+    ret = divide (looplen, iter);
+    ret = compare (looplen, iter);
   }
 
   GPTLstop ("total");
