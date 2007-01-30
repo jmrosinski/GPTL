@@ -3,6 +3,7 @@
 #include <papi.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #if ( defined THREADED_OMP )
 #include <omp.h>
