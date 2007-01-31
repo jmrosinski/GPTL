@@ -4,7 +4,7 @@
 #include "../gptl.inc"
 
 #ifdef HAVE_PAPI
-#include <fpapi.h>
+#include <f77papi.h>
 #endif
 
       real add
@@ -39,8 +39,15 @@
       if (gptlsetoption (gptlabort_on_error, 1) .lt. 0) call exit(3)
 #ifdef HAVE_PAPI
       if (gptlsetoption (PAPI_FP_OPS, 1) .lt. 0) call exit (4)
+      if (gptlsetoption (PAPI_TOT_CYC, 1) .lt. 0) call exit (4)
 #endif
+
+      if (gptlsetoption (gptloverhead, 0) < 0) call exit (4)
+      if (gptlsetoption (gptlnarrowprint, 1) < 0) call exit (4)
+      
       if (gptlinitialize () .lt. 0) call exit(1)
+
+      ret = gptlstart ('total')
 
 !$OMP PARALLEL DO PRIVATE (iter, zero)
 
@@ -51,6 +58,7 @@
         ret = divide (looplen, zero)
       end do
 
+      ret = gptlstop ('total')
       if (gptlpr (0) .lt. 0) call exit(2)
       if (gptlfinalize () .lt. 0) call exit(3)
 
