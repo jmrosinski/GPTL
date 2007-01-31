@@ -1,3 +1,7 @@
+gptl2_2: Multiplexing: can enable, disable, or always enable.
+	 GPTLnarrowprint (fewer digits)
+	 Add cmd-line PAPI option arg to utrtest.
+	 papiomptest no longer does malloc: caused trouble on SGI
 gptl1_7: Split tests/ into ctests/ and ftests.
 	 Fix logic on Fortran underscoring.
 	 Return error when selected PAPI option not available.
