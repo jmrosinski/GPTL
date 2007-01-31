@@ -515,12 +515,12 @@ void GPTL_PAPIprstr (FILE *fp,                          /* file descriptor */
   
   if (narrowprint) {
     for (n = 0; n < nevents; n++)
-      fprintf (fp, "%.8s ", eventlist[n].prstr);
+      fprintf (fp, "%8.8s ", &eventlist[n].counterstr[5]); /* 5 => lop off "PAPI_" */
     if (overheadstatsenabled && GPTLoverheadindx > -1)
       fprintf (fp, "OH (cyc) ");
   } else {
     for (n = 0; n < nevents; n++)
-      fprintf (fp, "%.16s ", eventlist[n].prstr);
+      fprintf (fp, "%16.16s ", eventlist[n].prstr);
     if (overheadstatsenabled && GPTLoverheadindx > -1)
       fprintf (fp, "Overhead (cyc)   ");
   }
