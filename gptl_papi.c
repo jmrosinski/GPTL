@@ -180,9 +180,10 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
       if (nprop+1 > MAX_AUX) {
 	return GPTLerror ("GPTL_PAPIsetoption: Event %s is too many\n", papitable[n].str);
       } else {
-	propeventlist[nprop].counter = counter;
-	propeventlist[nprop].prstr   = papitable[n].prstr;
-	propeventlist[nprop].str     = papitable[n].str;
+	propeventlist[nprop].counter    = counter;
+	propeventlist[nprop].counterstr = papitable[n].counterstr;
+	propeventlist[nprop].prstr      = papitable[n].prstr;
+	propeventlist[nprop].str        = papitable[n].str;
 	printf ("GPTL_PAPIsetoption: will attempt to enable event %s\n", 
 		propeventlist[nprop].str);
 	++nprop;
@@ -270,9 +271,10 @@ int GPTL_PAPIinitialize (const int maxthreads)  /* number of threads */
 	if (counter == PAPI_TOT_CYC)
 	  GPTLoverheadindx = nevents;
 
-	eventlist[nevents].counter = counter;
-	eventlist[nevents].prstr   = propeventlist[n].prstr;
-	eventlist[nevents].str     = propeventlist[n].str;
+	eventlist[nevents].counter    = counter;
+	eventlist[nevents].counterstr = propeventlist[n].counterstr;
+	eventlist[nevents].prstr      = propeventlist[n].prstr;
+	eventlist[nevents].str        = propeventlist[n].str;
 	printf ("GPTL_PAPIinitialize: event %s enabled\n", eventlist[nevents].str);
 	++nevents;
       }
