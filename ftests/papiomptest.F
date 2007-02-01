@@ -22,11 +22,13 @@
       integer iter
       integer papiopt
       integer event
-      integer iret
+      integer ret
+
+      integer*8 papicounters(3)
 
       character*40 eventname(4)
 
-      real ret
+      real result
       real zero
 
       nompiter = 128
@@ -41,19 +43,19 @@
 
       if (gptlsetoption (gptlverbose, 0) .lt. 0) call exit (3)
       if (gptlsetoption (gptlabort_on_error, 1) .lt. 0) call exit(3)
-#ifdef HAVE_PAPI
 
+#ifdef HAVE_PAPI
       if (gptlsetoption (PAPI_FP_OPS, 1) .lt. 0) call exit (4)
       if (gptlsetoption (PAPI_TOT_CYC, 1) .lt. 0) call exit (4)
 
       ! Try some native events: this probably requires calling papif_library_init
 
-      iret = PAPI_VER_CURRENT
-      call papif_library_init (iret)
-      if (iret .ne. PAPI_VER_CURRENT) call exit (5)
+      ret = PAPI_VER_CURRENT
+      call papif_library_init (ret)
+      if (ret .ne. PAPI_VER_CURRENT) call exit (5)
       eventname(1) = 'resource_stall_SBFULL'
-      call PAPIf_event_name_to_code(eventname(1), event, iret)
-      if (iret .ne. 0) call exit (6)
+      call PAPIf_event_name_to_code(eventname(1), event, ret)
+      if (ret .ne. 0) call exit (6)
       if (gptlsetoption (event, 1) .lt. 0) call exit (7)
 #endif
 
@@ -64,16 +66,22 @@
 
       ret = gptlstart ('total')
 
-!$OMP PARALLEL DO PRIVATE (iter, zero)
+!$OMP PARALLEL DO PRIVATE (iter, result, zero)
 
       do iter=1,nompiter
-        ret = add (looplen, zero)
-        ret = multiply (looplen, zero)
-        ret = multadd (looplen, zero)
-        ret = divide (looplen, zero)
+        result = add (looplen, zero)
+        result = multiply (looplen, zero)
+        result = multadd (looplen, zero)
+        result = divide (looplen, zero)
       end do
 
       ret = gptlstop ('total')
+#ifdef HAVE_PAPI
+      ret = gptlquerycounters ('total', -1, papicounters)
+      write(6,*)'total PAPI_FP_OPS=    ', papicounters(1)
+      write(6,*)'total PAPI_TOT_CYC=   ', papicounters(2)
+      write(6,*)'resource_stall_SBFULL=', papicounters(3)
+#endif
       if (gptlpr (0) .lt. 0) call exit(2)
       if (gptlfinalize () .lt. 0) call exit(3)
 

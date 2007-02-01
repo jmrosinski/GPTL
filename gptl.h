@@ -1,5 +1,5 @@
 /*
-$Id: gptl.h,v 1.20 2007-01-30 22:15:00 rosinski Exp $
+$Id: gptl.h,v 1.21 2007-02-01 22:01:49 rosinski Exp $
 */
 #ifndef GPTL_H
 #define GPTL_H
@@ -41,7 +41,8 @@ extern int GPTLsetutr (const int);
 extern int GPTLenable (void);
 extern int GPTLdisable (void);
 extern int GPTLquery (const char *, int, int *, int *, double *, double *, double *,
-		      long *, const int);
+		      long long *, const int);
+extern int GPTLquerycounters (const char *, int, long long *);
 
 /* 
 ** These are defined in gptl_papi.c 

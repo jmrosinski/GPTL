@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.18 2007-01-07 00:36:38 rosinski Exp $
+** $Id: f_wrappers.c,v 1.19 2007-02-01 22:01:49 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines
 */
@@ -22,6 +22,7 @@
 #define gptldisable GPTLDISABLE
 #define gptlsetutr GPTLSETUTR
 #define gptlquery GPTLQUERY
+#define gptlquerycounters GPTLQUERYCOUNTERS
 #define gptlget_memusage GPTLGET_MEMUSAGE
 #define gptlprint_memusage GPTLPRINT_MEMUSAGE
 #define gptl_papiprinttable GPTL_PAPIPRINTTABLE
@@ -41,6 +42,7 @@
 #define gptldisable gptldisable_
 #define gptlsetutr gptlsetutr_
 #define gptlquery gptlquery_
+#define gptlquerycounters gptlquerycounters_
 #define gptlget_memusage gptlget_memusage_
 #define gptlprint_memusage gptlprint_memusage_
 #define gptl_papiprinttable gptl_papiprinttable_
@@ -60,6 +62,7 @@
 #define gptldisable gptldisable_
 #define gptlsetutr gptlsetutr_
 #define gptlquery gptlquery_
+#define gptlquerycounters gptlquerycounters_
 #define gptlget_memusage gptlget_memusage__
 #define gptlprint_memusage gptlprint_memusage__
 #define gptl_papiprinttable gptl_papiprinttable__
@@ -136,7 +139,7 @@ int gptlsetutr (int *option)
 }
 
 int gptlquery (const char *name, int *t, int *count, int *onflg, double *wallclock, 
-	       double *usr, double *sys, long *papicounters_out, int *maxcounters, 
+	       double *usr, double *sys, long long *papicounters_out, int *maxcounters, 
 	       int nc)
 {
   char cname[MAX_CHARS+1];
@@ -146,6 +149,17 @@ int gptlquery (const char *name, int *t, int *count, int *onflg, double *wallclo
   strncpy (cname, name, numchars);
   cname[numchars] = '\0';
   return GPTLquery (cname, *t, count, onflg, wallclock, usr, sys, papicounters_out, *maxcounters);
+}
+
+int gptlquerycounters (const char *name, int *t, long long *papicounters_out, int nc)
+{
+  char cname[MAX_CHARS+1];
+  int numchars;
+
+  numchars = MIN (nc, MAX_CHARS);
+  strncpy (cname, name, numchars);
+  cname[numchars] = '\0';
+  return GPTLquerycounters (cname, *t, papicounters_out);
 }
 
 int gptlget_memusage (int *size, int *rss, int *share, int *text, int *datastack)

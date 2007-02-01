@@ -46,6 +46,7 @@
       integer gptldisable
       integer gptlsetutr
       integer gptlquery
+      integer gptlquerycounters
       integer gptl_papiprinttable
       integer gptl_papiname2id
 
@@ -63,5 +64,6 @@
       external gptldisable
       external gptlsetutr
       external gptlquery
+      external gptlquerycounters
       external gptl_papiprinttable
       external gptl_papiname2id

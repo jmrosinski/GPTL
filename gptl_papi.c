@@ -176,7 +176,7 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
   ** is available on this arch.
   */
 
-  for (n = 0; n < nentries; n++)
+  for (n = 0; n < nentries; n++) {
     if (counter == papitable[n].counter) {
       if (nprop+1 > MAX_AUX) {
 	return GPTLerror ("GPTL_PAPIsetoption: Event %s is too many\n", 
@@ -192,6 +192,7 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
       }
       return 0;
     }
+  }
 
   /*
   ** Now check native events

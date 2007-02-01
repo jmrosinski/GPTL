@@ -40,7 +40,7 @@ int main (int argc, char **argv)
   int first;                  /* logical */
 
   long bytes;                 /* number of bytes */
-  long papicounters[2];       /* returned from PAPI via GPTL */
+  long long papicounters[2];       /* returned from PAPI via GPTL */
 
   double firstdiff;
   double *sendbuf;            /* send buffer for MPI_Sendrecv */
