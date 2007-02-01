@@ -21,6 +21,9 @@
       integer looplen
       integer iter
       integer papiopt
+      integer event
+
+      character*40 eventname(4)
 
       real ret
       real zero
@@ -38,8 +41,18 @@
       if (gptlsetoption (gptlverbose, 0) .lt. 0) call exit (3)
       if (gptlsetoption (gptlabort_on_error, 1) .lt. 0) call exit(3)
 #ifdef HAVE_PAPI
+
       if (gptlsetoption (PAPI_FP_OPS, 1) .lt. 0) call exit (4)
       if (gptlsetoption (PAPI_TOT_CYC, 1) .lt. 0) call exit (4)
+
+      ! Try some native events: this probably requires calling papif_library_init
+
+      call papif_library_init (ret)
+      if (ret .ne. PAPI_VER_CURRENT) call exit (5)
+      eventname(1) = 'resource_stall_SBFULL'
+      call PAPIf_event_name_to_code(eventname(1), event, ret)
+      if (ret .ne. 0) stop 'PAPI_event_name_to_code failed'
+      if (gptlsetoption (event, 1) .lt. 0) stop event
 #endif
 
       if (gptlsetoption (gptloverhead, 0) < 0) call exit (4)

@@ -178,7 +178,8 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
   for (n = 0; n < nentries; n++)
     if (counter == papitable[n].counter) {
       if (nprop+1 > MAX_AUX) {
-	return GPTLerror ("GPTL_PAPIsetoption: Event %s is too many\n", papitable[n].str);
+	return GPTLerror ("GPTL_PAPIsetoption: Event %s is too many\n", 
+			  papitable[n].str);
       } else {
 	propeventlist[nprop].counter    = counter;
 	propeventlist[nprop].counterstr = papitable[n].counterstr;
@@ -192,14 +193,42 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
     }
 
   /*
-  ** Check for option which is not an actual counter
+  ** Now check native events
+  */
+  
+  if ((ret = PAPI_event_code_to_name (counter, papiname)) == PAPI_OK) {
+    if (nprop+1 > MAX_AUX) {
+      return GPTLerror ("GPTL_PAPIsetoption: Event %d is too many\n", counter);
+    } else {
+      propeventlist[nprop].counter    = counter;
+      
+      /*
+      ** Only one name known for native events, that which is in papiname
+      */
+
+      propeventlist[nprop].counterstr = GPTLallocate (strlen (papiname)+1);
+      propeventlist[nprop].prstr      = GPTLallocate (strlen (papiname)+1);
+      propeventlist[nprop].str        = GPTLallocate (strlen (papiname)+1);
+
+      strcpy (propeventlist[nprop].counterstr, papiname);
+      strcpy (propeventlist[nprop].prstr, papiname);
+      strcpy (propeventlist[nprop].str, papiname);
+
+      printf ("GPTL_PAPIsetoption: will attempt to enable event %s\n", 
+	      propeventlist[nprop].str);
+      ++nprop;
+    }
+    return 0;
+  }
+
+  /*
+  ** Finally, check for option which is not an actual counter
   */
 
   if (counter == GPTLnarrowprint) {
     narrowprint = (bool) val;
     return 0;
   }
-
   return GPTLerror ("GPTL_PAPIsetoption: counter %d does not exist\n", counter);
 }
 
@@ -224,11 +253,17 @@ int GPTL_PAPIinitialize (const int maxthreads)  /* number of threads */
   int *rc;       /* array of return codes from create_and_start_events */
   bool badret;   /* true if any bad return codes were found */
 
-  /* PAPI_library_init needs to be called before ANY other PAPI routine */
+  /* 
+  ** PAPI_library_init needs to be called before ANY other PAPI routine.
+  ** Check that the user hasn't already called PAPI_library_init before
+  ** invoking it.
+  */
 
-  if ((ret = PAPI_library_init (PAPI_VER_CURRENT)) != PAPI_VER_CURRENT)
-    return GPTLerror ("GPTL_PAPIinitialize: PAPI_library_init failure:%s\n",
-		      PAPI_strerror (ret));
+  if ((ret = PAPI_is_initialized ()) == PAPI_NOT_INITED) {
+    if ((ret = PAPI_library_init (PAPI_VER_CURRENT)) != PAPI_VER_CURRENT)
+      return GPTLerror ("GPTL_PAPIinitialize: PAPI_library_init failure:%s\n",
+			PAPI_strerror (ret));
+  }
 
   /* PAPI_thread_init needs to be called if threading enabled */
 
