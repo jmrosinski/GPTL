@@ -708,7 +708,7 @@ void GPTL_PAPIquery (const Papistats *aux,
 
   if (ncounters > 0) {
     for (n = 0; n < ncounters && n < nevents; n++) {
-      papicounters_out[n] = (long) aux->accum[n];
+      papicounters_out[n] = (long long) aux->accum[n];
     }
   }
 }
