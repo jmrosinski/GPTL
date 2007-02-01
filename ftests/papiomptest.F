@@ -22,6 +22,7 @@
       integer iter
       integer papiopt
       integer event
+      integer iret
 
       character*40 eventname(4)
 
@@ -47,8 +48,8 @@
 
       ! Try some native events: this probably requires calling papif_library_init
 
-      ret = PAPI_VER_CURRENT
-      call papif_library_init (ret)
+      iret = PAPI_VER_CURRENT
+      call papif_library_init (iret)
       if (ret .ne. PAPI_VER_CURRENT) call exit (5)
       eventname(1) = 'resource_stall_SBFULL'
       call PAPIf_event_name_to_code(eventname(1), event, ret)
