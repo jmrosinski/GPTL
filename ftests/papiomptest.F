@@ -47,6 +47,7 @@
 
       ! Try some native events: this probably requires calling papif_library_init
 
+      ret = PAPI_VER_CURRENT
       call papif_library_init (ret)
       if (ret .ne. PAPI_VER_CURRENT) call exit (5)
       eventname(1) = 'resource_stall_SBFULL'
