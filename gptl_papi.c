@@ -162,7 +162,8 @@ static int create_and_start_events (const int);
 int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
 			const int val)      /* true or false for enable or disable */
 {
-  int n;  /* loop index */
+  int n;   /* loop index */
+  int ret; /* return code */
   
   /* Just return if the flag says disable an option, because default is off */
 

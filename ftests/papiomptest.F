@@ -51,7 +51,7 @@
       if (ret .ne. PAPI_VER_CURRENT) call exit (5)
       eventname(1) = 'resource_stall_SBFULL'
       call PAPIf_event_name_to_code(eventname(1), event, ret)
-      if (ret .ne. 0) stop 'PAPI_event_name_to_code failed'
+      if (ret .ne. 0) call exit (6)
       if (gptlsetoption (event, 1) .lt. 0) stop event
 #endif
 
