@@ -50,10 +50,10 @@
 
       iret = PAPI_VER_CURRENT
       call papif_library_init (iret)
-      if (ret .ne. PAPI_VER_CURRENT) call exit (5)
+      if (iret .ne. PAPI_VER_CURRENT) call exit (5)
       eventname(1) = 'resource_stall_SBFULL'
-      call PAPIf_event_name_to_code(eventname(1), event, ret)
-      if (ret .ne. 0) call exit (6)
+      call PAPIf_event_name_to_code(eventname(1), event, iret)
+      if (iret .ne. 0) call exit (6)
       if (gptlsetoption (event, 1) .lt. 0) call exit (7)
 #endif
 
