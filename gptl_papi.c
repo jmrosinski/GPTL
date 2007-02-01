@@ -701,7 +701,7 @@ void GPTL_PAPIfinalize (int maxthreads)
 */
 
 void GPTL_PAPIquery (const Papistats *aux,
-		     long *papicounters_out,
+		     long long *papicounters_out,
 		     int ncounters)
 {
   int n;
