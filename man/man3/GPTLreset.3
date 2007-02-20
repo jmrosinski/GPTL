@@ -1,0 +1,42 @@
+.\" $Id: GPTLreset.3,v 1.1 2007-02-20 22:39:19 rosinski Exp $
+.TH GPTLreset 3 "February, 2007" "GPTL"
+
+.SH NAME
+GPTLreset \- Reset all timers. IMPORTANT NOTE: this function has no effect on
+PAPI counters.  Only metrics countable by GPTL itself (currently cpu time and
+wallclock time) can be reset.
+
+.SH SYNOPSIS
+.B C Interface:
+
+.BI "int\ GPTLreset (void);"
+
+.fi
+.B Fortran Interface:
+
+.BI "integer gptlreset ()"
+.fi
+
+.SH DESCRIPTION
+.B GPTLreset
+Reset all timers (except PAPI counters) to zero.  
+
+.SH RESTRICTIONS
+GPTLinitialize must have been called. This function must be
+called by the master thread only.
+
+.SH RETURN VALUES
+On success, this function returns
+.B 0.
+On error, a negative error code is returned and a descriptive message
+printed. 
+
+.SH EXAMPLES
+.nf         
+.if t .ft CW
+
+if (GPTLreset () != 0)
+  handle_error (1);
+
+.if t .ft P
+.fi

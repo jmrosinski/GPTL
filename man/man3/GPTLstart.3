@@ -1,0 +1,75 @@
+.\" $Id: GPTLstart.3,v 1.1 2007-02-20 22:39:19 rosinski Exp $
+.TH GPTLstart 3 "February, 2007" "GPTL"
+
+.SH NAME
+GPTLstart \- Start a timer
+GPTLstop \- Stop a timer
+
+.SH SYNOPSIS
+.B C Interface:
+
+.BI "int\ GPTLstart (const char *"name");"
+.BI "int\ GPTLstop (const char *"name");"
+
+.fi
+.B Fortran Interface:
+
+.BI "integer gptlstart (character(len=*) "name")"
+.BI "integer gptlstop (character(len=*) "name")"
+.fi
+
+.SH DESCRIPTION
+.B GPTLstart
+starts a timer defined by
+.B name.
+
+.B GPTLstop
+stops a timer defined by
+.B name.
+
+.SH ARGUMENTS
+.I name
+-- name of timer to start/stop. Only the first 15 characters are
+significant. This limit can be modified in the GPTL library code via the
+.B #define 
+of MAX_CHARS.  Longer names are truncated.
+
+.SH RESTRICTIONS
+GPTLinitialize must have been called. For GPTLstop, a previous call to
+GPTLstart with the same
+.B name
+must have been made.
+
+.SH RETURN VALUE
+On success, these functions return
+.B 0.
+On error, a negative error code is returned and a descriptive message
+printed. 
+
+.SH EXAMPLES
+A complete sequence of GPTL library calls within a program should look
+something like the following:
+.nf         
+.if t .ft CW
+
+(void) GPTLsetoption (GPTLcpu, 1);      /* enable cpu timings */
+(void) GPTLsetoption (GPTLwall, 0);     /* disable wallclock timings */
+(void) GPTLsetoption (PAPI_TOT_CYC, 1); /* enable counting of total cycles */
+...
+(void) GPTLinitialize();                /* initialize the GPTL library */
+(void) GPTLstart ("total");             /* start a timer */
+...
+(void) GPTLstart ("do_work");           /* start another timer */
+
+do_work();                              /* do some work */
+
+(void) GPTLstop ("do_work");            /* stop a timer */
+(void) GPTLstop ("total");              /* stop a timer */
+...
+(void) GPTLpr (mympitaskid);            /* print the results to timing.<mympitaskid> */
+
+.if t .ft P
+.fi
+
+.SH SEE ALSO
+.BR GPTLpr "(3)" 

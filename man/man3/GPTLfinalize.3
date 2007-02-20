@@ -1,0 +1,47 @@
+.\" $Id: GPTLfinalize.3,v 1.1 2007-02-20 22:39:18 rosinski Exp $
+.TH GPTfinalize 3 "February, 2007" "GPT"
+
+.SH NAME
+GPTLfinalize \- Finalize the GPTL environment (free memory, etc).
+
+.SH SYNOPSIS
+.B C Interface:
+
+.BI "int\ GPTLfinalize (void);"
+
+.fi
+.B Fortran Interface:
+
+.BI "integer gptfinalize ()"
+.fi
+
+.SH DESCRIPTION
+.B GPTLfinalize
+Finalizes the GPTL environment.  All internally allocated space is freed.
+
+.SH RESTRICTIONS
+This routine must be called only by the master thread. Further use of the
+library after GPTLfinalize requires another invocation of GPTLinitialize. 
+
+.SH RETURN VALUES
+On success, this function returns
+.B 0.
+On error, a negative error code is returned and a descriptive message
+printed. 
+
+.SH EXAMPLES
+.nf         
+.if t .ft CW
+
+if (GPTLfinalize () != 0)
+  handle_error (1);
+
+.if t .ft P
+.fi
+
+.SH BUGS
+It is not adequate to call this function and then subsequently invoke
+GPTLinitialize again. It should be but the code isn't there yet.
+
+.SH SEE ALSO
+.BR GPTLinitialize "(3)" 

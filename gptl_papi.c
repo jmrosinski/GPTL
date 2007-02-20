@@ -135,10 +135,11 @@ static int nevents = 0;                  /* number of events: initialize to 0 */
 static int nprop = 0;                    /* number of hoped events: initialize to 0 */ 
 static int *EventSet;                    /* list of events to be counted by PAPI */
 static long_long **papicounters;         /* counters return from PAPI */
+static long_long *readoverhead;          /* overhead due to reading PAPI counters */
+
 static char papiname[PAPI_MAX_STR_LEN];  /* returned from PAPI_event_code_to_name */
 static const int BADCOUNT = -999999;     /* Set counters to this when they are bad */
 static int GPTLoverheadindx = -1;        /* index into counters array */
-static long_long *readoverhead;          /* overhead due to reading PAPI counters */
 static bool is_multiplexed = false;      /* whether multiplexed (always start false)*/
 static bool narrowprint = false;         /* only use 8 digits not 16 for counter prints */
 const static bool enable_multiplexing = true; /* whether to try multiplexing */
@@ -742,6 +743,8 @@ void GPTL_PAPIprinttable ()
 
 /*
 ** GPTL_PAPIname2id: convert a PAPI event name in string form to an int
+**   Can't simply use PAPI_event_name_to_code() because PAPI_library_init()
+**   must already be called in order to use it.
 **
 ** Input args:
 **   name: PAPI event name

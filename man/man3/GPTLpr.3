@@ -1,0 +1,119 @@
+.\" $Id: GPTLpr.3,v 1.1 2007-02-20 22:39:19 rosinski Exp $
+.TH GPTLpr 3 "February, 2007" "GPTL"
+
+.SH NAME
+GPTLpr \- Print the values associated with all timers
+
+.SH SYNOPSIS
+.B C Interface:
+
+.BI "int\ GPTLpr (int "tag");"
+
+.fi
+.B Fortran Interface:
+
+.BI "integer gptpr (integer "tag")"
+.fi
+
+.SH DESCRIPTION
+.B GPTLpr
+Opens a file named timing.<tag> and writes the values for all timers to it.
+The value of the tag can be anything the user wishes.  Typically for MPI runs
+for example, the task id is used in order to obtain unique file names for all
+tasks.  See
+.B EXAMPLE OUTPUT
+below for a sample output file and description of contents.
+
+.SH ARGUMENTS
+.I tag
+-- Output file will be written to a file named timing."tag"
+
+.SH RESTRICTIONS
+GPTLinitialize must have been called. To obtain any useful data, one or more
+pairs of GPTLstart/GPTLstop calls need to have been exercised.
+
+.SH RETURN VALUES
+On success, this function returns
+.B 0.
+On error, a negative error code is returned and a descriptive message
+printed. 
+
+.SH EXAMPLE OUTPUT
+Here is sample output produced by a call to GPTLpr, where wallclock timing
+and the PAPI counter for floating point ops were enabled.  Note that
+threading was enabled in the sample run, so individual per-thread statistics
+are printed. Strings on the left are the names of the various timers input to
+GPTLstart() and GPTLstop().  Note that timer GPTLstart/GPTLstop pairs
+subsumed within other pairs are indented. The number of start/stop pairs is
+output in the "Called" column.  When wallclock times are being gathered, max
+and min stats for any single start/stop pair are also printed.  By default,
+if wallclock times and/or total cycles are being counted, a zeroth order
+attempt is made to estimate the overhead incurred by the underlying timing
+routine (UTR Overhead). Finally, the results of any PAPI counters enabled are
+printed. 
+.nf         
+.if t .ft CW
+
+PAPI event multiplexing was OFF
+PAPI events enabled:
+  Floating point operations executed
+
+Underlying timing routine was PAPI_get_real_usec
+Per-call utr overhead est: 1.3e-07 sec
+
+If overhead stats are printed, roughly half the estimated number is
+embedded in the wallclock (and/or PAPI counter) stats for each timer
+
+Stats for thread 0:
+                   Called Recurse Wallclock max       min       UTR Overhead    FP_OPS 
+  total                   1   -       1.929     1.929     1.929         0.000 7.04e+08 
+    1e+06additions       64   -       0.348     0.006     0.005         0.000 1.28e+08 
+    1e+06multiplies      64   -       0.427     0.007     0.007         0.000 6.40e+07 
+    1e+06multadds        64   -       0.386     0.046     0.005         0.000 1.92e+08 
+    1e+06divides         64   -       0.464     0.007     0.007         0.000 1.28e+08 
+    1e+06compares        64   -       0.303     0.005     0.005         0.000 1.92e+08 
+Overhead sum          =     0.000 wallclock seconds
+Total calls           = 321
+Total recursive calls = 0
+
+Stats for thread 1:
+                 Called Recurse Wallclock max       min       UTR Overhead    FP_OPS 
+  1e+06additions       64   -       0.349     0.007     0.005         0.000 1.28e+08 
+  1e+06multiplies      64   -       0.426     0.008     0.007         0.000 6.40e+07 
+  1e+06multadds        64   -       0.346     0.006     0.005         0.000 1.92e+08 
+  1e+06divides         64   -       0.463     0.007     0.007         0.000 1.28e+08 
+  1e+06compares        64   -       0.303     0.005     0.005         0.000 1.92e+08 
+Overhead sum          =     0.000 wallclock seconds
+Total calls           = 320
+Total recursive calls = 0
+
+Same stats sorted by timer for threaded regions:
+Thd                Called Recurse Wallclock max       min       UTR Overhead    FP_OPS 
+000 1e+06additions       64   -       0.348     0.006     0.005         0.000 1.28e+08 
+001 1e+06additions       64   -       0.349     0.007     0.005         0.000 1.28e+08 
+SUM 1e+06additions      128   -       0.696     0.007     0.005         0.000 2.56e+08 
+
+000 1e+06multiplies      64   -       0.427     0.007     0.007         0.000 6.40e+07 
+001 1e+06multiplies      64   -       0.426     0.008     0.007         0.000 6.40e+07 
+SUM 1e+06multiplies     128   -       0.853     0.008     0.007         0.000 1.28e+08 
+
+000 1e+06multadds        64   -       0.386     0.046     0.005         0.000 1.92e+08 
+001 1e+06multadds        64   -       0.346     0.006     0.005         0.000 1.92e+08 
+SUM 1e+06multadds       128   -       0.732     0.046     0.005         0.000 3.84e+08 
+
+000 1e+06divides         64   -       0.464     0.007     0.007         0.000 1.28e+08 
+001 1e+06divides         64   -       0.463     0.007     0.007         0.000 1.28e+08 
+SUM 1e+06divides        128   -       0.928     0.007     0.007         0.000 2.56e+08 
+
+000 1e+06compares        64   -       0.303     0.005     0.005         0.000 1.92e+08 
+001 1e+06compares        64   -       0.303     0.005     0.005         0.000 1.92e+08 
+SUM 1e+06compares       128   -       0.606     0.005     0.005         0.000 3.84e+08 
+
+OVERHEAD.000 (wallclock seconds) =     0.000
+OVERHEAD.001 (wallclock seconds) =     0.000
+OVERHEAD.SUM (wallclock seconds) =     0.000
+
+
+.if t .ft P
+.fi
+

@@ -1,0 +1,47 @@
+.\" $Id: GPTLprint_memusage.3,v 1.1 2007-02-20 22:39:19 rosinski Exp $
+.TH GPTLprint_memusage 3 "February, 2007" "GPTL"
+
+.SH NAME
+GPTLprint_memusage \- Print current memory usage info
+
+.SH SYNOPSIS
+.B C Interface:
+
+.BI "int\ GPTLprint_memusage (const char *"str");"
+
+.fi
+.B Fortran Interface:
+
+.BI "integer gptlprint_memusage (character(len=*) "str");"
+.fi
+
+.SH DESCRIPTION
+.B GPTLprint_memusage
+prints information about current memory usage of the process.
+
+.SH ARGUMENTS
+.I str
+-- input string gets printed ahead of the other information. Normally used
+as a tag to identify where in the code the call was made.
+
+.SH RESTRICTIONS
+None
+
+.SH RETURN VALUE
+On success, this function return
+.B 0.
+On error, -1 is returned.
+
+.SH EXAMPLES
+.nf         
+.if t .ft CW
+...
+(void) GPTLprint_memusage ("start");  // print memory usage info at program start
+(void) do_work();
+(void) GPTLprint_memusage ("end");    // print memory usage info at program end
+
+.if t .ft P
+.fi
+
+.SH SEE ALSO
+.BR GPTLget_memusage "(3)" 

@@ -6,14 +6,14 @@ use Cwd;
 my ($host) = hostname;
 my ($cmdfile) = "scale.gp";
 my ($cmd);
-@nodecounts = (2,3,4,6,8,9,10,11,12,13,14,16,18,22,26,30,32);
+@nodecounts = (2,4,6,8,10,12,14,16,18,20,22,24);
 my ($nodecountrange) = $nodecounts[$#nodecounts] - $nodecounts[0];
 my ($nodecount);
 my ($ret);
 my (@fpopsfiles) = ("FPops_max","FPops_min");
 my (@membwfiles) = ("MemBW_max","MemBW_min");
 my (@mpisendrecvfiles) = ("MPI_Sendrecv_max","MPI_Sendrecv_min");
-my ($mpicmd) = "mpirun";
+my ($mpicmd) = "srun";
 my ($rundir) = ".";
 my ($arg);
 my ($cwd);
@@ -48,7 +48,7 @@ $cwd = getcwd;
 print (STDOUT "Tests will be run in directory $cwd\n");
 
 foreach $nodecount (@nodecounts) {
-    $cmd = "$mpicmd -np $nodecount ./scale ";
+    $cmd = "$mpicmd -N 4 -n $nodecount ./scale -l 1000000 -n 10";
     print (STDOUT "Running $cmd...\n");
     $ret = system ("$cmd");
     if ($ret != 0) {
@@ -66,6 +66,7 @@ print (CMDFILE "set key left\n");
 print (CMDFILE "set style data linespoints\n");
 print (CMDFILE "set terminal postscript color\n");
 print (CMDFILE "set xrange [0:*]\n");
+print (CMDFILE "set yrange [0:*]\n");
 if ($nodecountrange < 10) {
     $xtics = 1;
 } elsif ($nodecountrange < 100) {

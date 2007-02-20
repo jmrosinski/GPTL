@@ -1,0 +1,48 @@
+.\" $Id: GPTLget_memusage.3,v 1.1 2007-02-20 22:39:18 rosinski Exp $
+.TH GPTLget_memusage 3 "February, 2007" "GPTL"
+
+.SH NAME
+GPTLget_memusage \- Return current memory usage info
+
+.SH SYNOPSIS
+.B C Interface:
+
+.BI "int\ GPTLget_memusage (int *"size", int *"rss", int *"share", int *"text", int
+*"datastack");"
+
+.fi
+.B Fortran Interface:
+
+.BI "integer gptlget_memusage (integer "size", integer "rss", integer "share",
+integer "text", integer "datastack");"
+.fi
+
+.SH DESCRIPTION
+.B GPTLget_memusage
+returns information about current memory usage of the process.
+
+.SH ARGUMENTS
+.I *size
+-- size of the process
+.I *rss
+-- resident set size
+.I *share
+-- portion of processs size occupied by 
+.Bshare
+.I *text
+-- portion of process size occupied by
+.Btext
+.I *datastack
+-- portion of process size occupied by
+.Bdatastack
+
+.SH RESTRICTIONS
+None
+
+.SH RETURN VALUE
+On success, this function returns
+.B 0.
+On error, -1 is returned.
+
+.SH SEE ALSO
+.BR GPTLprint_memusage "(3)" 

@@ -1,0 +1,57 @@
+.\" $Id: GPTLsetutr.3,v 1.1 2007-02-20 22:39:19 rosinski Exp $
+.TH GPTsetutr 3 "February, 2007" "GPT"
+
+.SH NAME
+GPTLsetutr \- Choose a different underlying timing routine than the default.
+
+.SH SYNOPSIS
+.B C Interface:
+
+.nf
+.B #include <gptl.h>
+
+.BI "int\ GPTLsetutr (const int "routine");"
+
+.fi
+.B Fortran Interface:
+
+.nf
+.B #include <gptl.inc>
+
+.BI "integer gptlsetutr (integer " routine ")"
+.fi
+
+.SH DESCRIPTION
+.B GPTLsetutr
+Sets the underlying timing routine to one of the supported
+values. PAPI_get_real_usec (via GPTLpapitime) is used by default, and this is
+likely to be the most efficient. So changing the routine to, for example,
+MPI_Wtime, probably will not be any more efficient. See gptl.h (or gptl.inc
+for Fortran) for the list of supported underlying timing routines.
+
+.SH ARGUMENTS
+.I routine
+-- routine identifier (see gptl.h or gptl.inc for available routines)
+
+.SH RESTRICTIONS
+Any calls to this routine must be done prior to GPTLinitialize. It should be
+called from an unthreaded region.
+
+.SH RETURN VALUES
+On success, this function returns
+.B 0.
+On error, a negative error code is returned and a descriptive message
+printed. 
+
+.SH EXAMPLES
+.nf         
+.if t .ft CW
+
+if (GPTLsetutr (GPTLmpiwtime) != 0)
+  handle_error (1);
+
+.if t .ft P
+.fi
+
+.SH SEE ALSO
+.BR GPTLinitialize "(3)" 

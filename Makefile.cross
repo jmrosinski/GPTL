@@ -1,5 +1,5 @@
 CC       = scpathcc
-CFLAGS   = -g -O2 -Winline  -DFORTRANUNDERSCORE  -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DLINUX=1 -DHAVE_GETTIMEOFDAY=1 -DHAVE_TIMES=1 -DFDEFS=1 -DHAVE_VPRINTF=1   
+CFLAGS   = -gnu3 -g -O2 -Winline -DFORTRANDOUBLEUNDERSCORE  -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DLINUX=1 -DHAVE_GETTIMEOFDAY=1 -DHAVE_TIMES=1 -DFDEFS=1 -DHAVE_VPRINTF=1   
 
 LIBNAME  = libgptl.a
 LIBDIR   = /home/jrosinski/sim/lib
@@ -26,10 +26,10 @@ uninstall:
 	rm -f $(LIBDIR)/$(LIBNAME) $(INCDIR)/gptl.h $(INCDIR)/gptl.inc
 
 ctests/all:
-	(cd ctests && $(MAKE) all)
+	(cd ctests && $(MAKE) all -f Makefile.cross)
 
 ftests/all:
-	(cd ftests && $(MAKE) all)
+	(cd ftests && $(MAKE) all -f Makefile.cross)
 
 clean:
 	rm -f $(OBJS) $(LIBNAME)

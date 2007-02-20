@@ -35,8 +35,8 @@ typedef struct {
 } Nofalse; 
 static Nofalse *current_depth;
 
-static int nthreads    = -1;     /* num threads. Init to bad value */
-static int maxthreads  = -1;     /* max threads (=nthreads for OMP). Init to bad value */
+static int GPTLnthreads= -1;     /* num threads. Init to bad value */
+static int maxthreads  = -1;     /* max threads (=GPTLnthreads for OMP). Init to bad value */
 static int depthlimit  = 99999;  /* max depth for timers (99999 is effectively infinite) */
 static bool disabled = false;    /* Timers disabled? */
 static bool initialized = false; /* GPTLinitialize has been called */
@@ -244,10 +244,10 @@ int GPTLinitialize (void)
   if (initialized)
     return GPTLerror ("GPTLinitialize: has already been called\n");
 
-  if (threadinit (&nthreads, &maxthreads) < 0)
+  if (threadinit (&GPTLnthreads, &maxthreads) < 0)
     return GPTLerror ("GPTLinitialize: bad return from threadinit\n");
 
-  if (get_thread_num (&nthreads, &maxthreads) > 0) 
+  if (get_thread_num (&GPTLnthreads, &maxthreads) > 0) 
     return GPTLerror ("GPTLinitialize: must only be called by master thread\n");
 
   if ((ticks_per_sec = sysconf (_SC_CLK_TCK)) == -1)
@@ -334,7 +334,7 @@ int GPTLfinalize (void)
   if ( ! initialized)
     return GPTLerror ("GPTLfinalize: initialization was not completed\n");
 
-  if (get_thread_num (&nthreads, &maxthreads) > 0) 
+  if (get_thread_num (&GPTLnthreads, &maxthreads) > 0) 
     return GPTLerror ("GPTLfinalize: must only be called by master thread\n");
 
   for (t = 0; t < maxthreads; ++t) {
@@ -361,7 +361,7 @@ int GPTLfinalize (void)
 
   timers = 0;
   last = 0;
-  nthreads = -1;
+  GPTLnthreads = -1;
   maxthreads = -1;
   initialized = false;
   ref_gettimeofday = -1;
@@ -405,7 +405,7 @@ int GPTLstart (const char *name)               /* timer name */
   if ( ! initialized)
     return GPTLerror ("GPTLstart: GPTLinitialize has not been called\n");
 
-  if ((t = get_thread_num (&nthreads, &maxthreads)) < 0)
+  if ((t = get_thread_num (&GPTLnthreads, &maxthreads)) < 0)
     return GPTLerror ("GPTLstart\n");
 
   /*
@@ -559,7 +559,7 @@ int GPTLstop (const char *name)               /* timer name */
   if ( ! initialized)
     return GPTLerror ("GPTLstop: GPTLinitialize has not been called\n");
 
-  if ((t = get_thread_num (&nthreads, &maxthreads)) < 0)
+  if ((t = get_thread_num (&GPTLnthreads, &maxthreads)) < 0)
     return GPTLerror ("GPTLstop\n");
 
   /*
@@ -722,10 +722,10 @@ int GPTLreset (void)
 
   /* Only allow the master thread to reset timers */
 
-  if (get_thread_num (&nthreads, &maxthreads) > 0) 
+  if (get_thread_num (&GPTLnthreads, &maxthreads) > 0) 
     return GPTLerror ("GPTLreset: must only be called by master thread\n");
 
-  for (t = 0; t < nthreads; t++) {
+  for (t = 0; t < GPTLnthreads; t++) {
     for (ptr = timers[t]; ptr; ptr = ptr->next) {
       ptr->onflg = false;
       ptr->count = 0;
@@ -772,7 +772,7 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
   if ( ! initialized)
     return GPTLerror ("GPTLpr: GPTLinitialize() has not been called\n");
 
-  if (get_thread_num (&nthreads, &maxthreads) > 0) 
+  if (get_thread_num (&GPTLnthreads, &maxthreads) > 0) 
     return GPTLerror ("GPTLpr: must only be called by master thread\n");
 
   if (id < 0 || id > 9999)
@@ -807,9 +807,9 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
   fprintf (fp, "If overhead stats are printed, roughly half the estimated number is\n");
   fprintf (fp, "embedded in the wallclock (and/or PAPI counter) stats for each timer\n\n");
 
-  sum = (float *) GPTLallocate (nthreads * sizeof (float));
+  sum = (float *) GPTLallocate (GPTLnthreads * sizeof (float));
   
-  for (t = 0; t < nthreads; ++t) {
+  for (t = 0; t < GPTLnthreads; ++t) {
     if (t > 0)
       fprintf (fp, "\n");
     fprintf (fp, "Stats for thread %d:\n", t);
@@ -861,7 +861,7 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
 
   /* Print per-name stats for all threads */
 
-  if (nthreads > 1) {
+  if (GPTLnthreads > 1) {
     fprintf (fp, "\nSame stats sorted by timer for threaded regions:\n");
     fprintf (fp, "Thd ");
 
@@ -894,7 +894,7 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
       foundany = false;
       first = true;
       sumstats = *ptr;
-      for (t = 1; t < nthreads; ++t) {
+      for (t = 1; t < GPTLnthreads; ++t) {
 	found = false;
 	for (tptr = timers[t]; tptr && ! found; tptr = tptr->next) {
 	  if (STRMATCH (ptr->name, tptr->name)) {
@@ -927,7 +927,7 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
 
     if (wallstats.enabled && overheadstats.enabled) {
       osum = 0.;
-      for (t = 0; t < nthreads; ++t) {
+      for (t = 0; t < GPTLnthreads; ++t) {
 	fprintf (fp, "OVERHEAD.%3.3d (wallclock seconds) = %9.3f\n", t, sum[t]);
 	osum += sum[t];
       }
@@ -937,7 +937,7 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
 
   /* Print hash table stats */
 
-  for (t = 0; t < nthreads; t++) {
+  for (t = 0; t < GPTLnthreads; t++) {
     first = true;
     for (i = 0; i < tablesize; i++) {
       int nument = hashtable[t][i].nument;
@@ -1140,7 +1140,7 @@ int GPTLquery (const char *name,
   */
   
   if (t < 0) {
-    if ((t = get_thread_num (&nthreads, &maxthreads)) < 0)
+    if ((t = get_thread_num (&GPTLnthreads, &maxthreads)) < 0)
       return GPTLerror ("GPTLquery: get_thread_num failure\n");
   } else {
     if (t >= maxthreads)
@@ -1199,7 +1199,7 @@ int GPTLquerycounters (const char *name,
   */
   
   if (t < 0) {
-    if ((t = get_thread_num (&nthreads, &maxthreads)) < 0)
+    if ((t = get_thread_num (&GPTLnthreads, &maxthreads)) < 0)
       return GPTLerror ("GPTLquerycounters: get_thread_num failure\n");
   } else {
     if (t >= maxthreads)
@@ -1273,26 +1273,26 @@ static inline Timer *getentry (const Hashentry *hashtable, /* hash table */
 ** get_thread_num: determine thread number of the calling thread
 **
 ** Input args:
-**   nthreads:   number of threads
+**   GPTLnthreads:   number of threads
 **   maxthreads: number of threads (unused in OpenMP case)
 **
 ** Return value: thread number (success) or GPTLerror (failure)
 */
 
-static inline int get_thread_num (int *nthreads, int *maxthreads)
+static inline int get_thread_num (int *GPTLnthreads, int *maxthreads)
 {
   int t;       /* thread number */
 
-  if ((t = omp_get_thread_num ()) >= *nthreads)
+  if ((t = omp_get_thread_num ()) >= *GPTLnthreads)
     return GPTLerror ("get_thread_num: returned id %d exceed numthreads %d\n",
-		      t, *nthreads);
+		      t, *GPTLnthreads);
 
   return t;
 }
 
 #elif ( ! defined THREADED_PTHREADS )
 
-static inline int get_thread_num (int *nthreads, int *maxthreads)
+static inline int get_thread_num (int *GPTLnthreads, int *maxthreads)
 {
   return 0;
 }

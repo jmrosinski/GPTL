@@ -1,0 +1,77 @@
+.\" $Id: GPTLquery.3,v 1.1 2007-02-20 22:39:19 rosinski Exp $
+.TH GPTLquery 3 "February, 2007" "GPTL"
+
+.SH NAME
+GPTLquery \- Request a large set of data about an existing timer
+GPTLquerycounters \- Request current values of PAPI counters
+
+.SH SYNOPSIS
+.B C Interface:
+
+.BI "int\ GPTLquery (const char *"name", int "t", int *"count", int *"onflg", double
+*"wallclock", double *"usr", double *"sys", long long *"counters", const int "maxcounters");"
+.BI "int\ GPTLquerycounters (const char *"name", int "t", long long *"counters");"
+
+.fi
+.B Fortran Interface:
+
+.BI "integer gptlquery (character(len=*) "name", integer "t", integer "count",
+integer "onflg", real*8 "wallclock", real*8 "usr", real*8 "sys", integer*8 "counters", integer "maxcounters");"
+.BI "integer gptlquerycounters (character(len=*) "name", integer "t", integer*8 "counters")"
+.fi
+
+.SH DESCRIPTION
+.B GPTLquery
+Requests 
+.B name.
+
+.B GPTLquerycounters
+stops a timer defined by
+.B name.
+
+Only the first 15 characters of
+.B name
+are significant, but this limit can be modified in the GPTL library code via the 
+.B #define 
+of MAX_CHARS.  Longer names are truncated.  All
+statistics set by earlier calls to GPTLsetoption (e.g. cpu time), or otherwise
+on by default (e.g. wallclock time), are counted.
+
+.SH ARGUMENTS
+.I name
+-- existing timer name
+.I t
+-- thread number. If < 0, return results for the current thread.
+.I *count
+-- an array to hold the number of start/stop pairs that have been invoked.
+.I *onflg
+-- non-zero returned value (true) means the timer is currently on. zero means
+the timer is currently off.
+.I *wallclock
+-- accumulated wallclock time.
+.I *usr
+-- accumulated user CPU time.
+.I *sys
+-- accumulated system CPU time.
+.I *counters
+-- an array to hold the values of the PAPI counters.
+.I maxcounters
+-- maximum number of PAPI counters to return. Note that this argument is not
+present in
+.B "GPTLquerycounters".
+In this case, the
+.B counters
+array must be large enough to hold all enabled PAPI counters.
+
+.SH RESTRICTIONS
+GPTLinitialize must have been called. To obtain any useful data, one or more
+pairs of GPTLstart/GPTLstop calls need to have been exercised.
+
+.SH RETURN VALUE
+On success, these functions return
+.B 0.
+On error, a negative error code is returned and a descriptive message
+printed. 
+
+.SH SEE ALSO
+.BR GPTLsetoption "(3)" 

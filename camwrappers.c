@@ -1,5 +1,5 @@
 /*
-** $Id: camwrappers.c,v 1.18 2007-01-17 17:25:57 rosinski Exp $
+** $Id: camwrappers.c,v 1.19 2007-02-20 22:39:18 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines used by CAM
 */
@@ -131,7 +131,7 @@ int gptlsetutr (int *option)
 }
 
 int gptlquery (const char *name, int *t, int *count, int *onflg, double *wallclock, 
-	       double *usr, double *sys, long *papicounters_out, int *maxcounters, 
+	       double *usr, double *sys, long long *papicounters_out, int *maxcounters, 
 	       int nc)
 {
   char cname[MAX_CHARS+1];
