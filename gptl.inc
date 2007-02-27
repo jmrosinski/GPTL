@@ -47,6 +47,8 @@
       integer gptlsetutr
       integer gptlquery
       integer gptlquerycounters
+      integer gptlget_nregions
+      integer gptlget_regionname
       integer gptl_papiprinttable
       integer gptl_papiname2id
 
@@ -65,5 +67,7 @@
       external gptlsetutr
       external gptlquery
       external gptlquerycounters
+      external gptlget_nregions
+      external gptlget_regionname
       external gptl_papiprinttable
       external gptl_papiname2id

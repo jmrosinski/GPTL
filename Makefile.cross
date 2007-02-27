@@ -1,11 +1,11 @@
 CC       = scpathcc
-CFLAGS   = -gnu3 -g -O2 -Winline -DFORTRANDOUBLEUNDERSCORE  -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DLINUX=1 -DHAVE_GETTIMEOFDAY=1 -DHAVE_TIMES=1 -DFDEFS=1 -DHAVE_VPRINTF=1   
+CFLAGS   = -g -O2 -Winline -DFORTRANDOUBLEUNDERSCORE -DLINUX=1 -DHAVE_GETTIMEOFDAY=1 -DHAVE_TIMES=1 -DFDEFS=1 -DHAVE_VPRINTF=1
 
 LIBNAME  = libgptl.a
 LIBDIR   = /home/jrosinski/sim/lib
 INCDIR   = /home/jrosinski/sim/include
 MANDIR   = /home/jrosinski/man/man3
-OBJS     = camwrappers.o f_wrappers.o gptl.o util.o threadutil.o get_memusage.o \
+OBJS     = f_wrappers.o gptl.o util.o threadutil.o get_memusage.o \
            print_memusage.o gptl_papi.o
 
 # Use scar X32 for 32-bit
@@ -36,7 +36,6 @@ clean:
 	(cd ctests && $(MAKE) clean)
 	(cd ftests && $(MAKE) clean)
 
-camwrappers.o: gptl.h private.h
 f_wrappers.o: gptl.h private.h
 gptl.o: gptl.h private.h
 util.o: gptl.h private.h

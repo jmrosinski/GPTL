@@ -58,14 +58,19 @@ int main (int argc, char **argv)
   double rdiff;               /* relative difference */
   double diam, drecvfm, diter;    /* double prec. versions of integers */
   double diampiter, drecvfmpiter; /* double prec. versions of integers */
+  char procname[MPI_MAX_PROCESSOR_NAME];
+  int resultlen;
 
   MPI_Status status;     /* required by MPI_Sendrecv */
 
   MPI_Init (&argc, &argv);
   ret = MPI_Comm_rank (MPI_COMM_WORLD, &iam);
+  ret = MPI_Get_processor_name (procname, &resultlen);
+  printf ("MPI task %d is running on %s\n", iam, procname);
   ret = MPI_Comm_size (MPI_COMM_WORLD, &ntask);
   if (iam == 0)
     printf ("ntask=%d\n", ntask);
+  ret = MPI_Barrier (MPI_COMM_WORLD);
 
   walls = (double *) malloc (ntask * sizeof (double));
   

@@ -1227,6 +1227,104 @@ int GPTLquerycounters (const char *name,
 }
 
 /*
+** GPTLget_nregions: return number of regions (i.e. timer names) for this thread
+** 
+** Input args:
+**   t:    thread number (if < 0, the request is for the current thread)
+**
+** Output args:
+**   nregions: number of regions
+*/
+
+int GPTLget_nregions (int t, 
+		      int *nregions)
+{
+  Timer *ptr;
+
+  if ( ! initialized)
+    return GPTLerror ("GPTLget_nregions: GPTLinitialize has not been called\n");
+  
+  /*
+  ** If t is < 0, assume the request is for the current thread
+  */
+  
+  if (t < 0) {
+    if ((t = get_thread_num (&GPTLnthreads, &maxthreads)) < 0)
+      return GPTLerror ("GPTLget_nregions: get_thread_num failure\n");
+  } else {
+    if (t >= maxthreads)
+      return GPTLerror ("GPTLget_nregions: requested thread %d is too big\n", t);
+  }
+  
+  *nregions = 0;
+  for (ptr = timers[t]; ptr; ptr = ptr->next) 
+    ++*nregions;
+
+  return 0;
+}
+
+/*
+** GPTLget_regionname: return region name for this thread
+** 
+** Input args:
+**   t:      thread number (if < 0, the request is for the current thread)
+**   region: region number
+**   nc:     max number of chars to put in name
+**
+** Output args:
+**   name    region name
+*/
+
+int GPTLget_regionname (int t,      /* thread number */
+			int region, /* region number (0-based) */
+			char *name, /* output region name */
+			int nc)     /* number of chars in name (free from Fortran) */
+{
+  int ncpy;    /* number of characters to copy */
+  int i;       /* index */
+  Timer *ptr;
+
+  if ( ! initialized)
+    return GPTLerror ("GPTLget_nregionname: GPTLinitialize has not been called\n");
+  
+  /*
+  ** If t is < 0, assume the request is for the current thread
+  */
+  
+  if (t < 0) {
+    if ((t = get_thread_num (&GPTLnthreads, &maxthreads)) < 0)
+      return GPTLerror ("GPTLget_regionname: get_thread_num failure\n");
+  } else {
+    if (t >= maxthreads)
+      return GPTLerror ("GPTLget_regionname: requested thread %d is too big\n", t);
+  }
+  
+  ptr = timers[t];
+  for (i = 0; i < region; i++) {
+    if ( ! ptr)
+      return GPTLerror ("GPTLget_regionname: timer %d does not exist in thread %d\n",
+			t, region);
+    ptr = ptr->next;
+  }
+
+  if (ptr) {
+    ncpy = MIN (nc, strlen (ptr->name));
+    strncpy (name, ptr->name, ncpy);
+    
+    /*
+    ** Adding the \0 is only important when called from C
+    */
+
+    if (ncpy < nc)
+      name[ncpy] = '\0';
+  } else {
+    return GPTLerror ("GPTLget_regionname: timer %d does not exist in thread %d\n",
+		      t, region);
+  }
+  return 0;
+}
+
+/*
 ** getentry: find the entry in the hash table and return a pointer to it.
 **
 ** Input args:

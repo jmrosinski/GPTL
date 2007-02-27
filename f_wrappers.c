@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.19 2007-02-01 22:01:49 rosinski Exp $
+** $Id: f_wrappers.c,v 1.20 2007-02-27 20:26:41 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines
 */
@@ -23,6 +23,8 @@
 #define gptlsetutr GPTLSETUTR
 #define gptlquery GPTLQUERY
 #define gptlquerycounters GPTLQUERYCOUNTERS
+#define gptlget_nregions GPTLGET_NREGIONS
+#define gptlget_regionname GPTLGET_REGIONNAME
 #define gptlget_memusage GPTLGET_MEMUSAGE
 #define gptlprint_memusage GPTLPRINT_MEMUSAGE
 #define gptl_papiprinttable GPTL_PAPIPRINTTABLE
@@ -43,6 +45,8 @@
 #define gptlsetutr gptlsetutr_
 #define gptlquery gptlquery_
 #define gptlquerycounters gptlquerycounters_
+#define gptlget_nregions gptlget_nregions_
+#define gptlget_regionname gptlget_regionname_
 #define gptlget_memusage gptlget_memusage_
 #define gptlprint_memusage gptlprint_memusage_
 #define gptl_papiprinttable gptl_papiprinttable_
@@ -63,6 +67,8 @@
 #define gptlsetutr gptlsetutr_
 #define gptlquery gptlquery_
 #define gptlquerycounters gptlquerycounters_
+#define gptlget_nregions gptlget_nregions__
+#define gptlget_regionname gptlget_regionname__
 #define gptlget_memusage gptlget_memusage__
 #define gptlprint_memusage gptlprint_memusage__
 #define gptl_papiprinttable gptl_papiprinttable__
@@ -160,6 +166,16 @@ int gptlquerycounters (const char *name, int *t, long long *papicounters_out, in
   strncpy (cname, name, numchars);
   cname[numchars] = '\0';
   return GPTLquerycounters (cname, *t, papicounters_out);
+}
+
+int gptlget_nregions (int *t, int *nregions)
+{
+  return GPTLget_nregions (*t, nregions);
+}
+
+int gptlget_regionname (int *t, int *region, char *name, int nc)
+{
+  return GPTLget_regionname (*t, *region, name, nc);
 }
 
 int gptlget_memusage (int *size, int *rss, int *share, int *text, int *datastack)

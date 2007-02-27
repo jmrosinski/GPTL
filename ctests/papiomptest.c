@@ -9,10 +9,10 @@
 #include <papi.h>
 #endif
 
-double add (int, int);
+double add (int, double);
 double multiply (int, int, double);
-double multadd (int, int);
-double divide (int, int);
+double multadd (int, double);
+double divide (int, double);
 double compare (int, int);
 
 int main (int argc, char **argv)
@@ -66,8 +66,8 @@ int main (int argc, char **argv)
   if (GPTLsetoption (GPTLoverhead, 1) < 0)
     exit (4);
 
-  if (GPTLsetoption (GPTLnarrowprint, 1) < 0)
-    exit (4);
+//  if (GPTLsetoption (GPTLnarrowprint, 1) < 0)
+//    exit (4);
 
   GPTLinitialize ();
   GPTLstart ("total");
@@ -75,10 +75,10 @@ int main (int argc, char **argv)
 #pragma omp parallel for private (iter, ret)
       
   for (iter = 1; iter <= nompiter; iter++) {
-    ret = add (looplen, iter);
+    ret = add (looplen, 0.);
     ret = multiply (looplen, iter, 0.);
-    ret = multadd (looplen, iter);
-    ret = divide (looplen, iter);
+    ret = multadd (looplen, 0.);
+    ret = divide (looplen, 1.);
     ret = compare (looplen, iter);
   }
 
@@ -90,11 +90,11 @@ int main (int argc, char **argv)
   return 0;
 }
 
-double add (int looplen, int iter)
+double add (int looplen, double zero)
 {
   int i;
   char string[128];
-  double val = iter;
+  double val = zero;
 
   if (looplen < 1000000)
     sprintf (string, "%dadditions", looplen);
@@ -105,7 +105,7 @@ double add (int looplen, int iter)
     exit (1);
 
   for (i = 1; i <= looplen; ++i)
-    val += (double) i;
+      val += zero;
 
   if (GPTLstop (string) < 0)
     exit (1);
@@ -127,8 +127,12 @@ double multiply (int looplen, int iter, double zero)
   if (GPTLstart (string) < 0)
     exit (1);
 
-  for (i = 1; i <= looplen; ++i)
-    val *= zero;
+  printf ("im about to divide by zero\n");
+  printf ("zero is %f\n", zero);
+  for (i = 1; i <= looplen; ++i) {
+    val /= zero;
+    printf ("val=%f\n", val);
+  }
 
   if (GPTLstop (string) < 0)
     exit (1);
@@ -136,11 +140,11 @@ double multiply (int looplen, int iter, double zero)
   return val;
 }
 
-double multadd (int looplen, int iter)
+double multadd (int looplen, double zero)
 {
   int i;
   char string[128];
-  double val = iter;
+  double val = zero;
 
   if (looplen < 1000000)
     sprintf (string, "%dmultadds", looplen);
@@ -151,7 +155,7 @@ double multadd (int looplen, int iter)
     exit (1);
 
   for (i = 1; i <= looplen; ++i)
-    val += ((double) i) * 0.00001;
+    val += zero * i;
 
   if (GPTLstop (string) < 0)
     exit (1);
@@ -159,11 +163,11 @@ double multadd (int looplen, int iter)
   return val;
 }
 
-double divide (int looplen, int iter)
+double divide (int looplen, double one)
 {
   int i;
   char string[128];
-  double val = iter;
+  double val = one;
 
   if (looplen < 1000000)
     sprintf (string, "%ddivides", looplen);
@@ -174,7 +178,7 @@ double divide (int looplen, int iter)
     exit (1);
 
   for (i = 1; i <= looplen; ++i)
-    val /= (double) i;
+    val /= one;
 
   if (GPTLstop (string) < 0)
     exit (1);

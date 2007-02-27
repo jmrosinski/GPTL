@@ -22,11 +22,13 @@
       integer iter
       integer papiopt
       integer event
+      integer nregions
       integer ret
 
       integer*8 papicounters(3)
 
       character*40 eventname(4)
+      character*40 regionname
 
       real result
       real zero
@@ -57,10 +59,10 @@
       call PAPIf_event_name_to_code(eventname(1), event, ret)
       if (ret .ne. 0) call exit (6)
       if (gptlsetoption (event, 1) .lt. 0) call exit (7)
+      if (gptlsetoption (gptlnarrowprint, 1) < 0) call exit (4)
 #endif
 
       if (gptlsetoption (gptloverhead, 0) < 0) call exit (4)
-      if (gptlsetoption (gptlnarrowprint, 1) < 0) call exit (4)
       
       if (gptlinitialize () .lt. 0) call exit(1)
 
@@ -83,6 +85,13 @@
       write(6,*)'resource_stall_SBFULL=', papicounters(3)
 #endif
       if (gptlpr (0) .lt. 0) call exit(2)
+      if (gptlget_nregions (-1, nregions) .lt. 0) call exit(4)
+      regionname = ' '
+      if (gptlget_regionname (-1, nregions-1, regionname) .lt. 0) then
+        call exit (5)
+      end if
+      write(6,*)'There are ',nregions,' regions'
+      write(6,*)'Last region name is ',regionname
       if (gptlfinalize () .lt. 0) call exit(3)
 
       stop 0
