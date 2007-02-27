@@ -1,0 +1,27 @@
+FC          = scpathf95
+FFLAGS      =   -g -O2
+LDFLAGS     =   -L.. -lgptl
+
+OBJS = errtest.o papiomptest.o stride.o utrtest.o
+EXES = errtest   papiomptest   stride   utrtest
+CAMOBJ = camtest.o
+CAMEXE = camtest
+
+all: $(EXES)
+clean:
+	rm $(OBJS) $(EXES)
+
+errtest: errtest.o
+	$(FC) -o $@ errtest.o $(LDFLAGS)
+
+papiomptest: papiomptest.o
+	$(FC) $(FFLAGS) -o $@ papiomptest.o $(LDFLAGS)
+
+stride: stride.o
+	$(FC) $(FFLAGS) -o $@ stride.o $(LDFLAGS)
+
+camtest: camtest.o
+	$(FC) $(FFLAGS) -o $@ camtest.o $(CAMLDFLAGS)
+
+utrtest: utrtest.o
+	$(FC) $(FFLAGS) -o $@ utrtest.o $(LDFLAGS)
