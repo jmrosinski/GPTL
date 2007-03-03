@@ -13,6 +13,8 @@ my ($ret);
 my (@fpopsfiles) = ("FPops_max","FPops_min");
 my (@membwfiles) = ("MemBW_max","MemBW_min");
 my (@mpisendrecvfiles) = ("MPI_Sendrecv_max","MPI_Sendrecv_min");
+my (@mpiisendirecvfiles) = ("Isend_Irecv_max","Isend_Irecv_min");
+my (@mpiirecvisendfiles) = ("Irecv_Isend_max","Irecv_Isend_min");
 my ($mpicmd) = "srun";
 my ($rundir) = ".";
 my ($arg);

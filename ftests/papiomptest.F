@@ -56,13 +56,13 @@
       call papif_library_init (ret)
       if (ret .ne. PAPI_VER_CURRENT) call exit (5)
       eventname(1) = 'resource_stall_SBFULL'
-      call PAPIf_event_name_to_code(eventname(1), event, ret)
-      if (ret .ne. 0) call exit (6)
-      if (gptlsetoption (event, 1) .lt. 0) call exit (7)
-      if (gptlsetoption (gptlnarrowprint, 1) < 0) call exit (4)
+!      call PAPIf_event_name_to_code(eventname(1), event, ret)
+!      if (ret .ne. 0) call exit (6)
+!      if (gptlsetoption (event, 1) .lt. 0) call exit (7)
+      if (gptlsetoption (gptlnarrowprint, 0) < 0) call exit (4)
 #endif
 
-      if (gptlsetoption (gptloverhead, 0) < 0) call exit (4)
+      if (gptlsetoption (gptloverhead, 1) < 0) call exit (4)
       
       if (gptlinitialize () .lt. 0) call exit(1)
 

@@ -26,6 +26,12 @@ AC_DEFUN(UD_SET_OMP_C,
     AC_TRY_LINK([#include <omp.h>],[(void) omp_get_max_threads();],OMP="YES",)
   fi
 
+  if test "$OMP" = "NO" ; then
+    OMPCFLAGS="-fopenmp"
+    CFLAGS="$OLDFLAGS $OMPCFLAGS"
+    AC_TRY_LINK([#include <omp.h>],[(void) omp_get_max_threads();],OMP="YES",)
+  fi
+
   if test "$OMP" = "YES" ; then
     OMPDEFS=-DTHREADED_OMP
     AC_MSG_RESULT([$OMPCFLAGS])
@@ -65,6 +71,12 @@ AC_DEFUN(UD_SET_OMP_F77,
 
   if test "$FORTOMP" = "NO" ; then
     OMPFFLAGS="-openmp"
+    FFLAGS="$OLDFLAGS $OMPFFLAGS"
+    AC_TRY_LINK(,[      call omp_get_max_threads()],FORTOMP="YES",)
+  fi
+
+  if test "$FORTOMP" = "NO" ; then
+    OMPFFLAGS="-fopenmp"
     FFLAGS="$OLDFLAGS $OMPFFLAGS"
     AC_TRY_LINK(,[      call omp_get_max_threads()],FORTOMP="YES",)
   fi
