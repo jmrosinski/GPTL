@@ -6,7 +6,8 @@ use Cwd;
 my ($host) = hostname;
 my ($cmdfile) = "scale.gp";
 my ($cmd);
-@nodecounts = (2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24);
+#@nodecounts = (2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24);
+@nodecounts = (1,2,3,4,5,6,7,8);
 my ($nodecountrange) = $nodecounts[$#nodecounts] - $nodecounts[0];
 my ($nodecount);
 my ($ret);
@@ -15,7 +16,8 @@ my (@membwfiles) = ("MemBW_max","MemBW_min");
 my (@mpisendrecvfiles) = ("MPI_Sendrecv_max","MPI_Sendrecv_min");
 my (@mpiisendirecvfiles) = ("Isend_Irecv_max","Isend_Irecv_min");
 my (@mpiirecvisendfiles) = ("Irecv_Isend_max","Irecv_Isend_min");
-my ($mpicmd) = "srun";
+#my ($mpicmd) = "srun";
+my ($mpicmd) = "mpiexec";
 my ($rundir) = ".";
 my ($arg);
 my ($cwd);
@@ -26,6 +28,8 @@ my ($xtics);
 unlink (@fpopsfiles);
 unlink (@membwfiles);
 unlink (@mpisendrecvfiles);
+unlink (@mpiisendirecvfiles);
+unlink (@mpiirecvisendfiles);
 
 # Parse arg list
 
@@ -100,6 +104,16 @@ print (CMDFILE "plot '$membwfiles[0]' using 1:2, '$membwfiles[1]' using 1:2, 'me
 print (CMDFILE "set ylabel \"MB/sec\"\n");
 print (CMDFILE "set output 'MPI_Sendrecv.ps'\n");
 print (CMDFILE "plot '$mpisendrecvfiles[0]' using 1:2, '$mpisendrecvfiles[1]' using 1:2, 'mpisendrecvlinear' using 1:2 with lines\n");
+
+&getlinear ($mpiisendirecvfiles[0], "mpiisendirecvlinear");
+print (CMDFILE "set ylabel \"MB/sec\"\n");
+print (CMDFILE "set output 'Isend_Irecv.ps'\n");
+print (CMDFILE "plot '$mpiisendirecvfiles[0]' using 1:2, '$mpiisendirecvfiles[1]' using 1:2, 'mpiisendirecvlinear' using 1:2 with lines\n");
+
+&getlinear ($mpiirecvisendfiles[0], "mpiirecvisendlinear");
+print (CMDFILE "set ylabel \"MB/sec\"\n");
+print (CMDFILE "set output 'Irecv_Isend.ps'\n");
+print (CMDFILE "plot '$mpiirecvisendfiles[0]' using 1:2, '$mpiirecvisendfiles[1]' using 1:2, 'mpiirecvisendlinear' using 1:2 with lines\n");
 
 close (CMDFILE);
 
