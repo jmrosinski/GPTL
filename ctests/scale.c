@@ -433,6 +433,7 @@ double chkresults (char *label, int iter, double *recvbuf)
       }
       maxdiff = diff;
       isave = i;
+      expectsave = expect
     }
   }
   ret = GPTLstop ("FPops");
@@ -440,8 +441,8 @@ double chkresults (char *label, int iter, double *recvbuf)
   if (maxdiff / expect > tol) {
     if (label)
       printf ("Problem in test %s\n", label);
-    printf ("iter %d task %d worst diff %f at i=%d exceeds tolerance=%f\n", 
-	    iter, iam, diff, isave, tol);
+    printf ("iter %d task %d worst diff expected %f got %f at i=%d\n", 
+	    iter, iam, expectsave, recvbuf[isave], isave);
     printf ("    First diff exceeding tolerance is %f at i=%d\n", firstdiff, ifirst);
     MPI_Abort ();
     exit (1);

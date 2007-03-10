@@ -1,6 +1,6 @@
 CC           = scpathcc
-CFLAGS       = -O2 -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DLINUX=1 -DFDEFS=1 -DHAVE_VPRINTF=1 -DHAVE_GETTIMEOFDAY=1 -DHAVE_TIMES=1 -I/home/phil/TOOLS/usr/include -Winline   -DHAVE_LIBMPICH -I/home/tmohan/TOOLS/usr/include
-LDFLAGS      =   -L.. -lgptl -lmpich -lpmi -lscdma -g
+CFLAGS       = -O3 -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DLINUX=1 -DFDEFS=1 -DHAVE_VPRINTF=1 -DHAVE_GETTIMEOFDAY=1 -DHAVE_TIMES=1 -Winline -DHAVE_LIBMPICH
+LDFLAGS      =   -L.. -lgptl -lmpich -lpmi -lscdma
 
 OBJS = avail.o depth.o rawpapitest.o recursion.o stride.o \
        memusage.o utrtest.o papiomptest.o cygprofile.o cygprofilesubs.o scale.o
