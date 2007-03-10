@@ -19,3 +19,4 @@ void do_nothing (char *stuff)
   stuff[0] = 'x';
   stuff[104857599 ] = 'x';
 }
+

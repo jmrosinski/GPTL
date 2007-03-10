@@ -397,6 +397,7 @@ double chkresults (char *label, int iter, double *recvbuf)
   int isave;
   int ret;
   int i;
+  int code;
 
   double firstdiff;
   double expect;              /* expected value */
@@ -444,7 +445,7 @@ double chkresults (char *label, int iter, double *recvbuf)
     printf ("iter %d task %d worst diff expected %f got %f at i=%d\n", 
 	    iter, iam, expectsave, recvbuf[isave], isave);
     printf ("    First diff exceeding tolerance is %f at i=%d\n", firstdiff, ifirst);
-    MPI_Abort ();
+    ret = MPI_Abort (MPI_COMM_WORLD, code);
     exit (1);
   }
   
