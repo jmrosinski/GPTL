@@ -13,7 +13,7 @@
 #include "../gptl.h"
 
 static int iam, sendto, recvfm;    /* mpi taskids */
-static int nsendrecv = 10240;      /* default number of doubles for send/receive */
+static int nsendrecv = 1024000;    /* default number of doubles for send/receive */
 static double drecvfm;
 
 int main (int argc, char **argv)
@@ -30,7 +30,7 @@ int main (int argc, char **argv)
   int sendtag;                /* tag for mpi */
   int recvtag;                /* tag for mpi */
 
-  int niter = 1024;           /* default number of repetitions */
+  int niter = 10;             /* default number of repetitions */
   int ntask;                  /* number of mpi tasks */
   int c;                      /* for parsing argv */
   int i, iter;                /* loop indices */
