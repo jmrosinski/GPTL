@@ -22,7 +22,7 @@ int main (int argc, char **argv)
   FILE *filep;                /* file pointer for GNUplot */
   extern char *optarg;
   void getmaxmin (const double *, int, double *, double *, int *, int *);
-  double chkresults (int, double *);
+  double chkresults (char *, int, double *);
   double fillsendbuf (double *, double);
   double zerobufs (double *, double *);
 
@@ -165,7 +165,7 @@ int main (int argc, char **argv)
 			recvbuf, nsendrecv, MPI_DOUBLE, recvfm, recvtag,
 			MPI_COMM_WORLD, &status);
     ret = GPTLstop ("MPI_Sendrecv");
-    totfp += chkresults (iter, recvbuf);           /* this accumulates into FPops */
+    totfp += chkresults ("MPI_Sendrecv", iter, recvbuf); /* this accumulates into FPops */
     totmpi += nsendrecv;                           /* number of doubles sent */
 
     /*
@@ -184,7 +184,7 @@ int main (int argc, char **argv)
     ret = MPI_Wait (&recvrequest, &status);
     ret = MPI_Wait (&sendrequest, &status);
     ret = GPTLstop ("Isend_Irecv");
-    totfp += chkresults (iter, recvbuf);           /* this accumulates into FPops */
+    totfp += chkresults ("Isend_Irecv", iter, recvbuf);           /* this accumulates into FPops */
 
     /*
     ** Fill send buffer, synchronize, Irecv_Isend, check results
@@ -202,7 +202,7 @@ int main (int argc, char **argv)
     ret = MPI_Wait (&recvrequest, &status);
     ret = MPI_Wait (&sendrequest, &status);
     ret = GPTLstop ("Irecv_Isend");
-    totfp += chkresults (iter, recvbuf);           /* this accumulates into FPops */
+    totfp += chkresults ("Irecv_Isend", iter, recvbuf);           /* this accumulates into FPops */
   }
 
   /*
@@ -390,7 +390,7 @@ void getmaxmin (const double *vals, int ntask, double *vmax, double *vmin, int *
   }
 }
 
-double chkresults (int iter, double *recvbuf)
+double chkresults (char *label, int iter, double *recvbuf)
 {
   int ifirst;
   int first;                  /* logical */
@@ -438,9 +438,12 @@ double chkresults (int iter, double *recvbuf)
   ret = GPTLstop ("FPops");
   
   if (maxdiff / expect > tol) {
+    if (label)
+      printf ("Problem in test %s\n", label);
     printf ("iter %d task %d worst diff %f at i=%d exceeds tolerance=%f\n", 
 	    iter, iam, diff, isave, tol);
     printf ("    First diff exceeding tolerance is %f at i=%d\n", firstdiff, ifirst);
+    MPI_Abort ();
     exit (1);
   }
   
