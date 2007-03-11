@@ -18,9 +18,9 @@ static int ntask;                  /* number of mpi tasks */
 static int nsendrecv = 1024000;    /* default number of doubles for send/receive */
 static char procname[MPI_MAX_PROCESSOR_NAME];
 static char **procnames;
-static double totfp = 0.;          /* total floating point ops (est.) (init to 0) */
-static double totmpi = 0.;         /* total items sent via MPI (init to 0) */
-static double totmem = 0.;         /* total items copied in memory (init to 0) */
+
+static double totfp = 0.;
+static double totmem = 0.;
 
 int main (int argc, char **argv)
 {
@@ -35,7 +35,7 @@ int main (int argc, char **argv)
   void irecvisend (char *, double *, double *, int, int, int);
   int are_othernodes (int, int);
   int are_mynode (int, int);
-  void gather_results (char *);
+  void gather_results (char *, double);
 
   int ppnmax = 6;             /* max # procs per node */
   int niter = 10;             /* default number of repetitions */
@@ -54,6 +54,7 @@ int main (int argc, char **argv)
 
   double *sendbuf;            /* send buffer for MPI_Sendrecv */
   double *recvbuf;            /* recv buffer for MPI_Sendrecv */
+  double totmpi;
 
   MPI_Status status;          /* required by MPI_Sendrecv */
 
@@ -156,6 +157,7 @@ int main (int argc, char **argv)
 
     sendto = (iam + 1) % ntask;         /* right neighbor */
     recvfm = (iam + ntask - 1) % ntask; /* left neighbor */
+
     sendrecv ("Sendrecv_base", sendbuf, recvbuf, iter, sendto, recvfm);
     isendirecv ("IsendIrecv_base", sendbuf, recvbuf, iter, sendto, recvfm); 
     irecvisend ("IrecvIsend_base", sendbuf, recvbuf, iter, sendto, recvfm); 
@@ -186,6 +188,7 @@ int main (int argc, char **argv)
     baseproc = (iam / ppnmax) * ppnmax;
     sendto = baseproc + (iam + 1) % ppnloc;
     recvfm = baseproc + (iam + ppnloc - 1) % ppnloc;
+
     if (are_mynode (sendto, recvfm)) {
       sendrecv ("Sendrecv_memory", sendbuf, recvbuf, iter, sendto, recvfm);
       isendirecv ("IsendIrecv_memory", sendbuf, recvbuf, iter, sendto, recvfm); 
@@ -197,20 +200,21 @@ int main (int argc, char **argv)
     }
   }
 
-  gather_results ("FPOPS");
-  gather_results ("MEMBW");
+  gather_results ("FPOPS", totfp);
+  gather_results ("MEMBW", totmem);
 
-  gather_results ("Sendrecv_base");
-  gather_results ("IsendIrecv_base");
-  gather_results ("IrecvIsend_base");
+  totmpi = nsendrecv * niter;
+  gather_results ("Sendrecv_base", totmpi);
+  gather_results ("IsendIrecv_base", totmpi);
+  gather_results ("IrecvIsend_base", totmpi);
 
-  gather_results ("Sendrecv_fabric");
-  gather_results ("IsendIrecv_fabric");
-  gather_results ("IrecvIsend_fabric");
+  gather_results ("Sendrecv_fabric", totmpi);
+  gather_results ("IsendIrecv_fabric", totmpi);
+  gather_results ("IrecvIsend_fabric", totmpi);
 
-  gather_results ("Sendrecv_memory");
-  gather_results ("IsendIrecv_memory");
-  gather_results ("IrecvIsend_memory");
+  gather_results ("Sendrecv_memory", totmpi);
+  gather_results ("IsendIrecv_memory", totmpi);
+  gather_results ("IrecvIsend_memory", totmpi);
 
   GPTLpr (iam);
   MPI_Finalize ();
@@ -382,7 +386,6 @@ void sendrecv (char *label,
 		      MPI_COMM_WORLD, &status);
   ret = GPTLstop (label);
   totfp += chkresults (label, iter, recvfm, recvbuf); /* this accumulates into FPOPS */
-  totmpi += nsendrecv;                           /* number of doubles sent */
 }
 
 void isendirecv (char *label, 
@@ -419,7 +422,6 @@ void isendirecv (char *label,
   ret = MPI_Wait (&sendrequest, &status);
   ret = GPTLstop (label);
   totfp += chkresults (label, iter, recvfm, recvbuf); /* this accumulates into FPOPS */
-  totmpi += nsendrecv;                           /* number of doubles sent */
 }
 
 void irecvisend (char *label, 
@@ -456,7 +458,6 @@ void irecvisend (char *label,
   ret = MPI_Wait (&sendrequest, &status);
   ret = GPTLstop (label);
   totfp += chkresults (label, iter, recvfm, recvbuf); /* this accumulates into FPOPS */
-  totmpi += nsendrecv;                           /* number of doubles sent */
 }
 
 int are_othernodes (int sendto, int recvfm)
@@ -471,7 +472,8 @@ int are_mynode (int sendto, int recvfm)
          strcmp (procname, procnames[recvfm]) == 0;
 }
 
-void gather_results (char *label) 
+void gather_results (char *label, /* timer name */
+		     double tot)  /* number of things */
 {
   const int mega = 1024*1024; /* convert to mega whatever */
   int isfp = (strcmp (label, "FPOPS") == 0);
@@ -506,9 +508,9 @@ void gather_results (char *label)
 
 #ifdef HAVE_PAPI
     if (isfp) {
-      rdiff = 100. * (totfp - papicounters[0]) / totfp;
+      rdiff = 100. * (tot - papicounters[0]) / tot;
       printf ("FPOPS: iam %d expected %g flops got %g rdiff=%9.2f\n",
-	      iam, totfp, (double) papicounters[0], rdiff);
+	      iam, tot, (double) papicounters[0], rdiff);
     }
 #endif
     
@@ -516,10 +518,10 @@ void gather_results (char *label)
       getmaxmin (walls, &wmax, &wmin, &taskmax, &taskmin);
       if (wmin > 0.) {
 	if (isfp) {
-	  rmax = totfp / (mega * wmin);
-	  rmin = totfp / (mega * wmax);
+	  rmax = tot / (mega * wmin);
+	  rmin = tot / (mega * wmax);
 	} else {
-	  bytes = sizeof (double) * totmpi;
+	  bytes = sizeof (double) * tot;
 	  rmax = bytes / (wmin*mega);
 	  rmin = bytes / (wmax*mega);
 	}
