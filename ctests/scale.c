@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <unistd.h>  /* getopt */
 #include <stdlib.h>  /* atof */
+#include <string.h>  /* atof */
 
 #ifdef HAVE_PAPI
 #include <papi.h>
@@ -12,100 +13,112 @@
 
 #include "../gptl.h"
 
-static int iam, sendto, recvfm;    /* mpi taskids */
+static int iam;                    /* my MPI rank */
+static int ntask;                  /* number of mpi tasks */
 static int nsendrecv = 1024000;    /* default number of doubles for send/receive */
-static double drecvfm;
+static char procname[MPI_MAX_PROCESSOR_NAME];
+static char **procnames;
+static double totfp = 0.;          /* total floating point ops (est.) (init to 0) */
+static double totmpi = 0.;         /* total items sent via MPI (init to 0) */
+static double totmem = 0.;         /* total items copied in memory (init to 0) */
 
 int main (int argc, char **argv)
 {
 #if ( defined HAVE_LIBMPI ) || ( defined HAVE_LIBMPICH )
-  FILE *filep;                /* file pointer for GNUplot */
   extern char *optarg;
-  void getmaxmin (const double *, int, double *, double *, int *, int *);
-  double chkresults (char *, int, double *);
-  double fillsendbuf (double *, double);
+  void getmaxmin (const double *, double *, double *, int *, int *);
+  double chkresults (char *, int, int, double *);
+  double fillsendbuf (double *, int);
   double zerobufs (double *, double *);
+  void sendrecv (char *, double *, double *, int, int, int);
+  void isendirecv (char *, double *, double *, int, int, int);
+  void irecvisend (char *, double *, double *, int, int, int);
+  int are_othernodes (int, int);
+  int are_mynode (int, int);
+  void gather_results (char *);
 
-  const int mega = 1024*1024; /* convert to mega whatever */
-  int sendtag;                /* tag for mpi */
-  int recvtag;                /* tag for mpi */
-
+  int ppnmax = 2;             /* max # procs per node */
   int niter = 10;             /* default number of repetitions */
-  int ntask;                  /* number of mpi tasks */
+
+  int baseproc;
+  int sendto;
+  int recvfm;
   int c;                      /* for parsing argv */
-  int i, iter;                /* loop indices */
-  int onflg;                  /* returned by GPTLquery */
-  int count;                  /* returned by GPTLquery */
-  int taskmax, taskmin;       /* which mpi task caused a max or min */
+  int iter;                   /* loop index */
+  int t;                      /* task index */
   int ret;                    /* return code */
   int resultlen;              /* length of processor name */
-
-  long long papicounters[2];  /* returned from PAPI via GPTL */
+  int ppnloc;                 /* # procs on this node */
+  int nnode;                  /* # nodes */
 
   double *sendbuf;            /* send buffer for MPI_Sendrecv */
   double *recvbuf;            /* recv buffer for MPI_Sendrecv */
-  double aggratemax;          /* aggregate rate (summed over mpi tasks) */
-  double aggratemin;          /* aggregate rate (summed over mpi tasks) */
-  double rmax, rmin;          /* max, min rates */
-  double wmax, wmin;          /* wallclock max, min */
-  double wall, *walls;        /* wallclock time for 1 task, all tasks */
-  double usr;                 /* usr CPU time returned by GPTLquery */
-  double sys;                 /* sys CPU time returned by GPTLquery */
-  double rdiff;               /* relative difference */
-  double diam, diter;         /* double prec. versions of integers */
-  double diampiter, drecvfmpiter; /* double prec. versions of integers */
-  double bytes;               /* number of bytes */
-  double totfp;               /* total floating point ops (est.) */
-  double totmpi;              /* total items sent via MPI */
-  double totmem;              /* total items copied in memory */
-
-  char procname[MPI_MAX_PROCESSOR_NAME];
 
   MPI_Status status;          /* required by MPI_Sendrecv */
-  MPI_Request sendrequest;    /* required by MPI_Isend_Irecv */
-  MPI_Request recvrequest;    /* required by MPI_Isend_Irecv */
 
   setlinebuf (stdout);
   MPI_Init (&argc, &argv);
   ret = MPI_Comm_rank (MPI_COMM_WORLD, &iam);
   ret = MPI_Get_processor_name (procname, &resultlen);
-  printf ("MPI task %d is running on %s\n", iam, procname);
   ret = MPI_Comm_size (MPI_COMM_WORLD, &ntask);
-  if (iam == 0)
+  procnames = (char **) malloc (ntask * sizeof (char *));
+  if (iam == 0) 
     printf ("ntask=%d\n", ntask);
+  for (t = 0; t < ntask; t++) {
+    procnames[t] = (char *) malloc (MPI_MAX_PROCESSOR_NAME+1);
+  }
+  if (iam == 0) {
+    printf ("MPI task %d is running on %s\n", 0, procname);
+    strcpy (procnames[0], procname);
+    for (t = 1; t < ntask; t++) {
+      MPI_Recv (procnames[t], MPI_MAX_PROCESSOR_NAME+1, MPI_CHAR, t, 0, MPI_COMM_WORLD, &status);
+      printf ("MPI task %d is running on %s\n", t, procnames[t]);
+    }
+  } else {
+    MPI_Send (procname, MPI_MAX_PROCESSOR_NAME+1, MPI_CHAR, 0, 0, MPI_COMM_WORLD);
+  }
+  for (t = 0; t < ntask; t++) {
+    MPI_Bcast (procnames[t], MPI_MAX_PROCESSOR_NAME+1, MPI_CHAR, 0, MPI_COMM_WORLD);
+  }
+
+  /*
+  ** Determine ppnloc (needed by MPI in-memory section)
+  ** Need to account for nnode not evenly dividing into ntask 
+  */
+
+  nnode = (ntask - 1)/ppnmax + 1;
+  ppnloc = ppnmax;
+  if (iam >= (nnode-1)*ppnmax)
+    ppnloc = ntask - (nnode-1)*ppnmax;
+
   ret = MPI_Barrier (MPI_COMM_WORLD);
 
-  walls = (double *) malloc (ntask * sizeof (double));
-  
 /* 
 ** Parse arg list
 */
   
-  if (iam == 0) {
-    while ((c = getopt (argc, argv, "l:n:")) != -1) {
-      switch (c) {
-      case 'l':
-	nsendrecv = atoi (optarg);
-	break;
-      case 'n':
-	niter = atoi (optarg);
-	break;
-      default:
-	printf ("unknown option %c\n", c);
-	exit (2);
-      }
+  while ((c = getopt (argc, argv, "l:n:p:")) != -1) {
+    switch (c) {
+    case 'l':
+      nsendrecv = atoi (optarg);
+      break;
+    case 'n':
+      niter = atoi (optarg);
+      break;
+    case 'p':
+      ppnmax = atoi (optarg);
+      break;
+    default:
+      printf ("unknown option %c\n", c);
+      exit (2);
     }
+  }
+
+  if (iam == 0) {
     printf ("Number of iterations  will be %d\n", niter);
     printf ("Loop length will be           %d\n", nsendrecv);
   }
   
-  /*
-  ** All tasks need to know nsendrecv and niter
-  */
-
-  ret = MPI_Bcast (&nsendrecv, 1, MPI_INT, 0, MPI_COMM_WORLD);
-  ret = MPI_Bcast (&niter, 1, MPI_INT, 0, MPI_COMM_WORLD);
-
   sendbuf = (double *) malloc (nsendrecv * sizeof (double));
   recvbuf = (double *) malloc (nsendrecv * sizeof (double));
 
@@ -113,6 +126,7 @@ int main (int argc, char **argv)
   ** Count floating point ops
   */
 
+  GPTLsetoption (GPTLverbose, 0);
 #ifdef HAVE_PAPI
   GPTLsetoption (PAPI_FP_OPS, 1);
 #endif
@@ -129,237 +143,65 @@ int main (int argc, char **argv)
   if (GPTLinitialize () < 0)
     exit (1);
 
-  sendto = (iam + 1) % ntask;         /* right neighbor */
-  recvfm = (iam + ntask - 1) % ntask; /* left neighbor */
-
-  diam = iam;
-  drecvfm = recvfm;
-  
   /*
   ** Loop over time doing the same thing over and over
   */
 
-  totfp = 0.;
-  totmpi = 0.;
-  totmem = 0.;
-
   for (iter = 0; iter < niter; iter++) {
-    ret = MPI_Barrier (MPI_COMM_WORLD);
-
-    diter = iter;
-    diampiter = diam + diter;
-    drecvfmpiter = drecvfm + diter;
-    sendtag = iter;
-    recvtag = iter;
 
     /*
-    ** Fill send buffer, synchronize, Sendrecv, check results
+    ** Base: one big ring from 0-ntask regardless of process to node mapping
     */
 
-    totmem += zerobufs (sendbuf, recvbuf);         /* this accumulates into MemBW */
-    totfp += fillsendbuf (sendbuf, diampiter);     /* this accumulates into FPops */
-    ret = MPI_Barrier (MPI_COMM_WORLD);
-
-    ret = GPTLstart ("MPI_Sendrecv");
-    ret = MPI_Sendrecv (sendbuf, nsendrecv, MPI_DOUBLE, sendto, sendtag,
-			recvbuf, nsendrecv, MPI_DOUBLE, recvfm, recvtag,
-			MPI_COMM_WORLD, &status);
-    ret = GPTLstop ("MPI_Sendrecv");
-    totfp += chkresults ("MPI_Sendrecv", iter, recvbuf); /* this accumulates into FPops */
-    totmpi += nsendrecv;                           /* number of doubles sent */
+    sendto = (iam + 1) % ntask;         /* right neighbor */
+    recvfm = (iam + ntask - 1) % ntask; /* left neighbor */
+    sendrecv ("Sendrecv_base", sendbuf, recvbuf, iter, sendto, recvfm);
+    isendirecv ("IsendIrecv_base", sendbuf, recvbuf, iter, sendto, recvfm); 
+    irecvisend ("IrecvIsend_base", sendbuf, recvbuf, iter, sendto, recvfm); 
 
     /*
-    ** Fill send buffer, synchronize, Isend_Irecv, check results
+    ** Fabric: always send/recv to/from another node
+    ** This can only be done when at least 2 nodes are filled with tasks
     */
 
-    totmem += zerobufs (sendbuf, recvbuf);
-    totfp + fillsendbuf (sendbuf, diampiter);
-    ret = MPI_Barrier (MPI_COMM_WORLD);
-
-    ret = GPTLstart ("Isend_Irecv");
-    ret = MPI_Isend (sendbuf, nsendrecv, MPI_DOUBLE, sendto, sendtag,
-		     MPI_COMM_WORLD, &sendrequest);
-    ret = MPI_Irecv (recvbuf, nsendrecv, MPI_DOUBLE, recvfm, recvtag,
-		     MPI_COMM_WORLD, &recvrequest);
-    ret = MPI_Wait (&recvrequest, &status);
-    ret = MPI_Wait (&sendrequest, &status);
-    ret = GPTLstop ("Isend_Irecv");
-    totfp += chkresults ("Isend_Irecv", iter, recvbuf);           /* this accumulates into FPops */
+    if (ntask >= 2*ppnmax) {
+      sendto = (iam + ppnmax) % ntask;
+      recvfm = (iam + ntask - ppnmax) % ntask;
+      if (are_othernodes (sendto, recvfm)) {
+	sendrecv ("Sendrecv_fabric", sendbuf, recvbuf, iter, sendto, recvfm);
+	isendirecv ("IsendIrecv_fabric", sendbuf, recvbuf, iter, sendto, recvfm); 
+	irecvisend ("IrecvIsend_fabric", sendbuf, recvbuf, iter, sendto, recvfm); 
+      }
+    }
 
     /*
-    ** Fill send buffer, synchronize, Irecv_Isend, check results
+    ** Memory: always send/recv to/from the same node
     */
 
-    totmem += zerobufs (sendbuf, recvbuf);
-    totfp += fillsendbuf (sendbuf, diampiter);
-    ret = MPI_Barrier (MPI_COMM_WORLD);
-
-    ret = GPTLstart ("Irecv_Isend");
-    ret = MPI_Irecv (recvbuf, nsendrecv, MPI_DOUBLE, recvfm, recvtag,
-		     MPI_COMM_WORLD, &recvrequest);
-    ret = MPI_Isend (sendbuf, nsendrecv, MPI_DOUBLE, sendto, sendtag,
-		     MPI_COMM_WORLD, &sendrequest);
-    ret = MPI_Wait (&recvrequest, &status);
-    ret = MPI_Wait (&sendrequest, &status);
-    ret = GPTLstop ("Irecv_Isend");
-    totfp += chkresults ("Irecv_Isend", iter, recvbuf);           /* this accumulates into FPops */
-  }
-
-  /*
-  ** FPops calcs.
-  */
-
-  ret = GPTLquery ("FPops", -1, &count, &onflg, &wall, &usr, &sys, papicounters, 2);
-  ret = MPI_Gather (&wall, 1, MPI_DOUBLE, walls, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
-#ifdef HAVE_PAPI
-  rdiff = 100. * (totfp - papicounters[0]) / totfp;
-  printf ("FPops: iam %d expected %g flops got %g rdiff=%9.2f\n",
-	  iam, totfp, (double) papicounters[0], rdiff);
-#endif
-
-  if (iam == 0) {
-    getmaxmin (walls, ntask, &wmax, &wmin, &taskmax, &taskmin);
-    rmax = totfp / (mega * wmin);
-    rmin = totfp / (mega * wmax);
-    aggratemax = rmax * ntask; 
-    aggratemin = rmin * ntask; 
-    printf ("wmin=%9.3g rmax=%9.3g\n", wmin, rmax);
-    printf ("FPops (Mflop/s task): max       =%9.3g %d\n"
-	    "                      min       =%9.3g %d\n"
-	    "                      aggratemax=%9.3g\n"
-	    "                      aggratemin=%9.3g\n",
-	    rmax, taskmax, rmin, taskmin, aggratemax, aggratemin);
-
-    if (filep = fopen ("FPops_max", "a")) {
-      fprintf (filep, "%d %9.3g\n", ntask, aggratemax);
-      (void) fclose (filep);
-    }
-    if (filep = fopen ("FPops_min", "a")) {
-      fprintf (filep, "%d %9.3g\n", ntask, aggratemin);
-      (void) fclose (filep);
-    }
-  }
-  
-  /*
-  ** MPI_Sendrecv
-  */
-
-  ret = GPTLquery ("MPI_Sendrecv", -1, &count, &onflg, &wall, &usr, &sys, papicounters, 0);
-  ret = MPI_Gather (&wall, 1, MPI_DOUBLE, walls, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
-  if (iam == 0) {
-    getmaxmin (walls, ntask, &wmax, &wmin, &taskmax, &taskmin);
-    bytes = sizeof (double) * totmpi;
-    rmax = bytes / (wmin*mega);
-    rmin = bytes / (wmax*mega);
-    aggratemax = rmax * ntask;
-    aggratemin = rmin * ntask;
-    printf ("MPI_Sendrecv (MB/s task): max       =%9.3g %d\n"
-	    "                          min       =%9.3g %d\n"
-	    "                          aggratemax=%9.3g\n"
-	    "                          aggratemin=%9.3g\n",
-	    rmax, taskmax, rmin, taskmin, aggratemax, aggratemin);
-
-    if (filep = fopen ("MPI_Sendrecv_max", "a")) {
-      fprintf (filep, "%d %9.3g\n", ntask, aggratemax);
-      (void) fclose (filep);
-    }
-    if (filep = fopen ("MPI_Sendrecv_min", "a")) {
-      fprintf (filep, "%d %9.3g\n", ntask, aggratemin);
-      (void) fclose (filep);
+    baseproc = (iam / ppnmax) * ppnmax;
+    sendto = baseproc + (iam + 1) % ppnloc;
+    recvfm = baseproc + (iam + ppnloc - 1) % ppnloc;
+    if (are_mynode (sendto, recvfm)) {
+      sendrecv ("Sendrecv_memory", sendbuf, recvbuf, iter, sendto, recvfm);
+      isendirecv ("IsendIrecv_memory", sendbuf, recvbuf, iter, sendto, recvfm); 
+      irecvisend ("IrecvIsend_memory", sendbuf, recvbuf, iter, sendto, recvfm); 
     }
   }
 
-  /*
-  ** MPI_Isend_Irecv
-  */
+  gather_results ("FPops");
+  gather_results ("memBW");
 
-  ret = GPTLquery ("Isend_Irecv", -1, &count, &onflg, &wall, &usr, &sys, papicounters, 0);
-  ret = MPI_Gather (&wall, 1, MPI_DOUBLE, walls, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+  gather_results ("Sendrecv_base");
+  gather_results ("IsendIrecv_base");
+  gather_results ("IrecvIsend_base");
 
-  if (iam == 0) {
-    getmaxmin (walls, ntask, &wmax, &wmin, &taskmax, &taskmin);
-    bytes = sizeof (double) * totmpi;
-    rmax = bytes / (wmin*mega);
-    rmin = bytes / (wmax*mega);
-    aggratemax = rmax * ntask;
-    aggratemin = rmin * ntask;
-    printf ("Isend_Irecv (MB/s task): max       =%9.3g %d\n"
-	    "                         min       =%9.3g %d\n"
-	    "                         aggratemax=%9.3g\n"
-	    "                         aggratemin=%9.3g\n",
-	    rmax, taskmax, rmin, taskmin, aggratemax, aggratemin);
+  gather_results ("Sendrecv_fabric");
+  gather_results ("IsendIrecv_fabric");
+  gather_results ("IrecvIsend_fabric");
 
-    if (filep = fopen ("Isend_Irecv_max", "a")) {
-      fprintf (filep, "%d %9.3g\n", ntask, aggratemax);
-      (void) fclose (filep);
-    }
-    if (filep = fopen ("Isend_Irecv_min", "a")) {
-      fprintf (filep, "%d %9.3g\n", ntask, aggratemin);
-      (void) fclose (filep);
-    }
-  }
-
-  /*
-  ** MPI_Irecv_Isend
-  */
-
-  ret = GPTLquery ("Irecv_Isend", -1, &count, &onflg, &wall, &usr, &sys, papicounters, 0);
-  ret = MPI_Gather (&wall, 1, MPI_DOUBLE, walls, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
-  if (iam == 0) {
-    getmaxmin (walls, ntask, &wmax, &wmin, &taskmax, &taskmin);
-    bytes = sizeof (double) * totmpi;
-    rmax = bytes / (wmin*mega);
-    rmin = bytes / (wmax*mega);
-    aggratemax = rmax * ntask;
-    aggratemin = rmin * ntask;
-    printf ("Irecv_Isend (MB/s task): max       =%9.3g %d\n"
-	    "                         min       =%9.3g %d\n"
-	    "                         aggratemax=%9.3g\n"
-	    "                         aggratemin=%9.3g\n",
-	    rmax, taskmax, rmin, taskmin, aggratemax, aggratemin);
-
-    if (filep = fopen ("Irecv_Isend_max", "a")) {
-      fprintf (filep, "%d %9.3g\n", ntask, aggratemax);
-      (void) fclose (filep);
-    }
-    if (filep = fopen ("Irecv_Isend_min", "a")) {
-      fprintf (filep, "%d %9.3g\n", ntask, aggratemin);
-      (void) fclose (filep);
-    }
-  }
-
-  /*
-  ** Memory BW
-  */
-
-  ret = GPTLquery ("memBW", -1, &count, &onflg, &wall, &usr, &sys, papicounters, 0);
-  ret = MPI_Gather (&wall, 1, MPI_DOUBLE, walls, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
-  if (iam == 0) {
-    getmaxmin (walls, ntask, &wmax, &wmin, &taskmax, &taskmin);
-    bytes = sizeof (double) * totmem;
-    rmax = bytes / (wmin*mega);
-    rmin = bytes / (wmax*mega);
-    aggratemax = rmax * ntask;
-    aggratemin = rmin * ntask;
-    printf ("Mem BW   (MB/s task): max       =%9.3g %d\n"
-	    "                      min       =%9.3g %d\n"
-	    "                      aggratemax=%9.3g\n"
-	    "                      aggratemin=%9.3g\n",
-	    rmax, taskmax, rmin, taskmin, aggratemax, aggratemin);
-
-    if (filep = fopen ("MemBW_max", "a")) {
-      fprintf (filep, "%d %9.3g\n", ntask, aggratemax);
-      (void) fclose (filep);
-    }
-    if (filep = fopen ("MemBW_min", "a")) {
-      fprintf (filep, "%d %9.3g\n", ntask, aggratemin);
-      (void) fclose (filep);
-    }
-  }
+  gather_results ("Sendrecv_memory");
+  gather_results ("IsendIrecv_memory");
+  gather_results ("IrecvIsend_memory");
 
   GPTLpr (iam);
   MPI_Finalize ();
@@ -369,7 +211,11 @@ int main (int argc, char **argv)
 #endif
 }
 
-void getmaxmin (const double *vals, int ntask, double *vmax, double *vmin, int *indmax, int *indmin)
+void getmaxmin (const double *vals, 
+		double *vmax, 
+		double *vmin, 
+		int *indmax, 
+		int *indmin)
 {
   int n;
 
@@ -390,7 +236,10 @@ void getmaxmin (const double *vals, int ntask, double *vmax, double *vmin, int *
   }
 }
 
-double chkresults (char *label, int iter, double *recvbuf)
+double chkresults (char *label, 
+		   int iter, 
+		   int recvfm, 
+		   double *recvbuf)
 {
   int ifirst;
   int first;                  /* logical */
@@ -401,16 +250,14 @@ double chkresults (char *label, int iter, double *recvbuf)
 
   double firstdiff;
   double expect;              /* expected value */
-  double diter, drecvfmpiter;
+  double drecvfmpiter = recvfm + iter;
   double diff;                /* difference */
   double maxdiff = 0.;        /* max difference */
+  double expectsave;
 
   const double tol = 1.e-12;  /* tolerance (double precision) */
 
   first = 1;
-
-  diter = iter;
-  drecvfmpiter = drecvfm + diter;
 
   ret = GPTLstart ("FPops");
   for (i = 0; i < nsendrecv; i++) {
@@ -434,7 +281,7 @@ double chkresults (char *label, int iter, double *recvbuf)
       }
       maxdiff = diff;
       isave = i;
-      expectsave = expect
+      expectsave = expect;
     }
   }
   ret = GPTLstop ("FPops");
@@ -460,10 +307,12 @@ double chkresults (char *label, int iter, double *recvbuf)
   return nsendrecv * 8;
 }
 
-double fillsendbuf (double *sendbuf, double diampiter)
+double fillsendbuf (double *sendbuf, int iter)
 {
   int ret;
   int i;
+
+  const double diampiter = iam + iter;
 
   /*
   ** This should be 3 FP ops times nsendrecv
@@ -493,4 +342,209 @@ double zerobufs (double *sendbuf, double *recvbuf)
   }
   ret = GPTLstop ("memBW");
   return nsendrecv * 2;
+}
+
+void sendrecv (char *label, 
+	       double *sendbuf, 
+	       double *recvbuf, 
+	       int iter, 
+	       int sendto, 
+	       int recvfm)
+{
+  int ret;
+  const int sendtag = iter;
+  const int recvtag = iter;
+
+  MPI_Status status;          /* required by MPI_Sendrecv */
+
+  ret = MPI_Barrier (MPI_COMM_WORLD);
+
+  /*
+  ** Fill send buffer, synchronize, Sendrecv, check results
+  */
+
+  totmem += zerobufs (sendbuf, recvbuf);         /* this accumulates into MemBW */
+  totfp += fillsendbuf (sendbuf, iter);     /* this accumulates into FPops */
+  ret = MPI_Barrier (MPI_COMM_WORLD);
+
+  ret = GPTLstart (label);
+  ret = MPI_Sendrecv (sendbuf, nsendrecv, MPI_DOUBLE, sendto, sendtag,
+		      recvbuf, nsendrecv, MPI_DOUBLE, recvfm, recvtag,
+		      MPI_COMM_WORLD, &status);
+  ret = GPTLstop (label);
+  totfp += chkresults (label, iter, recvfm, recvbuf); /* this accumulates into FPops */
+  totmpi += nsendrecv;                           /* number of doubles sent */
+}
+
+void isendirecv (char *label, 
+		 double *sendbuf, 
+		 double *recvbuf, 
+		 int iter, 
+		 int sendto, 
+		 int recvfm)
+{
+  int ret;
+  const int sendtag = iter;
+  const int recvtag = iter;
+
+  MPI_Request sendrequest;    /* required by MPI_Isend and Irecv */
+  MPI_Request recvrequest;    /* required by MPI_Isend and Irecv */
+  MPI_Status status;          /* required by MPI_Sendrecv */
+
+  ret = MPI_Barrier (MPI_COMM_WORLD);
+
+  /*
+  ** Fill send buffer, synchronize, Isend_Irecv, check results
+  */
+
+  totmem += zerobufs (sendbuf, recvbuf);         /* this accumulates into MemBW */
+  totfp += fillsendbuf (sendbuf, iter);     /* this accumulates into FPops */
+  ret = MPI_Barrier (MPI_COMM_WORLD);
+
+  ret = GPTLstart (label);
+  ret = MPI_Isend (sendbuf, nsendrecv, MPI_DOUBLE, sendto, sendtag,
+		   MPI_COMM_WORLD, &sendrequest);
+  ret = MPI_Irecv (recvbuf, nsendrecv, MPI_DOUBLE, recvfm, recvtag,
+		   MPI_COMM_WORLD, &recvrequest);
+  ret = MPI_Wait (&recvrequest, &status);
+  ret = MPI_Wait (&sendrequest, &status);
+  ret = GPTLstop (label);
+  totfp += chkresults (label, iter, recvfm, recvbuf); /* this accumulates into FPops */
+  totmpi += nsendrecv;                           /* number of doubles sent */
+}
+
+void irecvisend (char *label, 
+		 double *sendbuf, 
+		 double *recvbuf, 
+		 int iter, 
+		 int sendto, 
+		 int recvfm)
+{
+  int ret;
+  const int sendtag = iter;
+  const int recvtag = iter;
+
+  MPI_Request sendrequest;    /* required by MPI_Isend and Irecv */
+  MPI_Request recvrequest;    /* required by MPI_Isend and Irecv */
+  MPI_Status status;          /* required by MPI_Sendrecv */
+
+  ret = MPI_Barrier (MPI_COMM_WORLD);
+
+  /*
+  ** Fill send buffer, synchronize, Isend_Irecv, check results
+  */
+
+  totmem += zerobufs (sendbuf, recvbuf);         /* this accumulates into MemBW */
+  totfp += fillsendbuf (sendbuf, iter);     /* this accumulates into FPops */
+  ret = MPI_Barrier (MPI_COMM_WORLD);
+
+  ret = GPTLstart (label);
+  ret = MPI_Irecv (recvbuf, nsendrecv, MPI_DOUBLE, recvfm, recvtag,
+		   MPI_COMM_WORLD, &recvrequest);
+  ret = MPI_Isend (sendbuf, nsendrecv, MPI_DOUBLE, sendto, sendtag,
+		   MPI_COMM_WORLD, &sendrequest);
+  ret = MPI_Wait (&recvrequest, &status);
+  ret = MPI_Wait (&sendrequest, &status);
+  ret = GPTLstop (label);
+  totfp += chkresults (label, iter, recvfm, recvbuf); /* this accumulates into FPops */
+  totmpi += nsendrecv;                           /* number of doubles sent */
+}
+
+int are_othernodes (int sendto, int recvfm)
+{
+  return strcmp (procname, procnames[sendto]) != 0 && 
+         strcmp (procname, procnames[recvfm]) != 0;
+}
+
+int are_mynode (int sendto, int recvfm)
+{
+  return strcmp (procname, procnames[sendto]) == 0 && 
+         strcmp (procname, procnames[recvfm]) == 0;
+}
+
+void gather_results (char *label) 
+{
+  const int mega = 1024*1024; /* convert to mega whatever */
+  int isfp = (strcmp (label, "FPops") == 0);
+  int ret;
+  int onflg;                  /* returned by GPTLquery */
+  int count;                  /* returned by GPTLquery */
+  int taskmax, taskmin;       /* which mpi task caused a max or min */
+
+  long long papicounters[2];  /* returned from PAPI via GPTL */
+
+  double rmax, rmin;          /* max, min rates */
+  double wmax, wmin;          /* wallclock max, min */
+  double wall, *walls;        /* wallclock time for 1 task, all tasks */
+  double usr;                 /* usr CPU time returned by GPTLquery */
+  double sys;                 /* sys CPU time returned by GPTLquery */
+  double bytes;               /* number of bytes */
+  double rdiff;               /* relative difference */
+  double aggratemax;          /* aggregate rate (summed over mpi tasks) */
+  double aggratemin;          /* aggregate rate (summed over mpi tasks) */
+
+  char outfile[32];
+  FILE *filep;                /* file pointer for GNUplot */
+
+  walls = (double *) malloc (ntask * sizeof (double));
+  
+  /*
+  ** FPops calcs.
+  */
+  
+  if (GPTLquery (label, -1, &count, &onflg, &wall, &usr, &sys, papicounters, 2) == 0) {
+    ret = MPI_Gather (&wall, 1, MPI_DOUBLE, walls, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+#ifdef HAVE_PAPI
+    if (isfp) {
+      rdiff = 100. * (totfp - papicounters[0]) / totfp;
+      printf ("FPops: iam %d expected %g flops got %g rdiff=%9.2f\n",
+	      iam, totfp, (double) papicounters[0], rdiff);
+    }
+#endif
+    
+    if (iam == 0) {
+      getmaxmin (walls, &wmax, &wmin, &taskmax, &taskmin);
+      if (wmin > 0.) {
+	if (isfp) {
+	  rmax = totfp / (mega * wmin);
+	  rmin = totfp / (mega * wmax);
+	} else {
+	  bytes = sizeof (double) * totmpi;
+	  rmax = bytes / (wmin*mega);
+	  rmin = bytes / (wmax*mega);
+	}
+	
+	aggratemax = rmax * ntask; 
+	aggratemin = rmin * ntask; 
+	
+	if (isfp) {
+	  printf ("FPops (Mflop/s task): max       =%9.3g %d\n"
+		  "                      min       =%9.3g %d\n"
+		  "                      aggratemax=%9.3g\n"
+		  "                      aggratemin=%9.3g\n",
+		  rmax, taskmax, rmin, taskmin, aggratemax, aggratemin);
+	} else {
+	  printf ("%20s (MB/s task): max       =%9.3g %d\n"
+		  "                                  min       =%9.3g %d\n"
+		  "                                  aggratemax=%9.3g\n"
+		  "                                  aggratemin=%9.3g\n", label,
+		  rmax, taskmax, rmin, taskmin, aggratemax, aggratemin);
+	}
+	strcpy (outfile, label);
+	strcat (outfile, "_max");
+	if ((filep = fopen (outfile, "a"))) {
+	  fprintf (filep, "%d %9.3g\n", ntask, aggratemax);
+	  (void) fclose (filep);
+	}
+	strcpy (outfile, label);
+	strcat (outfile, "_min");
+	if ((filep = fopen (outfile, "a"))) {
+	  fprintf (filep, "%d %9.3g\n", ntask, aggratemin);
+	  (void) fclose (filep);
+	}
+      }
+    }
+  }
+  free (walls);
 }
