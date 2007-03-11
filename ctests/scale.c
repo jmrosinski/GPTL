@@ -37,7 +37,7 @@ int main (int argc, char **argv)
   int are_mynode (int, int);
   void gather_results (char *);
 
-  int ppnmax = 2;             /* max # procs per node */
+  int ppnmax = 6;             /* max # procs per node */
   int niter = 10;             /* default number of repetitions */
 
   int baseproc;
@@ -50,6 +50,7 @@ int main (int argc, char **argv)
   int resultlen;              /* length of processor name */
   int ppnloc;                 /* # procs on this node */
   int nnode;                  /* # nodes */
+  int code;
 
   double *sendbuf;            /* send buffer for MPI_Sendrecv */
   double *recvbuf;            /* recv buffer for MPI_Sendrecv */
@@ -171,6 +172,10 @@ int main (int argc, char **argv)
 	sendrecv ("Sendrecv_fabric", sendbuf, recvbuf, iter, sendto, recvfm);
 	isendirecv ("IsendIrecv_fabric", sendbuf, recvbuf, iter, sendto, recvfm); 
 	irecvisend ("IrecvIsend_fabric", sendbuf, recvbuf, iter, sendto, recvfm); 
+      } else {
+	printf ("iam=%d unexpectedly got same node for sendto=%d recvfm=%d\n",
+		iam, sendto, recvfm);
+	ret = MPI_Abort (MPI_COMM_WORLD, code);
       }
     }
 
@@ -185,11 +190,15 @@ int main (int argc, char **argv)
       sendrecv ("Sendrecv_memory", sendbuf, recvbuf, iter, sendto, recvfm);
       isendirecv ("IsendIrecv_memory", sendbuf, recvbuf, iter, sendto, recvfm); 
       irecvisend ("IrecvIsend_memory", sendbuf, recvbuf, iter, sendto, recvfm); 
+    } else {
+      printf ("iam=%d unexpectedly got differet node for sendto=%d recvfm=%d\n",
+	      iam, sendto, recvfm);
+      ret = MPI_Abort (MPI_COMM_WORLD, code);
     }
   }
 
-  gather_results ("FPops");
-  gather_results ("memBW");
+  gather_results ("FPOPS");
+  gather_results ("MEMBW");
 
   gather_results ("Sendrecv_base");
   gather_results ("IsendIrecv_base");
@@ -259,7 +268,7 @@ double chkresults (char *label,
 
   first = 1;
 
-  ret = GPTLstart ("FPops");
+  ret = GPTLstart ("FPOPS");
   for (i = 0; i < nsendrecv; i++) {
     expect = 0.1*(drecvfmpiter + (double) i);
 
@@ -284,7 +293,7 @@ double chkresults (char *label,
       expectsave = expect;
     }
   }
-  ret = GPTLstop ("FPops");
+  ret = GPTLstop ("FPOPS");
   
   if (maxdiff / expect > tol) {
     if (label)
@@ -302,7 +311,7 @@ double chkresults (char *label,
   */
 
   if (maxdiff > 0.) 
-    printf ("FPops: iam %d maxdiff=%9.3g\n", iam, maxdiff);
+    printf ("FPOPS: iam %d maxdiff=%9.3g\n", iam, maxdiff);
 
   return nsendrecv * 8;
 }
@@ -318,10 +327,10 @@ double fillsendbuf (double *sendbuf, int iter)
   ** This should be 3 FP ops times nsendrecv
   */
 
-  ret = GPTLstart ("FPops");
+  ret = GPTLstart ("FPOPS");
   for (i = 0; i < nsendrecv; i++) 
     sendbuf[i] = 0.1*(diampiter + (double) i);
-  ret = GPTLstop ("FPops");
+  ret = GPTLstop ("FPOPS");
 
   return nsendrecv * 3;
 }
@@ -335,12 +344,12 @@ double zerobufs (double *sendbuf, double *recvbuf)
   ** This should be 2 times nsendrecv memory xfers
   */
 
-  ret = GPTLstart ("memBW");
+  ret = GPTLstart ("MEMBW");
   for (i = 0; i < nsendrecv; i++) {
     sendbuf[i] = 0.;
     recvbuf[i] = 0.;
   }
-  ret = GPTLstop ("memBW");
+  ret = GPTLstop ("MEMBW");
   return nsendrecv * 2;
 }
 
@@ -363,8 +372,8 @@ void sendrecv (char *label,
   ** Fill send buffer, synchronize, Sendrecv, check results
   */
 
-  totmem += zerobufs (sendbuf, recvbuf);         /* this accumulates into MemBW */
-  totfp += fillsendbuf (sendbuf, iter);     /* this accumulates into FPops */
+  totmem += zerobufs (sendbuf, recvbuf);         /* this accumulates into MEMBW */
+  totfp += fillsendbuf (sendbuf, iter);     /* this accumulates into FPOPS */
   ret = MPI_Barrier (MPI_COMM_WORLD);
 
   ret = GPTLstart (label);
@@ -372,7 +381,7 @@ void sendrecv (char *label,
 		      recvbuf, nsendrecv, MPI_DOUBLE, recvfm, recvtag,
 		      MPI_COMM_WORLD, &status);
   ret = GPTLstop (label);
-  totfp += chkresults (label, iter, recvfm, recvbuf); /* this accumulates into FPops */
+  totfp += chkresults (label, iter, recvfm, recvbuf); /* this accumulates into FPOPS */
   totmpi += nsendrecv;                           /* number of doubles sent */
 }
 
@@ -397,8 +406,8 @@ void isendirecv (char *label,
   ** Fill send buffer, synchronize, Isend_Irecv, check results
   */
 
-  totmem += zerobufs (sendbuf, recvbuf);         /* this accumulates into MemBW */
-  totfp += fillsendbuf (sendbuf, iter);     /* this accumulates into FPops */
+  totmem += zerobufs (sendbuf, recvbuf);         /* this accumulates into MEMBW */
+  totfp += fillsendbuf (sendbuf, iter);     /* this accumulates into FPOPS */
   ret = MPI_Barrier (MPI_COMM_WORLD);
 
   ret = GPTLstart (label);
@@ -409,7 +418,7 @@ void isendirecv (char *label,
   ret = MPI_Wait (&recvrequest, &status);
   ret = MPI_Wait (&sendrequest, &status);
   ret = GPTLstop (label);
-  totfp += chkresults (label, iter, recvfm, recvbuf); /* this accumulates into FPops */
+  totfp += chkresults (label, iter, recvfm, recvbuf); /* this accumulates into FPOPS */
   totmpi += nsendrecv;                           /* number of doubles sent */
 }
 
@@ -434,8 +443,8 @@ void irecvisend (char *label,
   ** Fill send buffer, synchronize, Isend_Irecv, check results
   */
 
-  totmem += zerobufs (sendbuf, recvbuf);         /* this accumulates into MemBW */
-  totfp += fillsendbuf (sendbuf, iter);     /* this accumulates into FPops */
+  totmem += zerobufs (sendbuf, recvbuf);         /* this accumulates into MEMBW */
+  totfp += fillsendbuf (sendbuf, iter);     /* this accumulates into FPOPS */
   ret = MPI_Barrier (MPI_COMM_WORLD);
 
   ret = GPTLstart (label);
@@ -446,7 +455,7 @@ void irecvisend (char *label,
   ret = MPI_Wait (&recvrequest, &status);
   ret = MPI_Wait (&sendrequest, &status);
   ret = GPTLstop (label);
-  totfp += chkresults (label, iter, recvfm, recvbuf); /* this accumulates into FPops */
+  totfp += chkresults (label, iter, recvfm, recvbuf); /* this accumulates into FPOPS */
   totmpi += nsendrecv;                           /* number of doubles sent */
 }
 
@@ -465,7 +474,7 @@ int are_mynode (int sendto, int recvfm)
 void gather_results (char *label) 
 {
   const int mega = 1024*1024; /* convert to mega whatever */
-  int isfp = (strcmp (label, "FPops") == 0);
+  int isfp = (strcmp (label, "FPOPS") == 0);
   int ret;
   int onflg;                  /* returned by GPTLquery */
   int count;                  /* returned by GPTLquery */
@@ -489,7 +498,7 @@ void gather_results (char *label)
   walls = (double *) malloc (ntask * sizeof (double));
   
   /*
-  ** FPops calcs.
+  ** FPOPS calcs.
   */
   
   if (GPTLquery (label, -1, &count, &onflg, &wall, &usr, &sys, papicounters, 2) == 0) {
@@ -498,7 +507,7 @@ void gather_results (char *label)
 #ifdef HAVE_PAPI
     if (isfp) {
       rdiff = 100. * (totfp - papicounters[0]) / totfp;
-      printf ("FPops: iam %d expected %g flops got %g rdiff=%9.2f\n",
+      printf ("FPOPS: iam %d expected %g flops got %g rdiff=%9.2f\n",
 	      iam, totfp, (double) papicounters[0], rdiff);
     }
 #endif
@@ -519,7 +528,7 @@ void gather_results (char *label)
 	aggratemin = rmin * ntask; 
 	
 	if (isfp) {
-	  printf ("FPops (Mflop/s task): max       =%9.3g %d\n"
+	  printf ("FPOPS (Mflop/s task): max       =%9.3g %d\n"
 		  "                      min       =%9.3g %d\n"
 		  "                      aggratemax=%9.3g\n"
 		  "                      aggratemin=%9.3g\n",
