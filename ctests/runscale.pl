@@ -27,8 +27,8 @@ my (@irecvisendbasefiles) = ("IrecvIsend_base_max","IrecvIsend_base_min");
 my (@irecvisendfabricfiles) = ("IrecvIsend_fabric_max","IrecvIsend_fabric_min");
 my (@irecvisendmemoryfiles) = ("IrecvIsend_memory_max","IrecvIsend_memory_min");
 
-#my ($mpicmd) = "srun";
-my ($mpicmd) = "mpiexec";
+my ($mpicmd) = "srun";
+#my ($mpicmd) = "mpiexec";
 my ($rundir) = ".";
 my ($arg);
 my ($cwd);
