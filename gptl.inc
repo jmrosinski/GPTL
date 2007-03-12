@@ -4,6 +4,7 @@
       integer GPTLoverhead
       integer GPTLdepthlimit
       integer GPTLverbose
+      integer GPTLalwaysindent
 
       integer GPTLnarrowprint
 
@@ -20,15 +21,15 @@
       parameter (GPTLoverhead       = 4)
       parameter (GPTLdepthlimit     = 5)
       parameter (GPTLverbose        = 6)
+      parameter (GPTLalwaysindent   = 7)
+      parameter (GPTLnarrowprint    = 8)
 
-      parameter (GPTLnarrowprint    = -2)
-
-      parameter (GPTLgettimeofday   = 7)
-      parameter (GPTLnanotime       = 8)
-      parameter (GPTLrtc            = 9)
-      parameter (GPTLmpiwtime       = 10)
-      parameter (GPTLclockgettime   = 11)
-      parameter (GPTLpapitime       = 12)
+      parameter (GPTLgettimeofday   = 9)
+      parameter (GPTLnanotime       = 10)
+      parameter (GPTLrtc            = 11)
+      parameter (GPTLmpiwtime       = 12)
+      parameter (GPTLclockgettime   = 13)
+      parameter (GPTLpapitime       = 14)
 
 ! Externals
 

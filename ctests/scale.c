@@ -150,7 +150,8 @@ int main (int argc, char **argv)
   */
 
   for (iter = 0; iter < niter; iter++) {
-
+    if (iam == 0) 
+      printf ("starting iter=%d\n", iter);
     /*
     ** Base: one big ring from 0-ntask regardless of process to node mapping
     */
@@ -370,7 +371,11 @@ void sendrecv (char *label,
 
   MPI_Status status;          /* required by MPI_Sendrecv */
 
+  if (iam == 0) 
+      printf ("sendrecv bef barrier\n");
   ret = MPI_Barrier (MPI_COMM_WORLD);
+  if (iam == 0) 
+      printf ("sendrecv aft barrier\n");
 
   /*
   ** Fill send buffer, synchronize, Sendrecv, check results
@@ -403,7 +408,11 @@ void isendirecv (char *label,
   MPI_Request recvrequest;    /* required by MPI_Isend and Irecv */
   MPI_Status status;          /* required by MPI_Sendrecv */
 
+  if (iam == 0) 
+      printf ("isendirecv bef barrier\n");
   ret = MPI_Barrier (MPI_COMM_WORLD);
+  if (iam == 0) 
+      printf ("isendirecv aft barrier\n");
 
   /*
   ** Fill send buffer, synchronize, Isend_Irecv, check results
@@ -439,7 +448,11 @@ void irecvisend (char *label,
   MPI_Request recvrequest;    /* required by MPI_Isend and Irecv */
   MPI_Status status;          /* required by MPI_Sendrecv */
 
+  if (iam == 0) 
+      printf ("irecvisend bef barrier\n");
   ret = MPI_Barrier (MPI_COMM_WORLD);
+  if (iam == 0) 
+      printf ("irecvisend aft barrier\n");
 
   /*
   ** Fill send buffer, synchronize, Isend_Irecv, check results

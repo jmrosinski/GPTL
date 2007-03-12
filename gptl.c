@@ -42,6 +42,7 @@ static bool disabled = false;    /* Timers disabled? */
 static bool initialized = false; /* GPTLinitialize has been called */
 static bool dousepapi = false;   /* saves a function call if stays false */
 static bool verbose = true;      /* output verbosity */
+static bool alwaysindent = false;/* indent even when ambiguous indent level found */
 
 static time_t ref_gettimeofday = -1; /* ref start point for gettimeofday */
 static time_t ref_clock_gettime = -1;/* ref start point for clock_gettime */
@@ -182,6 +183,11 @@ int GPTLsetoption (const int option,  /* option */
     verbose = (bool) val; 
     if (verbose)
       printf ("GPTLsetoption: set verbose to %d\n", val);
+    return 0;
+  case GPTLalwaysindent: 
+    alwaysindent = (bool) val; 
+    if (verbose)
+      printf ("GPTLsetoption: set alwaysindent to %d\n", val);
     return 0;
   default:
     break;
@@ -461,7 +467,7 @@ int GPTLstart (const char *name)               /* timer name */
     ** called from more than 1 branch in the call tree.
     */
   
-    if (ptr->depth != current_depth[t].depth)
+    if ( ! alwaysindent && ptr->depth != current_depth[t].depth)
       ptr->depth = 0;
 
   } else {
