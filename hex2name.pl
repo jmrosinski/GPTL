@@ -87,7 +87,7 @@ sub main()
 	# Parse the line if it's a hex number followed by a number
 	# Otherwise just write it
 
-	if (/(^ *)([[:xdigit:]]+)( *)([[:digit:]]+)(.*)/) {
+	if (/(^\*? *)([[:xdigit:]]+)( *)([[:digit:]]+)(.*)/) {
 	    $begofline  = $1;
 	    $off1       = hex($2);
 	    $spaftsym   = $3;

@@ -460,7 +460,7 @@ int GPTLstart (const char *name)               /* timer name */
     ** current value. This will likely happen when the thing being timed is
     ** called from more than 1 branch in the call tree.
     */
-  
+
     if (ptr->depth != current_depth[t].depth)
       ptr->ambiguous = true;
 
