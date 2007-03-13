@@ -42,7 +42,6 @@ static bool disabled = false;    /* Timers disabled? */
 static bool initialized = false; /* GPTLinitialize has been called */
 static bool dousepapi = false;   /* saves a function call if stays false */
 static bool verbose = true;      /* output verbosity */
-static bool alwaysindent = false;/* indent even when ambiguous indent level found */
 
 static time_t ref_gettimeofday = -1; /* ref start point for gettimeofday */
 static time_t ref_clock_gettime = -1;/* ref start point for clock_gettime */
@@ -183,11 +182,6 @@ int GPTLsetoption (const int option,  /* option */
     verbose = (bool) val; 
     if (verbose)
       printf ("GPTLsetoption: set verbose to %d\n", val);
-    return 0;
-  case GPTLalwaysindent: 
-    alwaysindent = (bool) val; 
-    if (verbose)
-      printf ("GPTLsetoption: set alwaysindent to %d\n", val);
     return 0;
   default:
     break;
@@ -462,13 +456,13 @@ int GPTLstart (const char *name)               /* timer name */
   if (ptr) {
 
     /*
-    ** Reset indentation level to ambiguous value if inconsistent with
+    ** Set ambiguous flag if computed depth is inconsistent with
     ** current value. This will likely happen when the thing being timed is
     ** called from more than 1 branch in the call tree.
     */
   
-    if ( ! alwaysindent && ptr->depth != current_depth[t].depth)
-      ptr->depth = 0;
+    if (ptr->depth != current_depth[t].depth)
+      ptr->ambiguous = true;
 
   } else {
 
@@ -999,9 +993,18 @@ static void printstats (const Timer *timer,     /* timer to print */
 
   /* Indent to depth of this timer */
 
-  if (doindent)
-    for (indent = 0; indent < timer->depth; ++indent)  /* depth starts at 1 */
+  if (doindent) {
+
+    /* Flag ambiguous timer indentation levels with a * in column 1 */
+
+    if (timer->ambiguous)
+      fprintf (fp, "* ");
+    else
       fprintf (fp, "  ");
+
+    for (indent = 1; indent < timer->depth; ++indent)  /* note: depth starts at 1 */
+      fprintf (fp, "  ");
+  }
 
   fprintf (fp, "%s", timer->name);
 

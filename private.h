@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.36 2007-02-01 22:15:40 rosinski Exp $
+$Id: private.h,v 1.37 2007-03-13 19:56:39 rosinski Exp $
 */
 
 #include <stdio.h>
@@ -49,6 +49,7 @@ typedef struct {
 typedef struct TIMER {
   char name[MAX_CHARS+1];   /* timer name (user input) */
   bool onflg;               /* timer currently on or off */
+  bool ambiguous;           /* true => multiple depth levels */
   unsigned int depth;       /* depth in "calling" tree */
   unsigned int recurselvl;  /* recursion level */
   unsigned int max_recurse; /* max recursion level */
