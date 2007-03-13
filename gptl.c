@@ -457,7 +457,7 @@ int GPTLstart (const char *name)               /* timer name */
 
     /*
     ** Set ambiguous flag if computed depth is inconsistent with
-    ** current value. This will likely happen when the thing being timed is
+    ** current value. This can happen when the thing being timed is
     ** called from more than 1 branch in the call tree.
     */
 
@@ -525,7 +525,7 @@ int GPTLstart (const char *name)               /* timer name */
 
 int GPTLstop (const char *name)               /* timer name */
 {
-  double tp1;                /* time stamp */
+  double tp1 = 0.0;          /* time stamp */
   double delta;              /* diff between 2 time stamps */
   Timer *ptr;                /* linked list pointer */
 
@@ -533,8 +533,8 @@ int GPTLstop (const char *name)               /* timer name */
   int t;                     /* thread number for this process */
   int indx;                  /* index into hash table */
 
-  long usr;                  /* user time (returned from get_cpustamp) */
-  long sys;                  /* system time (returned from get_cpustamp) */
+  long usr = 0;              /* user time (returned from get_cpustamp) */
+  long sys = 0;              /* system time (returned from get_cpustamp) */
 
 #ifdef UNICOSMP
 #ifndef SSP
@@ -1369,10 +1369,6 @@ static inline Timer *getentry (const Hashentry *hashtable, /* hash table */
   return 0;
 }
 
-/*
-** These routines were moved from threadutil.c to here only to allow inlining.
-*/
-
 #if ( defined THREADED_OMP )
 #include <omp.h>
 
@@ -1530,7 +1526,7 @@ static int init_rtc ()
   extern long long rtc_rate_();
   ticks2sec = 1./rtc_rate_();
   if (verbose)
-    printf ("init_rtc: ticks per sec=%g\n", rtc_rate_();
+    printf ("init_rtc: ticks per sec=%g\n", rtc_rate_());
   return 0;
 #else
   return GPTLerror ("init_rtc: not enabled\n");
