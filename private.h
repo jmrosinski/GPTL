@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.37 2007-03-13 19:56:39 rosinski Exp $
+$Id: private.h,v 1.38 2007-03-29 23:19:05 rosinski Exp $
 */
 
 #include <stdio.h>
@@ -55,12 +55,15 @@ typedef struct TIMER {
   unsigned int max_recurse; /* max recursion level */
   unsigned long count;      /* number of start/stop calls */
   unsigned long nrecurse;   /* number of recursive start/stop calls */
+  unsigned int nchildren;   /* number of children (if parentchild is true) */
   Wallstats wall;           /* wallclock stats */
   Cpustats cpu;             /* cpu stats */
 #ifdef HAVE_PAPI
   Papistats aux;            /* PAPI stats  */
 #endif 
   struct TIMER *next;       /* next timer in linked list */
+  struct TIMER *parent;
+  struct TIMER **children;
 } Timer;
 
 typedef struct {

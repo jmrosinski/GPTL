@@ -3,10 +3,10 @@ CFLAGS       = @DEFS@ @PAPIPREP@ @THREADDEFS@ @CFLAGS@ @BITFLAGS@ @THREADFLAGS@
 LDFLAGS      = @BITFLAGS@ @THREADFLAGS@ -L.. -lgptl @LDFLAGS@ @LIBS@
 INSTRFLAGS   = @INSTRFLAGS@
 
-OBJS = avail.o depth.o rawpapitest.o recursion.o stride.o \
-       memusage.o utrtest.o papiomptest.o cygprofile.o cygprofilesubs.o scale.o
-EXES = avail depth     rawpapitest recursion stride \
-       memusage utrtest papiomptest cygprofile scale
+OBJS = avail.o depth.o rawpapitest.o recursion.o stride.o memusage.o \
+       utrtest.o papiomptest.o cygprofile.o cygprofilesubs.o scale.o parentchild.o
+EXES = avail depth     rawpapitest recursion stride memusage \
+       utrtest papiomptest cygprofile scale parentchild
 
 all: $(EXES)
 
@@ -50,3 +50,6 @@ stride: stride.o
 
 scale: scale.o
 	$(CC) -o $@ scale.o $(LDFLAGS)
+
+parentchild: parentchild.o
+	$(CC) -o $@ parentchild.o $(LDFLAGS)

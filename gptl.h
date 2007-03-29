@@ -1,5 +1,5 @@
 /*
-$Id: gptl.h,v 1.24 2007-03-13 19:56:39 rosinski Exp $
+$Id: gptl.h,v 1.25 2007-03-29 23:19:05 rosinski Exp $
 */
 #ifndef GPTL_H
 #define GPTL_H
@@ -10,16 +10,17 @@ typedef enum {
   GPTLoverhead       = 4,
   GPTLdepthlimit     = 5,
   GPTLverbose        = 6,
-  GPTLnarrowprint    = 7
+  GPTLnarrowprint    = 7,  /* Print PAPI stats in fewer columns */
+  GPTLparentchild    = 8
 } Option;
 
 typedef enum {
-  GPTLgettimeofday   = 8,
-  GPTLnanotime       = 9,
-  GPTLrtc            = 10,
-  GPTLmpiwtime       = 11,
-  GPTLclockgettime   = 12,
-  GPTLpapitime       = 13
+  GPTLgettimeofday   = 9,
+  GPTLnanotime       = 10,
+  GPTLrtc            = 11,
+  GPTLmpiwtime       = 12,
+  GPTLclockgettime   = 13,
+  GPTLpapitime       = 14
 } Funcoption;
 
 /*

@@ -42,6 +42,7 @@ static bool disabled = false;    /* Timers disabled? */
 static bool initialized = false; /* GPTLinitialize has been called */
 static bool dousepapi = false;   /* saves a function call if stays false */
 static bool verbose = true;      /* output verbosity */
+static bool parentchild = false; /* obtain parent/child info (more expensive) */
 
 static time_t ref_gettimeofday = -1; /* ref start point for gettimeofday */
 static time_t ref_clock_gettime = -1;/* ref start point for clock_gettime */
@@ -90,6 +91,7 @@ static int init_gettimeofday (void);
 
 static double utr_getoverhead (void);
 static inline Timer *getentry (const Hashentry *, const char *, int *);
+static void printself_andchildren (int, Timer *, FILE *, double);
 
 typedef struct {
   const Funcoption option;
@@ -182,6 +184,11 @@ int GPTLsetoption (const int option,  /* option */
     verbose = (bool) val; 
     if (verbose)
       printf ("GPTLsetoption: set verbose to %d\n", val);
+    return 0;
+  case GPTLparentchild: 
+    parentchild = (bool) val; 
+    if (verbose)
+      printf ("GPTLsetoption: set parentchild to %d\n", val);
     return 0;
   default:
     break;
@@ -477,10 +484,39 @@ int GPTLstart (const char *name)               /* timer name */
     strcpy (ptr->name, locname);
     ptr->depth = current_depth[t].depth;
 
-    if (timers[t])
+    if (timers[t]) {
       last[t]->next = ptr;
-    else
+
+      if (parentchild) {
+
+	Timer **chptr;
+	Timer *pptr;
+	int nchildren;
+
+	/* Determine parent by looking up the linked list for the first "on" flag */
+
+	for (pptr = last[t]; pptr; pptr = pptr->parent) {
+	  if (pptr->onflg) {
+	    ptr->parent = pptr;
+	    break;
+	  }
+	}
+
+	/* If parent found, update its children array */
+
+	if (ptr->parent) {
+	  ++pptr->nchildren;
+	  nchildren = pptr->nchildren;
+	  chptr = (Timer **) realloc (pptr->children, nchildren * sizeof (Timer *));
+	  if ( ! chptr)
+	    return GPTLerror ("GPTLstart: realloc error\n");
+	  pptr->children = chptr;
+	  pptr->children[nchildren-1] = ptr;
+	}
+      }
+    } else {
       timers[t] = ptr;
+    }
 
     last[t] = ptr;
     ++hashtable[t][indx].nument;
@@ -835,10 +871,14 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
     GPTL_PAPIprstr (fp, overheadstats.enabled);
 #endif
 
-    fprintf (fp, "\n");        /* Done with titles, go to next line */
+    fprintf (fp, "\n");        /* Done with titles, now print stats */
 
-    for (ptr = timers[t]; ptr; ptr = ptr->next)
-      printstats (ptr, fp, t, true, utr_overhead);
+    if (parentchild) {
+      printself_andchildren (t, timers[t], fp, utr_overhead);
+    } else {
+      for (ptr = timers[t]; ptr; ptr = ptr->next)
+	printstats (ptr, fp, t, true, utr_overhead);
+    }
 
     /* 
     ** Sum of overhead across timers is meaningful.
@@ -1675,4 +1715,20 @@ static double utr_getoverhead ()
     val2 = (*ptr2wtimefunc)();
   }
   return 0.01 * (val2 - val1);
+}
+
+/*
+** Invoke printstats for self, then recursively for children
+*/
+
+static void printself_andchildren (int t,
+				   Timer *ptr,
+				   FILE *fp, 
+				   double utr_overhead)
+{
+  int n;
+
+  printstats (ptr, fp, t, true, utr_overhead);
+  for (n = 0; n < ptr->nchildren; n++)
+    printself_andchildren (t, ptr->children[n], fp, utr_overhead);
 }
