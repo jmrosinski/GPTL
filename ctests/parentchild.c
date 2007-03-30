@@ -27,6 +27,8 @@ int main(int argc, char **argv)
     if (iter > 0) {
       GPTLstart ("DD:Misplaced_child_of_C");
       GPTLstart ("EE:child_of_DD");
+      GPTLstart ("utility");
+      GPTLstop ("utility");
       GPTLstop ("EE:child_of_DD");
       GPTLstop ("DD:Misplaced_child_of_C");
     }
@@ -38,6 +40,11 @@ int main(int argc, char **argv)
     GPTLstop ("B");
     GPTLstart ("BB");
     GPTLstop ("BB");
+
+    if (iter > 0) {
+      GPTLstart ("utility");
+      GPTLstop ("utility");
+    }
 
     GPTLstop ("A");
     GPTLstart ("AA");
