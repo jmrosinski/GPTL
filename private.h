@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.38 2007-03-29 23:19:05 rosinski Exp $
+$Id: private.h,v 1.39 2007-03-30 22:28:48 rosinski Exp $
 */
 
 #include <stdio.h>
@@ -48,22 +48,22 @@ typedef struct {
   
 typedef struct TIMER {
   char name[MAX_CHARS+1];   /* timer name (user input) */
-  bool onflg;               /* timer currently on or off */
-  bool ambiguous;           /* true => multiple depth levels */
-  unsigned int depth;       /* depth in "calling" tree */
-  unsigned int recurselvl;  /* recursion level */
-  unsigned int max_recurse; /* max recursion level */
-  unsigned long count;      /* number of start/stop calls */
-  unsigned long nrecurse;   /* number of recursive start/stop calls */
-  unsigned int nchildren;   /* number of children (if parentchild is true) */
-  Wallstats wall;           /* wallclock stats */
-  Cpustats cpu;             /* cpu stats */
 #ifdef HAVE_PAPI
   Papistats aux;            /* PAPI stats  */
 #endif 
+  Wallstats wall;           /* wallclock stats */
+  Cpustats cpu;             /* cpu stats */
+  unsigned long count;      /* number of start/stop calls */
+  unsigned long nrecurse;   /* number of recursive start/stop calls */
   struct TIMER *next;       /* next timer in linked list */
-  struct TIMER *parent;
-  struct TIMER **children;
+  struct TIMER *prev;       /* previous timer in linked list (if parentchild is true) */
+  struct TIMER **children;  /* array of children (if parentchild is true) */
+  unsigned int depth;       /* depth in "calling" tree */
+  unsigned int recurselvl;  /* recursion level */
+  unsigned int max_recurse; /* max recursion level */
+  unsigned int nchildren;   /* number of children (if parentchild is true) */
+  bool onflg;               /* timer currently on or off */
+  bool ambiguous;           /* true => multiple depth levels */
 } Timer;
 
 typedef struct {

@@ -42,7 +42,7 @@ static bool disabled = false;    /* Timers disabled? */
 static bool initialized = false; /* GPTLinitialize has been called */
 static bool dousepapi = false;   /* saves a function call if stays false */
 static bool verbose = true;      /* output verbosity */
-static bool parentchild = false; /* obtain parent/child info (more expensive) */
+static bool parentchild = false; /* retain parent/child relationships when printing (more expensive) */
 
 static time_t ref_gettimeofday = -1; /* ref start point for gettimeofday */
 static time_t ref_clock_gettime = -1;/* ref start point for clock_gettime */
@@ -398,6 +398,13 @@ int GPTLstart (const char *name)               /* timer name */
   int indx;        /* hash table index */
   int nument;      /* number of entries for a hash collision */
 
+  /* These are used only when parentchild is true */
+
+  bool foundparent; /* parent found for a new timer */
+  Timer **chptr;    /* array of pointers to children */
+  Timer *pptr;      /* pointer to parent (temporary) */
+  int nchildren;    /* number of children (temporary) */
+
 #ifdef UNICOSMP
 #ifndef SSP
   if (__streaming() == 0) return 0;  /* timers don't work in this situation so disable */
@@ -487,24 +494,27 @@ int GPTLstart (const char *name)               /* timer name */
     if (timers[t]) {
       last[t]->next = ptr;
 
-      if (parentchild) {
+      /*
+      ** If parentchild flag is set, define structure to retain parent/child
+      ** relationships for later printing. Credit idea to J. Edwards
+      */
 
-	Timer **chptr;
-	Timer *pptr;
-	int nchildren;
+      if (parentchild) {
+	ptr->prev = last[t]; /* need doubly linked list */
 
 	/* Determine parent by looking up the linked list for the first "on" flag */
 
-	for (pptr = last[t]; pptr; pptr = pptr->parent) {
+	foundparent = false;
+	for (pptr = last[t]; pptr; pptr = pptr->prev) {
 	  if (pptr->onflg) {
-	    ptr->parent = pptr;
+	    foundparent = true;
 	    break;
 	  }
 	}
 
-	/* If parent found, update its children array */
+	/* If parent found, update its children array with the new entry */
 
-	if (ptr->parent) {
+	if (foundparent) {
 	  ++pptr->nchildren;
 	  nchildren = pptr->nchildren;
 	  chptr = (Timer **) realloc (pptr->children, nchildren * sizeof (Timer *));
@@ -873,11 +883,19 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
 
     fprintf (fp, "\n");        /* Done with titles, now print stats */
 
-    if (parentchild) {
-      printself_andchildren (t, timers[t], fp, utr_overhead);
-    } else {
-      for (ptr = timers[t]; ptr; ptr = ptr->next)
+    for (ptr = timers[t]; ptr; ptr = ptr->next) {
+
+      /*
+      ** When parentchild is true, print all trees rooted at depth 1
+      ** Otherwise just print each entry in the linked list
+      */
+
+      if (parentchild) {
+	if (ptr->depth <= 1)
+	  printself_andchildren (t, ptr, fp, utr_overhead);
+      } else {
 	printstats (ptr, fp, t, true, utr_overhead);
+      }
     }
 
     /* 
