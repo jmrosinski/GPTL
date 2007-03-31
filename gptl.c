@@ -849,10 +849,12 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
   */
 
   utr_overhead = utr_getoverhead ();
-  fprintf (fp, "Underlying timing routine was %s\n", funclist[funcidx].name);
-  fprintf (fp, "Per-call utr overhead est: %g sec\n\n", utr_overhead);
+  fprintf (fp, "Underlying timing routine was %s.\n", funclist[funcidx].name);
+  fprintf (fp, "Per-call utr overhead est: %g sec.\n\n", utr_overhead);
   fprintf (fp, "If overhead stats are printed, roughly half the estimated number is\n");
   fprintf (fp, "embedded in the wallclock (and/or PAPI counter) stats for each timer\n\n");
+  fprintf (fp, "An asterisk in column 1 below means that timer had multiple indentation\n");
+  fprintf (fp, "levels. Only the first is printed, though printed timing info is complete.\n\n");
 
   sum = (float *) GPTLallocate (GPTLnthreads * sizeof (float));
   
