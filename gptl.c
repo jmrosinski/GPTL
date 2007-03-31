@@ -496,7 +496,8 @@ int GPTLstart (const char *name)               /* timer name */
 
       /*
       ** If parentchild flag is set, define structure to retain parent/child
-      ** relationships for later printing. Credit idea to J. Edwards
+      ** relationships for later printing. Credit idea and original code
+      ** to J. Edwards
       */
 
       if (parentchild) {
