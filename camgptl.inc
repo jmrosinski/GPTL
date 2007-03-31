@@ -3,6 +3,9 @@
       integer GPTLabort_on_error
       integer GPTLoverhead
       integer GPTLdepthlimit
+      integer GPTLverbose
+      integer GPTLnarrowprint
+      integer GPTLparentchild
 
       integer GPTLnanotime
       integer GPTLrtc
@@ -16,13 +19,16 @@
       parameter (GPTLabort_on_error = 3)
       parameter (GPTLoverhead       = 4)
       parameter (GPTLdepthlimit     = 5)
+      parameter (GPTLverbose        = 6)
+      parameter (GPTLnarrowprint    = 7)
+      parameter (GPTLparentchild    = 8)
 
-      parameter (GPTLgettimeofday   = 6)
-      parameter (GPTLnanotime       = 7)
-      parameter (GPTLrtc            = 8)
-      parameter (GPTLmpiwtime       = 9)
-      parameter (GPTLclockgettime   = 10)
-      parameter (GPTLpapitime       = 11)
+      parameter (GPTLgettimeofday   = 9)
+      parameter (GPTLnanotime       = 10)
+      parameter (GPTLrtc            = 11)
+      parameter (GPTLmpiwtime       = 12)
+      parameter (GPTLclockgettime   = 13)
+      parameter (GPTLpapitime       = 14)
 
 ! Externals
 
@@ -38,6 +44,9 @@
       integer gptldisable
       integer gptlsetutr
       integer gptlquery
+      integer gptlquerycounters
+      integer gptlget_nregions
+      integer gptlget_regionname
       integer gptl_papiprinttable
       integer gptl_papiname2id
 
@@ -53,5 +62,8 @@
       external gptldisable
       external gptlsetutr
       external gptlquery
+      external gptlquerycounters
+      external gptlget_nregions
+      external gptlget_regionname
       external gptl_papiprinttable
       external gptl_papiname2id
