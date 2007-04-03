@@ -6,10 +6,12 @@ use Cwd;
 my ($host) = hostname;
 my ($cmdfile) = "scale.gp";
 my ($cmd);
-@taskcounts = (2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24);
+@taskcounts = (2,4,8,16,24);
 #@taskcounts = (1,2,3);
 my ($taskcountrange) = $taskcounts[$#taskcounts] - $taskcounts[0];
 my ($taskcount);
+my ($N);
+my ($p);
 my ($ret);
 
 my (@fpopsfiles) = ("FPOPS_max","FPOPS_min");
@@ -74,7 +76,10 @@ $cwd = getcwd;
 print (STDOUT "Tests will be run in directory $cwd\n");
 
 foreach $taskcount (@taskcounts) {
-    $cmd = "$mpicmd -n $taskcount ./scale -l 1000000 -n 10";
+    $N = $taskcount;
+    $N = 4 if ($N > 4);
+    $p = $taskcount / $N;
+    $cmd = "$mpicmd -n $taskcount -N $N ./scale -p $p  -l 1000000 -n 10";
     print (STDOUT "Running $cmd...\n");
     $ret = system ("$cmd");
     if ($ret != 0) {

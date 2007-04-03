@@ -83,16 +83,6 @@ int main (int argc, char **argv)
     MPI_Bcast (procnames[t], MPI_MAX_PROCESSOR_NAME+1, MPI_CHAR, 0, MPI_COMM_WORLD);
   }
 
-  /*
-  ** Determine ppnloc (needed by MPI in-memory section)
-  ** Need to account for nnode not evenly dividing into ntask 
-  */
-
-  nnode = (ntask - 1)/ppnmax + 1;
-  ppnloc = ppnmax;
-  if (iam >= (nnode-1)*ppnmax)
-    ppnloc = ntask - (nnode-1)*ppnmax;
-
   ret = MPI_Barrier (MPI_COMM_WORLD);
 
 /* 
@@ -115,6 +105,16 @@ int main (int argc, char **argv)
       exit (2);
     }
   }
+
+  /*
+  ** Determine ppnloc (needed by MPI in-memory section)
+  ** Need to account for nnode not evenly dividing into ntask 
+  */
+
+  nnode = (ntask - 1)/ppnmax + 1;
+  ppnloc = ppnmax;
+  if (iam >= (nnode-1)*ppnmax)
+    ppnloc = ntask - (nnode-1)*ppnmax;
 
   if (iam == 0) {
     printf ("Number of iterations  will be %d\n", niter);
@@ -371,10 +371,10 @@ void sendrecv (char *label,
 
   MPI_Status status;          /* required by MPI_Sendrecv */
 
-  if (iam == 0) 
+  if (iam == 999) 
       printf ("sendrecv bef barrier\n");
   ret = MPI_Barrier (MPI_COMM_WORLD);
-  if (iam == 0) 
+  if (iam == 999) 
       printf ("sendrecv aft barrier\n");
 
   /*
@@ -408,10 +408,10 @@ void isendirecv (char *label,
   MPI_Request recvrequest;    /* required by MPI_Isend and Irecv */
   MPI_Status status;          /* required by MPI_Sendrecv */
 
-  if (iam == 0) 
+  if (iam == 999) 
       printf ("isendirecv bef barrier\n");
   ret = MPI_Barrier (MPI_COMM_WORLD);
-  if (iam == 0) 
+  if (iam == 999) 
       printf ("isendirecv aft barrier\n");
 
   /*
@@ -448,10 +448,10 @@ void irecvisend (char *label,
   MPI_Request recvrequest;    /* required by MPI_Isend and Irecv */
   MPI_Status status;          /* required by MPI_Sendrecv */
 
-  if (iam == 0) 
+  if (iam == 999) 
       printf ("irecvisend bef barrier\n");
   ret = MPI_Barrier (MPI_COMM_WORLD);
-  if (iam == 0) 
+  if (iam == 999) 
       printf ("irecvisend aft barrier\n");
 
   /*
