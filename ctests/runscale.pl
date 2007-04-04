@@ -124,7 +124,6 @@ if (&getlinear ($fpopsfiles[0], "FPOPS_linear")) {
 if (&getlinear ($membwfiles[0], "MEMBW_linear")) {
     print (CMDFILE "set ylabel \"MB/sec\"\n");
     print (CMDFILE "set output 'MEMBW.ps'\n");
-    print (STDOUT  "plot \'$membwfiles[0]\' using 1:2, \'$membwfiles[1]\' using 1:2, 'MEMBW_linear' using 1:2 with lines\n");
     print (CMDFILE "plot \'$membwfiles[0]\' using 1:2, \'$membwfiles[1]\' using 1:2, 'MEMBW_linear' using 1:2 with lines\n");
 }
 
