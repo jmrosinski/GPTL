@@ -81,10 +81,10 @@ foreach $taskcount (@taskcounts) {
     $p = $taskcount / $N;
     $cmd = "$mpicmd -n $taskcount -N $N ./scale -p $p  -l 1000000 -n 10";
     print (STDOUT "Running $cmd...\n");
-    $ret = system ("$cmd");
-    if ($ret != 0) {
-	print (STDOUT "Bad return from $cmd: $ret: exiting\n");
-	exit ($ret);
+#    $ret = system ("$cmd");
+#    if ($ret != 0) {
+#	print (STDOUT "Bad return from $cmd: $ret: exiting\n");
+#	exit ($ret);
     }
 }
 
@@ -150,13 +150,13 @@ if (&getlinear ($sendrecvmemoryfiles[0], "Sendrecv_memory_linear")) {
 if (&getlinear ($isendirecvbasefiles[0], "IsendIrecv_base_linear")) {
     print (CMDFILE "set ylabel \"MB/sec\"\n");
     print (CMDFILE "set output 'IsendIrecv_base.ps'\n");
-    print (CMDFILE "plot \'$isendirecvfiles[0]\' using 1:2, \'$isendirecvfiles[1]\' using 1:2, 'IsendIrecv_base_linear' using 1:2 with lines\n");
+    print (CMDFILE "plot \'$isendirecvbasefiles[0]\' using 1:2, \'$isendirecvbasefiles[1]\' using 1:2, 'IsendIrecv_base_linear' using 1:2 with lines\n");
 }
 
 if (&getlinear ($isendirecvfabricfiles[0], "IsendIrecv_fabric_linear")) {
     print (CMDFILE "set ylabel \"MB/sec\"\n");
     print (CMDFILE "set output 'IsendIrecv_fabric.ps'\n");
-    print (CMDFILE "plot \'$isendirecvfiles[0]\' using 1:2, \'$isendirecvfiles[1]\' using 1:2, 'IsendIrecv_fabric_linear' using 1:2 with lines\n");
+    print (CMDFILE "plot \'$isendirecvfabricfiles[0]\' using 1:2, \'$isendirecvfabricfiles[1]\' using 1:2, 'IsendIrecv_fabric_linear' using 1:2 with lines\n");
 }
 
 if (&getlinear ($isendirecvmemoryfiles[0], "IsendIrecv_memory_linear")) {
@@ -169,19 +169,19 @@ if (&getlinear ($isendirecvmemoryfiles[0], "IsendIrecv_memory_linear")) {
 if (&getlinear ($irecvisendbasefiles[0], "IrecvIsend_base_linear")) {
     print (CMDFILE "set ylabel \"MB/sec\"\n");
     print (CMDFILE "set output 'IrecvIsend_base.ps'\n");
-    print (CMDFILE "plot \'$irecvisendfiles[0]\' using 1:2, \'$irecvisendfiles[1]\' using 1:2, 'IrecvIsend_base_linear' using 1:2 with lines\n");
+    print (CMDFILE "plot \'$irecvisendbasefiles[0]\' using 1:2, \'$irecvisendbasefiles[1]\' using 1:2, 'IrecvIsend_base_linear' using 1:2 with lines\n");
 }
  
 if (&getlinear ($irecvisendfabricfiles[0], "IrecvIsend_fabric_linear")) {
     print (CMDFILE "set ylabel \"MB/sec\"\n");
     print (CMDFILE "set output 'IrecvIsend_fabric.ps'\n");
-    print (CMDFILE "plot \'$irecvisendfiles[0]\' using 1:2, \'$irecvisendfiles[1]\' using 1:2, 'IrecvIsend_fabric_linear' using 1:2 with lines\n");
+    print (CMDFILE "plot \'$irecvisendfabricfiles[0]\' using 1:2, \'$irecvisendfabricfiles[1]\' using 1:2, 'IrecvIsend_fabric_linear' using 1:2 with lines\n");
 }
 
 if (&getlinear ($irecvisendmemoryfiles[0], "IrecvIsend_memory_linear")) {
     print (CMDFILE "set ylabel \"MB/sec\"\n");
     print (CMDFILE "set output 'IrecvIsend_memory.ps'\n");
-    print (CMDFILE "plot \'$irecvisendfiles[0]\' using 1:2, \'$irecvisendfiles[1]\' using 1:2, 'IrecvIsend_memory_linear' using 1:2 with lines\n");
+    print (CMDFILE "plot \'$irecvisendmemoryfiles[0]\' using 1:2, \'$irecvisendmemoryfiles[1]\' using 1:2, 'IrecvIsend_memory_linear' using 1:2 with lines\n");
 }
 
 close (CMDFILE);
