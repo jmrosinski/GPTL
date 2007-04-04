@@ -81,10 +81,10 @@ foreach $taskcount (@taskcounts) {
     $p = $taskcount / $N;
     $cmd = "$mpicmd -n $taskcount -N $N ./scale -p $p  -l 1000000 -n 10";
     print (STDOUT "Running $cmd...\n");
-#    $ret = system ("$cmd");
-#    if ($ret != 0) {
-#	print (STDOUT "Bad return from $cmd: $ret: exiting\n");
-#	exit ($ret);
+    $ret = system ("$cmd");
+    if ($ret != 0) {
+	print (STDOUT "Bad return from $cmd: $ret: exiting\n");
+	exit ($ret);
     }
 }
 
@@ -124,6 +124,7 @@ if (&getlinear ($fpopsfiles[0], "FPOPS_linear")) {
 if (&getlinear ($membwfiles[0], "MEMBW_linear")) {
     print (CMDFILE "set ylabel \"MB/sec\"\n");
     print (CMDFILE "set output 'MEMBW.ps'\n");
+    print (STDOUT  "plot \'$membwfiles[0]\' using 1:2, \'$membwfiles[1]\' using 1:2, 'MEMBW_linear' using 1:2 with lines\n");
     print (CMDFILE "plot \'$membwfiles[0]\' using 1:2, \'$membwfiles[1]\' using 1:2, 'MEMBW_linear' using 1:2 with lines\n");
 }
 
