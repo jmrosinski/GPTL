@@ -162,7 +162,7 @@ if (&getlinear ($isendirecvfabricfiles[0], "IsendIrecv_fabric_linear")) {
 if (&getlinear ($isendirecvmemoryfiles[0], "IsendIrecv_memory_linear")) {
     print (CMDFILE "set ylabel \"MB/sec\"\n");
     print (CMDFILE "set output 'IsendIrecv_memory.ps'\n");
-    print (CMDFILE "plot \'$isendirecvfiles[0]\' using 1:2, \'$isendirecvfiles[1]\' using 1:2, 'IsendIrecv_memory_linear' using 1:2 with lines\n");
+    print (CMDFILE "plot \'$isendirecvmemoryfiles[0]\' using 1:2, \'$isendirecvmemoryfiles[1]\' using 1:2, 'IsendIrecv_memory_linear' using 1:2 with lines\n");
 }
 
 

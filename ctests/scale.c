@@ -318,7 +318,7 @@ double chkresults (char *label,
   if (maxdiff > 0.) 
     printf ("FPOPS: iam %d maxdiff=%9.3g\n", iam, maxdiff);
 
-  return nsendrecv * 8;
+  return nsendrecv * 6;
 }
 
 double fillsendbuf (double *sendbuf, int iter)
