@@ -535,8 +535,8 @@ void gather_results (char *label, /* timer name */
 	  rmin = tot / (mega * wmax);
 	} else {
 	  bytes = sizeof (double) * tot;
-	  rmax = bytes / (wmin*mega);
-	  rmin = bytes / (wmax*mega);
+	  rmax = bytes / (mega * wmin);
+	  rmin = bytes / (mega * wmax);
 	}
 	
 	aggratemax = rmax * ntask; 
