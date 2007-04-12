@@ -142,6 +142,7 @@ static const int BADCOUNT = -999999;     /* Set counters to this when they are b
 static int GPTLoverheadindx = -1;        /* index into counters array */
 static bool is_multiplexed = false;      /* whether multiplexed (always start false)*/
 static bool narrowprint = false;         /* only use 8 digits not 16 for counter prints */
+static bool persec = true;
 const static bool enable_multiplexing = true; /* whether to try multiplexing */
 
 /* Function prototypes */
@@ -230,6 +231,11 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
 
   if (counter == GPTLnarrowprint) {
     narrowprint = (bool) val;
+    return 0;
+  }
+
+  if (counter == GPTLpersec) {
+    persec = (bool) val;
     return 0;
   }
   return GPTLerror ("GPTL_PAPIsetoption: counter %d does not exist\n", counter);
@@ -554,13 +560,19 @@ void GPTL_PAPIprstr (FILE *fp,                          /* file descriptor */
   int n;
   
   if (narrowprint) {
-    for (n = 0; n < nevents; n++)
+    for (n = 0; n < nevents; n++) {
       fprintf (fp, "%8.8s ", &eventlist[n].counterstr[5]); /* 5 => lop off "PAPI_" */
+      if (persec)
+	fprintf (fp, "e6 / sec ");
+    }
     if (overheadstatsenabled && GPTLoverheadindx > -1)
       fprintf (fp, "OH (cyc) ");
   } else {
-    for (n = 0; n < nevents; n++)
+    for (n = 0; n < nevents; n++) {
       fprintf (fp, "%16.16s ", eventlist[n].prstr);
+      if (persec)
+	fprintf (fp, "e6 / sec ");
+    }
     if (overheadstatsenabled && GPTLoverheadindx > -1)
       fprintf (fp, "Overhead (cyc)   ");
   }
@@ -579,6 +591,7 @@ void GPTL_PAPIpr (FILE *fp,                          /* file descriptor to write
 		  const Papistats *aux,              /* stats to write */
 		  const int t,                       /* thread number */
 		  const int count,                   /* number of invocations */
+		  const double wcsec,                /* wallclock time (sec) */
 		  const bool overheadstatsenabled)   /* whether to print overhead stats*/
 {
   int n;
@@ -590,11 +603,18 @@ void GPTL_PAPIpr (FILE *fp,                          /* file descriptor to write
 	fprintf (fp, "%8ld ", (long) aux->accum[n]);
       else
 	fprintf (fp, "%8.2e ", (double) aux->accum[n]);
+      
     } else {
       if (aux->accum[n] < 1000000)
 	fprintf (fp, "%16ld ", (long) aux->accum[n]);
       else
 	fprintf (fp, "%16.10e ", (double) aux->accum[n]);
+    }
+    if (persec) {
+      if (wcsec > 0.)
+	fprintf (fp, "%8.2f ", aux->accum[n] * 1.e-6 / wcsec);
+      else
+	fprintf (fp, "%8.2f ", 0.);
     }
   }
 

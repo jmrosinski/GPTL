@@ -6,6 +6,8 @@
       integer GPTLverbose
       integer GPTLnarrowprint
       integer GPTLparentchild
+      integer GPTLpercent
+      integer GPTLpersec
 
       integer GPTLnanotime
       integer GPTLrtc
@@ -22,13 +24,15 @@
       parameter (GPTLverbose        = 6)
       parameter (GPTLnarrowprint    = 7)
       parameter (GPTLparentchild    = 8)
+      parameter (GPTLpercent        = 9)
+      parameter (GPTLpersec         = 10)
 
-      parameter (GPTLgettimeofday   = 9)
-      parameter (GPTLnanotime       = 10)
-      parameter (GPTLrtc            = 11)
-      parameter (GPTLmpiwtime       = 12)
-      parameter (GPTLclockgettime   = 13)
-      parameter (GPTLpapitime       = 14)
+      parameter (GPTLgettimeofday   = 11)
+      parameter (GPTLnanotime       = 12)
+      parameter (GPTLrtc            = 13)
+      parameter (GPTLmpiwtime       = 14)
+      parameter (GPTLclockgettime   = 15)
+      parameter (GPTLpapitime       = 16)
 
 ! Externals
 

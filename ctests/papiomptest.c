@@ -60,14 +60,9 @@ int main (int argc, char **argv)
   printf ("Outer loop length (OMP)=%d\n", nompiter);
   printf ("Inner loop length=%d\n", looplen);
 
-  if (GPTLsetoption (GPTLabort_on_error, 1) < 0)
-    exit (4);
-
-  if (GPTLsetoption (GPTLoverhead, 1) < 0)
-    exit (4);
-
-//  if (GPTLsetoption (GPTLnarrowprint, 1) < 0)
-//    exit (4);
+  (void) GPTLsetoption (GPTLabort_on_error, 1);
+  (void) GPTLsetoption (GPTLoverhead, 0);
+  (void) GPTLsetoption (GPTLnarrowprint, 1);
 
   GPTLinitialize ();
   GPTLstart ("total");
@@ -127,11 +122,8 @@ double multiply (int looplen, int iter, double zero)
   if (GPTLstart (string) < 0)
     exit (1);
 
-  printf ("im about to divide by zero\n");
-  printf ("zero is %f\n", zero);
   for (i = 1; i <= looplen; ++i) {
-    val /= zero;
-    printf ("val=%f\n", val);
+    val *= zero;
   }
 
   if (GPTLstop (string) < 0)

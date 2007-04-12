@@ -42,7 +42,8 @@ static bool disabled = false;    /* Timers disabled? */
 static bool initialized = false; /* GPTLinitialize has been called */
 static bool dousepapi = false;   /* saves a function call if stays false */
 static bool verbose = true;      /* output verbosity */
-static bool parentchild = false; /* retain parent/child relationships when printing (more expensive) */
+static bool parentchild = true;  /* retain parent/child relationships when printing (more expensive) */
+static bool percent = true;
 
 static time_t ref_gettimeofday = -1; /* ref start point for gettimeofday */
 static time_t ref_clock_gettime = -1;/* ref start point for clock_gettime */
@@ -189,6 +190,11 @@ int GPTLsetoption (const int option,  /* option */
     parentchild = (bool) val; 
     if (verbose)
       printf ("GPTLsetoption: set parentchild to %d\n", val);
+    return 0;
+  case GPTLpercent: 
+    percent = (bool) val; 
+    if (verbose)
+      printf ("GPTLsetoption: set percent to %d\n", val);
     return 0;
   default:
     break;
@@ -876,6 +882,8 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
       fprintf (fp, "%s", cpustats.str);
     if (wallstats.enabled) {
       fprintf (fp, "%s", wallstats.str);
+      if (percent)
+	fprintf (fp, "%% of %5s ", timers[0]->name);
       if (overheadstats.enabled)
 	fprintf (fp, "%s", overheadstats.str);
     }
@@ -1045,6 +1053,7 @@ static void printstats (const Timer *timer,     /* timer to print */
   float elapse;        /* elapsed time */
   float wallmax;       /* max wall time */
   float wallmin;       /* min wall time */
+  float ratio;         /* percentage calc */
 
   if ((ticks_per_sec = sysconf (_SC_CLK_TCK)) == -1)
     (void) GPTLerror ("printstats: token _SC_CLK_TCK is not defined\n");
@@ -1099,6 +1108,13 @@ static void printstats (const Timer *timer,     /* timer to print */
     wallmin = timer->wall.min;
     fprintf (fp, "%9.3f %9.3f %9.3f ", elapse, wallmax, wallmin);
 
+    if (percent) {
+      ratio = 0.;
+      if (timers[0]->wall.accum > 0.)
+	ratio = (timer->wall.accum * 100.) / timers[0]->wall.accum;
+      fprintf (fp, " %9.2f ", ratio);
+    }
+
     /*
     ** Factor of 2 is because there are 2 utr calls per start/stop pair.
     */
@@ -1109,7 +1125,7 @@ static void printstats (const Timer *timer,     /* timer to print */
   }
 
 #ifdef HAVE_PAPI
-  GPTL_PAPIpr (fp, &timer->aux, t, timer->count, overheadstats.enabled);
+  GPTL_PAPIpr (fp, &timer->aux, t, timer->count, timer->wall.accum, overheadstats.enabled);
 #endif
 
   fprintf (fp, "\n");
