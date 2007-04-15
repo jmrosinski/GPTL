@@ -141,8 +141,8 @@ static char papiname[PAPI_MAX_STR_LEN];  /* returned from PAPI_event_code_to_nam
 static const int BADCOUNT = -999999;     /* Set counters to this when they are bad */
 static int GPTLoverheadindx = -1;        /* index into counters array */
 static bool is_multiplexed = false;      /* whether multiplexed (always start false)*/
-static bool narrowprint = false;         /* only use 8 digits not 16 for counter prints */
-static bool persec = true;
+static bool narrowprint = true;          /* only use 8 digits not 16 for counter prints */
+static bool persec = true;               /* print PAPI stats per second */
 const static bool enable_multiplexing = true; /* whether to try multiplexing */
 
 /* Function prototypes */

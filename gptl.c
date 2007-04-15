@@ -43,7 +43,7 @@ static bool initialized = false; /* GPTLinitialize has been called */
 static bool dousepapi = false;   /* saves a function call if stays false */
 static bool verbose = true;      /* output verbosity */
 static bool parentchild = true;  /* retain parent/child relationships when printing (more expensive) */
-static bool percent = true;
+static bool percent = true;      /* print wallclock also as percent of 1st timers[0] */
 
 static time_t ref_gettimeofday = -1; /* ref start point for gettimeofday */
 static time_t ref_clock_gettime = -1;/* ref start point for clock_gettime */
