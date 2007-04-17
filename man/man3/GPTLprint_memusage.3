@@ -1,4 +1,4 @@
-.\" $Id: GPTLprint_memusage.3,v 1.1 2007-02-20 22:39:19 rosinski Exp $
+.\" $Id: GPTLprint_memusage.3,v 1.2 2007-04-17 20:09:03 rosinski Exp $
 .TH GPTLprint_memusage 3 "February, 2007" "GPTL"
 
 .SH NAME
@@ -6,13 +6,13 @@ GPTLprint_memusage \- Print current memory usage info
 
 .SH SYNOPSIS
 .B C Interface:
-
-.BI "int\ GPTLprint_memusage (const char *"str");"
-
+.nf
+int GPTLprint_memusage (const char *str);
 .fi
-.B Fortran Interface:
 
-.BI "integer gptlprint_memusage (character(len=*) "str");"
+.B Fortran Interface:
+.nf
+integer gptlprint_memusage (character(len=*) str)
 .fi
 
 .SH DESCRIPTION
@@ -28,8 +28,7 @@ as a tag to identify where in the code the call was made.
 None
 
 .SH RETURN VALUE
-On success, this function return
-.B 0.
+On success, this function returns 0.
 On error, -1 is returned.
 
 .SH EXAMPLES

@@ -1,31 +1,32 @@
-.\" $Id: GPTLfinalize.3,v 1.1 2007-02-20 22:39:18 rosinski Exp $
-.TH GPTfinalize 3 "February, 2007" "GPT"
+.\" $Id: GPTLfinalize.3,v 1.2 2007-04-17 20:09:03 rosinski Exp $
+.TH GPTfinalize 3 "February, 2007" "GPTL"
 
 .SH NAME
 GPTLfinalize \- Finalize the GPTL environment (free memory, etc).
 
 .SH SYNOPSIS
 .B C Interface:
-
-.BI "int\ GPTLfinalize (void);"
-
+.nf
+int GPTLfinalize (void);
 .fi
-.B Fortran Interface:
 
-.BI "integer gptfinalize ()"
+.B Fortran Interface:
+.nf
+integer gptfinalize ()
 .fi
 
 .SH DESCRIPTION
-.B GPTLfinalize
 Finalizes the GPTL environment.  All internally allocated space is freed.
 
 .SH RESTRICTIONS
 This routine must be called only by the master thread. Further use of the
-library after GPTLfinalize requires another invocation of GPTLinitialize. 
+library after
+.B GPTLfinalize()
+requires another invocation of
+.B GPTLinitialize()
 
 .SH RETURN VALUES
-On success, this function returns
-.B 0.
+On success, this function returns 0.
 On error, a negative error code is returned and a descriptive message
 printed. 
 
@@ -41,7 +42,8 @@ if (GPTLfinalize () != 0)
 
 .SH BUGS
 It is not adequate to call this function and then subsequently invoke
-GPTLinitialize again. It should be but the code isn't there yet.
+.B GPTLinitialize()
+again. It should be but the code isn't there yet.
 
 .SH SEE ALSO
 .BR GPTLinitialize "(3)" 

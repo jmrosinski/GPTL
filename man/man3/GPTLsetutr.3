@@ -1,32 +1,32 @@
-.\" $Id: GPTLsetutr.3,v 1.1 2007-02-20 22:39:19 rosinski Exp $
-.TH GPTsetutr 3 "February, 2007" "GPT"
+.\" $Id: GPTLsetutr.3,v 1.2 2007-04-17 20:09:03 rosinski Exp $
+.TH GPTLsetutr 3 "February, 2007" "GPTL"
 
 .SH NAME
 GPTLsetutr \- Choose a different underlying timing routine than the default.
 
 .SH SYNOPSIS
 .B C Interface:
-
 .nf
-.B #include <gptl.h>
-
-.BI "int\ GPTLsetutr (const int "routine");"
-
+#include <gptl.h>
+int GPTLsetutr (const int routine);
 .fi
+
 .B Fortran Interface:
-
 .nf
-.B #include <gptl.inc>
-
-.BI "integer gptlsetutr (integer " routine ")"
+#include <gptl.inc>
+integer gptlsetutr (integer routine)
 .fi
 
 .SH DESCRIPTION
-.B GPTLsetutr
 Sets the underlying timing routine to one of the supported
-values. PAPI_get_real_usec (via GPTLpapitime) is used by default, and this is
-likely to be the most efficient. So changing the routine to, for example,
-MPI_Wtime, probably will not be any more efficient. See gptl.h (or gptl.inc
+values. On SiCortex systems, 
+.B PAPI_get_real_usec()
+(via GPTLpapitime) is used by default. On other machines, 
+.B gettimeofday() 
+is the default. See
+.B gptl.h
+(or
+.B gptl.inc
 for Fortran) for the list of supported underlying timing routines.
 
 .SH ARGUMENTS
@@ -38,8 +38,7 @@ Any calls to this routine must be done prior to GPTLinitialize. It should be
 called from an unthreaded region.
 
 .SH RETURN VALUES
-On success, this function returns
-.B 0.
+On success, this function returns 0.
 On error, a negative error code is returned and a descriptive message
 printed. 
 

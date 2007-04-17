@@ -1,4 +1,4 @@
-.\" $Id: GPTLsetoption.3,v 1.1 2007-02-20 22:39:19 rosinski Exp $
+.\" $Id: GPTLsetoption.3,v 1.2 2007-04-17 20:09:03 rosinski Exp $
 .TH GPTLsetoption 3 "February, 2007" "GPTL"
 
 .SH NAME
@@ -6,31 +6,34 @@ GPTLsetoption \- Enable or disable a GPTL (or PAPI if available) option.
 
 .SH SYNOPSIS
 .B C Interface:
-
 .nf
-.B #include <gptl.h>
-
-.BI "int\ GPTLsetoption (const int option, const int val);"
-
+#include <gptl.h>
+int GPTLsetoption (const int option, const int val);
 .fi
+
 .B Fortran Interface:
-
 .nf
-.B #include <gptl.inc>
-.B #include <fpapi.h> (for PAPI options if PAPI support is enabled)
-
-.BI "integer gptlsetoption (integer " option ", integer " val ")"
+#include <gptl.inc>
+#include <fpapi.h> (for PAPI options if PAPI support is enabled)
+integer gptlsetoption (integer option, integer val)
 .fi
 
 .SH DESCRIPTION
-.B GPTLsetoption
 enables or disables an option (e.g. gathering CPU stats, or enabling a PAPI
-option such as PAPI_FP_OPS).  This function MUST be called BEFORE GPTLinitialize.
+option such as PAPI_FP_OPS).  This function MUST be called BEFORE
+.B GPTLinitialize().
 
 .SH ARGUMENTS
 .I "option"
 --  an integer specifying the option to be enabled or disabled.  Available
-options are defined in gptl.h (gptl.inc for Fortran).  And in papi.h (fpapi.h
+options are defined in
+.B gptl.h
+(
+.B gptl.inc
+for Fortran).  And in 
+.B papi.h
+(
+.B fpapi.h
 for Fortran) if PAPI support is enabled.
 .BR
 .LP
@@ -44,8 +47,7 @@ Zero or more invocations of this function must be made prior to
 GPTLinitialize. It cannot be called after GPTLinitialize.
 
 .SH RETURN VALUES
-On success, this function returns
-.B 0.
+On success, this function returns 0.
 On error, a negative error code is returned and a descriptive message
 printed. 
 

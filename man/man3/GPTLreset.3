@@ -1,4 +1,4 @@
-.\" $Id: GPTLreset.3,v 1.1 2007-02-20 22:39:19 rosinski Exp $
+.\" $Id: GPTLreset.3,v 1.2 2007-04-17 20:09:03 rosinski Exp $
 .TH GPTLreset 3 "February, 2007" "GPTL"
 
 .SH NAME
@@ -8,26 +8,24 @@ wallclock time) can be reset.
 
 .SH SYNOPSIS
 .B C Interface:
-
-.BI "int\ GPTLreset (void);"
-
+.nf
+int GPTLreset (void);
 .fi
-.B Fortran Interface:
 
-.BI "integer gptlreset ()"
+.B Fortran Interface:
+.nf
+integer gptlreset ()
 .fi
 
 .SH DESCRIPTION
-.B GPTLreset
 Reset all timers (except PAPI counters) to zero.  
 
 .SH RESTRICTIONS
-GPTLinitialize must have been called. This function must be
-called by the master thread only.
+.B GPTLinitialize()
+must have been called. This function must be called by the master thread only.
 
 .SH RETURN VALUES
-On success, this function returns
-.B 0.
+On success, this function returns 0.
 On error, a negative error code is returned and a descriptive message
 printed. 
 

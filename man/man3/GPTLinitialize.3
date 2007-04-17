@@ -1,32 +1,36 @@
-.\" $Id: GPTLinitialize.3,v 1.1 2007-02-20 22:39:18 rosinski Exp $
-.TH GPTLinitialize 3 "November, 2004" "GPTL"
+.\" $Id: GPTLinitialize.3,v 1.2 2007-04-17 20:09:03 rosinski Exp $
+.TH GPTLinitialize 3 "February, 2007" "GPTL"
 
 .SH NAME
-GPTLinitialize \- Initialize GPTL to allow subsequent calls to GPTLstart and GPTLstop.
+GPTLinitialize \- Initialize the GPTL library.
 
 .SH SYNOPSIS
 .B C Interface:
-
-.BI "int\ GPTLinitialize (void);"
-
+.nf
+int GPTLinitialize (void);
 .fi
-.B Fortran Interface:
 
-.BI "integer gptinitialize ()"
+.B Fortran Interface:
+.nf
+integer gptinitialize ()
 .fi
 
 .SH DESCRIPTION
-.B GPTLinitialize
-Initializes the GPTL library for subsequent calls to GPTLstart and GPTLstop.
+Initializes the GPTL library.
 
 .SH RESTRICTIONS
-This function must be called after all calls to GPTLsetoption and before all
-calls to GPTLstart and GPTLstop. There must be only one call to this routine,
-so it is better to invoke it from an unthreaded region.
+This function must be called after all calls to
+.B GPTLsetoption()
+and before all
+calls to
+.B GPTLstart()
+and
+.B GPTLstop().
+There must be only one call to this routine, so it is better to invoke it
+from an unthreaded region.
 
 .SH RETURN VALUE
-On success, this function returns
-.B 0.
+On success, this function returns 0.
 On error, a negative error code is returned and a descriptive message
 printed. 
 

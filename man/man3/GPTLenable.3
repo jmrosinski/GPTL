@@ -1,38 +1,45 @@
-.\" $Id: GPTLenable.3,v 1.1 2007-02-20 22:39:18 rosinski Exp $
+.\" $Id: GPTLenable.3,v 1.2 2007-04-17 20:09:03 rosinski Exp $
 .TH GPTLenable 3 "February, 2007" "GPTL"
 
 .SH NAME
+.nf
 GPTLenable \- Enable timer start/stop calls
 GPTLdisable \- Disable timer start/stop calls
+.fi
 
 .SH SYNOPSIS
 .B C Interface:
-
-.BI "int\ GPTLenable (void);"
-.BI "int\ GPTLdisable (void);"
-
+.nf
+int GPTLenable (void);
+int GPTLdisable (void);
 .fi
-.B Fortran Interface:
 
-.BI "integer gptlenable ()"
-.BI "integer gptldisable ()"
+.B Fortran Interface:
+.nf
+integer gptlenable ()
+integer gptldisable ()
 .fi
 
 .SH DESCRIPTION
-.B GPTLenable
-Subsequent calls to GPTLstart and GPTLstop will be recognized.
-.B name.
+.B GPTLenable():
+Subsequent calls to
+.B GPTLstart()
+and
+.B GPTLstop()
+will be recognized. This is the initial state of the GPTL library.
 
-.B GPTLdisable
-Subsequent calls to GPTLstart and GPTLstop will be ignored.
-.B name.
+.B GPTLdisable():
+Subsequent calls to
+.B GPTLstart()
+and
+.B GPTLstop()
+will be ignored.
 
 .SH RESTRICTIONS
 None.
 
 .SH RETURN VALUES
-On success, these functions return
-.B 0.
+On success, these functions return 0.
 On error, a negative error code is returned and a descriptive message
 printed. 
 

@@ -1,31 +1,31 @@
-.\" $Id: GPTLstart.3,v 1.1 2007-02-20 22:39:19 rosinski Exp $
+.\" $Id: GPTLstart.3,v 1.2 2007-04-17 20:09:03 rosinski Exp $
 .TH GPTLstart 3 "February, 2007" "GPTL"
 
 .SH NAME
 GPTLstart \- Start a timer
+.TP
 GPTLstop \- Stop a timer
 
 .SH SYNOPSIS
 .B C Interface:
-
-.BI "int\ GPTLstart (const char *"name");"
-.BI "int\ GPTLstop (const char *"name");"
-
+.nf
+int GPTLstart (const char *name);
+int GPTLstop (const char *name);
 .fi
-.B Fortran Interface:
 
-.BI "integer gptlstart (character(len=*) "name")"
-.BI "integer gptlstop (character(len=*) "name")"
+.B Fortran Interface:
+.nf
+integer gptlstart (character(len=*) name)
+integer gptlstop (character(len=*) name)
 .fi
 
 .SH DESCRIPTION
-.B GPTLstart
+.B GPTLstart()
 starts a timer defined by
-.B name.
-
-.B GPTLstop
+.I name.
+.B GPTLstop()
 stops a timer defined by
-.B name.
+.I name.
 
 .SH ARGUMENTS
 .I name
@@ -35,14 +35,17 @@ significant. This limit can be modified in the GPTL library code via the
 of MAX_CHARS.  Longer names are truncated.
 
 .SH RESTRICTIONS
-GPTLinitialize must have been called. For GPTLstop, a previous call to
-GPTLstart with the same
-.B name
+.B GPTLinitialize()
+must have been called. For 
+.B GPTLstop()
+, a previous call to
+.B GPTLstart()
+with the same
+.I name
 must have been made.
 
 .SH RETURN VALUE
-On success, these functions return
-.B 0.
+On success, these functions return 0.
 On error, a negative error code is returned and a descriptive message
 printed. 
 
