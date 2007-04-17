@@ -861,6 +861,8 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
   fprintf (fp, "embedded in the wallclock (and/or PAPI counter) stats for each timer\n\n");
   fprintf (fp, "An asterisk in column 1 below means that timer had multiple indentation\n");
   fprintf (fp, "levels. Only the first is printed, though printed timing info is complete.\n\n");
+  fprintf (fp, "If a \'%% of\' field is present, it is w.r.t. the first timer for thread 0.\n");
+  fprintf (fp, "If a \'e6 per sec\' field is present, it is in millions of PAPI counts per sec.\n\n");
 
   sum = (float *) GPTLallocate (GPTLnthreads * sizeof (float));
   
@@ -943,6 +945,8 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
       fprintf (fp, "%s", cpustats.str);
     if (wallstats.enabled) {
       fprintf (fp, "%s", wallstats.str);
+      if (percent)
+	fprintf (fp, "%% of %5s ", timers[0]->name);
       if (overheadstats.enabled)
 	fprintf (fp, "%s", overheadstats.str);
     }
