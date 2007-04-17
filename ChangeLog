@@ -1,3 +1,5 @@
+gptl2_11: Man pages. Default narrowprint to true. Fix minor formatting
+	  bug in GPTLpr.
 gptl2_10: Add GPTLpercent (of 1st timers[0]), and GPTLpersec (for PAPI).
 	  Add timingModule.F90
 gptl2_9: Update camgptl.inc to match gptl.inc (forgot in gptl2_8)
