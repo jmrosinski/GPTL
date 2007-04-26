@@ -3,8 +3,8 @@ FFLAGS      = @PAPIPREP@ @FORTDEFS@ @FFLAGS@ @BITFLAGS@ @FTHREADFLAGS@
 LDFLAGS     = @BITFLAGS@ @FTHREADFLAGS@ -L.. -lgptl @LDFLAGS@ @LIBS@
 CAMLDFLAGS  = @BITFLAGS@ @FTHREADFLAGS@ -L.. -lcamgptl @LDFLAGS@ @LIBS@
 
-OBJS = errtest.o papiomptest.o stride.o utrtest.o
-EXES = errtest   papiomptest   stride   utrtest
+OBJS = errtest.o papiomptest.o stride.o ugex.o utrtest.o
+EXES = errtest   papiomptest   stride   ugex   utrtest
 CAMOBJ = camtest.o
 CAMEXE = camtest
 
@@ -24,6 +24,9 @@ stride: stride.o
 
 camtest: camtest.o
 	$(FC) $(FFLAGS) -o $@ camtest.o $(CAMLDFLAGS)
+
+ugex: ugex.o
+	$(FC) $(FFLAGS) -o $@ ugex.o $(LDFLAGS)
 
 utrtest: utrtest.o
 	$(FC) $(FFLAGS) -o $@ utrtest.o $(LDFLAGS)
