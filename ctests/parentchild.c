@@ -6,7 +6,6 @@
 
 int main(int argc, char **argv)
 {
-  int niter = 1000;
   int iter;
 
   GPTLsetoption (GPTLcpu, 0);

@@ -1,17 +1,14 @@
 FC          = @F77@
 FFLAGS      = @PAPIPREP@ @FORTDEFS@ @FFLAGS@ @BITFLAGS@ @FTHREADFLAGS@
 LDFLAGS     = @BITFLAGS@ @FTHREADFLAGS@ -L.. -lgptl @LDFLAGS@ @LIBS@
-CAMLDFLAGS  = @BITFLAGS@ @FTHREADFLAGS@ -L.. -lcamgptl @LDFLAGS@ @LIBS@
 
 OBJS = errtest.o papiomptest.o stride.o ugex.o utrtest.o
 EXES = errtest   papiomptest   stride   ugex   utrtest
-CAMOBJ = camtest.o
-CAMEXE = camtest
 
-all: $(EXES) $(CAMEXE)
+all: $(EXES)
 
 clean:
-	rm -f $(OBJS) $(CAMOBJ) $(EXES) $(CAMEXE)
+	rm -f $(OBJS) $(EXES)
 
 errtest: errtest.o
 	$(FC) $(FFLAGS) -o $@ errtest.o $(LDFLAGS)
@@ -21,9 +18,6 @@ papiomptest: papiomptest.o
 
 stride: stride.o
 	$(FC) $(FFLAGS) -o $@ stride.o $(LDFLAGS)
-
-camtest: camtest.o
-	$(FC) $(FFLAGS) -o $@ camtest.o $(CAMLDFLAGS)
 
 ugex: ugex.o
 	$(FC) $(FFLAGS) -o $@ ugex.o $(LDFLAGS)

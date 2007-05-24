@@ -50,7 +50,6 @@ int main (int argc, char **argv)
   int resultlen;              /* length of processor name */
   int ppnloc;                 /* # procs on this node */
   int nnode;                  /* # nodes */
-  int code;
 
   double *sendbuf;            /* send buffer for MPI_Sendrecv */
   double *recvbuf;            /* recv buffer for MPI_Sendrecv */
@@ -178,7 +177,7 @@ int main (int argc, char **argv)
       } else {
 	printf ("iam=%d unexpectedly got same node for sendto=%d recvfm=%d\n",
 		iam, sendto, recvfm);
-	ret = MPI_Abort (MPI_COMM_WORLD, code);
+	ret = MPI_Abort (MPI_COMM_WORLD, -1);
       }
     }
 
@@ -197,7 +196,7 @@ int main (int argc, char **argv)
     } else {
       printf ("iam=%d unexpectedly got differet node for sendto=%d recvfm=%d\n",
 	      iam, sendto, recvfm);
-      ret = MPI_Abort (MPI_COMM_WORLD, code);
+      ret = MPI_Abort (MPI_COMM_WORLD, -1);
     }
   }
 
@@ -260,7 +259,6 @@ double chkresults (char *label,
   int isave;
   int ret;
   int i;
-  int code;
 
   double firstdiff;
   double expect;              /* expected value */
@@ -306,7 +304,7 @@ double chkresults (char *label,
     printf ("iter %d task %d worst diff expected %f got %f at i=%d\n", 
 	    iter, iam, expectsave, recvbuf[isave], isave);
     printf ("    First diff exceeding tolerance is %f at i=%d\n", firstdiff, ifirst);
-    ret = MPI_Abort (MPI_COMM_WORLD, code);
+    ret = MPI_Abort (MPI_COMM_WORLD, -1);
     exit (1);
   }
   
