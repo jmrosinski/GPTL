@@ -14,7 +14,7 @@ AR       = @AR@
 all: $(LIBNAME) ctests/all ftests/all
 
 $(LIBNAME): $(OBJS)
-	$(AR) @ARFLAGS@ $@ $(OBJS)
+	ar @ARFLAGS@ $@ $(OBJS)
 	rm -f ctests/*.o ftests/*.o
 
 install: $(LIBNAME)
