@@ -532,15 +532,15 @@ int GPTL_PAPIstop (const int t,         /* thread number */
   
   /* 
   ** Accumulate the difference since timer start in aux.
-  ** If negative accumulation has occurred (unfortunately this can and does
-  ** happen, especially on AIX), store a flag value (BADCOUNT)
+  ** Negative accumulation can happen when multiplexing is enabled, so don't
+  ** set count to BADCOUNT in that case.
   */
 
   for (n = 0; n < nevents; n++) {
     delta = papicounters[t][n] - aux->last[n];
-    if (delta < 0)
+    if ( ! is_multiplexed && delta < 0)
       aux->accum[n] = BADCOUNT;
-    else if (aux->accum[n] != BADCOUNT)
+    else
       aux->accum[n] += delta;
   }
   return 0;
