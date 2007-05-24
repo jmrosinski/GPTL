@@ -1,7 +1,7 @@
       program ugex
       implicit none
 
-#include "gptl.inc"
+#include "../gptl.inc"
 #include "f90papi.h"
 
       integer, parameter :: nompiter = 128 ! iteration count for threaded loop

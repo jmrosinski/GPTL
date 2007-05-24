@@ -178,6 +178,9 @@ AC_C_INLINE
 dnl Checks for library functions.
 AC_FUNC_VPRINTF
 
+dnl Checks for AR
+AC_CHECK_PROG(AR,ar)
+
 AC_SUBST(FDEFS)
 AC_SUBST(THREADDEFS)
 AC_SUBST(THREADFLAGS)

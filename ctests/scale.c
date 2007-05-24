@@ -130,7 +130,7 @@ int main (int argc, char **argv)
 
   GPTLsetoption (GPTLverbose, 0);
 #ifdef HAVE_PAPI
-  GPTLsetoption (PAPI_FP_OPS, 1);
+//  GPTLsetoption (PAPI_FP_OPS, 1);
 #endif
 
   /*
