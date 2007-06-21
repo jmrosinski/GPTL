@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.40 2007-04-12 18:31:28 rosinski Exp $
+$Id: private.h,v 1.41 2007-06-21 20:01:19 rosinski Exp $
 */
 
 #include <stdio.h>
@@ -84,7 +84,7 @@ extern int get_thread_num (int *, int *);      /* determine thread number */
 
 #ifdef HAVE_PAPI
 extern int GPTL_PAPIsetoption (const int, const int);
-extern int GPTL_PAPIinitialize (const int);
+extern int GPTL_PAPIinitialize (const int, const bool);
 extern int GPTL_PAPIstart (const int, Papistats *);
 extern int GPTL_PAPIstop (const int, Papistats *);
 extern void GPTL_PAPIprstr (FILE *, const bool);

@@ -144,6 +144,7 @@ static bool is_multiplexed = false;      /* whether multiplexed (always start fa
 static bool narrowprint = true;          /* only use 8 digits not 16 for counter prints */
 static bool persec = true;               /* print PAPI stats per second */
 const static bool enable_multiplexing = true; /* whether to try multiplexing */
+static bool verbose = false;             /* output verbosity */
 
 /* Function prototypes */
 
@@ -188,8 +189,11 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
 	propeventlist[nprop].counterstr = papitable[n].counterstr;
 	propeventlist[nprop].prstr      = papitable[n].prstr;
 	propeventlist[nprop].str        = papitable[n].str;
-	printf ("GPTL_PAPIsetoption: will attempt to enable event %s\n", 
-		propeventlist[nprop].str);
+
+	if (verbose)
+	    printf ("GPTL_PAPIsetoption: will attempt to enable event %s\n", 
+		    propeventlist[nprop].str);
+
 	++nprop;
       }
       return 0;
@@ -218,8 +222,10 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
       strcpy (propeventlist[nprop].prstr, papiname);
       strcpy (propeventlist[nprop].str, papiname);
 
-      printf ("GPTL_PAPIsetoption: will attempt to enable event %s\n", 
-	      propeventlist[nprop].str);
+      if (verbose)
+	  printf ("GPTL_PAPIsetoption: will attempt to enable event %s\n", 
+		  propeventlist[nprop].str);
+
       ++nprop;
     }
     return 0;
@@ -253,7 +259,8 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
 ** Return value: 0 (success) or GPTLerror or -1 (failure)
 */
  
-int GPTL_PAPIinitialize (const int maxthreads)  /* number of threads */
+int GPTL_PAPIinitialize (const int maxthreads,     /* number of threads */
+			 const bool verbose_flag)  /* output verbosity */
 {
   int ret;       /* return code */
   int n;         /* loop index */
@@ -261,6 +268,8 @@ int GPTL_PAPIinitialize (const int maxthreads)  /* number of threads */
   int t;         /* thread index */
   int *rc;       /* array of return codes from create_and_start_events */
   bool badret;   /* true if any bad return codes were found */
+
+  verbose = verbose_flag;
 
   /* 
   ** PAPI_library_init needs to be called before ANY other PAPI routine.
@@ -319,7 +328,10 @@ int GPTL_PAPIinitialize (const int maxthreads)  /* number of threads */
 	eventlist[nevents].counterstr = propeventlist[n].counterstr;
 	eventlist[nevents].prstr      = propeventlist[n].prstr;
 	eventlist[nevents].str        = propeventlist[n].str;
-	printf ("GPTL_PAPIinitialize: event %s enabled\n", eventlist[nevents].str);
+	
+	if (verbose)
+	    printf ("GPTL_PAPIinitialize: event %s enabled\n", eventlist[nevents].str);
+
 	++nevents;
       }
     }
@@ -378,12 +390,15 @@ static int create_and_start_events (const int t)  /* thread number */
 
   for (n = 0; n < nevents; n++) {
     if ((ret = PAPI_add_event (EventSet[t], eventlist[n].counter)) != PAPI_OK) {
-      printf ("%s\n", PAPI_strerror (ret));
-      printf ("create_and_start_events: failure adding event:%s\n", 
-	      eventlist[n].str);
+      if (verbose) {
+	  printf ("%s\n", PAPI_strerror (ret));
+	  printf ("create_and_start_events: failure adding event:%s\n", 
+		  eventlist[n].str);
+      }
 
       if (enable_multiplexing) {
-	printf ("Trying multiplexing...\n");
+        if (verbose)
+	  printf ("Trying multiplexing...\n");
 	is_multiplexed = true;
 	break;
       } else

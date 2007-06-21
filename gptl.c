@@ -41,7 +41,7 @@ static int depthlimit  = 99999;  /* max depth for timers (99999 is effectively i
 static bool disabled = false;    /* Timers disabled? */
 static bool initialized = false; /* GPTLinitialize has been called */
 static bool dousepapi = false;   /* saves a function call if stays false */
-static bool verbose = true;      /* output verbosity */
+static bool verbose = false;     /* output verbosity */
 static bool parentchild = true;  /* retain parent/child relationships when printing (more expensive) */
 static bool percent = true;      /* print wallclock also as percent of 1st timers[0] */
 
@@ -290,7 +290,7 @@ int GPTLinitialize (void)
   }
 
 #ifdef HAVE_PAPI
-  if (GPTL_PAPIinitialize (maxthreads) < 0)
+  if (GPTL_PAPIinitialize (maxthreads, verbose) < 0)
     return GPTLerror ("GPTLinitialize: GPTL_PAPIinitialize failure\n");
 #endif
 
@@ -835,6 +835,8 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
 
   if ( ! (fp = fopen (outfile, "w")))
     fp = stderr;
+
+  fprintf (fp, "GPTL V 2.13\n");
 
 #ifdef HAVE_NANOTIME
   fprintf (fp, "Clock rate = %f MHz\n", cpumhz);
