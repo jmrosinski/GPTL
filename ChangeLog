@@ -1,3 +1,6 @@
+gptl2_13: verbose = false by default. Wrap informational printout in 
+	  test on "verbose". Add verbose option to gptl_papi.c
+	  Modified behavior of scale.c
 gptl2_11: Man pages. Default narrowprint to true. Fix minor formatting
 	  bug in GPTLpr.
 gptl2_10: Add GPTLpercent (of 1st timers[0]), and GPTLpersec (for PAPI).
