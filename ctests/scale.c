@@ -7,7 +7,7 @@
 #endif
 
 #include <mpi.h>
-#include "gptl.h"
+#include "../gptl.h"
 
 static int iam, sendto, recvfm;    /* mpi taskids */
 static int nsendrecv = 1024000;    /* default number of doubles for send/receive */
