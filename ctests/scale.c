@@ -29,7 +29,7 @@ int main (int argc, char **argv)
   int niter = 10;             /* default number of repetitions */
   int ntask;                  /* number of mpi tasks */
   int c;                      /* for parsing argv */
-  int i, iter;                /* loop indices */
+  int iter;                   /* loop indices */
   int onflg;                  /* returned by GPTLquery */
   int count;                  /* returned by GPTLquery */
   int taskmax, taskmin;       /* which mpi task caused a max or min */
@@ -50,7 +50,7 @@ int main (int argc, char **argv)
   double sys;                 /* sys CPU time returned by GPTLquery */
   double rdiff;               /* relative difference */
   double diam, diter;         /* double prec. versions of integers */
-  double diampiter, drecvfmpiter; /* double prec. versions of integers */
+  double diampiter;           /* double prec. versions of integers */
   char procname[MPI_MAX_PROCESSOR_NAME];
   char **procnames;
   int resultlen;
@@ -161,7 +161,6 @@ int main (int argc, char **argv)
 
     diter = iter;
     diampiter = diam + diter;
-    drecvfmpiter = drecvfm + diter;
     sendtag = iter;
     recvtag = iter;
 
@@ -228,7 +227,7 @@ int main (int argc, char **argv)
 #ifdef HAVE_PAPI
   if (totfp > 0) {
     rdiff = 100. * (totfp - papicounters[0]) / (double) totfp;
-    printf ("FPops: iam %d expected %d flops got %ld rdiff=%.2f%%\n",
+    printf ("FPops: iam %d expected %ul flops got %ld rdiff=%.2f%%\n",
 	    iam, totfp, (long) papicounters[0], rdiff);
   }
 #endif
