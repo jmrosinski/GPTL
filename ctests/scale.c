@@ -227,7 +227,7 @@ int main (int argc, char **argv)
 #ifdef HAVE_PAPI
   if (totfp > 0) {
     rdiff = 100. * (totfp - papicounters[0]) / (double) totfp;
-    printf ("FPops: iam %d expected %ul flops got %ld rdiff=%.2f%%\n",
+    printf ("FPops: iam %d expected %ld flops got %ld rdiff=%.2f%%\n",
 	    iam, totfp, (long) papicounters[0], rdiff);
   }
 #endif

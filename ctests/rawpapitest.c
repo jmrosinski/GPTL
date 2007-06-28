@@ -17,7 +17,7 @@ typedef struct {
   char *str;
 } Papientry;
 
-#define MAX_AUX 8
+#define MAX_AUX 16
 static Papientry eventlist[MAX_AUX];
 static int nevents = 0;                 /* number of events: initialize to 0 */ 
 static int *EventSet;
