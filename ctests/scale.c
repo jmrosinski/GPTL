@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <unistd.h>  /* getopt */
 #include <stdlib.h>  /* atoi */
+#include <string.h>
 
 #ifdef HAVE_PAPI
 #include "papi.h"
