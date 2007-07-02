@@ -12,11 +12,6 @@
 #include <pthread.h>
 #endif
 
-typedef struct {
-  int counter;
-  char *str;
-} Papientry;
-
 #define MAX_AUX 16
 static Papientry eventlist[MAX_AUX];
 static int nevents = 0;                 /* number of events: initialize to 0 */ 

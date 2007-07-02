@@ -1,5 +1,5 @@
 /*
-$Id: gptl.h,v 1.26 2007-04-12 18:31:28 rosinski Exp $
+$Id: gptl.h,v 1.27 2007-07-02 20:28:28 rosinski Exp $
 */
 #ifndef GPTL_H
 #define GPTL_H
@@ -44,6 +44,7 @@ extern int GPTLstart (const char *);
 extern int GPTLstop (const char *);
 extern int GPTLstamp (double *, double *, double *);
 extern int GPTLpr (const int);
+extern int GPTLpr_mpisummary (int);
 extern int GPTLreset (void);
 extern int GPTLfinalize (void);
 extern int GPTLprint_memusage (const char *);

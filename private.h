@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.41 2007-06-21 20:01:19 rosinski Exp $
+$Id: private.h,v 1.42 2007-07-02 20:28:28 rosinski Exp $
 */
 
 #include <stdio.h>
@@ -46,6 +46,13 @@ typedef struct {
   long long accum_cycles;   /* for overhead computation */
 } Papistats;
   
+typedef struct {
+  int counter;      /* PAPI counter */
+  char *counterstr; /* PAPI counter as string */
+  char *prstr;      /* print string for output timers (16 chars) */
+  char *str;        /* descriptive print string (more descriptive than prstr) */
+} Papientry;
+
 typedef struct TIMER {
   char name[MAX_CHARS+1];   /* timer name (user input) */
 #ifdef HAVE_PAPI
@@ -84,7 +91,7 @@ extern int get_thread_num (int *, int *);      /* determine thread number */
 
 #ifdef HAVE_PAPI
 extern int GPTL_PAPIsetoption (const int, const int);
-extern int GPTL_PAPIinitialize (const int, const bool);
+extern int GPTL_PAPIinitialize (const int, const bool, int *, Papientry *);
 extern int GPTL_PAPIstart (const int, Papistats *);
 extern int GPTL_PAPIstop (const int, Papistats *);
 extern void GPTL_PAPIprstr (FILE *, const bool);

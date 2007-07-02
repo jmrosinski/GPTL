@@ -13,13 +13,6 @@
 
 #include "private.h"
 
-typedef struct {
-  int counter;      /* PAPI counter */
-  char *counterstr; /* PAPI counter as string */
-  char *prstr;      /* print string for output timers (16 chars) */
-  char *str;        /* descriptive print string (more descriptive than prstr) */
-} Papientry;
-
 /* Mapping of PAPI counters to short and long printed strings */
 
 static Papientry papitable [] = {
@@ -260,7 +253,9 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
 */
  
 int GPTL_PAPIinitialize (const int maxthreads,     /* number of threads */
-			 const bool verbose_flag)  /* output verbosity */
+			 const bool verbose_flag,  /* output verbosity */
+			 int *nevents_out,         /* nevents needed by gptl.c */
+			 Papientry *eventlist_out) /* events needed by gptl.c */
 {
   int ret;       /* return code */
   int n;         /* loop index */
@@ -358,6 +353,13 @@ int GPTL_PAPIinitialize (const int maxthreads,     /* number of threads */
       return -1;
   }
 
+  *nevents_out = nevents;
+  for (n = 0; n < nevents; ++n) {
+    eventlist_out[n].counter    = eventlist[n].counter;
+    eventlist_out[n].counterstr = eventlist[n].counterstr;
+    eventlist_out[n].prstr      = eventlist[n].prstr;
+    eventlist_out[n].str        = eventlist[n].str;
+  }
   return 0;
 }
 
@@ -576,7 +578,10 @@ void GPTL_PAPIprstr (FILE *fp,                          /* file descriptor */
   
   if (narrowprint) {
     for (n = 0; n < nevents; n++) {
-      fprintf (fp, "%8.8s ", &eventlist[n].counterstr[5]); /* 5 => lop off "PAPI_" */
+      if (strncmp (eventlist[n].counterstr, "PAPI_", 5) == 0)
+	fprintf (fp, "%8.8s ", &eventlist[n].counterstr[5]); /* 5 => lop off "PAPI_" */
+      else
+	fprintf (fp, "%8.8s ", &eventlist[n].counterstr[0]);
       if (persec)
 	fprintf (fp, "e6 / sec ");
     }
