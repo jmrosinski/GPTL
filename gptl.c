@@ -1405,18 +1405,20 @@ void get_mpistats (Mpistats *mpistats,
   }
   
 #ifdef HAVE_PAPI
-  int n;
-  for (n = 0; n < nevents; ++n) {
-    if (mpistats_slave->papimax[n] > mpistats->papimax[n]) {
-      mpistats->papimax[n]   = mpistats_slave->papimax[n];
-      mpistats->papimax_p[n] = p;
-      mpistats->papimax_t[n] = mpistats_slave->papimax_t[n];
-    }
+  {
+    int n;
+    for (n = 0; n < nevents; ++n) {
+      if (mpistats_slave->papimax[n] > mpistats->papimax[n]) {
+	mpistats->papimax[n]   = mpistats_slave->papimax[n];
+	mpistats->papimax_p[n] = p;
+	mpistats->papimax_t[n] = mpistats_slave->papimax_t[n];
+      }
 
-    if (mpistats_slave->papimin[n] < mpistats->papimin[n] || mpistats->papimin[n] == 0) {
-      mpistats->papimin[n]   = mpistats_slave->papimin[n];
-      mpistats->papimin_p[n] = p;
-      mpistats->papimin_t[n] = mpistats_slave->papimin_t[n];
+      if (mpistats_slave->papimin[n] < mpistats->papimin[n] || mpistats->papimin[n] == 0) {
+	mpistats->papimin[n]   = mpistats_slave->papimin[n];
+	mpistats->papimin_p[n] = p;
+	mpistats->papimin_t[n] = mpistats_slave->papimin_t[n];
+      }
     }
   }
 #endif
