@@ -26,11 +26,6 @@ int main (int argc, char **argv)
 
   extern char *optarg;
 
-  FILE *fd;
-  while ( ! (fd = fopen ("zzz", "r")))
-    sleep (1);
-	  
-  printf ("Done with getchar got %c\n", c);
   (void) MPI_Init (&argc, &argv);
 
   while ((c = getopt (argc, argv, "p:")) != -1) {

@@ -1,3 +1,7 @@
+gptl2_14: Add GPTLpr_mpistats entry point. 
+	  Check string starts with "PAPI_" before lopping off.
+	  Remove "inline" attribute to timing functions--they're probably
+	  not inlined anyway.
 gptl2_13: verbose = false by default. Wrap informational printout in 
 	  test on "verbose". Add verbose option to gptl_papi.c
 	  Modified behavior of scale.c

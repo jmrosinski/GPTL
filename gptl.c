@@ -1194,10 +1194,10 @@ static void add (Timer *tout,
 ** GPTLpr_mpisummary: gather and print summary stats across tasks
 **
 ** Input arguments:
-**   comm: commuicator (e.g. MPI_COMM_WORLD)
+**   comm: commuicator (e.g. MPI_COMM_WORLD). If zero, use MPI_COMM_WORLD
 */
 
-int GPTLpr_mpisummary (const int comm)
+int GPTLpr_mpisummary (int comm)
 {
 #if ( defined HAVE_LIBMPI ) || ( defined HAVE_LIBMPICH )
   int ret;                 /* return code */
@@ -1214,6 +1214,9 @@ int GPTLpr_mpisummary (const int comm)
   MPI_Status status;       /* required by MPI_Recv */
   Timer *ptr;              /* timer */
   FILE *fp;                /* output file */
+
+  if (comm == 0)
+    comm = MPI_COMM_WORLD;
 
   ret = MPI_Comm_rank (comm, &iam);
   ret = MPI_Comm_size (comm, &nproc);
