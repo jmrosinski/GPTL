@@ -127,7 +127,7 @@ int main (int argc, char **argv)
   */
 
 #ifdef HAVE_PAPI
-//  GPTLsetoption (PAPI_FP_OPS, 1);
+/*  GPTLsetoption (PAPI_FP_OPS, 1); */
 #endif
 
   /*
