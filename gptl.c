@@ -860,7 +860,7 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
   if ( ! (fp = fopen (outfile, "w")))
     fp = stderr;
 
-  fprintf (fp, "GPTL $Id: gptl.c,v 1.66 2007-07-30 19:43:29 rosinski Exp $\n");
+  fprintf (fp, "GPTL $Id: gptl.c,v 1.67 2007-07-30 20:05:47 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   fprintf (fp, "Clock rate = %f MHz\n", cpumhz);
@@ -1234,7 +1234,12 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen ("timing.summary", "w")))
       fp = stderr;
 
-    fprintf (fp, "GPTL $Id: gptl.c,v 1.66 2007-07-30 19:43:29 rosinski Exp $\n");
+    fprintf (fp, "GPTL $Id: gptl.c,v 1.67 2007-07-30 20:05:47 rosinski Exp $\n");
+    fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
+#if ( ! defined HAVE_LIBMPI ) && ( ! defined HAVE_LIBMPICH )
+    fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");
+    fprintf (fp, "This is even for MPI codes.\n");
+#endif
 
     /* Print heading */
 
