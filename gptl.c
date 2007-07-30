@@ -860,7 +860,7 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
   if ( ! (fp = fopen (outfile, "w")))
     fp = stderr;
 
-  fprintf (fp, "GPTL V 2.13\n");
+  fprintf (fp, "GPTL $Id: gptl.c,v 1.65 2007-07-30 18:35:18 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   fprintf (fp, "Clock rate = %f MHz\n", cpumhz);
