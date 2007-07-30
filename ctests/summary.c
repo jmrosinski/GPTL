@@ -2,7 +2,9 @@
 #include <stdlib.h>  /* atoi,exit */
 #include <unistd.h>  /* getopt */
 #include <string.h>  /* memset */
+#if ( defined HAVE_LIBMPI ) || ( defined HAVE_LIBMPICH )
 #include <mpi.h>
+#endif
 
 #include "../gptl.h"
 
@@ -10,8 +12,8 @@
 #include <papi.h>
 #endif
 
-static int iam;
-static int nproc;
+static int iam = 0;
+static int nproc = 1;
 static int nthreads;
 
 double sub (int);
@@ -21,12 +23,16 @@ int main (int argc, char **argv)
   int iter;
   int papiopt;
   int c;
+  int comm = 0;
 
   double ret;
 
   extern char *optarg;
 
+#if ( defined HAVE_LIBMPI ) || ( defined HAVE_LIBMPICH )
   (void) MPI_Init (&argc, &argv);
+  comm = MPI_COMM_WORLD;
+#endif
 
   while ((c = getopt (argc, argv, "p:")) != -1) {
     switch (c) {
@@ -54,10 +60,12 @@ int main (int argc, char **argv)
   GPTLinitialize ();
   GPTLstart ("total");
 	 
+#if ( defined HAVE_LIBMPI ) || ( defined HAVE_LIBMPICH )
   ret = MPI_Comm_rank (MPI_COMM_WORLD, &iam);
   ret = MPI_Comm_size (MPI_COMM_WORLD, &nproc);
+#endif
   if (iam == 0) {
-    printf ("Purpose: test behavior of MPI summary stats\n");
+    printf ("Purpose: test behavior of summary stats\n");
     printf ("Include PAPI and OpenMP, respectively, if enabled\n");
   }
   nthreads = omp_get_max_threads ();
@@ -70,13 +78,13 @@ int main (int argc, char **argv)
 
   GPTLstop ("total");
   GPTLpr (iam);
-#if ( defined HAVE_LIBMPI ) || ( defined HAVE_LIBMPICH )
-  GPTLpr_mpisummary (MPI_COMM_WORLD);
-#endif
+  GPTLpr_summary (comm);
   if (GPTLfinalize () < 0)
     exit (6);
 
+#if ( defined HAVE_LIBMPI ) || ( defined HAVE_LIBMPICH )
   MPI_Finalize ();
+#endif
   return 0;
 }
 

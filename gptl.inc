@@ -42,7 +42,7 @@
       integer gptlstop
       integer gptlstamp 
       integer gptlpr
-      integer gptlpr_mpisummary
+      integer gptlpr_summary
       integer gptlreset 
       integer gptlfinalize
       integer gptlget_memusage
@@ -63,7 +63,7 @@
       external gptlstop
       external gptlstamp 
       external gptlpr
-      external gptlpr_mpisummary
+      external gptlpr_summary
       external gptlreset 
       external gptlfinalize
       external gptlget_memusage

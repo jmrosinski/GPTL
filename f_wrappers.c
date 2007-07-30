@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.21 2007-07-02 20:28:28 rosinski Exp $
+** $Id: f_wrappers.c,v 1.22 2007-07-30 19:43:29 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines
 */
@@ -29,7 +29,7 @@
 #define gptlprint_memusage GPTLPRINT_MEMUSAGE
 #define gptl_papiprinttable GPTL_PAPIPRINTTABLE
 #define gptl_papiname2id GPTL_PAPINAME2ID
-#define gptlpr_mpisummary GPTLPR_MPISUMMARY
+#define gptlpr_summary GPTLPR_SUMMARY
 
 #elif ( defined FORTRANUNDERSCORE )
 
@@ -52,7 +52,7 @@
 #define gptlprint_memusage gptlprint_memusage_
 #define gptl_papiprinttable gptl_papiprinttable_
 #define gptl_papiname2id gptl_papiname2id_
-#define gptlpr_mpisummary gptlpr_mpisummary_
+#define gptlpr_summary gptlpr_summary_
 
 #elif ( defined FORTRANDOUBLEUNDERSCORE )
 
@@ -75,7 +75,7 @@
 #define gptlprint_memusage gptlprint_memusage__
 #define gptl_papiprinttable gptl_papiprinttable__
 #define gptl_papiname2id gptl_papiname2id__
-#define gptlpr_mpisummary gptlpr_mpisummary__
+#define gptlpr_summary gptlpr_summary__
 
 #endif
 
@@ -212,7 +212,7 @@ int gptl_papiname2id (const char *name, int nc)
   return GPTL_PAPIname2id (cname);
 }
 
-int gptlpr_mpisummary (int *comm)
+int gptlpr_summary (int *comm)
 {
-  return GPTLpr_mpisummary (*comm);
+  return GPTLpr_summary (*comm);
 }
