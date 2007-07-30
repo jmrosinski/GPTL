@@ -1,5 +1,6 @@
 gptl2_16: Rename GPTLpr_mpistats to GPTLpr_summary. Make it behave
 	  reasonably even when MPI not enabled.
+	  Close print files after writing to them.
 gptl2_14: Add GPTLpr_mpistats entry point. 
 	  Check string starts with "PAPI_" before lopping off.
 	  Remove "inline" attribute to timing functions--they're probably

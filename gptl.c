@@ -860,7 +860,7 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
   if ( ! (fp = fopen (outfile, "w")))
     fp = stderr;
 
-  fprintf (fp, "GPTL $Id: gptl.c,v 1.67 2007-07-30 20:05:47 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.68 2007-07-30 20:29:32 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   fprintf (fp, "Clock rate = %f MHz\n", cpumhz);
@@ -1054,6 +1054,10 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
   }
 
   free (sum);
+
+  if (fclose (fp) != 0)
+    fprintf (stderr, "Attempt to close %s failed\n", outfile);
+
   return 0;
 }
 
@@ -1200,6 +1204,7 @@ static void add (Timer *tout,
 
 int GPTLpr_summary (int comm)
 {
+  const char *outfile = "timing.summary";
   int iam = 0;                     /* MPI rank */
   int n;                           /* index */
   int extraspace;                  /* for padding to length of longest name */
@@ -1231,10 +1236,10 @@ int GPTLpr_summary (int comm)
   */
 
   if (iam == 0) {
-    if ( ! (fp = fopen ("timing.summary", "w")))
+    if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "GPTL $Id: gptl.c,v 1.67 2007-07-30 20:05:47 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.68 2007-07-30 20:29:32 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #if ( ! defined HAVE_LIBMPI ) && ( ! defined HAVE_LIBMPICH )
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");
@@ -1338,6 +1343,8 @@ int GPTLpr_summary (int comm)
     }
 #endif
   }
+  if (iam == 0 && fclose (fp) != 0)
+    fprintf (stderr, "Attempt to close %s failed\n", outfile);
   return 0;
 }
 
