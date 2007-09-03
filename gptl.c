@@ -40,8 +40,8 @@ static int GPTLnthreads= -1;     /* num threads. Init to bad value */
 static int maxthreads  = -1;     /* max threads (=GPTLnthreads for OMP). Init to bad value */
 static int depthlimit  = 99999;  /* max depth for timers (99999 is effectively infinite) */
 static int nevents = 0;          /* number of PAPI events (init to 0) */
-static bool disabled = false;    /* Timers disabled? */
-static bool initialized = false; /* GPTLinitialize has been called */
+static volatile bool disabled = false;    /* Timers disabled? */
+static volatile bool initialized = false; /* GPTLinitialize has been called */
 static bool dousepapi = false;   /* saves a function call if stays false */
 static bool verbose = false;     /* output verbosity */
 static bool parentchild = true;  /* retain parent/child relationships when printing (more expensive) */
@@ -220,6 +220,13 @@ int GPTLsetoption (const int option,  /* option */
     if (verbose)
       printf ("GPTLsetoption: set percent to %d\n", val);
     return 0;
+
+  /* 
+  ** Allow GPTLmultiplex to fall through because it will be handled by 
+  ** GPTL_PAPIsetoption()
+  */
+
+  case GPTLmultiplex:
   default:
     break;
   }
@@ -698,8 +705,7 @@ int GPTLstop (const char *name)               /* timer name */
     ptr->wall.accum += delta;
 
     if (delta < 0.) {
-      printf ("GPTLstop: negative delta=%g reset to 0\n", delta);
-      delta = 0.;
+      printf ("GPTLstop: negative delta=%g\n", delta);
     }
 
     if (ptr->count == 1) {
@@ -838,7 +844,7 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
   int i, ii, n, t;          /* indices */
   unsigned long totcount;   /* total timer invocations */
   unsigned long totrecurse; /* total recursive timer invocations */
-  char outfile[12];         /* name of output file: timing.xxxx */
+  char outfile[14];         /* name of output file: timing.xxxxxx */
   float *sum;               /* sum of overhead values (per thread) */
   float osum;               /* sum of overhead over threads */
   double utr_overhead;      /* overhead of calling underlying timing routine */
@@ -860,7 +866,7 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
   if ( ! (fp = fopen (outfile, "w")))
     fp = stderr;
 
-  fprintf (fp, "$Id: gptl.c,v 1.68 2007-07-30 20:29:32 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.69 2007-09-03 14:59:21 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   fprintf (fp, "Clock rate = %f MHz\n", cpumhz);
@@ -1205,12 +1211,12 @@ static void add (Timer *tout,
 int GPTLpr_summary (int comm)
 {
   const char *outfile = "timing.summary";
-  int iam = 0;                     /* MPI rank */
+  int iam = 0;                     /* MPI rank: default master */
   int n;                           /* index */
   int extraspace;                  /* for padding to length of longest name */
   Summarystats summarystats;       /* stats to be printed */
   Timer *ptr;                      /* timer */
-  FILE *fp;                        /* output file */
+  FILE *fp = 0;                    /* output file */
 
 #if ( defined HAVE_LIBMPI ) || ( defined HAVE_LIBMPICH )
   int nproc;                                /* number of procs in MPI communicator */
@@ -1239,7 +1245,7 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.68 2007-07-30 20:29:32 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.69 2007-09-03 14:59:21 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #if ( ! defined HAVE_LIBMPI ) && ( ! defined HAVE_LIBMPICH )
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");

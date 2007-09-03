@@ -136,7 +136,7 @@ static int GPTLoverheadindx = -1;        /* index into counters array */
 static bool is_multiplexed = false;      /* whether multiplexed (always start false)*/
 static bool narrowprint = true;          /* only use 8 digits not 16 for counter prints */
 static bool persec = true;               /* print PAPI stats per second */
-const static bool enable_multiplexing = true; /* whether to try multiplexing */
+static bool enable_multiplexing = true;  /* whether to try multiplexing */
 static bool verbose = false;             /* output verbosity */
 
 /* Function prototypes */
@@ -227,6 +227,11 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
   /*
   ** Finally, check for option which is not an actual counter
   */
+
+  if (counter == GPTLmultiplex) {
+    enable_multiplexing = (bool) val;
+    return 0;
+  }
 
   if (counter == GPTLnarrowprint) {
     narrowprint = (bool) val;

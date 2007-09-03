@@ -8,6 +8,7 @@
       integer GPTLparentchild
       integer GPTLpercent
       integer GPTLpersec
+      integer GPTLmultiplex
 
       integer GPTLnanotime
       integer GPTLrtc
@@ -26,13 +27,14 @@
       parameter (GPTLparentchild    = 8)
       parameter (GPTLpercent        = 9)
       parameter (GPTLpersec         = 10)
+      parameter (GPTLmultiplex      = 11)
 
-      parameter (GPTLgettimeofday   = 11)
-      parameter (GPTLnanotime       = 12)
-      parameter (GPTLrtc            = 13)
-      parameter (GPTLmpiwtime       = 14)
-      parameter (GPTLclockgettime   = 15)
-      parameter (GPTLpapitime       = 16)
+      parameter (GPTLgettimeofday   = 12)
+      parameter (GPTLnanotime       = 13)
+      parameter (GPTLrtc            = 14)
+      parameter (GPTLmpiwtime       = 15)
+      parameter (GPTLclockgettime   = 16)
+      parameter (GPTLpapitime       = 17)
 
 ! Externals
 

@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.22 2007-07-30 19:43:29 rosinski Exp $
+** $Id: f_wrappers.c,v 1.23 2007-09-03 14:59:21 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines
 */
@@ -204,8 +204,8 @@ void gptl_papiprinttable ()
 
 int gptl_papiname2id (const char *name, int nc)
 {
-  char cname[16+1];
-  int numchars = MIN (nc, 16);
+  char cname[128+1];
+  int numchars = MIN (nc, 128);
 
   strncpy (cname, name, numchars);
   cname[numchars] = '\0';
