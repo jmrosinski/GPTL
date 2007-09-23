@@ -866,7 +866,7 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
   if ( ! (fp = fopen (outfile, "w")))
     fp = stderr;
 
-  fprintf (fp, "$Id: gptl.c,v 1.69 2007-09-03 14:59:21 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.70 2007-09-23 20:39:30 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   fprintf (fp, "Clock rate = %f MHz\n", cpumhz);
@@ -1245,7 +1245,7 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.69 2007-09-03 14:59:21 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.70 2007-09-23 20:39:30 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #if ( ! defined HAVE_LIBMPI ) && ( ! defined HAVE_LIBMPICH )
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");
@@ -1308,6 +1308,7 @@ int GPTLpr_summary (int comm)
 	       summarystats.wallmax, summarystats.wallmax_p, summarystats.wallmax_t, 
 	       summarystats.wallmin, summarystats.wallmin_p, summarystats.wallmin_t);
       for (n = 0; n < nevents; ++n) {
+#ifdef HAVE_PAPI
 	if (summarystats.papimax[n] < 1000000)
 	  fprintf (fp, " %8ld    (%4d %4d)", 
 		   (long) summarystats.papimax[n], summarystats.papimax_p[n], 
@@ -1325,6 +1326,7 @@ int GPTLpr_summary (int comm)
 	  fprintf (fp, " %8.2e    (%4d %4d)", 
 		   (double) summarystats.papimin[n], summarystats.papimin_p[n], 
 		   summarystats.papimin_t[n]);
+#endif
       }
       fprintf (fp, "\n");
     }
