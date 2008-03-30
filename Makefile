@@ -29,7 +29,10 @@ ifeq ($(HAVE_PAPI),yes)
     CFLAGS += -I$(PAPI_INCDIR)
   endif
   ifneq ($(PAPI_LIBDIR),$(null))
-    LDFLAGS += -L$(PAPI_LIBDIR) -l$(PAPI_LIBNAME)
+    LDFLAGS += -L$(PAPI_LIBDIR)
+  endif
+  ifneq ($(PAPI_LIBNAME),$(null))
+    LDFLAGS += -l$(PAPI_LIBNAME)
   endif
 endif
 
