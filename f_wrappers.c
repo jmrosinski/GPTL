@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.23 2007-09-03 14:59:21 rosinski Exp $
+** $Id: f_wrappers.c,v 1.24 2008-03-30 15:01:42 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines
 */
@@ -29,7 +29,6 @@
 #define gptlprint_memusage GPTLPRINT_MEMUSAGE
 #define gptl_papiprinttable GPTL_PAPIPRINTTABLE
 #define gptl_papiname2id GPTL_PAPINAME2ID
-#define gptlpr_summary GPTLPR_SUMMARY
 
 #elif ( defined FORTRANUNDERSCORE )
 
@@ -52,7 +51,6 @@
 #define gptlprint_memusage gptlprint_memusage_
 #define gptl_papiprinttable gptl_papiprinttable_
 #define gptl_papiname2id gptl_papiname2id_
-#define gptlpr_summary gptlpr_summary_
 
 #elif ( defined FORTRANDOUBLEUNDERSCORE )
 
@@ -75,7 +73,6 @@
 #define gptlprint_memusage gptlprint_memusage__
 #define gptl_papiprinttable gptl_papiprinttable__
 #define gptl_papiname2id gptl_papiname2id__
-#define gptlpr_summary gptlpr_summary__
 
 #endif
 
@@ -210,9 +207,4 @@ int gptl_papiname2id (const char *name, int nc)
   strncpy (cname, name, numchars);
   cname[numchars] = '\0';
   return GPTL_PAPIname2id (cname);
-}
-
-int gptlpr_summary (int *comm)
-{
-  return GPTLpr_summary (*comm);
 }

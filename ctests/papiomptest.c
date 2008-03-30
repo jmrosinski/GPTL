@@ -62,7 +62,7 @@ int main (int argc, char **argv)
 
   (void) GPTLsetoption (GPTLabort_on_error, 1);
   (void) GPTLsetoption (GPTLoverhead, 1);
-  (void) GPTLsetoption (GPTLnarrowprint, 1);
+  (void) GPTLsetoption (GPTLnarrowprint, 0);
 
   GPTLinitialize ();
   GPTLstart ("total");

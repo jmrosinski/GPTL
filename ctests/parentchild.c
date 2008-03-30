@@ -32,7 +32,11 @@ int main(int argc, char **argv)
       GPTLstop ("DD:Misplaced_child_of_C");
     }
 
+    GPTLstart ("DDD");
+    GPTLstop ("DDD");
+
     GPTLstop ("C");
+
     GPTLstart ("CC");
     GPTLstop ("CC");
 

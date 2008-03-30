@@ -230,11 +230,15 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
 
   if (counter == GPTLmultiplex) {
     enable_multiplexing = (bool) val;
+    if (verbose)
+      printf ("GPTL_PAPIsetoption: set GPTLmultiplex to %d\n", val);
     return 0;
   }
 
   if (counter == GPTLnarrowprint) {
     narrowprint = (bool) val;
+    if (verbose)
+      printf ("GPTL_PAPIsetoption: set GPTLnarrowprint to %d\n", val);
     return 0;
   }
 
