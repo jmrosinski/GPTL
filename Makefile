@@ -10,6 +10,10 @@ include macros.make
 
 LDFLAGS += $(ABIFLAGS)
 
+ifeq ($(LINUX),yes)
+  CFLAGS += -DLINUX
+endif
+
 ifeq ($(FORTRAN),yes)
  OBJS += f_wrappers.o
  TESTS += ftests/all

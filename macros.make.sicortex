@@ -8,6 +8,9 @@ CFLAGS = -g -O3 -inline -Winline -Wall
 # Set ABI flags for non-default ABIs (e.g. 64-bit addressing)
 ABIFLAGS =
 
+# Linux system or not? Used by get_memusage
+LINUX = yes
+
 # To enable OpenMP threading, set OPENMP=yes and define the compiler flag. Otherwise,
 # set OPENMP=no. OpenMP applications linked with GPTL as built with OPENMP=no will NOT
 # be thread-safe
