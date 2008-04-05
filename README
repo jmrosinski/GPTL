@@ -1,53 +1,39 @@
-GPTL is a general-purpose timing library.  By itself it can gather wallclock
+GPTL is a general-purpose timing library. By itself it can gather wallclock
 and cpu timing statistics for a code instrumented with an aribtrary sequence
 of calls to the pair of routines "GPTLstart" and "GPTLstop" (more details
-below).  It is thread-safe, presuming either OpenMP or pthreads is available.
+below). It is thread-safe, presuming either OpenMP or pthreads is
+available. If the Fortran interface is built, entry point names and the API
+are exactly the same as in C, except that Fortran is case-insensitive.
 
 GPTL also provides hooks into the hardware counters library PAPI
-(http://icl.cs.utk.edu/papi/index.html).  If this option is enabled
-(./configure --enable-papi), the same "GPTLstart" and "GPTLstop" calls can be
-used to provide various low-level hardware counter info, such as total
-cycles, floating point ops, cache misses, and various other performance
-information depending on the target architecture.  PAPI must already be
-installed in order to enable this option.
+(http://icl.cs.utk.edu/papi/index.html). If this option is enabled, the same
+"GPTLstart" and "GPTLstop" calls can be used to provide various low-level
+hardware counter info, such as total cycles, floating point ops, cache
+misses, and various other performance information depending on the target
+architecture. PAPI must already be installed in order to enable this option.
 
 
 Building GPTL
--------- ---
+-------------
 
-The simplest procedure for building GPTL is:
+After untarring the distribution and then doing "cd gptl", construct a
+macros.make file by editing one of the templates provided (currenty there's
+macros.make.linux, and macros.make.sicortex) that is closest to the machine
+you're building the library on. Step-by-step instructions for setting each
+configuration option are embedded in that file. Then:
 
-./configure
-make
-make install
+% make all
+% make install
 
-Some important options to configure are:
-
---enable-papi      Enables support for the PAPI low-level counters library.
---with-papi=<path> Specify path to root of PAPI installation (only useful if
-                   --enable-papi also specified)
---enable-openmp    Enables OpenMP threading support.  This means the
-                   same timer can be called from multiple threads.
---enable-pthreads  Enables pthreads threading support.  OpenMP is preferable
-                   if available, because the pthreads option utilizes an 
-                   arbitrary (but changeable) upper limit on the number of
-                   available threads.  --enable-openmp overrides
-                   --enable-pthreads if both are specified.
---enable-bit64     build 64-bit version of library.  For now this only has an
-                   effect on AIX and IRIX.
---enable-debug     Turn on -g and turn off optimization compiler flags.
---enable-opt       Turn on compiler optimization (recommended).
---prefix=<dir>     For installing GPTL in a non-standard place.
-
-configure also accepts CC= and F77= command line options to specify C and
-Fortran compilers, respectively.
-
-Don't hesitate to edit the Makefile that configure produces if you like.  It
-is quite straightforward.
+In addition to building the library, the "make all" step will build test
+codes in subdirectories ctests/ and (if applicable) ftests/. Currently
+there's not an automated testing procedure. To test the library and see how
+it works, you'll need to "cd" into ctests/ or ftests/ and run the desired
+test executables individually.
 
 
 Using GPTL
------ ---
+----------
 
 Code instrumentation to utilize GPTL involves an arbitrary number of calls to
 GPTLsetoption(), then a single call to GPTLinitialize(), then an arbitrary
@@ -78,7 +64,9 @@ allowed.  The printed results will be indented to indicate the level of
 nesting.
 
 GPTLpr prints the results to a file named timing.<number>, where <number> is
-an input argument to GPTLpr.
+an input argument to GPTLpr. For MPI jobs, it is most convenient to use the
+MPI rank. There is also an entry point GPTLpr_file, which takes a single
+argument which is the output file to write to.
 
 GPTLfinalize can be called to clean up the GPTL environment.  All space
 malloc'ed by the GPTL library will be freed by this call.

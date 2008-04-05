@@ -24,16 +24,19 @@ else
   LDFLAGS += -lpthread
 endif
 
-# For gcc, -Dinline=inline is a no-op. For other C compilers, things like -Dinline=__inline__
-# may be required. Autoconf test AC_C_INLINE can find the right definition.
+# For gcc, -Dinline=inline is a no-op. For other C compilers, things like 
+# -Dinline=__inline__ may be required. Autoconf test AC_C_INLINE can find the 
+# right definition.
 INLINEFLAG  = -Dinline=inline
 
 # To build the Fortran interface, set FORTRAN=yes and define the entries under
 # ifeq ($(FORTRAN),yes). Otherwise, set FORTRAN=no and skip this section.
 FORTRAN = yes
 ifeq ($(FORTRAN),yes)
-# Fortran name mangling: possibilities are: leave UNDERSCORING blank (none),
-# -DFORTRANDOUBLEUNDERSCORE (e.g. g77), and -DFORTRANUNDERSCORE (e.g. gfortran)
+# Fortran name mangling: possibilities are: leave UNDERSCORING blank meaning none
+# (e.g. xlf90), -DFORTRANDOUBLEUNDERSCORE (e.g. g77), and -DFORTRANUNDERSCORE 
+# (e.g. gfortran, pathf95)
+#
 #  UNDERSCORING =
 #  UNDERSCORING = -DFORTRANDOUBLEUNDERSCORE
   UNDERSCORING = -DFORTRANUNDERSCORE
