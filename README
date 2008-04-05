@@ -13,8 +13,8 @@ misses, and various other performance information depending on the target
 architecture. PAPI must already be installed in order to enable this option.
 
 
-Building GPTL
--------------
+Building and installing GPTL
+----------------------------
 
 After untarring the distribution and then doing "cd gptl", construct a
 macros.make file by editing one of the templates provided (currenty there's
@@ -38,6 +38,10 @@ test executables individually.
 Using GPTL
 ----------
 
+C codes issuing GPTL library calls should #include <gptl.h>. Fortran codes
+should #include or Fortran include 'gptl.inc'. Example codes that use the
+library can be found in the subdirectories ctests/ and ftests/.
+
 Code instrumentation to utilize GPTL involves an arbitrary number of calls to
 GPTLsetoption(), then a single call to GPTLinitialize(), then an arbitrary
 sequence of calls to GPTLstart() and GPTLstop(), and finally a call to
@@ -52,7 +56,7 @@ of the form:
 
 GPTLsetoption (PAPI_TOT_CYC, 1)
 
-is required.  The list of available GPTL options is contained in gptl.h, and
+is required. The list of available GPTL options is contained in gptl.h, and
 the list of possible PAPI options is contained in the file papiStdEventDefs.h 
 included with the PAPI distribution.
 
