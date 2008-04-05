@@ -40,16 +40,15 @@ Using GPTL
 
 Code instrumentation to utilize GPTL involves an arbitrary number of calls to
 GPTLsetoption(), then a single call to GPTLinitialize(), then an arbitrary
-sequence of calls to GPTLstart() and GPTLstop(), and finally a call to GPTLpr().
-See the man pages for details of arguments to these functions.  The man pages
-for GPTLstart and GPTLstop give an example complete sequence of GPTL calls to
-instrument a code.  Also, various test codes are built in the tests/
-subdirectory of this distribution.
+sequence of calls to GPTLstart() and GPTLstop(), and finally a call to
+GPTLpr() or GPTLpr_file().  See the man pages for details of arguments to
+these functions.  The man pages for GPTLstart and GPTLstop give an example
+complete sequence of GPTL calls to instrument a code.  Also, various test
+codes are built in the tests/ subdirectory of this distribution.
 
-The purpose of GPTLsetoption is to enable or disable certain types of timing.
-The default is to only gather wallclock timing stats.  If this is the
-desired bahavior then no calls to GPTLsetoption are required.  If for example,
-the PAPI counter for total cycles is also desired, then a call of the form:
+The purpose of GPTLsetoption is to enable or disable various library options.
+For example, the PAPI counter for total cycles is also desired, then a call
+of the form:
 
 GPTLsetoption (PAPI_TOT_CYC, 1)
 
@@ -59,17 +58,17 @@ included with the PAPI distribution.
 
 GPTLinitialize () initializes the GPTL library for subsequent calls to GPTLstart
 and GPTLstop.  This is necessary for threading, and to initialize the PAPI
-library in case support for it was enabled at configure time.
+library in case support for it was requested in macros.make.
 
-There can be an arbitrary number of start/stop pairs before GPTLpr is called
-to print the results.  And an arbitrary amount of nesting of timers is also
-allowed.  The printed results will be indented to indicate the level of
-nesting.
+There can be an arbitrary number of start/stop pairs before GPTLpr() or
+GPTLpr_file() is called to print the results.  And an arbitrary amount of
+nesting of timers is also allowed.  The printed results will be indented to
+indicate the level of nesting.
 
-GPTLpr prints the results to a file named timing.<number>, where <number> is
-an input argument to GPTLpr. For MPI jobs, it is most convenient to use the
-MPI rank. There is also an entry point GPTLpr_file, which takes a single
-argument which is the output file to write to.
+GPTLpr() prints the results to a file named timing.<number>, where <number>
+is an input argument to GPTLpr. For MPI jobs, it is most convenient to use
+the MPI rank. The entry point GPTLpr_file takes a single argument which is
+the output file to write to.
 
-GPTLfinalize can be called to clean up the GPTL environment.  All space
+GPTLfinalize() can be called to clean up the GPTL environment.  All space
 malloc'ed by the GPTL library will be freed by this call.
