@@ -26,7 +26,7 @@ endif
 
 # For gcc, -Dinline=inline is a no-op. For other C compilers, things like 
 # -Dinline=__inline__ may be required. Autoconf test AC_C_INLINE can find the 
-# right definition.
+# right definition. If unsure, try running "./suggestions CC=<your_C_compiler>"
 INLINEFLAG  = -Dinline=inline
 
 # To build the Fortran interface, set FORTRAN=yes and define the entries under

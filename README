@@ -20,7 +20,10 @@ After untarring the distribution and then doing "cd gptl", construct a
 macros.make file by editing one of the templates provided (currenty there's
 macros.make.linux, and macros.make.sicortex) that is closest to the machine
 you're building the library on. Step-by-step instructions for setting each
-configuration option are embedded in that file. Then:
+configuration option are embedded in that file. If unsure of some settings,
+you can run "./suggestions". This is an autoconf "configure" script which has
+been modified to just print suggestions, rather than creating any output
+files. After creating macros.make:
 
 % make all
 % make install
