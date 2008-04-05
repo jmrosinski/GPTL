@@ -186,7 +186,7 @@ int main (int argc, char **argv)
     */
 
     totmem += zerobufs (sendbuf, recvbuf);
-    totfp + fillsendbuf (sendbuf, diampiter);
+    totfp += fillsendbuf (sendbuf, diampiter);
     ret = MPI_Barrier (MPI_COMM_WORLD);
 
     ret = GPTLstart ("Isend_Irecv");
@@ -247,11 +247,11 @@ int main (int argc, char **argv)
 	      "                      aggratemin=%9.3g\n",
 	      rmax, taskmax, rmin, taskmin, aggratemax, aggratemin);
       
-      if (filep = fopen ("FPops_max", "a")) {
+      if ((filep = fopen ("FPops_max", "a"))) {
 	fprintf (filep, "%d %9.3g\n", ntask, aggratemax);
 	(void) fclose (filep);
       }
-      if (filep = fopen ("FPops_min", "a")) {
+      if ((filep = fopen ("FPops_min", "a"))) {
 	fprintf (filep, "%d %9.3g\n", ntask, aggratemin);
 	(void) fclose (filep);
       }
@@ -279,11 +279,11 @@ int main (int argc, char **argv)
 	      "                          aggratemin=%9.3g\n",
 	      rmax, taskmax, rmin, taskmin, aggratemax, aggratemin);
 
-      if (filep = fopen ("MPI_Sendrecv_max", "a")) {
+      if ((filep = fopen ("MPI_Sendrecv_max", "a"))) {
 	fprintf (filep, "%d %9.3g\n", ntask, aggratemax);
 	(void) fclose (filep);
       }
-      if (filep = fopen ("MPI_Sendrecv_min", "a")) {
+      if ((filep = fopen ("MPI_Sendrecv_min", "a"))) {
 	fprintf (filep, "%d %9.3g\n", ntask, aggratemin);
 	(void) fclose (filep);
       }
@@ -311,11 +311,11 @@ int main (int argc, char **argv)
 	      "                         aggratemin=%9.3g\n",
 	      rmax, taskmax, rmin, taskmin, aggratemax, aggratemin);
       
-      if (filep = fopen ("Isend_Irecv_max", "a")) {
+      if ((filep = fopen ("Isend_Irecv_max", "a"))) {
 	fprintf (filep, "%d %9.3g\n", ntask, aggratemax);
 	(void) fclose (filep);
       }
-      if (filep = fopen ("Isend_Irecv_min", "a")) {
+      if ((filep = fopen ("Isend_Irecv_min", "a"))) {
 	fprintf (filep, "%d %9.3g\n", ntask, aggratemin);
 	(void) fclose (filep);
       }
@@ -343,11 +343,11 @@ int main (int argc, char **argv)
 	      "                         aggratemin=%9.3g\n",
 	      rmax, taskmax, rmin, taskmin, aggratemax, aggratemin);
       
-      if (filep = fopen ("Irecv_Isend_max", "a")) {
+      if ((filep = fopen ("Irecv_Isend_max", "a"))) {
 	fprintf (filep, "%d %9.3g\n", ntask, aggratemax);
 	(void) fclose (filep);
       }
-      if (filep = fopen ("Irecv_Isend_min", "a")) {
+      if ((filep = fopen ("Irecv_Isend_min", "a"))) {
 	fprintf (filep, "%d %9.3g\n", ntask, aggratemin);
 	(void) fclose (filep);
       }
@@ -375,11 +375,11 @@ int main (int argc, char **argv)
 	      "                      aggratemin=%9.3g\n",
 	      rmax, taskmax, rmin, taskmin, aggratemax, aggratemin);
       
-      if (filep = fopen ("MemBW_max", "a")) {
+      if ((filep = fopen ("MemBW_max", "a"))) {
 	fprintf (filep, "%d %9.3g\n", ntask, aggratemax);
 	(void) fclose (filep);
       }
-      if (filep = fopen ("MemBW_min", "a")) {
+      if ((filep = fopen ("MemBW_min", "a"))) {
 	fprintf (filep, "%d %9.3g\n", ntask, aggratemin);
 	(void) fclose (filep);
       }
