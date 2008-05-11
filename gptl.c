@@ -1103,7 +1103,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.75 2008-05-11 02:12:44 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.76 2008-05-11 02:22:44 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1753,7 +1753,7 @@ static inline Timer *getentry (const Hashentry *hashtable, /* hash table */
   *indx = 0;
   c = (unsigned char *) name;
   for (i = 0; *c && i < MAX_CHARS; ++c, ++i) {
-    *indx += (*c) << i;
+    *indx += (*c) + i;
   }
 
   *indx %= tablesize;
