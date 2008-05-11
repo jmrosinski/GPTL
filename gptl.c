@@ -863,6 +863,19 @@ int GPTLstop (const char *name)               /* timer name */
   return 0;
 }
 
+/*
+** update_stats: update stats inside ptr
+**
+** Input arguments:
+**   ptr: pointer to timer
+**   tp1: input time stapm
+**   usr: user time
+**   sys: system time
+**   t: thread index
+**
+** Return value: 0 (success) or GPTLerror (failure)
+*/
+
 static inline int update_stats (Timer *ptr, 
 				const double tp1, 
 				const double usr, 
@@ -1090,7 +1103,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.73 2008-05-11 01:25:13 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.74 2008-05-11 01:46:36 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
