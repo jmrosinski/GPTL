@@ -1,10 +1,11 @@
 /*
-** $Id: f_wrappers.c,v 1.24 2008-03-30 15:01:42 rosinski Exp $
+** $Id: f_wrappers.c,v 1.25 2008-05-11 03:11:31 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines
 */
 
 #include <string.h>
+#include <stdlib.h>
 #include "private.h" /* MAX_CHARS, bool */
 #include "gptl.h"    /* function prototypes */
 
@@ -13,6 +14,7 @@
 #define gptlinitialize GPTLINITIALIZE
 #define gptlfinalize GPTLFINALIZE
 #define gptlpr GPTLPR
+#define gptlpr_file GPTLPR_FILE
 #define gptlreset GPTLRESET
 #define gptlstamp GPTLSTAMP
 #define gptlstart GPTLSTART
@@ -35,6 +37,7 @@
 #define gptlinitialize gptlinitialize_
 #define gptlfinalize gptlfinalize_
 #define gptlpr gptlpr_
+#define gptlpr_file gptlpr_file_
 #define gptlreset gptlreset_
 #define gptlstamp gptlstamp_
 #define gptlstart gptlstart_
@@ -57,6 +60,7 @@
 #define gptlinitialize gptlinitialize_
 #define gptlfinalize gptlfinalize_
 #define gptlpr gptlpr_
+#define gptlpr_file gptlpr_file__
 #define gptlreset gptlreset_
 #define gptlstamp gptlstamp_
 #define gptlstart gptlstart_
@@ -89,6 +93,22 @@ int gptlfinalize ()
 int gptlpr (int *procid)
 {
   return GPTLpr (*procid);
+}
+
+int gptlpr_file (char *file, int nc1)
+{
+  char *locfile;
+  int ret;
+
+  if ( ! (locfile = malloc (nc1+1)))
+    return GPTLerror ("gptlpr_file: malloc error\n");
+
+  snprintf (locfile, nc1, "%s", file);
+  locfile[nc1] = '\0';
+
+  ret = GPTLpr_file (*locfile);
+  free (locfile);
+  return ret;
 }
 
 void gptlreset ()
