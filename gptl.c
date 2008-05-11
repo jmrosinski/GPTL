@@ -1103,7 +1103,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.76 2008-05-11 02:22:44 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.77 2008-05-11 02:38:47 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1748,12 +1748,12 @@ static inline Timer *getentry (const Hashentry *hashtable, /* hash table */
   const unsigned char *c;     /* pointer to elements of "name" */
   Timer *ptr = 0;
 
-  /* Generate the hash value by summing values of the chars in "name" */
+  /* Hash value is sum of chars times their position index */
 
   *indx = 0;
   c = (unsigned char *) name;
   for (i = 0; *c && i < MAX_CHARS; ++c, ++i) {
-    *indx += (*c) + i;
+    *indx += (*c) * i;
   }
 
   *indx %= tablesize;
@@ -1899,7 +1899,7 @@ static int init_nanotime ()
 #endif
 }
 
-static double utr_nanotime ()
+static inline double utr_nanotime ()
 {
 #ifdef HAVE_NANOTIME
   double timestamp;
@@ -1928,7 +1928,7 @@ static int init_rtc ()
 #endif
 }
   
-static double utr_rtc ()
+static inline double utr_rtc ()
 {
 #ifdef UNICOSMP
   return _rtc () * ticks2sec;
@@ -1951,7 +1951,7 @@ static int init_mpiwtime ()
 #endif
 }
 
-static double utr_mpiwtime ()
+static inline double utr_mpiwtime ()
 {
 #ifdef HAVE_MPI
   return MPI_Wtime ();
@@ -1977,7 +1977,7 @@ static int init_papitime ()
 #endif
 }
   
-static double utr_papitime ()
+static inline double utr_papitime ()
 {
 #ifdef HAVE_PAPI
   return (PAPI_get_real_usec () - ref_papitime) * 1.e-6;
@@ -2005,7 +2005,7 @@ static int init_clock_gettime ()
 #endif
 }
 
-static double utr_clock_gettime ()
+static inline double utr_clock_gettime ()
 {
 #ifdef HAVE_LIBRT
   struct timespec tp;
@@ -2035,7 +2035,7 @@ static int init_gettimeofday ()
 #endif
 }
 
-static double utr_gettimeofday ()
+static inline double utr_gettimeofday ()
 {
 #ifdef HAVE_GETTIMEOFDAY
   struct timeval tp;
