@@ -888,12 +888,12 @@ static inline int update_stats (Timer *ptr,
   --stackidx[t];
   if (stackidx[t] < -1) {
     stackidx[t] = -1;
-    return GPTLerror ("GPTLstop_instr: tree depth has become negative.\n");
+    return GPTLerror ("update_stats: tree depth has become negative.\n");
   }
 
 #ifdef HAVE_PAPI
   if (dousepapi && GPTL_PAPIstop (t, &ptr->aux) < 0)
-    return GPTLerror ("GPTLstop_instr: error from GPTL_PAPIstop\n");
+    return GPTLerror ("update_stats: error from GPTL_PAPIstop\n");
 #endif
 
   if (wallstats.enabled) {
@@ -927,7 +927,7 @@ static inline int update_stats (Timer *ptr,
 /*
 ** GPTLenable: enable timers
 **
-** Return value: 0 (success)p
+** Return value: 0 (success)
 */
 
 int GPTLenable (void)
@@ -1080,7 +1080,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
     return GPTLerror ("GPTLpr_file: GPTLinitialize() has not been called\n");
 
   if (get_thread_num (&GPTLnthreads, &maxthreads) > 0) 
-    return GPTLerror ("GPTLpr: must only be called by master thread\n");
+    return GPTLerror ("GPTLpr_file: must only be called by master thread\n");
 
   /* 2 is for "/" plus null */
   if (outdir)
@@ -1103,7 +1103,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.74 2008-05-11 01:46:36 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.75 2008-05-11 02:12:44 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1694,6 +1694,18 @@ int GPTLget_regionname (int t,      /* thread number */
   }
   return 0;
 }
+
+/*
+** getentry_instr: find hash table entry and return a pointer to it
+**
+** Input args:
+**   hashtable: the hashtable (array)
+**   self:      input address (from -finstrument-functions)
+** Output args:
+**   indx:      hashtable index
+**
+** Return value: pointer to the entry, or NULL if not found
+*/
 
 static inline Timer *getentry_instr (const Hashentry *hashtable, /* hash table */
 				     void *self,                 /* address */
