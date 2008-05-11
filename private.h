@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.43 2008-05-11 00:50:22 rosinski Exp $
+$Id: private.h,v 1.44 2008-05-11 02:59:57 rosinski Exp $
 */
 
 #include <stdio.h>
@@ -16,7 +16,7 @@ $Id: private.h,v 1.43 2008-05-11 00:50:22 rosinski Exp $
 
 #define STRMATCH(X,Y) (strcmp((X),(Y)) == 0)
 
-/* Maximum allowed stack depath */
+/* Maximum allowed stack depth */
 #define MAX_STACK 128
 
 /* longest timer name allowed (probably safe to just change) */

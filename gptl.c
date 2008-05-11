@@ -34,7 +34,7 @@ static int *max_name_len;        /* max length of timer name */
 static Papientry eventlist[MAX_AUX];     /* list of PAPI events to be counted */
 
 typedef struct {
-  int depth;                     /* depth in calling tree */
+  int val;                       /* depth in calling tree */
   int padding[31];               /* padding is to mitigate false cache sharing */
 } Nofalse; 
 static Nofalse *current_depth;
@@ -288,7 +288,6 @@ int GPTLinitialize (void)
   stackidx      = (int *)        GPTLallocate (maxthreads * sizeof (int));
   timers        = (Timer **)     GPTLallocate (maxthreads * sizeof (Timer *));
   last          = (Timer **)     GPTLallocate (maxthreads * sizeof (Timer *));
-  current_depth = (Nofalse *)    GPTLallocate (maxthreads * sizeof (Nofalse));
   max_depth     = (int *)        GPTLallocate (maxthreads * sizeof (int));
   max_name_len  = (int *)        GPTLallocate (maxthreads * sizeof (int));
   hashtable     = (Hashentry **) GPTLallocate (maxthreads * sizeof (Hashentry *));
@@ -297,7 +296,6 @@ int GPTLinitialize (void)
 
   for (t = 0; t < maxthreads; t++) {
     timers[t] = 0;
-    current_depth[t].depth = 0;
     max_depth[t]     = 0;
     max_name_len[t]  = 0;
     callstack[t] = (Timer **) GPTLallocate (MAX_STACK * sizeof (Timer *));
@@ -370,7 +368,6 @@ int GPTLfinalize (void)
   }
 
   free (timers);
-  free (current_depth);
   free (max_depth);
   free (max_name_len);
   free (hashtable);
@@ -1103,7 +1100,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.77 2008-05-11 02:38:47 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.78 2008-05-11 02:59:57 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
