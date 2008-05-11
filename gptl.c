@@ -395,6 +395,15 @@ int GPTLfinalize (void)
   return 0;
 }
 
+/*
+** GPTLstart_instr: start a timer (auto-instrumented)
+**
+** Input arguments:
+**   self: function address
+**
+** Return value: 0 (success) or GPTLerror (failure)
+*/
+
 int GPTLstart_instr (void *self)
 {
   Timer *ptr = 0;
@@ -543,6 +552,17 @@ int GPTLstart (const char *name)               /* timer name */
   return (0);
 }
 
+/*
+** update_ll_hash: Update linked list and hash table
+**
+** Input arguments:
+**   ptr:  pointer to timer
+**   t:    thread index
+**   indx: hash index
+**
+** Return value: 0 (success) or GPTLerror (failure)
+*/
+
 static inline int update_ll_hash (Timer *ptr, const int t, const int indx)
 {
   int nchars;      /* number of chars */
@@ -577,6 +597,16 @@ static inline int update_ll_hash (Timer *ptr, const int t, const int indx)
   return 0;
 }
 
+/*
+** update_ptr: Update timer contents
+**
+** Input arguments:
+**   ptr:  pointer to timer
+**   t:    thread index
+**
+** Return value: 0 (success) or GPTLerror (failure)
+*/
+
 static inline int update_ptr (Timer *ptr, const int t)
 {
   double tp2;    /* time stamp */
@@ -597,6 +627,17 @@ static inline int update_ptr (Timer *ptr, const int t)
 #endif
   return 0;
 }
+
+/*
+** update_parent: update infor about parent
+**
+** Input arguments:
+**   ptr:  pointer to timer
+**   callstackt: callstack for this thread
+**   stackidxt:  stack index for this thread
+**
+** Return value: 0 (success) or GPTLerror (failure)
+*/
 
 static inline int update_parent (Timer *ptr, Timer **callstackt, int stackidxt) 
 {
@@ -657,6 +698,15 @@ static inline int update_parent (Timer *ptr, Timer **callstackt, int stackidxt)
   }
   return 0;
 }
+
+/*
+** GPTLstop_instr: stop a timer (auto-instrumented)
+**
+** Input arguments:
+**   self: function address
+**
+** Return value: 0 (success) or GPTLerror (failure)
+*/
 
 int GPTLstop_instr (void *self)
 {
@@ -1040,7 +1090,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.72 2008-05-11 00:50:22 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.73 2008-05-11 01:25:13 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
