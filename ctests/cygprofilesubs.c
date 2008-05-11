@@ -1,56 +1,64 @@
 #include <stdio.h>
 
-extern void mult (int, float *);
-extern void add (int, float *);
-extern void multadd (int, float *);
-extern void division (int, float *);
+static int junk;
+extern void callutil10times ();
+extern void callutil100times ();
+extern void util ();
+extern void A ();
+extern void B ();
+extern void C ();
 
 void callsubs (int niter)
 {
-  float zero = 0.;
-
-  mult (niter, &zero);
-  add (niter, &zero);
-  multadd (niter, &zero);
-  division (niter, &zero);
+  printf ("callsubs calling callutil10times\n");
+  callutil10times ();
+  printf ("callsubs calling callutil100times\n");
+  callutil100times ();
+  printf ("callsubs calling A\n");
+  A();
+  printf ("callsubs calling util\n");
+  util ();
 }
 
-void mult (int niter, float *val)
+void callutil10times ()
 {
-  int i;
+  int n;
 
-  printf ("Starting mult\n");
-  for (i = 0; i < niter; i++) {
-    *val *= i;
-  }
+  printf ("callutil10times calling util\n");
+  for (n = 0; n < 10; ++n) 
+    util ();
 }
 
-void add (int niter, float *val)
+void callutil100times ()
 {
-  int i;
+  int n;
 
-  printf ("Starting add\n");
-  for (i = 0; i < niter; i++) {
-    *val += i;
-  }
+  printf ("callutil100times calling util\n");
+  for (n = 0; n < 100; ++n)
+    util ();
 }
 
-void multadd (int niter, float *val)
+void util () 
 {
-  int i;
-
-  printf ("Starting multadd\n");
-  for (i = 0; i < niter; i++) {
-    *val += i*0.1;
-  }
+  junk = 11;
 }
 
-void division (int niter, float *val)
+void A ()
 {
-  int i;
+  printf ("A calling B\n");
+  B ();
+}
 
-  printf ("Starting division\n");
-  for (i = 1; i <= niter; i++) {
-    *val /= i;
-  }
+void B ()
+{
+  printf ("B calling C\n");
+  C ();
+}
+
+void C ()
+{
+  printf ("C calling util\n");
+  util ();
+  printf ("C calling callutil10times\n");
+  callutil10times ();
 }

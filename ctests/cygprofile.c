@@ -20,7 +20,7 @@ int main (int argc, char **argv)
   }
   printf ("Using %d iterations\n", niter);
 
-  GPTLsetoption (GPTLabort_on_error, 1);
+  GPTLsetoption (GPTLabort_on_error, 0);
 
 #ifdef HAVE_PAPI
   GPTLsetoption (PAPI_TOT_CYC, 1);

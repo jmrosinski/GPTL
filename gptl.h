@@ -1,5 +1,5 @@
 /*
-$Id: gptl.h,v 1.30 2008-03-30 15:01:42 rosinski Exp $
+$Id: gptl.h,v 1.31 2008-05-11 00:50:22 rosinski Exp $
 */
 #ifndef GPTL_H
 #define GPTL_H
@@ -41,7 +41,9 @@ typedef enum {
 
 extern int GPTLsetoption (const int, const int);
 extern int GPTLinitialize (void);
+extern int GPTLstart_instr (void *);
 extern int GPTLstart (const char *);
+extern int GPTLstop_instr (void *);
 extern int GPTLstop (const char *);
 extern int GPTLstamp (double *, double *, double *);
 extern int GPTLpr (const int);

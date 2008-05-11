@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.42 2007-07-02 20:28:28 rosinski Exp $
+$Id: private.h,v 1.43 2008-05-11 00:50:22 rosinski Exp $
 */
 
 #include <stdio.h>
@@ -15,6 +15,9 @@ $Id: private.h,v 1.42 2007-07-02 20:28:28 rosinski Exp $
 #endif
 
 #define STRMATCH(X,Y) (strcmp((X),(Y)) == 0)
+
+/* Maximum allowed stack depath */
+#define MAX_STACK 128
 
 /* longest timer name allowed (probably safe to just change) */
 #define MAX_CHARS 31
@@ -62,15 +65,18 @@ typedef struct TIMER {
   Cpustats cpu;             /* cpu stats */
   unsigned long count;      /* number of start/stop calls */
   unsigned long nrecurse;   /* number of recursive start/stop calls */
+  void *address;            /* address of timer: used only by _instr routines */
   struct TIMER *next;       /* next timer in linked list */
-  struct TIMER *prev;       /* previous timer in linked list (if parentchild is true) */
-  struct TIMER **children;  /* array of children (if parentchild is true) */
+  struct TIMER **parent;    /* array of parents */
+  struct TIMER **children;  /* array of children */
+  int *parent_count;        /* array of call counts, one for each parent */
   unsigned int depth;       /* depth in "calling" tree */
   unsigned int recurselvl;  /* recursion level */
   unsigned int max_recurse; /* max recursion level */
-  unsigned int nchildren;   /* number of children (if parentchild is true) */
+  unsigned int nchildren;   /* number of children */
+  unsigned int nparent;     /* number of parents */
+  unsigned int norphan;     /* number of times this timer was an orphan */
   bool onflg;               /* timer currently on or off */
-  bool ambiguous;           /* true => multiple depth levels */
 } Timer;
 
 typedef struct {

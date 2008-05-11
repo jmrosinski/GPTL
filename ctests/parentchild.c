@@ -11,7 +11,6 @@ int main(int argc, char **argv)
   GPTLsetoption (GPTLcpu, 0);
   GPTLsetoption (GPTLwall, 1);
   GPTLsetoption (GPTLabort_on_error, 1);
-  GPTLsetoption (GPTLparentchild, 1);
 
   GPTLinitialize ();
 

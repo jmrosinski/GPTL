@@ -11,7 +11,7 @@ include macros.make
 LDFLAGS += $(ABIFLAGS)
 
 ifeq ($(LINUX),yes)
-  CFLAGS += -DLINUX
+  CFLAGS       += -DLINUX
 endif
 
 ifeq ($(FORTRAN),yes)
@@ -20,17 +20,19 @@ ifeq ($(FORTRAN),yes)
 endif
 
 ifeq ($(OPENMP),yes)
-  CFLAGS   += -DTHREADED_OMP $(COMPFLAG)
+  CFLAGS  += -DTHREADED_OMP $(COMPFLAG)
   LDFLAGS += $(COMPFLAG)
-  FFLAGS += $(FOMPFLAG)
+  FFLAGS  += $(FOMPFLAG)
 endif
 
 CFLAGS += $(INLINEFLAG) $(UNDERSCORING)
 
 ifeq ($(HAVE_PAPI),yes)
-  CFLAGS += -DHAVE_PAPI
+  CFLAGS       += -DHAVE_PAPI
+  CFLAGS_TESTS += -DHAVE_PAPI
   ifneq ($(PAPI_INCDIR),$(null))
-    CFLAGS += -I$(PAPI_INCDIR)
+    CFLAGS       += -I$(PAPI_INCDIR)
+    CFLAGS_TESTS += -I$(PAPI_INCDIR)
   endif
   ifneq ($(PAPI_LIBDIR),$(null))
     LDFLAGS += -L$(PAPI_LIBDIR)
@@ -41,9 +43,11 @@ ifeq ($(HAVE_PAPI),yes)
 endif
 
 ifeq ($(HAVE_MPI),yes)
-  CFLAGS += -DHAVE_MPI
+  CFLAGS       += -DHAVE_MPI
+  CFLAGS_TESTS += -DHAVE_MPI
   ifneq ($(MPI_INCDIR),$(null))
-    CFLAGS += -I$(MPI_INCDIR)
+    CFLAGS       += -I$(MPI_INCDIR)
+    CFLAGS_TESTS += -I$(MPI_INCDIR)
   endif
   ifneq ($(MPI_LIBDIR),$(null))
     LDFLAGS += -L$(MPI_LIBDIR)
@@ -96,7 +100,7 @@ uninstall:
 	rm -f $(MANDIR)/GPTL*
 
 ctests/all:
-	(cd ctests && $(MAKE) all CC=$(CC) CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)")
+	(cd ctests && $(MAKE) all CC=$(CC) CFLAGS="$(CFLAGS_TESTS)" LDFLAGS="$(LDFLAGS)")
 
 ftests/all:
 	(cd ftests && $(MAKE) all FC=$(FC) FFLAGS="$(FFLAGS)" LDFLAGS="$(LDFLAGS)")
