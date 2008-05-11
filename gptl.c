@@ -32,13 +32,6 @@ static Timer **last = 0;         /* last element in list */
 static int *max_depth;           /* maximum indentation level encountered */
 static int *max_name_len;        /* max length of timer name */
 static Papientry eventlist[MAX_AUX];     /* list of PAPI events to be counted */
-
-typedef struct {
-  int val;                       /* depth in calling tree */
-  int padding[31];               /* padding is to mitigate false cache sharing */
-} Nofalse; 
-static Nofalse *current_depth;
-
 static int GPTLnthreads= -1;     /* num threads. Init to bad value */
 static int maxthreads  = -1;     /* max threads (=GPTLnthreads for OMP). Init to bad value */
 static int depthlimit  = 99999;  /* max depth for timers (99999 is effectively infinite) */
@@ -67,8 +60,13 @@ static Settings overheadstats = {GPTLoverhead, "UTR Overhead  "                ,
 
 static Hashentry **hashtable;    /* table of entries */
 static long ticks_per_sec;       /* clock ticks per second */
+
+typedef struct {
+  int val;                       /* depth in calling tree */
+  int padding[31];               /* padding is to mitigate false cache sharing */
+} Nofalse; 
 static Timer ***callstack;       /* call stack */
-static int *stackidx;            /* index into callstack */
+static Nofalse *stackidx;        /* index into callstack: */
 
 /* Local function prototypes */
 
@@ -285,7 +283,7 @@ int GPTLinitialize (void)
   /* Allocate space for global arrays */
 
   callstack     = (Timer ***)    GPTLallocate (maxthreads * sizeof (Timer **));
-  stackidx      = (int *)        GPTLallocate (maxthreads * sizeof (int));
+  stackidx      = (Nofalse *)    GPTLallocate (maxthreads * sizeof (Nofalse));
   timers        = (Timer **)     GPTLallocate (maxthreads * sizeof (Timer *));
   last          = (Timer **)     GPTLallocate (maxthreads * sizeof (Timer *));
   max_depth     = (int *)        GPTLallocate (maxthreads * sizeof (int));
@@ -299,7 +297,7 @@ int GPTLinitialize (void)
     max_depth[t]     = 0;
     max_name_len[t]  = 0;
     callstack[t] = (Timer **) GPTLallocate (MAX_STACK * sizeof (Timer *));
-    stackidx[t] = -1; /* will get incremented to 0 on 1st start call */
+    stackidx[t].val = -1; /* will get incremented to 0 on 1st start call */
     for (i = 0; i < MAX_STACK; i++)
       callstack[t][i] = 0;
     hashtable[t] = (Hashentry *) GPTLallocate (tablesize * sizeof (Hashentry));
@@ -361,6 +359,7 @@ int GPTLfinalize (void)
 
   for (t = 0; t < maxthreads; ++t) {
     free (hashtable[t]);
+    free (callstack[t]);
     for (ptr = timers[t]; ptr; ptr = ptrnext) {
       ptrnext = ptr->next;
       free (ptr);
@@ -371,6 +370,8 @@ int GPTLfinalize (void)
   free (max_depth);
   free (max_name_len);
   free (hashtable);
+  free (callstack);
+  free (stackidx);
 
   threadfinalize ();
 
@@ -421,8 +422,8 @@ int GPTLstart_instr (void *self)
   ** increment and return
   */
 
-  if (stackidx[t] >= depthlimit) {
-    ++stackidx[t];
+  if (stackidx[t].val >= depthlimit) {
+    ++stackidx[t].val;
     return 0;
   }
 
@@ -439,7 +440,7 @@ int GPTLstart_instr (void *self)
     return 0;
   }
 
-  if (++stackidx[t] > MAX_STACK-1)
+  if (++stackidx[t].val > MAX_STACK-1)
     return GPTLerror ("GPTLstart_instr: stack too big\n");
 
   if ( ! ptr) {     /* Add a new entry and initialize */
@@ -459,7 +460,7 @@ int GPTLstart_instr (void *self)
       return GPTLerror ("GPTLstart_instr: update_ll_hash error\n");
   }
 
-  if (update_parent (ptr, callstack[t], stackidx[t]) != 0)
+  if (update_parent (ptr, callstack[t], stackidx[t].val) != 0)
     return GPTLerror ("GPTLstart_instr: find_parent error\n");
 
   if (update_ptr (ptr, t) != 0)
@@ -503,8 +504,8 @@ int GPTLstart (const char *name)               /* timer name */
   ** increment and return
   */
 
-  if (stackidx[t] >= depthlimit) {
-    ++stackidx[t];
+  if (stackidx[t].val >= depthlimit) {
+    ++stackidx[t].val;
     return 0;
   }
 
@@ -526,7 +527,7 @@ int GPTLstart (const char *name)               /* timer name */
     return 0;
   }
 
-  if (++stackidx[t] > MAX_STACK-1)
+  if (++stackidx[t].val > MAX_STACK-1)
     return GPTLerror ("GPTLstart: stack too big\n");
 
   if ( ! ptr) { /* Add a new entry and initialize */
@@ -540,7 +541,7 @@ int GPTLstart (const char *name)               /* timer name */
       return GPTLerror ("GPTLstart: update_ll_hash error\n");
   }
 
-  if (update_parent (ptr, callstack[t], stackidx[t]) != 0)
+  if (update_parent (ptr, callstack[t], stackidx[t].val) != 0)
     return GPTLerror ("GPTLstart: find_parent error\n");
 
   if (update_ptr (ptr, t) != 0)
@@ -570,7 +571,7 @@ static inline int update_ll_hash (Timer *ptr, const int t, const int indx)
   if (nchars > max_name_len[t])
     max_name_len[t] = nchars;
 
-  ptr->depth = stackidx[t];
+  ptr->depth = stackidx[t].val;
   if (timers[t]) {
     last[t]->next = ptr;
   } else {
@@ -588,8 +589,8 @@ static inline int update_ll_hash (Timer *ptr, const int t, const int indx)
   hashtable[t][indx].entries           = eptr;
   hashtable[t][indx].entries[nument-1] = ptr;
 
-  if (stackidx[t] > max_depth[t])
-    max_depth[t] = stackidx[t];
+  if (stackidx[t].val > max_depth[t])
+    max_depth[t] = stackidx[t].val;
 
   return 0;
 }
@@ -745,8 +746,8 @@ int GPTLstop_instr (void *self)
   ** decrement and return
   */
 
-  if (stackidx[t] > depthlimit) {
-    --stackidx[t];
+  if (stackidx[t].val > depthlimit) {
+    --stackidx[t].val;
     return 0;
   }
 
@@ -827,8 +828,8 @@ int GPTLstop (const char *name)               /* timer name */
   ** decrement and return
   */
 
-  if (stackidx[t] > depthlimit) {
-    --stackidx[t];
+  if (stackidx[t].val > depthlimit) {
+    --stackidx[t].val;
     return 0;
   }
 
@@ -882,9 +883,9 @@ static inline int update_stats (Timer *ptr,
   double delta;       /* difference */
 
   ptr->onflg = false;
-  --stackidx[t];
-  if (stackidx[t] < -1) {
-    stackidx[t] = -1;
+  --stackidx[t].val;
+  if (stackidx[t].val < -1) {
+    stackidx[t].val = -1;
     return GPTLerror ("update_stats: tree depth has become negative.\n");
   }
 
@@ -1100,7 +1101,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.78 2008-05-11 02:59:57 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.79 2008-05-11 14:00:00 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1126,10 +1127,11 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   fprintf (fp, "Per-call utr overhead est: %g sec.\n\n", utr_overhead);
   fprintf (fp, "If overhead stats are printed, roughly half the estimated number is\n");
   fprintf (fp, "embedded in the wallclock (and/or PAPI counter) stats for each timer\n\n");
-  fprintf (fp, "An asterisk in column 1 below means that timer had multiple indentation\n");
-  fprintf (fp, "levels. Only the first is printed, though printed timing info is complete.\n\n");
   fprintf (fp, "If a \'%% of\' field is present, it is w.r.t. the first timer for thread 0.\n");
   fprintf (fp, "If a \'e6 per sec\' field is present, it is in millions of PAPI counts per sec.\n\n");
+  fprintf (fp, "A '*' in column 1 below means the timer had multiple parents, though the\n");
+  fprintf (fp, "values printed are for all calls. Further down the listing is more detailed\n");
+  fprintf (fp, "information about multiple parents. Look for 'Multiple parent info'\n\n");
 
   sum = (float *) GPTLallocate (GPTLnthreads * sizeof (float));
   
@@ -1274,6 +1276,11 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   for (t = 0; t < GPTLnthreads; ++t) {
     fprintf (fp, "\nMultiple parent info (if any) for thread %d:\n", t);
+    if (t == 0) {
+      fprintf (fp, "\nParents are listed first, followed by child (indented)\n");
+      fprintf (fp, "Counts next to parents are number of times they called the child\n");
+      fprintf (fp, "Count next to child is total number of times it was called\n");
+    }
     for (ptr = timers[t]; ptr; ptr = ptr->next)
       if (ptr->nparent > 1)
 	print_multparentinfo (fp, ptr);
@@ -1713,9 +1720,11 @@ static inline Timer *getentry_instr (const Hashentry *hashtable, /* hash table *
 
   /*
   ** Use timer addrress as the hash index, modulo the table size
+  ** On most machines, right-shifting the address helps because linkers often
+  ** align functions on even boundaries
   */
 
-  *indx = ((unsigned long) self) % tablesize;
+  *indx = (((unsigned long) self) >> 4) % tablesize;
   for (i = 0; i < hashtable[*indx].nument; ++i) {
     if (hashtable[*indx].entries[i]->address == self) {
       ptr = hashtable[*indx].entries[i];
@@ -1750,7 +1759,7 @@ static inline Timer *getentry (const Hashentry *hashtable, /* hash table */
   *indx = 0;
   c = (unsigned char *) name;
   for (i = 0; *c && i < MAX_CHARS; ++c, ++i) {
-    *indx += (*c) * i;
+    *indx += (*c) * (i+1);
   }
 
   *indx %= tablesize;
