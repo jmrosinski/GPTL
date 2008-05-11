@@ -1102,7 +1102,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.80 2008-05-11 14:27:15 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.81 2008-05-11 15:51:25 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1278,7 +1278,9 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   for (t = 0; t < GPTLnthreads; ++t) {
     fprintf (fp, "\nMultiple parent info (if any) for thread %d:\n", t);
     if (t == 0) {
-      fprintf (fp, "\nParents are listed first, followed by child (indented)\n");
+      fprintf (fp, "The 2 columns are parent name, and number of times it invoked the child\n");
+      fprintf (fp, "The rows are each parent, with their common child being the last entry, "
+	       "which is indented\n");
       fprintf (fp, "Counts next to parents are number of times they called the child\n");
       fprintf (fp, "Count next to child is total number of times it was called\n");
     }
