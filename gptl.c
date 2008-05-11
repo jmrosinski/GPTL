@@ -359,6 +359,7 @@ int GPTLfinalize (void)
 
   for (t = 0; t < maxthreads; ++t) {
     free (hashtable[t]);
+    hashtable[t] = NULL;
     free (callstack[t]);
     for (ptr = timers[t]; ptr; ptr = ptrnext) {
       ptrnext = ptr->next;
@@ -1101,7 +1102,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.79 2008-05-11 14:00:00 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.80 2008-05-11 14:27:15 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1758,8 +1759,8 @@ static inline Timer *getentry (const Hashentry *hashtable, /* hash table */
 
   *indx = 0;
   c = (unsigned char *) name;
-  for (i = 0; *c && i < MAX_CHARS; ++c, ++i) {
-    *indx += (*c) * (i+1);
+  for (i = 1; *c && i < MAX_CHARS+1; ++c, ++i) {
+    *indx += (*c) * i;
   }
 
   *indx %= tablesize;

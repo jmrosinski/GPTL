@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.25 2008-05-11 03:11:31 rosinski Exp $
+** $Id: f_wrappers.c,v 1.26 2008-05-11 14:27:15 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines
 */
@@ -106,7 +106,7 @@ int gptlpr_file (char *file, int nc1)
   snprintf (locfile, nc1, "%s", file);
   locfile[nc1] = '\0';
 
-  ret = GPTLpr_file (*locfile);
+  ret = GPTLpr_file (locfile);
   free (locfile);
   return ret;
 }
