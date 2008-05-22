@@ -628,7 +628,7 @@ static inline int update_ptr (Timer *ptr, const int t)
 }
 
 /*
-** update_parent: update infor about parent
+** update_parent: update info about parent
 **
 ** Input arguments:
 **   ptr:  pointer to timer
@@ -662,7 +662,7 @@ static inline int update_parent (Timer *ptr, Timer **callstackt, int stackidxt)
 
   pptr = callstackt[stackidxt-1];
 
-  /* Determine whether this is a new parent */
+  /* Bump parent count if parent found */
 
   for (n = 0; n < ptr->nparent; ++n) {
     if (ptr->parent[n] == pptr) {
@@ -683,7 +683,10 @@ static inline int update_parent (Timer *ptr, Timer **callstackt, int stackidxt)
     ptr->parent_count = parent_count;
     ptr->parent_count[nparent-1] = 1;
 
-    /* Update parent only for first parent found */
+    /* 
+    ** Update parent only for first parent found. This minimizes the size of
+    ** the printed call tree
+    */
 
     if (ptr->nparent == 1) {
       ++pptr->nchildren;
@@ -695,6 +698,7 @@ static inline int update_parent (Timer *ptr, Timer **callstackt, int stackidxt)
       pptr->children[nchildren-1] = ptr;
     }
   }
+
   return 0;
 }
 
@@ -1102,7 +1106,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.81 2008-05-11 15:51:25 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.82 2008-05-22 15:08:20 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1722,7 +1726,7 @@ static inline Timer *getentry_instr (const Hashentry *hashtable, /* hash table *
   Timer *ptr = 0;
 
   /*
-  ** Use timer addrress as the hash index, modulo the table size
+  ** Hash index is timer address modulo the table size
   ** On most machines, right-shifting the address helps because linkers often
   ** align functions on even boundaries
   */
