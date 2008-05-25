@@ -1,6 +1,5 @@
 #include <unistd.h>
 #include <stdio.h>
-#include <papi.h>
 #include "../gptl.h"
 
 #ifdef THREADED_OMP
@@ -9,6 +8,10 @@
 
 #ifdef HAVE_MPI
 #include <mpi.h>
+#endif
+
+#ifdef HAVE_PAPI
+#include <papi.h>
 #endif
 
 int main (int argc, char **argv)
@@ -55,7 +58,9 @@ int main (int argc, char **argv)
 
   ret = GPTLsetoption (GPTLoverhead, 0);
   ret = GPTLsetoption (GPTLabort_on_error, 1);
+#ifdef HAVE_PAPI
   ret = GPTLsetoption (PAPI_TOT_INS, 1);
+#endif
   ret = GPTLinitialize ();
 
   ret = GPTLstart ("total");

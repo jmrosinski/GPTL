@@ -2,7 +2,9 @@
       implicit none
 
 #include "../gptl.inc"
+#ifdef HAVE_PAPI
 #include "f90papi.h"
+#endif
 
       integer, parameter :: nompiter = 128 ! iteration count for threaded loop
       integer, parameter :: ny = 9         ! iteration count for middle loop
@@ -17,8 +19,10 @@
       if (gptlsetoption (gptlverbose, 0) < 0) call exit (1)       ! turn off verbosity
       if (gptlsetoption (gptlabort_on_error, 1) < 0) call exit(2) ! abort on error
       
+#ifdef HAVE_PAPI
       ret = gptlsetoption (PAPI_FP_INS, 1)     ! count FP instructions
       ret = gptlsetoption (PAPI_TOT_CYC, 1)    ! count total cycles
+#endif
       ret = gptlsetoption (gptloverhead, 0)    ! don't print overhead stats
       ret = gptlsetoption (gptlnarrowprint, 1) ! print fewer sig figs
       
