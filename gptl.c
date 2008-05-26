@@ -1106,7 +1106,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.82 2008-05-22 15:08:20 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.83 2008-05-26 15:36:31 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1195,7 +1195,10 @@ int GPTLpr_file (const char *outfile) /* output file to write */
     }
     if (wallstats.enabled && overheadstats.enabled)
       fprintf (fp, "Overhead sum          = %9.3f wallclock seconds\n", sum[t]);
-    fprintf (fp, "Total calls           = %lu\n", totcount);
+    if (totcount < 100000000L)
+      fprintf (fp, "Total calls           = %lu\n", totcount);
+    else
+      fprintf (fp, "Total calls           = %8.3f\n", (float) totcount);
     fprintf (fp, "Total recursive calls = %lu\n", totrecurse);
   }
 
@@ -1282,7 +1285,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   for (t = 0; t < GPTLnthreads; ++t) {
     fprintf (fp, "\nMultiple parent info (if any) for thread %d:\n", t);
     if (t == 0) {
-      fprintf (fp, "The 2 columns are parent name, and number of times it invoked the child\n");
+      fprintf (fp, "The 2 columns are number of child invocations\n");
       fprintf (fp, "The rows are each parent, with their common child being the last entry, "
 	       "which is indented\n");
       fprintf (fp, "Counts next to parents are number of times they called the child\n");
@@ -1387,10 +1390,17 @@ static void printstats (const Timer *timer,     /* timer to print */
     for (indent = timer->depth; indent < max_depth[t]; ++indent)
       fprintf (fp, "  ");
 
-  if (timer->nrecurse > 0)
-    fprintf (fp, "%8ld %5ld ", timer->count, timer->nrecurse);
-  else
-    fprintf (fp, "%8ld   -   ", timer->count);
+  if (timer->count < 100000000L) {
+    if (timer->nrecurse > 0)
+      fprintf (fp, "%8ld %5ld ", timer->count, timer->nrecurse);
+    else
+      fprintf (fp, "%8ld   -   ", timer->count);
+  } else {
+    if (timer->nrecurse > 0)
+      fprintf (fp, "%8.3f %5ld ", (float) timer->count, timer->nrecurse);
+    else
+      fprintf (fp, "%8.3f   -   ", (float) timer->count);
+  }
 
   if (cpustats.enabled) {
     usr = timer->cpu.accum_utime / (float) ticks_per_sec;
@@ -1443,10 +1453,16 @@ void print_multparentinfo (FILE *fp,
     fprintf (fp, "%34s %d\n", "ORPHAN", ptr->norphan);
 
   for (n = 0; n < ptr->nparent; ++n) {
-    fprintf (fp, "%32s   %d\n", ptr->parent[n]->name, ptr->parent_count[n]);
+    if (ptr->parent_count[n] < 100000000L)
+      fprintf (fp, "%8d %-32s\n", ptr->parent_count[n], ptr->parent[n]->name);
+    else
+      fprintf (fp, "%8.3f %-32s\n", (float) ptr->parent_count[n], ptr->parent[n]->name);
   }
 
-  fprintf (fp, "  %32s %ld\n\n", ptr->name, ptr->count);
+  if (ptr->count < 100000000L)
+    fprintf (fp, "%8ld   %-32s\n\n", ptr->count, ptr->name);
+  else
+    fprintf (fp, "%8.3f   %-32s\n\n", (float) ptr->count, ptr->name);
 }
 
 /* 

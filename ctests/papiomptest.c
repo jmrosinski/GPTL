@@ -64,7 +64,11 @@ int main (int argc, char **argv)
   (void) GPTLsetoption (GPTLoverhead, 1);
   (void) GPTLsetoption (GPTLnarrowprint, 0);
 
-  GPTLinitialize ();
+  if ((GPTLinitialize ()) != 0) {
+    printf ("papiomptest: GPTLinitialize failure\n");
+    return -1;
+  }
+
   GPTLstart ("total");
 	 
 #pragma omp parallel for private (iter, ret)

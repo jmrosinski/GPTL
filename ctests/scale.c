@@ -140,8 +140,11 @@ int main (int argc, char **argv)
   GPTLsetutr (GPTLpapitime);
 */
   GPTLsetutr (GPTLgettimeofday);
-  if (GPTLinitialize () < 0)
-    exit (1);
+
+  if ((ret = GPTLinitialize ()) != 0) {
+    printf ("scale: GPTLinitialize failure\n");
+    return -1;
+  }
 
   sendto = (iam + 1) % ntask;         /* right neighbor */
   recvfm = (iam + ntask - 1) % ntask; /* left neighbor */

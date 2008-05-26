@@ -1,9 +1,16 @@
 # Where to install GPTL library, include files, and man pages
 INSTALLDIR = /usr/local
 
-# C compiler and flags: symbols, high optimization, inlining
+# C compiler
 CC     = gcc
-CFLAGS = -g -O3 -finline-functions -Winline -Wall
+
+# Whether to build debug lib or optimized lib, and associated flags
+DEBUG = no
+ifeq ($(DEBUG),yes)
+  CFLAGS = -g -O1 -Wall
+else
+  CFLAGS = -g -O3 -finline-functions -Winline -Wall
+endif
 
 # Set ABI flags for non-default ABIs (e.g. 64-bit addressing)
 ABIFLAGS =

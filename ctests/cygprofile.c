@@ -11,6 +11,7 @@ extern void callsubs (int);
 int main (int argc, char **argv)
 {
   int niter = 1000;  /* default number of */
+  int ret;
   
   printf ("Purpose: test library with automatic per-function timing enabled\n");
   if (argc == 2) {
@@ -27,7 +28,10 @@ int main (int argc, char **argv)
   GPTLsetoption (PAPI_FP_INS, 1);
 #endif
 
-  GPTLinitialize ();
+  if ((ret = GPTLinitialize ()) != 0) {
+    printf ("cygprofile: GPTLinitialize failure\n");
+    return -1;
+  }
   callsubs (niter);
   GPTLpr (0);
 

@@ -56,8 +56,13 @@ sub main()
     my ($spaftsym);
     my ($ncalls);
     my ($restofline);
-    my ($newlen3);
-    my ($new3);
+    my ($numsp);  # number of spaces before rest of line
+    my ($spaces);     # text containing spaces before rest of line
+    my ($thread) = -1;   # thread number (init to -1
+    my ($doparse) = 0;   # logical flag: true indicates between "Statas for thread..."
+                         # and "Number of calls..."
+    my ($indent);
+    my (@max_chars);     # longest symbol name + indentation (per thread)
 	
     if ($demangle) {
 	open (NM, "nm $binfile | c++filt | ") or die ("Unable to run 'nm $binfile | c++filt': $!\n");
@@ -80,41 +85,109 @@ sub main()
     printf("OK\nSeen %d symbols, stored %d function offsets\n", $nsym, $nfunc);
     close(NM);
 
-    open (TEXT, "$timingout") or die ("Unable to open '$timingout': $!\n");
+    @max_chars = &get_max_chars ("$timingout");
+
+    open (TEXT, "<$timingout") or die ("Unable to open '$timingout': $!\n");
 	
     while (<TEXT>) {
 
 	# Parse the line if it's a hex number followed by a number
-	# Otherwise just write it
-
-	if (/(^\*? *)([[:xdigit:]]+)( *)([[:digit:]]+)(.*)/) {
-	    $begofline  = $1;
-	    $off1       = hex($2);
-	    $spaftsym   = $3;
-	    $ncalls     = $4;
-	    $restofline = $5;
+	
+	if (/Stats for thread /) { # beginning of main region
+	    $doparse = 1;
+	    ++$thread;
+	    print $_; 
+	} elsif (/^Total calls /) {  # end of main region
+	    $doparse = 0;
+	    print $_; 
+	} elsif ($doparse) {                # Inside main region
+	    if (/^ *(Called Recurse.*)$/) { # heading
+		$numsp = $max_chars[$thread];
+		$spaces = " " x $numsp;
+		printf ("%s   %s\n", $spaces, $1);
+	    } elsif (/(^\*? *)([[:xdigit:]]+)( *)(\w+)(.*)$/) { # hex entry
+		$begofline  = $1;
+		$off1       = hex($2);
+		$ncalls     = $4;
+		$restofline = $5;
+		if (defined ($symtab{$off1})) {
+		    $sym = $symtab{$off1};
+		} else {
+		    $sym = "???";
+		}
+		$numsp = $max_chars[$thread] - length ($begofline) - length ($sym);
+		$spaces = " " x $numsp;
+		printf ("%s%s%s %9d %s\n", $begofline, $sym, $spaces, $ncalls, $restofline);
+	    } elsif (/(^\*? *)(\w+)( *)(\w+)(.*)$/) { # standard entry
+		$begofline  = $1;
+		$sym        = $2;
+		$ncalls     = $4;
+		$restofline = $5;
+		$numsp = $max_chars[$thread] - length ($begofline) - length ($sym);
+		$spaces = " " x $numsp;
+		printf ("%s%s%s %9d %s\n", $begofline, $sym, $spaces, $ncalls, $restofline);
+	    } else {           # unknown: just print it
+		print $_; 
+	    }
+	} elsif (/(^ *)(\w+)( *)([[:xdigit:]]+)( *)$/) {
+#
+# Hex entry in multiple parent region
+#
+	    $ncalls     = $2;
+	    $indent     = $3;
+	    $off1       = hex($4);
 	    if (defined ($symtab{$off1})) {
 		$sym = $symtab{$off1};
 	    } else {
 		$sym = "???";
 	    }
-#	    $sym = ( ? $symtab{$off1} : "???");
-
-# Attempt to line things up--won't work if length of mangled name
-# is too long.
-
-	    $newlen3 = length ($3) + (length ($2) - length ($sym));
-	    if ($newlen3 > 0) {
-		$new3 = " " x $newlen3;
-		printf ("%s%s%s%s%s\n", $begofline, $sym, $new3, $ncalls, $restofline);
-	    } else {
-		printf ("%s%s %s%s\n", $begofline, $sym, $ncalls, $restofline);
-	    }
-	} else {
+	    $restofline = $5;
+	    printf ("%8s%s%s%s\n", $ncalls, $indent, $sym, $restofline);
+	} else { # unknown: just print it
 	    print $_; 
 	    next;
 	}
     }
     close (TEXT);
     printf("done\n");
+}
+
+sub get_max_chars ()
+{
+    my ($file) = $_[0];
+    my ($thread) = -1;
+    my ($tmp);
+    my ($sym);
+    my ($off1);
+    my ($doparse) = 0;
+    my (@max_chars);
+    
+    open (TEXT, "<$file") or die ("Unable to open '$file': $!\n");
+    
+    while (<TEXT>) {
+
+	# Parse the line if it's a hex number followed by a number
+	# Otherwise just write it
+	
+	if (/Stats for thread /) {
+	    $doparse = 1;
+	    ++$thread;
+	    $max_chars[$thread] = 0;
+	} elsif (/^Total calls /) {
+	    $doparse = 0;
+	} elsif ($doparse && /(^\*? *)([[:xdigit:]]+)/) {
+	    $off1 = hex($2);
+	    if (defined ($symtab{$off1})) {
+		$sym = $symtab{$off1};
+	    } else {
+		$sym = "???";
+	    }
+	    $tmp = length ($1) + length ($sym);
+	    if ($tmp > $max_chars[$thread]) {
+		$max_chars[$thread] = $tmp;
+	    }
+	}
+    }
+    close (TEXT);
+    return @max_chars;
 }

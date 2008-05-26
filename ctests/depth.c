@@ -8,12 +8,16 @@ int main(int argc, char **argv)
 {
   int niter = 1000;
   int i;
+  int ret;
 
   GPTLsetoption (GPTLcpu, 0);
   GPTLsetoption (GPTLwall, 1);
   GPTLsetoption (GPTLabort_on_error, 1);
 
-  GPTLinitialize ();
+  if ((ret = GPTLinitialize ()) != 0) {
+    printf ("GPTLinitialize failure\n");
+    return -1;
+  }
 
   printf ("Enter number of iterations:\n");
   scanf ("%d", &niter);

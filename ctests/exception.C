@@ -10,7 +10,11 @@ int main ()
   int niter;
   int ret;
 
-  GPTLinitialize ();
+  if ((ret = GPTLinitialize ()) != 0) {
+    printf ("exception: GPTLinitialize failure\n");
+    return -1;
+  }
+
   GPTLstart ("total");
 
   printf ("Enter number of iterations\n");

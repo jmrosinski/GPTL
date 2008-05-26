@@ -37,7 +37,11 @@ int main (int argc, char **argv)
     printf ("Checking %s...\n", vals[n].name);
     if ((ret = GPTLsetutr (vals[n].utr)) == 0) {
       ret = GPTLsetoption (GPTLoverhead, 0);
-      ret = GPTLinitialize ();
+      if ((ret = GPTLinitialize ()) != 0) {
+	printf ("GPTLinitialize failure\n");
+	return -1;
+      }
+	
       /* 
       ** Warm up the timing lib by starting/stopping a single timer
       */

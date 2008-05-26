@@ -3,8 +3,11 @@ OBJS = avail.o depth.o rawpapitest.o recursion.o stride.o memusage.o utrtest.o \
        papiomptest.o cygprofile.o cygprofilesubs.o scale.o parentchild.o mpi.o \
        gran_overhead.o load_imbalance.o
 EXES = avail depth     rawpapitest recursion stride memusage utrtest \
-       papiomptest cygprofile scale parentchild mpi \
-       gran_overhead   load_imbalance
+       papiomptest cygprofile parentchild \
+       gran_overhead  
+ifeq ($(HAVE_MPI),yes)
+  EXES += scale mpi load_imbalance
+endif
 
 all: $(EXES)
 
@@ -36,7 +39,7 @@ utrtest: utrtest.o
 	$(CC) -o $@ utrtest.o $(LDFLAGS)
 
 papiomptest: papiomptest.o
-	$(CC) $(THREADFLAGS) -o $@ papiomptest.o $(LDFLAGS)
+	$(CC) $(THREADFLAGS) -o $@ papiomptest.c $(LDFLAGS)
 
 cygprofile: cygprofile.o cygprofilesubs.o
 	$(CC) -o $@ cygprofile.o cygprofilesubs.o $(LDFLAGS)

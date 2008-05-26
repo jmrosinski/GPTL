@@ -7,12 +7,16 @@
 int main(int argc, char **argv)
 {
   int iter;
+  int ret;
 
   GPTLsetoption (GPTLcpu, 0);
   GPTLsetoption (GPTLwall, 1);
   GPTLsetoption (GPTLabort_on_error, 1);
 
-  GPTLinitialize ();
+  if ((ret = GPTLinitialize ()) != 0) {
+    printf ("parentchild: GPTLinitialize failure\n");
+    return -1;
+  }
 
   for (iter = 0; iter < 10; iter++) {
     GPTLstart ("A");

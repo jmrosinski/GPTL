@@ -161,11 +161,6 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
   int n;   /* loop index */
   int ret; /* return code */
   
-  /* Just return if the flag says disable an option, because default is off */
-
-  if ( ! val)
-    return 0;
-
   /*
   ** Loop through table looking for counter. If found, add the entry to the
   ** list of "proposed events".  Won't know till init time whether the event

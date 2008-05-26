@@ -19,6 +19,7 @@ void sub (int);
 int main (int argc, char **argv)
 {
   int depth;
+  int ret;
 
   printf ("Purpose: compare timings of basetimer1, basetimer2 and basetimer3.\n"
 	  "Difference is measure of cost of traversing linked list\n");
@@ -30,7 +31,11 @@ int main (int argc, char **argv)
   GPTLsetoption (PAPI_TOT_CYC, 1);
 #endif
 
-  GPTLinitialize ();
+  if ((ret = GPTLinitialize ()) != 0) {
+    printf ("parentchild: GPTLinitialize failure\n");
+    return -1;
+  }
+
   GPTLstart (TOTAL);
   sub (depth);
   GPTLstop (TOTAL);

@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.44 2008-05-11 02:59:57 rosinski Exp $
+$Id: private.h,v 1.45 2008-05-26 15:36:31 rosinski Exp $
 */
 
 #include <stdio.h>
@@ -20,7 +20,7 @@ $Id: private.h,v 1.44 2008-05-11 02:59:57 rosinski Exp $
 #define MAX_STACK 128
 
 /* longest timer name allowed (probably safe to just change) */
-#define MAX_CHARS 31
+#define MAX_CHARS 63
 
 /* max allowable number of PAPI counters (though most machines allow fewer */
 #define MAX_AUX 16

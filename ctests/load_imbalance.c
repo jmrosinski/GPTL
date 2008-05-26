@@ -19,7 +19,10 @@ int main (int argc, char **argv)
   ret = GPTLsetoption (PAPI_TOT_IIS, 1);
 #endif
 
-  ret = GPTLinitialize ();
+  if ((ret = GPTLinitialize ()) != 0) {
+    printf ("load_imbalance: GPTLinitialize failure\n");
+    return -1;
+  }
 
   ret = GPTLstart ("total");
   ret = GPTLstart ("sleep_iam_A");

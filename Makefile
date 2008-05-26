@@ -1,10 +1,16 @@
-null =
-OBJS     = gptl.o util.o threadutil.o get_memusage.o \
-           print_memusage.o gptl_papi.o
-LDFLAGS = -L.. -lgptl
-TESTS = ctests/all 
-
 include macros.make
+
+null =
+OBJS = gptl.o util.o threadutil.o get_memusage.o print_memusage.o gptl_papi.o
+
+ifeq ($(DEBUG),yes)
+  LIBNAME = gptl_debug
+else
+  LIBNAME = gptl
+endif
+
+LDFLAGS = -L.. -l$(LIBNAME)
+TESTS = ctests/all 
 
 # Set variables based on settings in macros.make
 
@@ -83,19 +89,19 @@ endif
 
 ##############################################################################
 
-all: libgptl.a $(TESTS)
+all: lib$(LIBNAME).a $(TESTS)
 
-libgptl.a: $(OBJS)
+lib$(LIBNAME).a: $(OBJS)
 	$(AR)  ruv $@ $(OBJS)
 	rm -f ctests/*.o ftests/*.o
 
-install: libgptl.a
-	install -m 0644 libgptl.a $(INSTALLDIR)/lib
+install: lib$(LIBNAME).a
+	install -m 0644 lib$(LIBNAME).a $(INSTALLDIR)/lib
 	install -m 0644 gptl.h gptl.inc $(INSTALLDIR)/include
 	install -m 0644 man/man3/*.3 $(INSTALLDIR)/man/man3
 
 uninstall:
-	rm -f $(INSTALLDIR)/lib/libgptl.a
+	rm -f $(INSTALLDIR)/lib/lib$(LIBNAME).a
 	rm -f $(INSTALLDIR)/include gptl.h $(INSTALLDIR)/include/gptl.inc
 	rm -f $(MANDIR)/GPTL*
 
@@ -106,7 +112,7 @@ ftests/all:
 	(cd ftests && $(MAKE) all FC=$(FC) FFLAGS="$(FFLAGS)" LDFLAGS="$(LDFLAGS)")
 
 clean:
-	rm -f $(OBJS) libgptl.a
+	rm -f $(OBJS) lib$(LIBNAME).a
 	(cd ctests && $(MAKE) clean)
 	(cd ftests && $(MAKE) clean)
 
