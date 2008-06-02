@@ -14,6 +14,7 @@ my ($binfile);   # executable
 my ($timingout); # timer file (normally timing.[0-9]*)
 my ($demangle);  # whether to demangle the symbols
 my ($arg);       # cmd-line arg
+my ($PRTHRESH) = 1000000; # This needs to match what is in the GPTL lib
 
 $OUTPUT_AUTOFLUSH = 1;
 
@@ -105,7 +106,7 @@ sub main()
 		$numsp = $max_chars[$thread];
 		$spaces = " " x $numsp;
 		printf ("%s   %s\n", $spaces, $1);
-	    } elsif (/(^\*? *)([[:xdigit:]]+)( *)(\w+)(.*)$/) { # hex entry
+	    } elsif (/(^\*? *)([[:xdigit:]]+)( +)([0-9.Ee+]+)(.*)$/) { # hex entry
 		$begofline  = $1;
 		$off1       = hex($2);
 		$ncalls     = $4;
@@ -117,19 +118,19 @@ sub main()
 		}
 		$numsp = $max_chars[$thread] - length ($begofline) - length ($sym);
 		$spaces = " " x $numsp;
-		printf ("%s%s%s %9d %s\n", $begofline, $sym, $spaces, $ncalls, $restofline);
-	    } elsif (/(^\*? *)(\w+)( *)(\w+)(.*)$/) { # standard entry
+		printf ("%s%s%s %9s %s\n", $begofline, $sym, $spaces, $ncalls, $restofline);
+	    } elsif (/(^\*? *)(\w+)( +)([0-9.Ee+]+)(.*)$/) { # standard entry
 		$begofline  = $1;
 		$sym        = $2;
 		$ncalls     = $4;
 		$restofline = $5;
 		$numsp = $max_chars[$thread] - length ($begofline) - length ($sym);
 		$spaces = " " x $numsp;
-		printf ("%s%s%s %9d %s\n", $begofline, $sym, $spaces, $ncalls, $restofline);
+		printf ("%s%s%s %9s %s\n", $begofline, $sym, $spaces, $ncalls, $restofline);
 	    } else {           # unknown: just print it
 		print $_; 
 	    }
-	} elsif (/(^ *)(\w+)( *)([[:xdigit:]]+)( *)$/) {
+	} elsif (/(^ *)([0-9.Ee+]+)( +)([[:xdigit:]]+)( *)$/) {
 #
 # Hex entry in multiple parent region
 #

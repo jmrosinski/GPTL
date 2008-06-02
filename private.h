@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.45 2008-05-26 15:36:31 rosinski Exp $
+$Id: private.h,v 1.46 2008-06-02 13:57:49 rosinski Exp $
 */
 
 #include <stdio.h>
@@ -16,7 +16,10 @@ $Id: private.h,v 1.45 2008-05-26 15:36:31 rosinski Exp $
 
 #define STRMATCH(X,Y) (strcmp((X),(Y)) == 0)
 
-/* Maximum allowed stack depth */
+/* Threshold count below which integers will be printed */
+#define PRTHRESH 1000000L
+
+/* Maximum allowed callstack depth */
 #define MAX_STACK 128
 
 /* longest timer name allowed (probably safe to just change) */
@@ -46,7 +49,6 @@ typedef struct {
 typedef struct {
   long long last[MAX_AUX];  /* array of saved counters from "start" */
   long long accum[MAX_AUX]; /* accumulator for counters */
-  long long accum_cycles;   /* for overhead computation */
 } Papistats;
   
 typedef struct {
@@ -100,11 +102,12 @@ extern int GPTL_PAPIsetoption (const int, const int);
 extern int GPTL_PAPIinitialize (const int, const bool, int *, Papientry *);
 extern int GPTL_PAPIstart (const int, Papistats *);
 extern int GPTL_PAPIstop (const int, Papistats *);
-extern void GPTL_PAPIprstr (FILE *, const bool);
-extern void GPTL_PAPIpr (FILE *, const Papistats *, const int, const int, const double, const bool);
+extern void GPTL_PAPIprstr (FILE *);
+extern void GPTL_PAPIpr (FILE *, const Papistats *, const int, const int, const double);
 extern void GPTL_PAPIadd (Papistats *, const Papistats *);
 extern void GPTL_PAPIfinalize (int);
 extern void GPTL_PAPIquery (const Papistats *, long long *, int);
 extern bool GPTL_PAPIis_multiplexed (void);
 extern void GPTL_PAPIprintenabled (FILE *);
+extern void read_counters100 (void);
 #endif

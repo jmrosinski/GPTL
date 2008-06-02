@@ -128,11 +128,9 @@ static int nevents = 0;                  /* number of events: initialize to 0 */
 static int nprop = 0;                    /* number of hoped events: initialize to 0 */ 
 static int *EventSet;                    /* list of events to be counted by PAPI */
 static long_long **papicounters;         /* counters return from PAPI */
-static long_long *readoverhead;          /* overhead due to reading PAPI counters */
 
 static char papiname[PAPI_MAX_STR_LEN];  /* returned from PAPI_event_code_to_name */
 static const int BADCOUNT = -999999;     /* Set counters to this when they are bad */
-static int GPTLoverheadindx = -1;        /* index into counters array */
 static bool is_multiplexed = false;      /* whether multiplexed (always start false)*/
 static bool narrowprint = true;          /* only use 8 digits not 16 for counter prints */
 static bool persec = true;               /* print PAPI stats per second */
@@ -296,12 +294,10 @@ int GPTL_PAPIinitialize (const int maxthreads,     /* number of threads */
 
   EventSet     = (int *)        GPTLallocate (maxthreads * sizeof (int));
   papicounters = (long_long **) GPTLallocate (maxthreads * sizeof (long_long *));
-  readoverhead = (long_long *)  GPTLallocate (maxthreads * sizeof (long_long));
 
   for (t = 0; t < maxthreads; t++) {
     EventSet[t] = PAPI_NULL;
     papicounters[t] = (long_long *) GPTLallocate (MAX_AUX * sizeof (long_long));
-    readoverhead[t] = -1;
   }
 
   /* 
@@ -320,9 +316,6 @@ int GPTL_PAPIinitialize (const int maxthreads,     /* number of threads */
 	(void) PAPI_event_code_to_name (counter, papiname);
 	return GPTLerror ("GPTL_PAPIinitialize: Event %s is too many\n", papiname);
       } else {
-	if (counter == PAPI_TOT_CYC)
-	  GPTLoverheadindx = nevents;
-
 	eventlist[nevents].counter    = counter;
 	eventlist[nevents].counterstr = propeventlist[n].counterstr;
 	eventlist[nevents].prstr      = propeventlist[n].prstr;
@@ -382,9 +375,6 @@ static int create_and_start_events (const int t)  /* thread number */
 {
   int ret;
   int n;
-  int i;
-  long_long counters1[MAX_AUX];  /* Temp counter for estimating PAPI_read overhead  */
-  long_long counters2[MAX_AUX];  /* Temp counter for estimating PAPI_read overhead  */
 
   /* Create the event set */
 
@@ -445,38 +435,6 @@ static int create_and_start_events (const int t)  /* thread number */
 
   if ((ret = PAPI_start (EventSet[t])) != PAPI_OK)
     return GPTLerror ("create_and_start_events: failed to start event set: %s\n", PAPI_strerror (ret));
-
-  /* Estimate overhead of calling PAPI_read, to be used later in printing */
-
-  if (GPTLoverheadindx > -1) {
-    if ((ret = PAPI_read (EventSet[t], counters1)) != PAPI_OK)
-      return GPTLerror ("create_and_start_events: %s\n", PAPI_strerror (ret));
-
-    for (i = 0; i < 10; ++i) {
-      if ((ret = PAPI_read (EventSet[t], counters2)) != PAPI_OK)
-	return GPTLerror ("create_and_start_events: %s\n", PAPI_strerror (ret));
-      if ((ret = PAPI_read (EventSet[t], counters2)) != PAPI_OK)
-	return GPTLerror ("create_and_start_events: %s\n", PAPI_strerror (ret));
-      if ((ret = PAPI_read (EventSet[t], counters2)) != PAPI_OK)
-	return GPTLerror ("create_and_start_events: %s\n", PAPI_strerror (ret));
-      if ((ret = PAPI_read (EventSet[t], counters2)) != PAPI_OK)
-	return GPTLerror ("create_and_start_events: %s\n", PAPI_strerror (ret));
-      if ((ret = PAPI_read (EventSet[t], counters2)) != PAPI_OK)
-	return GPTLerror ("create_and_start_events: %s\n", PAPI_strerror (ret));
-      if ((ret = PAPI_read (EventSet[t], counters2)) != PAPI_OK)
-	return GPTLerror ("create_and_start_events: %s\n", PAPI_strerror (ret));
-      if ((ret = PAPI_read (EventSet[t], counters2)) != PAPI_OK)
-	return GPTLerror ("create_and_start_events: %s\n", PAPI_strerror (ret));
-      if ((ret = PAPI_read (EventSet[t], counters2)) != PAPI_OK)
-	return GPTLerror ("create_and_start_events: %s\n", PAPI_strerror (ret));
-      if ((ret = PAPI_read (EventSet[t], counters2)) != PAPI_OK)
-	return GPTLerror ("create_and_start_events: %s\n", PAPI_strerror (ret));
-      if ((ret = PAPI_read (EventSet[t], counters2)) != PAPI_OK)
-	return GPTLerror ("create_and_start_events: %s\n", PAPI_strerror (ret));
-    }
-    
-    readoverhead[t] = 0.01 * (counters2[GPTLoverheadindx] - counters1[GPTLoverheadindx]);
-  }
 
   return 0;
 }
@@ -575,8 +533,7 @@ int GPTL_PAPIstop (const int t,         /* thread number */
 **   fp: file descriptor
 */
 
-void GPTL_PAPIprstr (FILE *fp,                          /* file descriptor */
-		     const bool overheadstatsenabled)   /* whether to print overhead stats*/
+void GPTL_PAPIprstr (FILE *fp)
 {
   int n;
   
@@ -589,16 +546,12 @@ void GPTL_PAPIprstr (FILE *fp,                          /* file descriptor */
       if (persec)
 	fprintf (fp, "e6 / sec ");
     }
-    if (overheadstatsenabled && GPTLoverheadindx > -1)
-      fprintf (fp, "OH (cyc) ");
   } else {
     for (n = 0; n < nevents; n++) {
       fprintf (fp, "%16.16s ", eventlist[n].prstr);
       if (persec)
 	fprintf (fp, "e6 / sec ");
     }
-    if (overheadstatsenabled && GPTLoverheadindx > -1)
-      fprintf (fp, "Overhead (cyc)   ");
   }
 }
 
@@ -615,21 +568,19 @@ void GPTL_PAPIpr (FILE *fp,                          /* file descriptor to write
 		  const Papistats *aux,              /* stats to write */
 		  const int t,                       /* thread number */
 		  const int count,                   /* number of invocations */
-		  const double wcsec,                /* wallclock time (sec) */
-		  const bool overheadstatsenabled)   /* whether to print overhead stats*/
+		  const double wcsec)                /* wallclock time (sec) */
 {
   int n;
-  long_long overhead;  /* overhead due to PAPI_read */
   
   for (n = 0; n < nevents; n++) {
     if (narrowprint) {
-      if (aux->accum[n] < 1000000)
+      if (aux->accum[n] < PRTHRESH)
 	fprintf (fp, "%8ld ", (long) aux->accum[n]);
       else
 	fprintf (fp, "%8.2e ", (double) aux->accum[n]);
       
     } else {
-      if (aux->accum[n] < 1000000)
+      if (aux->accum[n] < PRTHRESH)
 	fprintf (fp, "%16ld ", (long) aux->accum[n]);
       else
 	fprintf (fp, "%16.10e ", (double) aux->accum[n]);
@@ -639,26 +590,6 @@ void GPTL_PAPIpr (FILE *fp,                          /* file descriptor to write
 	fprintf (fp, "%8.2f ", aux->accum[n] * 1.e-6 / wcsec);
       else
 	fprintf (fp, "%8.2f ", 0.);
-    }
-  }
-
-  /* 
-  ** Print overhead estimate. Note similarity of overhead calc. to
-  ** overhead calc. in gptl.c.
-  */
-
-  if (overheadstatsenabled && GPTLoverheadindx > -1) {
-    overhead = count * 2 * readoverhead[t];
-    if (narrowprint) {
-      if (overhead < 1000000)
-	fprintf (fp, "%8ld ", (long) overhead);
-      else
-	fprintf (fp, "%8.2e ", (double) overhead);
-    } else {
-      if (overhead < 1000000)
-	fprintf (fp, "%8ld ", (long) overhead);
-      else
-	fprintf (fp, "%8.2e ", (double) overhead);
     }
   }
 }
@@ -700,13 +631,6 @@ void GPTL_PAPIadd (Papistats *auxout,      /* output struct */
       auxout->accum[n] = BADCOUNT;
     else
       auxout->accum[n] += auxin->accum[n];
-
-  /* Overhead calcs */
-
-  if (auxin->accum_cycles == BADCOUNT || auxout->accum_cycles == BADCOUNT)
-    auxout->accum_cycles = BADCOUNT;
-  else
-    auxout->accum_cycles += auxin->accum_cycles;
 }
 
 /*
@@ -724,13 +648,11 @@ void GPTL_PAPIfinalize (int maxthreads)
 
   free (EventSet);
   free (papicounters);
-  free (readoverhead);
 
   /* Reset initial values */
 
   nevents = 0;
   nprop = 0;
-  GPTLoverheadindx = -1;
 }
 
 /*
@@ -807,6 +729,27 @@ int GPTL_PAPIname2id (const char *name)
   return 77; /* successful return is a negative number */
 }
 
+void read_counters100 ()
+{
+  int i;
+  int ret;
+  long_long counters[MAX_AUX];
+
+  for (i = 0; i < 10; ++i) {
+    ret = PAPI_read (EventSet[0], counters);
+    ret = PAPI_read (EventSet[0], counters);
+    ret = PAPI_read (EventSet[0], counters);
+    ret = PAPI_read (EventSet[0], counters);
+    ret = PAPI_read (EventSet[0], counters);
+    ret = PAPI_read (EventSet[0], counters);
+    ret = PAPI_read (EventSet[0], counters);
+    ret = PAPI_read (EventSet[0], counters);
+    ret = PAPI_read (EventSet[0], counters);
+    ret = PAPI_read (EventSet[0], counters);
+  }
+  return;
+}
+
 #else
 
 /*
@@ -828,3 +771,4 @@ int GPTL_PAPIname2id (const char *name, int nc)
 }
 
 #endif  /* HAVE_PAPI */
+

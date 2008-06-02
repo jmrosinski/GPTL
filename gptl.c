@@ -324,13 +324,11 @@ int GPTLinitialize (void)
 
   ptr2wtimefunc = funclist[funcidx].func;
 
-  t1 = (*ptr2wtimefunc) ();
-  t2 = (*ptr2wtimefunc) ();
-
-  if (t1 > t2)
-    return GPTLerror ("GPTLinitialize: bad t1=%f t2=%f\n", t1, t2);
-
   if (verbose) {
+    t1 = (*ptr2wtimefunc) ();
+    t2 = (*ptr2wtimefunc) ();
+    if (t1 > t2)
+      printf ("GPTLinitialize: negative delta-t=%g\n", t2-t1);
     printf ("Per call overhead est. t2-t1=%g should be near zero\n", t2-t1);
     printf ("Underlying wallclock timing routine is %s\n", funclist[funcidx].name);
   }
@@ -685,10 +683,13 @@ static inline int update_parent (Timer *ptr, Timer **callstackt, int stackidxt)
 
     /* 
     ** Update parent only for first parent found. This minimizes the size of
-    ** the printed call tree
+    ** the printed call tree.
+    ** Also: when a depth 0 timer encounters a parent (e.g. it's called in
+    ** multiple places), don't make the parent point to it. Instead, it will be
+    ** printed once because all depth 0 timers are printed in GPTLpr_file()
     */
 
-    if (ptr->nparent == 1) {
+    if (ptr->nparent == 1 && ptr->depth > 0) {
       ++pptr->nchildren;
       nchildren = pptr->nchildren;
       chptr = (Timer **) realloc (pptr->children, nchildren * sizeof (Timer *));
@@ -1075,6 +1076,8 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   float *sum;               /* sum of overhead values (per thread) */
   float osum;               /* sum of overhead over threads */
   double utr_overhead;      /* overhead of calling underlying timing routine */
+  double tot_overhead;      /* utr_overhead + papi overhead */
+  double papi_overhead = 0; /* overhead of reading papi counters */
   bool found;               /* jump out of loop when name found */
   bool foundany;            /* whether summation print necessary */
   bool first;               /* flag 1st time entry found */
@@ -1106,7 +1109,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.83 2008-05-26 15:36:31 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.84 2008-06-02 13:57:49 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1129,7 +1132,18 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   utr_overhead = utr_getoverhead ();
   fprintf (fp, "Underlying timing routine was %s.\n", funclist[funcidx].name);
-  fprintf (fp, "Per-call utr overhead est: %g sec.\n\n", utr_overhead);
+  fprintf (fp, "Per-call utr overhead est: %g sec.\n", utr_overhead);
+#ifdef HAVE_PAPI
+  if (dousepapi) {
+    double t1, t2;
+    t1 = (*ptr2wtimefunc) ();
+    read_counters100 ();
+    t2 = (*ptr2wtimefunc) ();
+    papi_overhead = 0.01 * (t2 - t1);
+    fprintf (fp, "Per-call PAPI overhead est: %g sec.\n", papi_overhead);
+  }
+#endif
+  tot_overhead = utr_overhead + papi_overhead;
   fprintf (fp, "If overhead stats are printed, roughly half the estimated number is\n");
   fprintf (fp, "embedded in the wallclock (and/or PAPI counter) stats for each timer\n\n");
   fprintf (fp, "If a \'%% of\' field is present, it is w.r.t. the first timer for thread 0.\n");
@@ -1165,7 +1179,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
     }
 
 #ifdef HAVE_PAPI
-    GPTL_PAPIprstr (fp, overheadstats.enabled);
+    GPTL_PAPIprstr (fp);
 #endif
 
     fprintf (fp, "\n");        /* Done with titles, now print stats */
@@ -1177,7 +1191,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
       */
 
       if (ptr->depth == 0)
-	printself_andchildren (t, ptr, fp, utr_overhead);
+	printself_andchildren (t, ptr, fp, tot_overhead);
     }
 
     /* 
@@ -1189,16 +1203,16 @@ int GPTLpr_file (const char *outfile) /* output file to write */
     totcount   = 0;
     totrecurse = 0;
     for (ptr = timers[t]; ptr; ptr = ptr->next) {
-      sum[t]     += ptr->count * 2 * utr_overhead;
+      sum[t]     += ptr->count * 2 * tot_overhead;
       totcount   += ptr->count;
       totrecurse += ptr->nrecurse;
     }
     if (wallstats.enabled && overheadstats.enabled)
       fprintf (fp, "Overhead sum          = %9.3f wallclock seconds\n", sum[t]);
-    if (totcount < 100000000L)
+    if (totcount < PRTHRESH)
       fprintf (fp, "Total calls           = %lu\n", totcount);
     else
-      fprintf (fp, "Total calls           = %8.3f\n", (float) totcount);
+      fprintf (fp, "Total calls           = %8.1e\n", (float) totcount);
     fprintf (fp, "Total recursive calls = %lu\n", totrecurse);
   }
 
@@ -1224,7 +1238,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
     }
 
 #ifdef HAVE_PAPI
-    GPTL_PAPIprstr (fp, overheadstats.enabled);
+    GPTL_PAPIprstr (fp);
 #endif
 
     fprintf (fp, "\n");
@@ -1249,13 +1263,13 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 	    if (first) {
 	      first = false;
 	      fprintf (fp, "%3.3d ", 0);
-	      printstats (ptr, fp, 0, false, utr_overhead);
+	      printstats (ptr, fp, 0, false, tot_overhead);
 	    }
 
 	    found = true;
 	    foundany = true;
 	    fprintf (fp, "%3.3d ", t);
-	    printstats (tptr, fp, 0, false, utr_overhead);
+	    printstats (tptr, fp, 0, false, tot_overhead);
 	    add (&sumstats, tptr);
 	  }
 	}
@@ -1263,7 +1277,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
       if (foundany) {
 	fprintf (fp, "SUM ");
-	printstats (&sumstats, fp, 0, false, utr_overhead);
+	printstats (&sumstats, fp, 0, false, tot_overhead);
 	fprintf (fp, "\n");
       }
     }
@@ -1341,7 +1355,7 @@ static void printstats (const Timer *timer,     /* timer to print */
 			FILE *fp,               /* file descriptor to write to */
 			const int t,            /* thread number */
 			const bool doindent,    /* whether indenting will be done */
-			double utr_overhead)    /* underlying timing routine overhead */
+			double tot_overhead)    /* underlying timing routine overhead */
 {
   int i;               /* index */
   int indent;          /* index for indenting */
@@ -1390,16 +1404,16 @@ static void printstats (const Timer *timer,     /* timer to print */
     for (indent = timer->depth; indent < max_depth[t]; ++indent)
       fprintf (fp, "  ");
 
-  if (timer->count < 100000000L) {
+  if (timer->count < PRTHRESH) {
     if (timer->nrecurse > 0)
       fprintf (fp, "%8ld %5ld ", timer->count, timer->nrecurse);
     else
       fprintf (fp, "%8ld   -   ", timer->count);
   } else {
     if (timer->nrecurse > 0)
-      fprintf (fp, "%8.3f %5ld ", (float) timer->count, timer->nrecurse);
+      fprintf (fp, "%8.1e %5ld ", (float) timer->count, timer->nrecurse);
     else
-      fprintf (fp, "%8.3f   -   ", (float) timer->count);
+      fprintf (fp, "%8.1e   -   ", (float) timer->count);
   }
 
   if (cpustats.enabled) {
@@ -1427,12 +1441,12 @@ static void printstats (const Timer *timer,     /* timer to print */
     */
 
     if (overheadstats.enabled) {
-      fprintf (fp, "%13.3f ", timer->count * 2 * utr_overhead);
+      fprintf (fp, "%13.3f ", timer->count * 2 * tot_overhead);
     }
   }
 
 #ifdef HAVE_PAPI
-  GPTL_PAPIpr (fp, &timer->aux, t, timer->count, timer->wall.accum, overheadstats.enabled);
+  GPTL_PAPIpr (fp, &timer->aux, t, timer->count, timer->wall.accum);
 #endif
 
   fprintf (fp, "\n");
@@ -1453,16 +1467,16 @@ void print_multparentinfo (FILE *fp,
     fprintf (fp, "%34s %d\n", "ORPHAN", ptr->norphan);
 
   for (n = 0; n < ptr->nparent; ++n) {
-    if (ptr->parent_count[n] < 100000000L)
+    if (ptr->parent_count[n] < PRTHRESH)
       fprintf (fp, "%8d %-32s\n", ptr->parent_count[n], ptr->parent[n]->name);
     else
-      fprintf (fp, "%8.3f %-32s\n", (float) ptr->parent_count[n], ptr->parent[n]->name);
+      fprintf (fp, "%8.1e %-32s\n", (float) ptr->parent_count[n], ptr->parent[n]->name);
   }
 
-  if (ptr->count < 100000000L)
+  if (ptr->count < PRTHRESH)
     fprintf (fp, "%8ld   %-32s\n\n", ptr->count, ptr->name);
   else
-    fprintf (fp, "%8.3f   %-32s\n\n", (float) ptr->count, ptr->name);
+    fprintf (fp, "%8.1e   %-32s\n\n", (float) ptr->count, ptr->name);
 }
 
 /* 
@@ -2108,11 +2122,11 @@ static double utr_getoverhead ()
 static void printself_andchildren (int t,
 				   Timer *ptr,
 				   FILE *fp, 
-				   double utr_overhead)
+				   double tot_overhead)
 {
   int n;
 
-  printstats (ptr, fp, t, true, utr_overhead);
+  printstats (ptr, fp, t, true, tot_overhead);
   for (n = 0; n < ptr->nchildren; n++)
-    printself_andchildren (t, ptr->children[n], fp, utr_overhead);
+    printself_andchildren (t, ptr->children[n], fp, tot_overhead);
 }
