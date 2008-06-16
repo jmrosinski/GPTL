@@ -1,5 +1,5 @@
 /*
-$Id: gptl.h,v 1.32 2008-05-11 15:39:21 rosinski Exp $
+$Id: gptl.h,v 1.33 2008-06-16 18:21:44 rosinski Exp $
 */
 #ifndef GPTL_H
 #define GPTL_H
@@ -19,7 +19,8 @@ typedef enum {
   GPTLparentchild    = 8,  /* Guarantee parent/child ordering of printed output */
   GPTLpercent        = 9,  /* Add a column for percent of first timer */
   GPTLpersec         = 10, /* Add a PAPI column that prints "per second" stats */
-  GPTLmultiplex      = 11  /* Allow PAPI multiplexing */
+  GPTLmultiplex      = 11,  /* Allow PAPI multiplexing */
+  GPTLIPC            = 12
 } Option;
 
 /*
@@ -27,12 +28,12 @@ typedef enum {
 */
 
 typedef enum {
-  GPTLgettimeofday   = 12, /* the default */
-  GPTLnanotime       = 13, /* only available on x86 */
-  GPTLrtc            = 14,
-  GPTLmpiwtime       = 15,
-  GPTLclockgettime   = 16,
-  GPTLpapitime       = 17  /* only if PAPI is available */
+  GPTLgettimeofday   = 22, /* the default */
+  GPTLnanotime       = 23, /* only available on x86 */
+  GPTLrtc            = 24,
+  GPTLmpiwtime       = 25,
+  GPTLclockgettime   = 26,
+  GPTLpapitime       = 27  /* only if PAPI is available */
 } Funcoption;
 
 /*

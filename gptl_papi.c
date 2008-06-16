@@ -158,7 +158,17 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
 {
   int n;   /* loop index */
   int ret; /* return code */
-  
+  /*
+  ** First check derived events
+  */
+  switch (option) {
+  case GPTLIPC:
+    printf ("GPTL_PAPIsetoption: GPTLIPC not yet enabled\n");
+    break;
+  default:
+    break;
+  }
+
   /*
   ** Loop through table looking for counter. If found, add the entry to the
   ** list of "proposed events".  Won't know till init time whether the event
@@ -242,6 +252,18 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
   return GPTLerror ("GPTL_PAPIsetoption: counter %d does not exist\n", counter);
 }
 
+int GPTL_PAPIlibraryinit ()
+{
+  int ret;
+
+  if ((ret = PAPI_is_initialized ()) == PAPI_NOT_INITED) {
+    if ((ret = PAPI_library_init (PAPI_VER_CURRENT)) != PAPI_VER_CURRENT)
+      return GPTLerror ("GPTL_PAPIlibraryinit: PAPI_library_init failure:%s\n",
+			PAPI_strerror (ret));
+  }
+
+}
+
 /*
 ** GPTL_PAPIinitialize(): Initialize the PAPI interface. Called from GPTLinitialize.
 **   PAPI_library_init must be called before any other PAPI routines.  
@@ -279,7 +301,7 @@ int GPTL_PAPIinitialize (const int maxthreads,     /* number of threads */
       return GPTLerror ("GPTL_PAPIinitialize: PAPI_library_init failure:%s\n",
 			PAPI_strerror (ret));
   }
-
+w
   /* PAPI_thread_init needs to be called if threading enabled */
 
 #if ( defined THREADED_OMP )
