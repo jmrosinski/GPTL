@@ -20,6 +20,7 @@ int main (int argc, char **argv)
 #endif
 
   printf ("Purpose: estimate overhead of GPTL\n");
+  (void) GPTL_PAPIlibraryinit ();
 
   while ((c = getopt (argc, argv, "dp:")) != -1) {
     switch (c) {
@@ -27,8 +28,8 @@ int main (int argc, char **argv)
       disable = 1;
       break;
     case 'p':
-      if ((papiopt = GPTL_PAPIname2id (optarg)) >= 0) {
-	printf ("Failure from GPTL_PAPIname2id\n");
+      if ((PAPI_event_name_to_code (optarg, &papiopt)) != 0) {
+	printf ("Failure from PAPI_event_name_to_code\n");
 	exit (1);
       }
       if (GPTLsetoption (papiopt, 1) < 0) {

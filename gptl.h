@@ -1,5 +1,5 @@
 /*
-$Id: gptl.h,v 1.33 2008-06-16 18:21:44 rosinski Exp $
+$Id: gptl.h,v 1.34 2008-06-19 16:40:05 rosinski Exp $
 */
 #ifndef GPTL_H
 #define GPTL_H
@@ -19,8 +19,9 @@ typedef enum {
   GPTLparentchild    = 8,  /* Guarantee parent/child ordering of printed output */
   GPTLpercent        = 9,  /* Add a column for percent of first timer */
   GPTLpersec         = 10, /* Add a PAPI column that prints "per second" stats */
-  GPTLmultiplex      = 11,  /* Allow PAPI multiplexing */
-  GPTLIPC            = 12
+  GPTLmultiplex      = 11, /* Allow PAPI multiplexing */
+  GPTL_IPC           = 12, /* Instructions per cycle */
+  GPTL_CI            = 13  /* Computational intensity */
 } Option;
 
 /*
@@ -61,11 +62,11 @@ extern int GPTLquery (const char *, int, int *, int *, double *, double *, doubl
 extern int GPTLquerycounters (const char *, int, long long *);
 extern int GPTLget_nregions (int, int *);
 extern int GPTLget_regionname (int, int, char *, int);
+extern int GPTL_PAPIlibraryinit ();
 
 /* 
 ** These are defined in gptl_papi.c 
 */
 
 extern void GPTL_PAPIprinttable (void);
-extern int GPTL_PAPIname2id (const char *);
 #endif

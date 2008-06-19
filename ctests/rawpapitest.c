@@ -13,7 +13,7 @@
 #endif
 
 #define MAX_AUX 16
-static Papientry eventlist[MAX_AUX];
+static Entry eventlist[MAX_AUX];
 static int nevents = 0;                 /* number of events: initialize to 0 */ 
 static int *EventSet;
 static long long **papicounters;

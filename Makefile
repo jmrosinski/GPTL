@@ -90,6 +90,7 @@ endif
 ##############################################################################
 
 all: lib$(LIBNAME).a $(TESTS)
+libonly: lib$(LIBNAME).a 
 
 lib$(LIBNAME).a: $(OBJS)
 	$(AR)  ruv $@ $(OBJS)

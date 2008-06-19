@@ -15,6 +15,7 @@ int main ()
 
   int id;
   int n;
+  int ret;
 
   /* Make arr static to keep off stack */
 
@@ -25,8 +26,9 @@ int main ()
   GPTLsetoption (GPTLabort_on_error, 1);
 
 #ifdef HAVE_PAPI
-  if ((id = GPTL_PAPIname2id ("PAPI_TOT_CYC")) > 0)
-    exit (id);
+  (void) GPTL_PAPIlibraryinit ();
+  if ((ret = PAPI_event_name_to_code ("PAPI_TOT_CYC", &id)) != 0)
+    exit (ret);
   if (GPTLsetoption (id, 1) < 0)
     exit (2);
 #endif

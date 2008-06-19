@@ -31,6 +31,8 @@ int main (int argc, char **argv)
   printf ("Include PAPI and OpenMP, respectively, if enabled\n");
   printf ("Usage: %s [-l looplen] [-n nompiter] [-p papi_option_name]\n", argv[0]);
 
+  (void) GPTL_PAPIlibraryinit ();
+
   while ((c = getopt (argc, argv, "l:n:p:")) != -1) {
     switch (c) {
 	case 'l':
@@ -42,7 +44,7 @@ int main (int argc, char **argv)
 	  printf ("Set nompiter=%d\n", nompiter);
 	  break;
 	case 'p':
-	  if ((papiopt = GPTL_PAPIname2id (optarg)) >= 0) {
+	  if ((ret = PAPI_event_name_to_code (optarg, &papiopt)) != 0) {
 	    printf ("Failure from GPTL_PAPIname2id\n");
 	    exit (1);
 	  }

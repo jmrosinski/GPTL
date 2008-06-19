@@ -1,9 +1,16 @@
 # Where to install GPTL library, include files, and man pages
 INSTALLDIR = $(HOME)/mips
 
-# C compiler and flags: symbols, high optimization, inlining
+# C compiler
 CC     = pathcc
-CFLAGS = -g -O3 -inline -Winline -Wall
+
+# Whether to build debug lib or optimized lib, and associated flags
+DEBUG = no
+ifeq ($(DEBUG),yes)
+  CFLAGS = -g -O0 -Wall -fno-inline
+else
+  CFLAGS = -g -O3 -finline-functions -Winline -Wall
+endif
 
 # Set ABI flags for non-default ABIs (e.g. 64-bit addressing)
 ABIFLAGS =
@@ -18,10 +25,11 @@ OPENMP = yes
 ifeq ($(OPENMP),yes)
   COMPFLAG = -mp
 else
-# OpenMP threading not enabled: threading may be enabled via the pthreads library.
-# If so, add -DTHREADED_PTHREADS to CFLAGS. -lpthread will probably be needed on LDFLAGS.
-  CFLAGS  += -DTHREADED_PTHREADS
-  LDFLAGS += -lpthread
+# Check for PTHREADS
+  ifeq ($(PTHREADS),yes)
+    CFLAGS  += -DTHREADED_PTHREADS
+    LDFLAGS += -lpthread
+  endif
 endif
 
 # For gcc, -Dinline=inline is a no-op. For other C compilers, things like 

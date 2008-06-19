@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.46 2008-06-02 13:57:49 rosinski Exp $
+$Id: private.h,v 1.47 2008-06-19 16:40:05 rosinski Exp $
 */
 
 #include <stdio.h>
@@ -25,7 +25,7 @@ $Id: private.h,v 1.46 2008-06-02 13:57:49 rosinski Exp $
 /* longest timer name allowed (probably safe to just change) */
 #define MAX_CHARS 63
 
-/* max allowable number of PAPI counters (though most machines allow fewer */
+/* max allowable number of PAPI counters */
 #define MAX_AUX 16
 
 #ifndef __cplusplus
@@ -52,11 +52,17 @@ typedef struct {
 } Papistats;
   
 typedef struct {
-  int counter;      /* PAPI counter */
-  char *counterstr; /* PAPI counter as string */
+  int counter;      /* PAPI or Derived counter */
+  char *counterstr; /* PAPI or Derived counter as string */
   char *prstr;      /* print string for output timers (16 chars) */
   char *str;        /* descriptive print string (more descriptive than prstr) */
-} Papientry;
+} Entry;
+
+typedef struct {
+  Entry event;
+  int numidx;
+  int denomidx;
+} Pr_event;
 
 typedef struct TIMER {
   char name[MAX_CHARS+1];   /* timer name (user input) */
@@ -99,7 +105,7 @@ extern int get_thread_num (int *, int *);      /* determine thread number */
 
 #ifdef HAVE_PAPI
 extern int GPTL_PAPIsetoption (const int, const int);
-extern int GPTL_PAPIinitialize (const int, const bool, int *, Papientry *);
+extern int GPTL_PAPIinitialize (const int, const bool, int *, Entry *);
 extern int GPTL_PAPIstart (const int, Papistats *);
 extern int GPTL_PAPIstop (const int, Papistats *);
 extern void GPTL_PAPIprstr (FILE *);

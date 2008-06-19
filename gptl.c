@@ -31,7 +31,7 @@ static Timer **timers = 0;       /* linked list of timers */
 static Timer **last = 0;         /* last element in list */
 static int *max_depth;           /* maximum indentation level encountered */
 static int *max_name_len;        /* max length of timer name */
-static Papientry eventlist[MAX_AUX];     /* list of PAPI events to be counted */
+static Entry eventlist[MAX_AUX]; /* list of PAPI events to be counted */
 static int GPTLnthreads= -1;     /* num threads. Init to bad value */
 static int maxthreads  = -1;     /* max threads (=GPTLnthreads for OMP). Init to bad value */
 static int depthlimit  = 99999;  /* max depth for timers (99999 is effectively infinite) */
@@ -1109,7 +1109,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.84 2008-06-02 13:57:49 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.85 2008-06-19 16:40:05 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
