@@ -124,8 +124,9 @@ static const Entry papitable [] = {
 
 static const int npapientries = sizeof (papitable) / sizeof (Entry);
 static int papieventlist[MAX_AUX];        /* list of PAPI events to be counted */
-static Pr_event pr_event[MAX_AUX];        /* array of events (PAPI or derived) */
+static Pr_event pr_event[MAX_AUX];        /* list of events (PAPI or derived) */
 
+/* Derived events */
 static const Entry derivedtable [] = {
   {GPTL_IPC, "GPTL_IPC", "Instr per cycle ", "Instructions per cycle"},
   {GPTL_CI,  "GPTL_CI",  "Comp Intensity  ", "Computational intensity"}
@@ -197,23 +198,17 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
     return 0;
   }
 
-  /*
-  ** Initialize PAPI if it hasn't already been done
-  */
+  /* Initialize PAPI if it hasn't already been done */
 
   if (GPTL_PAPIlibraryinit () < 0)
     return GPTLerror ("GPTL_PAPIsetoption: PAPI library init error\n");
 
-  /*
-  ** Ensure we will not exceed max nevents
-  */
+  /* Ensure max nevents won't be exceeded */
 
   if (nevents+1 > MAX_AUX)
     return GPTLerror ("GPTL_PAPIsetoption: %d is too many events\n", nevents+1);
 
-  /*
-  ** Check derived events
-  */
+  /* Check derived events */
 
   switch (counter) {
   case GPTL_IPC:
@@ -240,9 +235,7 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
     break;
   }
 
-  /*
-  ** Check PAPI presets
-  */
+  /* Check PAPI presets */
 
   for (n = 0; n < npapientries; n++) {
     if (counter == papitable[n].counter) {
@@ -265,12 +258,16 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
   }
 
   /*
-  ** Check native events last: if we get here and PAPI_event_code_to_name fails,
-  ** then we know the input is erroneous.
+  ** Check native events last: If PAPI_event_code_to_name fails, give up
   */
   
   if ((ret = PAPI_event_code_to_name (counter, papiname)) != PAPI_OK)
     return GPTLerror ("GPTL_PAPIsetoption: PAPI_strerror: %s\n", PAPI_strerror (ret));
+
+  /*
+  ** A table with predefined names of various lengths does not exist for
+  ** native events. Just truncate papiname.
+  */
 
   if ((numidx = is_enabled (counter)) >= 0) {
     pr_event[nevents].event.counter    = counter;
@@ -284,7 +281,7 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
     pr_event[nevents].event.prstr[16] = '\0';
 
     pr_event[nevents].event.str        = GPTLallocate (PAPI_MAX_STR_LEN);
-    strcpy (pr_event[nevents].event.str, papiname);
+    strncpy (pr_event[nevents].event.str, papiname, PAPI_MAX_STR_LEN);
 
     pr_event[nevents].numidx           = numidx;
   } else if (canenable (counter)) {
@@ -299,7 +296,7 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
     pr_event[nevents].event.prstr[16] = '\0';
 
     pr_event[nevents].event.str        = GPTLallocate (PAPI_MAX_STR_LEN);
-    strcpy (pr_event[nevents].event.str, papiname);
+    strncpy (pr_event[nevents].event.str, papiname, PAPI_MAX_STR_LEN);
 
     pr_event[nevents].numidx           = enable (counter);
   } else {
@@ -479,16 +476,11 @@ int GPTL_PAPIinitialize (const int maxthreads,     /* number of threads */
   verbose = verbose_flag;
 
   /* 
-  ** PAPI_library_init needs to be called before ANY other PAPI routine.
-  ** Check that the user hasn't already called PAPI_library_init before
-  ** invoking it.
+  ** Ensure that PAPI_library_init has already been called.
   */
 
-  if ((ret = PAPI_is_initialized ()) == PAPI_NOT_INITED) {
-    if ((ret = PAPI_library_init (PAPI_VER_CURRENT)) != PAPI_VER_CURRENT)
-      return GPTLerror ("GPTL_PAPIinitialize: PAPI_library_init failure:%s\n",
-			PAPI_strerror (ret));
-  }
+  if ((ret = GPTL_PAPIlibraryinit ()) < 0)
+    return GPTLerror ("GPTL_PAPIinitialize: GPTL_PAPIlibraryinit failure\n");
 
   /* PAPI_thread_init needs to be called if threading enabled */
 
@@ -614,7 +606,7 @@ static int create_and_start_events (const int t)  /* thread number */
     }
   }
 
-    /* Start the event set.  It will only be read from now on--never stopped */
+  /* Start the event set.  It will only be read from now on--never stopped */
 
   if ((ret = PAPI_start (EventSet[t])) != PAPI_OK)
     return GPTLerror ("create_and_start_events: failed to start event set: %s\n", PAPI_strerror (ret));
@@ -759,17 +751,17 @@ void GPTL_PAPIpr (FILE *fp,                          /* file descriptor to write
 		  const int count,                   /* number of invocations */
 		  const double wcsec)                /* wallclock time (sec) */
 {
-  char *shortintfmt   = "%8ld ";
-  char *longintfmt    = "%16ld ";
-  char *shortfloatfmt = "%8.2e ";
-  char *longfloatfmt  = "%16.10e ";
+  const char *shortintfmt   = "%8ld ";
+  const char *longintfmt    = "%16ld ";
+  const char *shortfloatfmt = "%8.2e ";
+  const char *longfloatfmt  = "%16.10e ";
   
-  char *intfmt;
-  char *floatfmt;
-  int n;
-  int numidx;
-  int denomidx;
-  double val;
+  char *intfmt;       /* integer format */
+  char *floatfmt;     /* floating point format */
+  int n;              /* loop index */
+  int numidx;         /* index pointer to appropriated (derived) numerator */
+  int denomidx;       /* index pointer to appropriated (derived) denominator */
+  double val;         /* value to be printed */
 
   intfmt   = narrowprint ? shortintfmt   : longintfmt;
   floatfmt = narrowprint ? shortfloatfmt : longfloatfmt;
@@ -786,7 +778,9 @@ void GPTL_PAPIpr (FILE *fp,                          /* file descriptor to write
       else
 	val = 0.;
       fprintf (fp, floatfmt, val);
-    } else {                         /* Raw PAPI event */
+
+    } else {                               /* Raw PAPI event */
+
       if (aux->accum[numidx] < PRTHRESH)
 	fprintf (fp, intfmt, (long) aux->accum[numidx]);
       else
