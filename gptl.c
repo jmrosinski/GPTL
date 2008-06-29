@@ -221,7 +221,7 @@ int GPTLsetoption (const int option,  /* option */
     return 0;
   }
 #endif
-  return GPTLerror ("GPTLsetoption: option %d not found\n", option);
+  return GPTLerror ("GPTLsetoption: option %d not available\n", option);
 }
 
 /*
@@ -1109,7 +1109,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.85 2008-06-19 16:40:05 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.86 2008-06-29 02:36:33 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)

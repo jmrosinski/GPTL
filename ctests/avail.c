@@ -28,7 +28,14 @@ int main ()
     if (ret == PAPI_OK && info.count > 0) {
       printf("%-20s %-10d %s\n", info.symbol, i & info.event_code, info.long_descr);
     }
+    /*
+    ** Should use PAPI_ENUM_ALL below, but papivi.h doesn't always
+    ** automatically get installed
+    */
+  } while (PAPI_enum_event (&i, 0) == PAPI_OK);
+  /*
   } while (PAPI_enum_event (&i, PAPI_ENUM_ALL) == PAPI_OK);
+  */
 #else
   printf ("PAPI not enabled so this code does nothing\n");
 #endif
