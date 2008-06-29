@@ -213,7 +213,7 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
   switch (counter) {
   case GPTL_IPC:
     if ( ! canenable2 (PAPI_TOT_INS, PAPI_TOT_CYC))
-      return GPTLerror ("GPTL_PAPIsetoption: canenable2 error\n");
+      return GPTLerror ("GPTL_PAPIsetoption: canenable2 return says GPTL_IPC unavailable\n");
 
     idx = getderivedidx (GPTL_IPC);
     pr_event[nevents].event    = derivedtable[idx];
@@ -223,7 +223,7 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
     return 0;
   case GPTL_CI:
     if ( ! canenable2 (PAPI_FP_OPS, PAPI_LST_INS))
-      return GPTLerror ("GPTL_PAPIsetoption: canenable2 error\n");
+      return GPTLerror ("GPTL_PAPIsetoption: canenable2 return says GPTL_CI unavailable\n");
 
     idx = getderivedidx (GPTL_CI);
     pr_event[nevents].event    = derivedtable[idx];
@@ -755,9 +755,9 @@ void GPTL_PAPIpr (FILE *fp,                          /* file descriptor to write
   const char *longintfmt    = "%16ld ";
   const char *shortfloatfmt = "%8.2e ";
   const char *longfloatfmt  = "%16.10e ";
-  
-  char *intfmt;       /* integer format */
-  char *floatfmt;     /* floating point format */
+  const char *intfmt;       /* integer format */
+  const char *floatfmt;     /* floating point format */
+
   int n;              /* loop index */
   int numidx;         /* index pointer to appropriated (derived) numerator */
   int denomidx;       /* index pointer to appropriated (derived) denominator */
