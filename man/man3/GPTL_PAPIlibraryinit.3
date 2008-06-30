@@ -1,0 +1,43 @@
+.\" $Id: GPTL_PAPIlibraryinit.3,v 1.1 2008-06-30 01:43:49 rosinski Exp $
+.TH GPTL_PAPIlibraryinit 3 "June, 2008" "GPTL"
+
+.SH NAME
+.nf
+GPTL_PAPIlibraryinit \- Ensure PAPI library is initialized
+.fi
+
+.SH SYNOPSIS
+.B C Interface:
+.nf
+int GPTL_PAPIlibraryinit (void);
+.fi
+
+.B Fortran Interface:
+.nf
+integer gptl_papilibraryinit ()
+.fi
+
+.SH DESCRIPTION
+.B GPTL_PAPIlibraryinit():
+Ensure that the PAPI library is initialized. The main reason to call this
+function is so PAPI native events can be enabled with a 
+.B GPTLsetoption()
+call.
+
+.SH RESTRICTIONS
+None.
+
+.SH RETURN VALUES
+On success, 0 is returned.
+On error, a negative error code is returned and a descriptive message
+printed. 
+
+.SH EXAMPLES
+.nf         
+.if t .ft CW
+
+(void) GPTL_PAPIlibraryinit ();
+(void) GPTLsetoption (L2_LD, 1);
+
+.if t .ft P
+.fi
