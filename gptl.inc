@@ -5,7 +5,6 @@
       integer GPTLdepthlimit
       integer GPTLverbose
       integer GPTLnarrowprint
-      integer GPTLparentchild
       integer GPTLpercent
       integer GPTLpersec
       integer GPTLmultiplex
@@ -26,7 +25,6 @@
       parameter (GPTLdepthlimit     = 5)
       parameter (GPTLverbose        = 6)
       parameter (GPTLnarrowprint    = 7)
-      parameter (GPTLparentchild    = 8)
       parameter (GPTLpercent        = 9)
       parameter (GPTLpersec         = 10)
       parameter (GPTLmultiplex      = 11)
@@ -60,8 +58,7 @@
       integer gptlquerycounters
       integer gptlget_nregions
       integer gptlget_regionname
-      integer gptl_papiprinttable
-      integer gptl_papiname2id
+      integer gptl_papilibraryinit
 
       external gptlsetoption
       external gptlinitialize
@@ -81,5 +78,4 @@
       external gptlquerycounters
       external gptlget_nregions
       external gptlget_regionname
-      external gptl_papiprinttable
-      external gptl_papiname2id
+      external gptl_papilibraryinit

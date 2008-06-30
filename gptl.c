@@ -121,13 +121,8 @@ static Funcentry funclist[] = {
 };
 static const int nfuncentries = sizeof (funclist) / sizeof (Funcentry);
 
-/* 
-** The following is for efficiency. Would like to use funclist[funcidx].func
-** but compiler complains about non-constant initializer
-*/
-
 static int funcidx = 0;               /* default timer is gettimeofday*/  
-static double (*ptr2wtimefunc)() = utr_gettimeofday;
+static double (*ptr2wtimefunc)() = 0; /* init to invalid */
 
 #ifdef HAVE_NANOTIME
 static float cpumhz = -1.;                        /* init to bad value */
@@ -1109,7 +1104,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.86 2008-06-29 02:36:33 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.87 2008-06-30 00:45:33 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1849,8 +1844,8 @@ static inline int get_thread_num (int *GPTLnthreads, int *maxthreads)
 #endif
 
 /*
-** Add entry points for when -finstrument-functions was set on gcc compile
-** line.
+** Add entry points for gcc (and some PathScale) codes instrumented with 
+** -finstrument-functions
 */
 
 #ifdef __cplusplus

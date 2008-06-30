@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.27 2008-06-19 16:40:05 rosinski Exp $
+** $Id: f_wrappers.c,v 1.28 2008-06-30 00:45:33 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines
 */
@@ -29,7 +29,7 @@
 #define gptlget_regionname GPTLGET_REGIONNAME
 #define gptlget_memusage GPTLGET_MEMUSAGE
 #define gptlprint_memusage GPTLPRINT_MEMUSAGE
-#define gptl_papiprinttable GPTL_PAPIPRINTTABLE
+#define gptl_papilibraryinit GPTL_PAPILIBRARYINIT
 
 #elif ( defined FORTRANUNDERSCORE )
 
@@ -51,7 +51,7 @@
 #define gptlget_regionname gptlget_regionname_
 #define gptlget_memusage gptlget_memusage_
 #define gptlprint_memusage gptlprint_memusage_
-#define gptl_papiprinttable gptl_papiprinttable_
+#define gptl_papilibraryinit gptl_papilibraryinit_
 
 #elif ( defined FORTRANDOUBLEUNDERSCORE )
 
@@ -73,7 +73,7 @@
 #define gptlget_regionname gptlget_regionname__
 #define gptlget_memusage gptlget_memusage__
 #define gptlprint_memusage gptlprint_memusage__
-#define gptl_papiprinttable gptl_papiprinttable__
+#define gptl_papilibraryinit gptl_papilibraryinit__
 
 #endif
 
@@ -210,8 +210,8 @@ int gptlprint_memusage (const char *str, int nc)
   return GPTLprint_memusage (cname);
 }
 
-void gptl_papiprinttable ()
+void gptl_papilibraryinit ()
 {
-  GPTL_PAPIprinttable ();
+  GPTL_PAPIlibraryinit ();
   return;
 }

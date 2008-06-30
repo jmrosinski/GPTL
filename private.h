@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.47 2008-06-19 16:40:05 rosinski Exp $
+$Id: private.h,v 1.48 2008-06-30 00:45:33 rosinski Exp $
 */
 
 #include <stdio.h>
@@ -16,7 +16,7 @@ $Id: private.h,v 1.47 2008-06-19 16:40:05 rosinski Exp $
 
 #define STRMATCH(X,Y) (strcmp((X),(Y)) == 0)
 
-/* Threshold count below which integers will be printed */
+/* Output counts less than PRTHRESH will be printed as integers */
 #define PRTHRESH 1000000L
 
 /* Maximum allowed callstack depth */
@@ -102,6 +102,10 @@ extern void threadfinalize (void);             /* finalize threading environment
 #if ( defined THREADED_PTHREADS )
 extern int get_thread_num (int *, int *);      /* determine thread number */
 #endif
+
+/* 
+** These are needed for communication between gptl.c and gptl_papi.c
+*/
 
 #ifdef HAVE_PAPI
 extern int GPTL_PAPIsetoption (const int, const int);

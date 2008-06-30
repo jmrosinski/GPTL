@@ -895,20 +895,6 @@ bool GPTL_PAPIis_multiplexed ()
 ** The following functions are publicly available
 */
 
-/*
-** GPTL_PAPIprinttable:  Print table of PAPI native counters. Not all are
-**   necessarily available on this architecture. This is the one routine 
-**   in this file which is user-visible.
-*/
-
-void GPTL_PAPIprinttable ()
-{
-  int n;
-
-  for (n = 0; n < npapientries; n++)
-    printf ("%d %s\n", papitable[n].counter, papitable[n].str);
-}
-
 void read_counters100 ()
 {
   int i;
