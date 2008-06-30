@@ -807,7 +807,7 @@ void GPTL_PAPIprintenabled (FILE *fp)
 {
   int n;
 
-  fprintf (fp, "PAPI events enabled (including derived):\n");
+  fprintf (fp, "PAPI events enabled (including those required for derived events):\n");
   for (n = 0; n < nevents; n++)
     fprintf (fp, "  %s\n", pr_event[n].event.str);
   fprintf (fp, "\n");

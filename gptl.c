@@ -1104,7 +1104,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.87 2008-06-30 00:45:33 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.88 2008-06-30 01:34:24 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1140,7 +1140,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 #endif
   tot_overhead = utr_overhead + papi_overhead;
   fprintf (fp, "If overhead stats are printed, roughly half the estimated number is\n");
-  fprintf (fp, "embedded in the wallclock (and/or PAPI counter) stats for each timer\n\n");
+  fprintf (fp, "embedded in the wallclock stats for each timer\n\n");
   fprintf (fp, "If a \'%% of\' field is present, it is w.r.t. the first timer for thread 0.\n");
   fprintf (fp, "If a \'e6 per sec\' field is present, it is in millions of PAPI counts per sec.\n\n");
   fprintf (fp, "A '*' in column 1 below means the timer had multiple parents, though the\n");
@@ -1294,11 +1294,13 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   for (t = 0; t < GPTLnthreads; ++t) {
     fprintf (fp, "\nMultiple parent info (if any) for thread %d:\n", t);
     if (t == 0) {
-      fprintf (fp, "The 2 columns are number of child invocations\n");
-      fprintf (fp, "The rows are each parent, with their common child being the last entry, "
+      fprintf (fp, "Columns are count and name for the listed child\n");
+      fprintf (fp, "Rows are each parent, with their common child being the last entry, "
 	       "which is indented\n");
-      fprintf (fp, "Counts next to parents are number of times they called the child\n");
-      fprintf (fp, "Count next to child is total number of times it was called\n");
+      fprintf (fp, "Count next to each parent is the number of times it called the "
+	       "child\n");
+      fprintf (fp, "Count next to child is total number of times it was called by the "
+	       "listed parents\n\n");
     }
     for (ptr = timers[t]; ptr; ptr = ptr->next)
       if (ptr->nparent > 1)
@@ -1458,8 +1460,12 @@ void print_multparentinfo (FILE *fp,
 {
   int n;
 
-  if (ptr->norphan > 0)
-    fprintf (fp, "%34s %d\n", "ORPHAN", ptr->norphan);
+  if (ptr->norphan > 0) {
+    if (ptr->norphan < PRTHRESH)
+      fprintf (fp, "%8d %-32s\n", ptr->norphan, "ORPHAN");
+    else
+      fprintf (fp, "%8.1e %-32s\n", (float) ptr->norphan, "ORPHAN");
+  }
 
   for (n = 0; n < ptr->nparent; ++n) {
     if (ptr->parent_count[n] < PRTHRESH)
