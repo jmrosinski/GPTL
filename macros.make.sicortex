@@ -1,5 +1,5 @@
 # Where to install GPTL library, include files, and man pages
-INSTALLDIR = $(HOME)/mips
+INSTALLDIR = /usr/local
 
 # C compiler
 CC     = pathcc

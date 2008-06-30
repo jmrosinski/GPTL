@@ -1,7 +1,9 @@
 gptl3_2: Handle multiple parents
 	 Add parsegptlout.pl for handling MPI output
 	 Add capability for derived counters (currently just IPC and CI)
-	 Junk autoconf in favor of macros.make
+	 Add GPTL_PAPIlibraryinit to allow enabling PAPI native events
+	 Junk autoconf in favor of macros.make ("suggestions" retained as
+           an autoconf-generated script to suggest settings)
 	 Vastly faster start/stop for auto-instrumented codes
 	 hex2name.pl properly indents output
 	 Efficiency enhancements (e.g. no character copying on start/stop)
