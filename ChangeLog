@@ -1,3 +1,11 @@
+gptl3_2: Handle multiple parents
+	 Add capability for derived counters (currently just IPC and CI)
+	 Junk autoconf in favor of macros.make
+	 Vastly faster start/stop for auto-instrumented codes
+	 hex2name.pl properly indents timer names
+	 Efficiency enhancements (e.g. no character copying on start/stop)
+	 Use stack to determine parent, for simplicity, efficiency, correctness
+	 Arrange timers in tree for proper handling of parent/chiled
 gptl2_16: Rename GPTLpr_mpistats to GPTLpr_summary. Make it behave
 	  reasonably even when MPI not enabled.
 	  Close print files after writing to them.
