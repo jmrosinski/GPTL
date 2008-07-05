@@ -1,12 +1,17 @@
-INSTRFLAGS   = -finstrument-functions
 OBJS = avail.o depth.o rawpapitest.o recursion.o stride.o memusage.o utrtest.o \
        papiomptest.o cygprofile.o cygprofilesubs.o scale.o parentchild.o mpi.o \
        gran_overhead.o load_imbalance.o
 EXES = avail depth     rawpapitest recursion stride memusage utrtest \
-       papiomptest cygprofile parentchild \
+       papiomptest parentchild \
        gran_overhead  
+
 ifeq ($(HAVE_MPI),yes)
   EXES += scale mpi load_imbalance
+endif
+
+ifeq ($(CC),gcc)
+  EXES += cygprofile
+  INSTRFLAGS = -finstrument-functions
 endif
 
 all: $(EXES)
