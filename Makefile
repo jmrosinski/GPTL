@@ -36,7 +36,7 @@ CFLAGS += $(INLINEFLAG) $(UNDERSCORING)
 ifeq ($(HAVE_PAPI),yes)
   CFLAGS       += -DHAVE_PAPI
   CFLAGS_TESTS += -DHAVE_PAPI
-  ifneq ($(PAPI_INCDIR),$(null))
+  ifneq ($(PAPI_INCFLAGS),$(null))
     CFLAGS       += $(PAPI_INCFLAGS)
     CFLAGS_TESTS += $(PAPI_INCFLAGS)
   endif
