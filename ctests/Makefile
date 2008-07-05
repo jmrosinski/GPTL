@@ -14,6 +14,11 @@ ifeq ($(CC),gcc)
   INSTRFLAGS = -finstrument-functions
 endif
 
+ifeq ($(CC),pathcc)
+  EXES += cygprofile
+  INSTRFLAGS = -finstrument-functions
+endif
+
 all: $(EXES)
 
 clean:
