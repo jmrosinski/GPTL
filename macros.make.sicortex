@@ -65,19 +65,18 @@ AR = ar
 # PAPI_LIBNAME: Test applications will be linked with -l$(PAPI_LIBNAME)
 HAVE_PAPI = yes
 ifeq ($(HAVE_PAPI),yes)
-  PAPI_INCDIR  = 
-  PAPI_LIBDIR  = 
-  PAPI_LIBNAME = papi
+  PAPI_INCFLAGS  = 
+  PAPI_LIBFLAGS  = -lpapi
 endif
 
-# MPI: To enable, set HAVE_MPI=yes. Then set inc and lib info if needed.
+# MPI: This is needed only for MPI_Wtime, and some of the test codes in ctests and ftests
+# To enable, set HAVE_MPI=yes. Then set inc and lib info if needed.
 # If CC=mpicc for example, MPI_INCDIR MPI_LIBDIR and MPI_LIBNAME can all be blank.
 # If MPI_LIBNAME is set, test applications will be linked with -l$(MPI_LIBNAME)
 HAVE_MPI    = yes
 ifeq ($(HAVE_MPI),yes)
-  MPI_INCDIR  = 
-  MPI_LIBDIR  = 
-  MPI_LIBNAME = scmpi
+  MPI_INCFLAGS  = 
+  MPI_LIBFLAGS = -lscmpi
 endif
 
 # librt.a is an option for gathering wallclock time stats on some machines. Setting

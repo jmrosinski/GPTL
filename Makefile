@@ -37,29 +37,23 @@ ifeq ($(HAVE_PAPI),yes)
   CFLAGS       += -DHAVE_PAPI
   CFLAGS_TESTS += -DHAVE_PAPI
   ifneq ($(PAPI_INCDIR),$(null))
-    CFLAGS       += -I$(PAPI_INCDIR)
-    CFLAGS_TESTS += -I$(PAPI_INCDIR)
+    CFLAGS       += $(PAPI_INCFLAGS)
+    CFLAGS_TESTS += $(PAPI_INCFLAGS)
   endif
-  ifneq ($(PAPI_LIBDIR),$(null))
-    LDFLAGS += -L$(PAPI_LIBDIR)
-  endif
-  ifneq ($(PAPI_LIBNAME),$(null))
-    LDFLAGS += -l$(PAPI_LIBNAME)
+  ifneq ($(PAPI_LIBFLAGS),$(null))
+    LDFLAGS += $(PAPI_LIBFLAGS)
   endif
 endif
 
 ifeq ($(HAVE_MPI),yes)
   CFLAGS       += -DHAVE_MPI
   CFLAGS_TESTS += -DHAVE_MPI
-  ifneq ($(MPI_INCDIR),$(null))
-    CFLAGS       += -I$(MPI_INCDIR)
-    CFLAGS_TESTS += -I$(MPI_INCDIR)
+  ifneq ($(MPI_INCFLAGS),$(null))
+    CFLAGS       += $(MPI_INCFLAGS)
+    CFLAGS_TESTS += $(MPI_INCFLAGS)
   endif
-  ifneq ($(MPI_LIBDIR),$(null))
-    LDFLAGS += -L$(MPI_LIBDIR)
-  endif
-  ifneq ($(MPI_LIBNAME),$(null))
-    LDFLAGS += -l$(MPI_LIBNAME)
+  ifneq ($(MPI_LIBFLAGS),$(null))
+    LDFLAGS += $(MPI_LIBFLAGS)
   endif
 endif
 
