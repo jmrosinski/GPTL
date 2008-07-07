@@ -1,78 +1,144 @@
-GPTL is a general-purpose timing library. By itself it can gather wallclock
-and cpu timing statistics for a code instrumented with an aribtrary sequence
-of calls to the pair of routines "GPTLstart" and "GPTLstop" (more details
-below). It is thread-safe, presuming either OpenMP or pthreads is
-available. If the Fortran interface is built, entry point names and the API
-are exactly the same as in C, except that Fortran is case-insensitive.
+This file contains information about using GPTL. For information on building
+and installing GPTL, see the file INSTALL.
 
-GPTL also provides hooks into the hardware counters library PAPI
-(http://icl.cs.utk.edu/papi/index.html). If this option is enabled, the same
-"GPTLstart" and "GPTLstop" calls can be used to provide various low-level
-hardware counter info, such as total cycles, floating point ops, cache
-misses, and various other performance information depending on the target
-architecture. PAPI must already be installed in order to enable this option.
+GPTL means "General Purpose Timing Library". The library can be used to
+manually instrument application codes with an arbitrary set of "regions" over
+which statistics such as wallclock time and CPU time are gathered and
+subsequently printed. If the target application is built with the GNU
+compilers (gcc or gfortran) or Pathscale (pathcc or pathf95), GPTL can also be
+used to automatically instrument regions which are defined by function entry
+and exit points. This is an easy way to generate a dynamic call tree. See
+Auto-Instrumentation below for a description of how to use this feature.
 
-
-Building and installing GPTL
-----------------------------
-
-After untarring the distribution and then doing "cd gptl", construct a
-macros.make file by editing one of the templates provided (currenty there's
-macros.make.linux, and macros.make.sicortex) that is closest to the machine
-you're building the library on. Step-by-step instructions for setting each
-configuration option are embedded in that file. If unsure of some settings,
-you can run "./suggestions". This is an autoconf "configure" script which has
-been modified to just print suggestions, rather than creating any output
-files. After creating macros.make:
-
-% make all
-% make install
-
-In addition to building the library, the "make all" step will build test
-codes in subdirectories ctests/ and (if applicable) ftests/. Currently
-there's not an automated testing procedure. To test the library and see how
-it works, you'll need to "cd" into ctests/ or ftests/ and run the desired
-test executables individually.
+If the PAPI library is already installed (http://icl.cs.utk.edu/papi), GPTL
+also provides a convenient mechanism to access all available PAPI events. In
+addtion to PAPI preset and native events, GPTL defines derived events which
+are based on PAPI counters. Available derived events are instructions per
+cycle (GPTL_IPC) and computational intensity (GPTL_CI). Of course these events
+can only be enabled if the PAPI counters they require are available on the
+target architecture.
 
 
-Using GPTL
+Using GPTL 
 ----------
 
-C codes issuing GPTL library calls should #include <gptl.h>. Fortran codes
-should #include or Fortran include 'gptl.inc'. Example codes that use the
-library can be found in the subdirectories ctests/ and ftests/.
+C codes making GPTL library calls should #include <gptl.h>. Fortran codes
+should #include or Fortran include 'gptl.inc'. The C and Fortran interfaces
+are identical, except that the C interface uses mixed case. All
+user-accessible functions return either 0 (success) or -1 (failure). Example
+codes that use the library can be found in subdirectories ctests/ and ftests/.
 
-Code instrumentation to utilize GPTL involves an arbitrary number of calls to
+Code instrumentation to utilize GPTL involves zero or more calls to
 GPTLsetoption(), then a single call to GPTLinitialize(), then an arbitrary
 sequence of calls to GPTLstart() and GPTLstop(), and finally a call to
-GPTLpr() or GPTLpr_file().  See the man pages for details of arguments to
-these functions.  The man pages for GPTLstart and GPTLstop give an example
-complete sequence of GPTL calls to instrument a code.  Also, various test
-codes are built in the tests/ subdirectory of this distribution.
+GPTLpr() or GPTLpr_file(). See "Example" below for a sample calling
+sequence. Calls to GPTLstart() and GPTLstop() are thread-safe, with per-thread
+statistics printed by GPTLpr() or GPTLpr_file().
 
-The purpose of GPTLsetoption is to enable or disable various library options.
-For example, the PAPI counter for total cycles is also desired, then a call
-of the form:
+The purpose of GPTLsetoption() is to enable or disable various library
+options. For example, to enable the PAPI counter for total cycles, do this:
 
-GPTLsetoption (PAPI_TOT_CYC, 1)
+ret = GPTLsetoption (PAPI_TOT_CYC, 1);
 
-is required. The list of available GPTL options is contained in gptl.h, and
-the list of possible PAPI options is contained in the file papiStdEventDefs.h 
-included with the PAPI distribution.
+The "1" says "enable". Use "0" for "disable". See the man pages for complete
+documentation on function usage and arguments. The list of available GPTL
+options is contained in gptl.h, and a complete list of available PAPI-based
+events can be found by running "ctests/avail".
 
-GPTLinitialize () initializes the GPTL library for subsequent calls to GPTLstart
-and GPTLstop.  This is necessary for threading, and to initialize the PAPI
-library in case support for it was requested in macros.make.
+GPTLinitialize() initializes the GPTL library.
 
 There can be an arbitrary number of start/stop pairs before GPTLpr() or
-GPTLpr_file() is called to print the results.  And an arbitrary amount of
-nesting of timers is also allowed.  The printed results will be indented to
-indicate the level of nesting.
+GPTLpr_file() is called to print the results. And an arbitrary amount of
+nesting of regions is also allowed. The printed results will be indented to
+indicate the level of nesting for each region.
 
-GPTLpr() prints the results to a file named timing.<number>, where <number>
-is an input argument to GPTLpr. For MPI jobs, it is most convenient to use
-the MPI rank. The entry point GPTLpr_file takes a single argument which is
-the output file to write to.
+GPTLpr() prints the results to a file named timing.<number>, where the single
+argument <number> is an integer. For MPI jobs, it is most convenient to use
+the MPI rank of the invoking task for <number>. Equivalently, function
+GPTLpr_file() can be called. Its input argument is a character string
+indicating the output file name to be written. It is up to the user to ensure
+that these print functions write to uniquely-named files, in order to avoid
+name-space collisions.
 
 GPTLfinalize() can be called to clean up the GPTL environment.  All space
 malloc'ed by the GPTL library will be freed by this call.
+
+
+Example 
+-------
+
+From "man GPTLstart", a simple example calling sequence to time a couple of
+code regions and print the results is:
+
+(void) GPTLsetoption (GPTLcpu, 1);      /* enable cpu timings */
+(void) GPTLsetoption (GPTLwall, 0);     /* disable wallclock timings */
+(void) GPTLsetoption (PAPI_TOT_CYC, 1); /* enable counting of total cycles */
+...
+(void) GPTLinitialize();                /* initialize the GPTL library */
+(void) GPTLstart ("total");             /* start a timer */
+...
+(void) GPTLstart ("do_work");           /* start another timer */
+
+do_work();                              /* do some work */
+
+(void) GPTLstop ("do_work");            /* stop a timer */
+(void) GPTLstop ("total");              /* stop a timer */
+...
+(void) GPTLpr (mympitaskid);            /* print the results to timing.<mympitaskid> */
+
+
+Auto-instrumentation 
+--------------------
+
+If the regions to be timed are defined by function entry and exit points, and
+the application to be profiled is built with either the GNU or Pathscale
+compilers, you might find it convenient to use the auto-instrumentation
+feature of GPTL. Here's how:
+
+1) Add the flag -finstrument-functions when compiling the routines you'd like
+to profile.
+
+2) Add calls to GPTLsetoption() (if desired), and GPTLinitialize() to the main
+program before any other routines are invoked.
+
+3) Add a call to GPTLpr() or GPTLpr_file() wherever appropriate prior to where
+the code terminates.
+
+4) Link with -lgptl (and -lpapi if PAPI is enabled).
+
+5) Run the code.
+
+6) Run "hex2name.pl <a.out> <timing.0> | less", where
+<a.out> is the name of the executable, and <timing.0> is the name of the
+timing file to be converted.
+
+The result should be a dynamic call tree with timings and (if enabled) PAPI
+counts and derived event statistics for each region, where regions are defined
+by function entry and exit points.
+
+Here's what's happening under the covers:
+
+The -finstrument-functions flag tells the compiler to insert calls to
+__cyg_profile_func_enter (void *this_fn, void *call_site) at function start,
+and __cyg_profile_func_exit (void *this_fn, void *call_site) at function
+exit. GPTL defines these functions as calls to (effectively) GPTLstart() and
+GPTLstop(), where the address of the function is used as the input sentinel to
+these routines.
+
+Running hex2name.pl converts the function addresses back to human-readable
+function names. It uses the UNIX "nm" utility to do this.
+
+
+Multi-processor instrumented codes 
+----------------------------------
+
+For instrumented codes which make use of threading and/or MPI, a
+post-processing script is provided to analyze GPTL output files and gather
+max/min/average stats on a per-region basis. The script is parsegptlout.pl. It
+might be invoked as, for example:
+
+parsegptlout.pl sub1
+
+The script will look through all files in the current directory named timing.*
+for regions named "sub1", then gather and print various statistics. Numerous
+options are available. See "man parsegptlout" for more in-depth information.
