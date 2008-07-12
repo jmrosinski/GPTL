@@ -1,9 +1,9 @@
 This file contains information about using GPTL. For information on building
 and installing GPTL, see the file INSTALL.
 
-GPTL means "General Purpose Timing Library". The library can be used to
-manually instrument application codes with an arbitrary set of "regions" over
-which statistics such as wallclock time and CPU time are gathered and
+GPTL is the "General Purpose Timing Library". It can be used to manually
+instrument application codes with an arbitrary set of "regions" (or "timers")
+over which statistics such as wallclock time and CPU time are gathered and
 subsequently printed. If the target application is built with the GNU
 compilers (gcc or gfortran) or Pathscale (pathcc or pathf95), GPTL can also be
 used to automatically instrument regions which are defined by function entry

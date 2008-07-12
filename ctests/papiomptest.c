@@ -64,7 +64,7 @@ int main (int argc, char **argv)
 
   (void) GPTLsetoption (GPTLabort_on_error, 1);
   (void) GPTLsetoption (GPTLoverhead, 1);
-  (void) GPTLsetoption (GPTLnarrowprint, 0);
+  (void) GPTLsetoption (GPTLnarrowprint, 1);
 
   if ((GPTLinitialize ()) != 0) {
     printf ("papiomptest: GPTLinitialize failure\n");

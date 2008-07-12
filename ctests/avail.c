@@ -19,7 +19,7 @@ int main ()
     return -1;
   }
 
-  printf ("Purpose: print PAPI events enabled on this arch\n");
+  printf ("Purpose: print PAPI-based events enabled on this architecture\n");
   printf ("Preset events:\n");
   printf ("Name                Code        Description\n");
 
@@ -52,6 +52,23 @@ int main ()
     ** automatically get installed
     */
   } while (PAPI_enum_event (&i, 0) == PAPI_OK);
+
+  printf ("\n\n\n");
+  printf ("Derived events:\n");
+  printf ("Name                Code        Description\n");
+
+  /*
+  ** This should be done with a "getter" function for the derived counter name
+  */
+
+  if ((ret == PAPI_query_event (PAPI_TOT_INS)) == PAPI_OK &&
+      (ret == PAPI_query_event (PAPI_TOT_CYC)) == PAPI_OK)
+    printf("%-20s %-10d %s\n", "GPTL_IPC", GPTL_IPC, "Instructions per cycle\n");
+
+  if ((ret == PAPI_query_event (PAPI_FP_OPS)) == PAPI_OK &&
+      (ret == PAPI_query_event (PAPI_LST_INS)) == PAPI_OK)
+    printf("%-20s %-10d %s\n", "GPTL_IPC", GPTL_CI, "Computational intensity\n");
+  
 #else
   printf ("PAPI not enabled so this code does nothing\n");
 #endif

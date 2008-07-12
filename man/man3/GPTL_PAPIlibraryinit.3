@@ -1,4 +1,4 @@
-.\" $Id: GPTL_PAPIlibraryinit.3,v 1.1 2008-06-30 01:43:49 rosinski Exp $
+.\" $Id: GPTL_PAPIlibraryinit.3,v 1.2 2008-07-12 00:35:03 rosinski Exp $
 .TH GPTL_PAPIlibraryinit 3 "June, 2008" "GPTL"
 
 .SH NAME
@@ -19,10 +19,12 @@ integer gptl_papilibraryinit ()
 
 .SH DESCRIPTION
 .B GPTL_PAPIlibraryinit():
-Ensure that the PAPI library is initialized. The main reason to call this
-function is so PAPI native events can be enabled with a 
+Ensure that the PAPI library is initialized. In past releases the main reason to call this
+function was so PAPI native events could be enabled with a 
 .B GPTLsetoption()
-call.
+call. Now this should happen automatically so users shouldn't need to invoke
+.B GPTLsetoption()
+.
 
 .SH RESTRICTIONS
 None.
