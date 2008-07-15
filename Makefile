@@ -12,12 +12,14 @@ endif
 LDFLAGS = -L.. -l$(LIBNAME)
 TESTS = ctests/all 
 
-# Set variables based on settings in macros.make
-
 LDFLAGS += $(ABIFLAGS)
 
+ifeq ($(MANDIR),$(null))
+  MANDIR = $(INSTALLDIR)
+endif
+
 ifeq ($(LINUX),yes)
-  CFLAGS       += -DLINUX
+  CFLAGS += -DLINUX
 endif
 
 ifeq ($(FORTRAN),yes)
@@ -93,12 +95,12 @@ lib$(LIBNAME).a: $(OBJS)
 install: lib$(LIBNAME).a
 	install -m 0644 lib$(LIBNAME).a $(INSTALLDIR)/lib
 	install -m 0644 gptl.h gptl.inc $(INSTALLDIR)/include
-	install -m 0644 man/man3/*.3 $(INSTALLDIR)/man/man3
+	install -m 0644 man/man3/*.3 $(MANDIR)/man/man3
 
 uninstall:
 	rm -f $(INSTALLDIR)/lib/lib$(LIBNAME).a
 	rm -f $(INSTALLDIR)/include gptl.h $(INSTALLDIR)/include/gptl.inc
-	rm -f $(MANDIR)/GPTL*
+	rm -f $(MANDIR)/man/man3/GPTL*.3
 
 ctests/all:
 	(cd ctests && $(MAKE) all CC=$(CC) CFLAGS="$(CFLAGS_TESTS)" LDFLAGS="$(LDFLAGS)")

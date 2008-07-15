@@ -66,8 +66,8 @@ int main (int argc, char **argv)
     ret = GPTLfinalize ();
     printf ("\n");
   }
-  printf ("func with min granularity = %s (%g)\n", mingranname, mingran);
-  printf ("func with min overhead    = %s (%g)\n", minohname, minoh);
+  printf ("func with finest granularity = %s (%g)\n", mingranname, mingran);
+  printf ("func with min overhead       = %s (%g)\n", minohname, minoh);
   return 0;
 }
 

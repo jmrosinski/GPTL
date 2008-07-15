@@ -13,7 +13,7 @@
       ret = mpi_nit ()
 #endif
 
-      write(6,*) 'Purpose: estimate overhead of GPTL'
+      write(6,*) 'Purpose: estimate overhead of GPTL timing (UTR)'
       ret = gptlsetoption (gptlabort_on_error, 0)
       ret = gptlsetoption (gptlverbose, 0)
 

@@ -1,5 +1,8 @@
-# Where to install GPTL library, include files, and man pages
+# Where to install GPTL library and include files
 INSTALLDIR = /usr/local
+
+# Where to install man pages (if blank, defaults to $INSTALLDIR)
+MANDIR =
 
 # C compiler
 CC     = pathcc

@@ -121,14 +121,17 @@ static Funcentry funclist[] = {
 };
 static const int nfuncentries = sizeof (funclist) / sizeof (Funcentry);
 
-static int funcidx = 0;               /* default timer is gettimeofday*/  
 static double (*ptr2wtimefunc)() = 0; /* init to invalid */
 
 #ifdef HAVE_NANOTIME
+/* If nanotime is available make it the default due to huge granularity/overhead advantage */
+static int funcidx = 1;                           /* default timer is nanotime */  
 static float cpumhz = -1.;                        /* init to bad value */
 static double cyc2sec = -1;                       /* init to bad value */
 static unsigned inline long long nanotime (void); /* read counter (assembler) */
 static float get_clockfreq (void);                /* cycles/sec */
+#else
+static int funcidx = 0;                           /* default timer is gettimeofday*/  
 #endif
 
 #ifdef UNICOSMP
@@ -313,7 +316,7 @@ int GPTLinitialize (void)
 
   if ((*funclist[funcidx].funcinit)() < 0) {
     printf ("GPTLinitialize: failure initializing %s: reverting underlying timer"
-	    " to default %s\n", funclist[funcidx].name, funclist[0].name);
+	    " to %s\n", funclist[funcidx].name, funclist[0].name);
     funcidx = 0;
   }
 
@@ -1104,7 +1107,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.88 2008-06-30 01:34:24 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.89 2008-07-15 21:15:23 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
