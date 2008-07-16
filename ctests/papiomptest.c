@@ -31,7 +31,9 @@ int main (int argc, char **argv)
   printf ("Include PAPI and OpenMP, respectively, if enabled\n");
   printf ("Usage: %s [-l looplen] [-n nompiter] [-p papi_option_name]\n", argv[0]);
 
+#ifdef HAVE_PAPI
   (void) GPTL_PAPIlibraryinit ();
+#endif
 
   while ((c = getopt (argc, argv, "l:n:p:")) != -1) {
     switch (c) {
@@ -44,6 +46,7 @@ int main (int argc, char **argv)
 	  printf ("Set nompiter=%d\n", nompiter);
 	  break;
 	case 'p':
+#ifdef HAVE_PAPI
 	  if ((ret = PAPI_event_name_to_code (optarg, &papiopt)) != 0) {
 	    printf ("Failure from GPTL_PAPIname2id\n");
 	    exit (1);
@@ -52,6 +55,9 @@ int main (int argc, char **argv)
 	    printf ("Failure from GPTLsetoption (%s,1)\n", optarg);
 	    exit (1);
 	  }
+#else
+	  printf ("HAVE_PAPI is false so -p ignored\n");
+#endif
 	  break;
 	default:
 	  printf ("unknown option %c\n", c);

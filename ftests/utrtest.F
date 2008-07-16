@@ -19,10 +19,10 @@
 
       ret = gptlsetutr (gptlmpiwtime)
       ret = gptlsetutr (gptlrtc)
-      ret = gptlsetutr (gptlnanotime)
       ret = gptlsetutr (gptlclockgettime)
       ret = gptlsetutr (gptlgettimeofday)
       ret = gptlsetutr (gptlpapitime)
+      ret = gptlsetutr (gptlnanotime)
       
       ret = gptlinitialize ()
 
