@@ -1,0 +1,117 @@
+<html>
+   <title>GPTL Home Page</title>
+<h1>GPTL - General Purpose Timing Library</h1>
+<h2>(with optional interface to PAPI)</h2>
+
+<b>GPTL</b> is a library for instrumenting C and Fortran application codes to assess
+    performance characteristics. The instrumentation can be done
+    manually by inserting calls to <b>GPTLstart</b> and
+    <b>GPTLstop</b>. Or, instrumentation can be done automatically at
+    function entry (<b>GPTLstart</b>) and exit (<b>GPTLstop</b>)
+    points if the application to be profiled is built with either 
+    the PathScale or GNU compilers. This is accomplished by adding the
+    option <pre>-finstrument-functions</pre> to the application's compile
+    flags, and then linking with <pre>-lgptl</pre>
+<p>
+    If the <a HREF="http://icl.cs.utk.edu/papi">PAPI</a> library is
+    available on the target platform, <b>GPTL</b> can be used to
+    access all available <b>PAPI</b> events.
+    To count floating point operations for example, one need only add
+    a call that looks like: 
+
+    <pre>
+    ret = GPTLsetoption (PAPI_FP_OPS, 1);
+    </pre>
+
+    Multiple GPTL or PAPI options can be included with additional
+    calls to <b>GPTLsetoption</b>. See "man GPTLsetoption" for further
+    details.
+<p>
+    Calls to <b>GPTLstart</b> and <b>GPTLstop</b> can be nested to an
+    arbitrary depth. GPTL handles multiply nested regions by
+    presenting output in an indented fashion (see <a
+    href="#EXAMPLES">EXAMPLES</a> below). If auto-instrumentation
+    is used, this provides an easy way to get a dynamic call-tree of
+    your application. 
+
+<h3>Features</h3>
+<ul>
+<li> Low overhead.
+<li> No external dependencies (PAPI interface is optional).
+<li> Automatically multiplexes requested PAPI counters when required.
+<li> Thread-safe, and reports per-thread statistics for multi-threaded
+	codes.
+<li> Includes utility functions to print memory usage
+	(<b>GPTLprint_memusage</b>) and get timestamps (<b>GPTLstamp</b>).
+<li> Includes utility scripts to post-process multi-threaded and
+	multi-tasked output for easy assessment of load balance
+	characteristics.
+<li> Support for derived (PAPI-based) events such as computational
+	intensity and instructions per cycle.
+</ul>
+
+<h3>Download and Installation</h3>
+<ul> 
+<li> The most recent release is <a href="gptl3_2.tar.gz">gptl3_2.tar.gz</a>
+<li> To build and install <b>GPTL</b>, see the <A
+	  HREF="INSTALL">INSTALL</a> file. Unfortunately I'm not good
+	enough at GNU Autoconf to write a good "configure" procedure,
+	so for the moment you'll need to edit a "macros.make" file
+	appropriate for your target platform. But it's quite simple.
+<li> To use <b>GPTL</b>, see the <A HREF="gptl-man.html">man page</a>.
+</ul>
+
+<A name=Examples>
+<h3>Examples</h3>
+The first example below is a manually-instrumented Fortran code, along
+with the output produced by a call to <b>gptlpr</b>. 
+
+<pre>
+program papiomptest
+  implicit none
+#include <gptl.inc>
+  integer :: ret, iter
+  integer, parameter :: nompiter = 2
+  character(len=40) :: eventname        ! Name of a PAPI event
+
+  ret = gptlsetoption (gptlabort_on_error, 1) ! Abort on GPTL error
+  ret = gptlsetoption (PAPI_FP_OPS, 1)        ! Count floating point ops
+  eventname(1) = 'resource_stall_SBFULL'      ! Count a native event
+  ret = gptlsetoption (gptlnarrowprint, 0)    ! Print fewer sig figs
+  ret = gptlsetoption (gptloverhead, 1)       ! Print overhead estimates
+  ret = gptlinitialize ()                     ! Initialize GPTL
+  ret = gptlstart ('total')                   ! Start a timer
+
+!$OMP PARALLEL DO PRIVATE (iter)   ! Threaded loop
+  do iter=1,nompiter
+    ret = gptlstart ('A')          ! Start a timer
+    ret = gptlstart ('B')          ! Start another timer
+    ret = gptlstart ('C')
+    ret = gptlstop ('C')           ! Stop a timer
+    ret = gptlstart ('CC')
+    ret = gptlstop ('CC')
+    ret = gptlstop ('A')
+    ret = gptlstop ('B')         
+  end do
+  ret = gptlstop ('total')
+  ret = gptlpr (0)                 ! Print timer stats
+  ret = gptlfinalize ()            ! Clean up
+end program papiomptest
+</pre>
+
+Compile and link, then run:
+<pre>
+% gfortran papiomptest.F -lgptl -lpapi
+% ./a.out
+</pre>
+
+The call to gptlpr wrote to a file named timing.0, which looks like:
+
+
+
+<h3>Author</h3>
+<b>GPTL</b> was written by <a HREF="http://www.burningserver.net/rosinski">Jim Rosinski</a> 
+<h3>Copyright</h3>
+This software is <b>Open Source</b>. My only request is that you don't
+embed it in software that you intend to sell. 
+</html>
