@@ -50,15 +50,12 @@
       if (gptlsetoption (PAPI_FP_OPS, 1) .lt. 0) call exit (4)
       if (gptlsetoption (PAPI_TOT_CYC, 1) .lt. 0) call exit (4)
 
-      ! Try some native events: this probably requires calling papif_library_init
+      ! Try some native events:
 
-      ret = PAPI_VER_CURRENT
-      call papif_library_init (ret)
-      if (ret .ne. PAPI_VER_CURRENT) call exit (5)
       eventname(1) = 'resource_stall_SBFULL'
-!      call PAPIf_event_name_to_code(eventname(1), event, ret)
-!      if (ret .ne. 0) call exit (6)
-!      if (gptlsetoption (event, 1) .lt. 0) call exit (7)
+      call PAPIf_event_name_to_code(eventname(1), event, ret)
+      if (ret .ne. 0) call exit (6)
+      if (gptlsetoption (event, 1) .lt. 0) call exit (7)
       if (gptlsetoption (gptlnarrowprint, 0) < 0) call exit (4)
 #endif
 
