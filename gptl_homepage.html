@@ -1,10 +1,15 @@
 <html>
-   <title>GPTL Home Page</title>
+<head>
+<title>GPTL Home Page</title>
+<meta name="Author" content="Jim Rosinski">
+<meta name="Keywords" content="gptl","timing","papi", "performance analysis">
 <h1>GPTL - General Purpose Timing Library</h1>
 <h2>(with optional interface to PAPI)</h2>
+</head>
+<body bgcolor="peachpuff">
 
-<b>GPTL</b> is a library for instrumenting C and Fortran application codes to assess
-    performance characteristics. The instrumentation can be done
+<b>GPTL</b> is a library for instrumenting C and Fortran codes for
+    performance analysis. The instrumentation can be done
     manually by inserting calls to <b>GPTLstart</b> and
     <b>GPTLstop</b>. Or, instrumentation can be done automatically at
     function entry (<b>GPTLstart</b>) and exit (<b>GPTLstop</b>)
@@ -58,10 +63,10 @@
 	enough at GNU Autoconf to write a good "configure" procedure,
 	so for the moment you'll need to edit a "macros.make" file
 	appropriate for your target platform. But it's quite simple.
-<li> To use <b>GPTL</b>, see the <A HREF="gptl-man.html">man page</a>.
+<li> For information on using <b>GPTL</b>, see the <A HREF="gptl-man.html">man page</a>.
 </ul>
 
-<A name=Examples>
+<A name=Examples></A>
 <h3>Examples</h3>
 The first example below is a manually-instrumented Fortran code, along
 with the output produced by a call to <b>gptlpr</b>. 
@@ -69,16 +74,15 @@ with the output produced by a call to <b>gptlpr</b>.
 <pre>
 program papiomptest
   implicit none
-#include <gptl.inc>
+  include 'gptl.inc'                 ! Fortran GPTL include file
+  include 'f90papi.h'                ! Needed for PAPI_FP_OPS
   integer :: ret, iter
-  integer, parameter :: nompiter = 2
-  character(len=40) :: eventname        ! Name of a PAPI event
+  integer, parameter :: nompiter = 2 ! Number of OMP threads
 
   ret = gptlsetoption (gptlabort_on_error, 1) ! Abort on GPTL error
   ret = gptlsetoption (PAPI_FP_OPS, 1)        ! Count floating point ops
-  eventname(1) = 'resource_stall_SBFULL'      ! Count a native event
-  ret = gptlsetoption (gptlnarrowprint, 0)    ! Print fewer sig figs
-  ret = gptlsetoption (gptloverhead, 1)       ! Print overhead estimates
+  ret = gptlsetoption (gptlnarrowprint, 1)    ! Print fewer sig figs
+  ret = gptlsetoption (gptloverhead, 0)       ! Turn off overhead estimate
   ret = gptlinitialize ()                     ! Initialize GPTL
   ret = gptlstart ('total')                   ! Start a timer
 
@@ -87,6 +91,7 @@ program papiomptest
     ret = gptlstart ('A')          ! Start a timer
     ret = gptlstart ('B')          ! Start another timer
     ret = gptlstart ('C')
+    call sleep (iter)              ! Sleep for "iter" seconds
     ret = gptlstop ('C')           ! Stop a timer
     ret = gptlstart ('CC')
     ret = gptlstop ('CC')
@@ -101,16 +106,178 @@ end program papiomptest
 
 Compile and link, then run:
 <pre>
-% gfortran papiomptest.F -lgptl -lpapi
-% ./a.out
+% gfortran -fopenmp papiomptest.f90 -I/usr/local/include -lgptl -lpapi 
+% env OMP_NUM_THREADS=2 ./a.out
 </pre>
 
 The call to gptlpr wrote to a file named timing.0, which looks like:
+<pre>
+$Id: gptl_homepage.html,v 1.2 2008-07-18 02:07:52 rosinski Exp $
+PAPI event multiplexing was OFF
+PAPI events enabled (including those required for derived events):
+  Floating point operations executed
 
+Underlying timing routine was nanotime.
+Per-call utr overhead est: 1.5224e-07 sec.
+Per-call PAPI overhead est: 4.5771e-07 sec.
+If overhead stats are printed, roughly half the estimated number is
+embedded in the wallclock stats for each timer
 
+If a '% of' field is present, it is w.r.t. the first timer for thread 0.
+If a 'e6 per sec' field is present, it is in millions of PAPI counts per sec.
+
+A '*' in column 1 below means the timer had multiple parents, though the
+values printed are for all calls. Further down the listing is more detailed
+information about multiple parents. Look for 'Multiple parent info'
+
+Stats for thread 0:
+             Called Recurse Wallclock max       min       % of total   FP_OPS e6 / sec 
+  total             1   -       0.248     0.248     0.248     100.00       49     0.00 
+    A               1   -       0.175     0.175     0.175      70.45       33     0.00 
+      B             1   -       0.175     0.175     0.175      70.45       36     0.00 
+        C           1   -       0.175     0.175     0.175      70.43        5     0.00 
+        CC          1   -       0.000     0.000     0.000       0.00        6     5.24 
+Total calls           = 5
+Total recursive calls = 0
+
+Stats for thread 1:
+        Called Recurse Wallclock max       min       % of total   FP_OPS e6 / sec 
+  A            1   -       0.248     0.248     0.248      99.97       26     0.00 
+    B          1   -       0.248     0.248     0.248      99.97       29     0.00 
+      C        1   -       0.248     0.248     0.248      99.94        6     0.00 
+      CC       1   -       0.000     0.000     0.000       0.00        2     1.07 
+Total calls           = 4
+Total recursive calls = 0
+
+Same stats sorted by timer for threaded regions:
+Thd      Called Recurse Wallclock max       min       % of total   FP_OPS e6 / sec 
+000 A           1   -       0.175     0.175     0.175      70.45       33     0.00 
+001 A           1   -       0.248     0.248     0.248      99.97       26     0.00 
+SUM A           2   -       0.423     0.248     0.175     170.42       59     0.00 
+
+000 B           1   -       0.175     0.175     0.175      70.45       36     0.00 
+001 B           1   -       0.248     0.248     0.248      99.97       29     0.00 
+SUM B           2   -       0.423     0.248     0.175     170.42       65     0.00 
+
+000 C           1   -       0.175     0.175     0.175      70.43        5     0.00 
+001 C           1   -       0.248     0.248     0.248      99.94        6     0.00 
+SUM C           2   -       0.423     0.248     0.175     170.37       11     0.00 
+
+000 CC          1   -       0.000     0.000     0.000       0.00        6     5.24 
+001 CC          1   -       0.000     0.000     0.000       0.00        2     1.07 
+SUM CC          2   -       0.000     0.000     0.000       0.00        8     2.65 
+</pre>
+
+The second example is a C code with auto-instrumentation turned on. Also note
+that region <em>B</em> has multiple parents.
+<em>main.c:</em>
+<pre>
+#include <gptl.h>
+#include <papi.h>
+
+int main ()
+{
+  void do_work (void);
+  int i, ret;
+  ret = GPTLsetoption (GPTL_IPC, 1);     // Count instructions per cycle
+  ret = GPTLsetoption (PAPI_TOT_INS, 1); // Print total instructions
+  ret = GPTLsetoption (GPTLoverhead, 0); // Don't print overhead estimate
+  ret = GPTLinitialize ();               // Initialize GPTL
+  ret = GPTLstart ("main");              // Start a manual timer
+  do_work ();                            // Do some work 
+  ret = GPTLstop ("main");               // Stop the manual timer
+  ret = GPTLpr_file ("outfile");         // Write output to "outfile"
+}
+
+<em>subs.c:</em>
+#include <unistd.h>
+
+extern void A(void);
+extern void AA(void);
+extern void B(void);
+
+void do_work ()
+{
+  A ();
+  AA ();
+  B ();
+}
+
+void A ()
+{
+  B ();
+}
+
+void AA ()
+{
+}
+
+void B ()
+{
+  usleep (500000);
+}
+</pre>
+
+Compile all but main.c with auto-instrumentation, then link and run:
+<pre>
+% gcc -c main.c
+% gcc -finstrument-functions subs.c main.o -lgptl -lpapi
+% ./a.out
+</pre>
+
+Now convert the auto-instrumented output to human-readable form:
+<pre>
+% hex2name.pl a.out outfile > outfile.converted
+</pre>
+
+Output file <em> outfile.converted</em> looks like this:
+<pre>
+$Id: gptl_homepage.html,v 1.2 2008-07-18 02:07:52 rosinski Exp $
+PAPI event multiplexing was OFF
+PAPI events enabled (including those required for derived events):
+  Instructions per cycle
+  Total instructions executed
+
+Underlying timing routine was nanotime.
+Per-call utr overhead est: 1.5191e-07 sec.
+Per-call PAPI overhead est: 5.8388e-07 sec.
+If overhead stats are printed, roughly half the estimated number is
+embedded in the wallclock stats for each timer
+
+If a '% of' field is present, it is w.r.t. the first timer for thread 0.
+If a 'e6 per sec' field is present, it is in millions of PAPI counts per sec.
+
+A '*' in column 1 below means the timer had multiple parents, though the
+values printed are for all calls. Further down the listing is more detailed
+information about multiple parents. Look for 'Multiple parent info'
+
+Stats for thread 0:
+                     Called Recurse Wallclock max       min       % of  main GPTL_IPC  TOT_INS e6 / sec 
+  main                     1    -       0.135     0.135     0.135     100.00 2.88e-01    18386     0.14 
+    do_work                1    -       0.135     0.135     0.135      99.98 2.64e-01    12056     0.09 
+      A                    1    -       0.108     0.108     0.108      80.13 3.15e-01     4912     0.05 
+*       B                  2    -       0.135     0.108     0.027      99.93 1.17e-01     2436     0.02 
+      AA                   1    -       0.000     0.000     0.000       0.00 7.53e-01      439   399.09 
+Total calls           = 6
+Total recursive calls = 0
+
+Multiple parent info (if any) for thread 0:
+Columns are count and name for the listed child
+Rows are each parent, with their common child being the last entry, which is indented
+Count next to each parent is the number of times it called the child
+Count next to child is total number of times it was called by the listed parents
+
+       1 A                         
+       1 do_work                         
+       2   B                         
+</pre>
 
 <h3>Author</h3>
-<b>GPTL</b> was written by <a HREF="http://www.burningserver.net/rosinski">Jim Rosinski</a> 
+<b>GPTL</b> was written
+by <a HREF="http://www.burningserver.net/rosinski">Jim Rosinski</a>,
+currently at <a HREF="http://www.ornl.gov">ORNL</a>, formerly
+  of <a HREF="http://www.sicortex.com">SiCortex</a>,
+and <a HREF="http://www.ncar.edu">NCAR</a>. 
 <h3>Copyright</h3>
 This software is <b>Open Source</b>. My only request is that you don't
 embed it in software that you intend to sell. 
