@@ -6,7 +6,7 @@
 <h1>GPTL - General Purpose Timing Library</h1>
 <h2>(with optional interface to PAPI)</h2>
 </head>
-<body bgcolor="peachpuff">
+<body bgcolor="lightblue">
 
 <b>GPTL</b> is a library for instrumenting C and Fortran codes for
     performance analysis. The instrumentation can be done
@@ -71,7 +71,10 @@
 The first example below is a manually-instrumented Fortran code, along
 with the output produced by a call to <b>gptlpr</b>. 
 
+<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
+
 <pre>
+<div style="background-color:white;">
 program papiomptest
   implicit none
   include 'gptl.inc'                 ! Fortran GPTL include file
@@ -102,7 +105,10 @@ program papiomptest
   ret = gptlpr (0)                 ! Print timer stats
   ret = gptlfinalize ()            ! Clean up
 end program papiomptest
+</div>
 </pre>
+
+<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
 
 Compile and link, then run:
 <pre>
@@ -110,9 +116,15 @@ Compile and link, then run:
 % env OMP_NUM_THREADS=2 ./a.out
 </pre>
 
+<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
+
 The call to gptlpr wrote to a file named timing.0, which looks like:
+
+<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
+
 <pre>
-$Id: gptl_homepage.html,v 1.2 2008-07-18 02:07:52 rosinski Exp $
+<div style="background-color:white;">
+$Id: gptl_homepage.html,v 1.3 2008-07-18 02:27:19 rosinski Exp $
 PAPI event multiplexing was OFF
 PAPI events enabled (including those required for derived events):
   Floating point operations executed
@@ -166,12 +178,19 @@ SUM C           2   -       0.423     0.248     0.175     170.37       11     0.
 000 CC          1   -       0.000     0.000     0.000       0.00        6     5.24 
 001 CC          1   -       0.000     0.000     0.000       0.00        2     1.07 
 SUM CC          2   -       0.000     0.000     0.000       0.00        8     2.65 
+</div>
 </pre>
+
+<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
 
 The second example is a C code with auto-instrumentation turned on. Also note
 that region <em>B</em> has multiple parents.
+
+<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
+
 <em>main.c:</em>
 <pre>
+<div style="background-color:white;">
 #include <gptl.h>
 #include <papi.h>
 
@@ -188,8 +207,13 @@ int main ()
   ret = GPTLstop ("main");               // Stop the manual timer
   ret = GPTLpr_file ("outfile");         // Write output to "outfile"
 }
+</div>
+</pre>
 
 <em>subs.c:</em>
+<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
+<pre>
+<div style="background-color:white;">
 #include <unistd.h>
 
 extern void A(void);
@@ -216,7 +240,9 @@ void B ()
 {
   usleep (500000);
 }
+</div>
 </pre>
+<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
 
 Compile all but main.c with auto-instrumentation, then link and run:
 <pre>
@@ -225,14 +251,19 @@ Compile all but main.c with auto-instrumentation, then link and run:
 % ./a.out
 </pre>
 
+<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
+
 Now convert the auto-instrumented output to human-readable form:
 <pre>
 % hex2name.pl a.out outfile > outfile.converted
 </pre>
 
+<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
+
 Output file <em> outfile.converted</em> looks like this:
 <pre>
-$Id: gptl_homepage.html,v 1.2 2008-07-18 02:07:52 rosinski Exp $
+<div style="background-color:white;">
+$Id: gptl_homepage.html,v 1.3 2008-07-18 02:27:19 rosinski Exp $
 PAPI event multiplexing was OFF
 PAPI events enabled (including those required for derived events):
   Instructions per cycle
@@ -270,7 +301,10 @@ Count next to child is total number of times it was called by the listed parents
        1 A                         
        1 do_work                         
        2   B                         
+</div>
 </pre>
+
+<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
 
 <h3>Author</h3>
 <b>GPTL</b> was written
