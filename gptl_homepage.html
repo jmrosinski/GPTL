@@ -4,24 +4,24 @@
 <meta name="Author" content="Jim Rosinski">
 <meta name="Keywords" content="gptl","timing","papi", "performance analysis">
 <h1>GPTL - General Purpose Timing Library</h1>
-<h2>(with optional interface to PAPI)</h2>
+<h2>(with optional PAPI interface)</h2>
 </head>
-<body bgcolor="lightblue">
 <body bgcolor="peachpuff">
+<body bgcolor="lightblue">
 
-<b>GPTL</b> is a library for instrumenting C and Fortran codes for
-    performance analysis. The instrumentation can be done
-    manually by inserting calls to <b>GPTLstart</b> and
-    <b>GPTLstop</b>. Or, instrumentation can be done automatically at
-    function entry (<b>GPTLstart</b>) and exit (<b>GPTLstop</b>)
+<b>GPTL</b> is a library to instrument C, C++, and Fortran codes for
+    performance analysis and profiling. Instrumentation can be done
+    manually by inserting calls to <b>GPTLstart()</b> and
+    <b>GPTLstop()</b> around regions of interest, or it can be done automatically at 
+    function entry and exit 
     points if the application to be profiled is built with either 
-    the PathScale or GNU compilers. This is accomplished by adding the
-    option <pre>-finstrument-functions</pre> to the application's compile
-    flags, and then linking with <pre>-lgptl</pre>
+    the GNU or PathScale compilers. Auto-instrumentation is accomplished by adding the
+    option <b><em>-finstrument-functions</em></b> to the application's compile
+    flags, then linking with <b><em>-lgptl</em></b>.
 <p>
     If the <a HREF="http://icl.cs.utk.edu/papi">PAPI</a> library is
     available on the target platform, <b>GPTL</b> can be used to
-    access all available <b>PAPI</b> events.
+    access all available <b>PAPI</b> events (including native events).
     To count floating point operations for example, one need only add
     a call that looks like: 
 
@@ -29,51 +29,73 @@
     ret = GPTLsetoption (PAPI_FP_OPS, 1);
     </pre>
 
-    Multiple GPTL or PAPI options can be included with additional
-    calls to <b>GPTLsetoption</b>. See "man GPTLsetoption" for further
+    Multiple <b>GPTL</b> or <b>PAPI</b> options can be included with additional
+    calls to <b>GPTLsetoption()</b>. See "man GPTLsetoption" for further
     details.
 <p>
-    Calls to <b>GPTLstart</b> and <b>GPTLstop</b> can be nested to an
-    arbitrary depth. GPTL handles multiply nested regions by
+    Calls to <b>GPTLstart()</b> and <b>GPTLstop()</b> can be nested to an
+    arbitrary depth. <b>GPTL</b> handles multiply nested regions by
     presenting output in an indented fashion (see <a
     href="#EXAMPLES">EXAMPLES</a> below). If auto-instrumentation
-    is used, this provides an easy way to get a dynamic call-tree of
-    your application. 
+    is used, this provides an easy way to get a dynamic call tree of
+    the application being profiled.
 
-<h3>Features</h3>
+<h2>Features</h2>
 <ul>
 <li> Low overhead.
-<li> No external dependencies (PAPI interface is optional).
-<li> Automatically multiplexes requested PAPI counters when required.
+<li> No external dependencies (<b>PAPI</b> interface is optional).
+<li> Automatically multiplexes requested <b>PAPI</b> counters when required.
 <li> Thread-safe, and reports per-thread statistics for multi-threaded
 	codes.
 <li> Includes utility functions to print memory usage
-	(<b>GPTLprint_memusage</b>) and get timestamps (<b>GPTLstamp</b>).
+	(<b>GPTLprint_memusage()</b>) and get timestamps (<b>GPTLstamp()</b>).
 <li> Includes utility scripts to post-process multi-threaded and
 	multi-tasked output for easy assessment of load balance
 	characteristics.
-<li> Support for derived (PAPI-based) events such as computational
+<li> Support for derived (<b>PAPI</b>-based) events such as computational
 	intensity and instructions per cycle.
 </ul>
 
-<h3>Download and Installation</h3>
+<h2>Download and Installation</h2>
 <ul> 
 <li> The most recent release is <a href="gptl3_2.tar.gz">gptl3_2.tar.gz</a>
 <li> To build and install <b>GPTL</b>, see the <A
-	  HREF="INSTALL">INSTALL</a> file. Unfortunately I'm not good
-	enough at GNU Autoconf to write a good "configure" procedure,
-	so for the moment you'll need to edit a "macros.make" file
-	appropriate for your target platform. But it's quite simple.
-<li> For information on using <b>GPTL</b>, see the <A HREF="gptl-man.html">man page</a>.
+	      HREF="INSTALL">INSTALL</a> file. Unfortunately I
+	    don't know GNU Autoconf well enough to write a good "configure"
+	    procedure, so you'll need to create a "macros.make" file 
+	    appropriate for your target platform. Example macros.make files for various
+	    architectures are included in the tar file. An autoconf-based
+	    script named "suggestions" is included to help in editing
+	    this file.
+<li> For information on using <b>GPTL</b>, see the top-level <A
+	      HREF="gptl-man.html">man page</a>, as well as the
+	    individual man pages for all <b>GPTL</b> functions
+	    provided with the distribution.
 </ul>
 
-<A name=Examples></A>
-<h3>Examples</h3>
-The first example below is a manually-instrumented Fortran code, along
-with the output produced by a call to <b>gptlpr</b>. 
-
+<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
+<A name=EXAMPLES></A>
+<h2>Examples</h2>
+Below are three simple codes which illustrate the use of some features of
+	<b>GPTL</b>. They were all run on a Linux x86 using GNU
+	compilers. <A
+	  HREF="#EXAMPLE1">Example 1</A> is a manually-instrumented
+	Fortran code which uses <b>PAPI</b> to count floating point
+	operations. <A HREF="#EXAMPLE2">Example 2</A> is C code compiled
+	with gcc's auto-instrumentation hooks to print a dynamic call tree. <A
+	  HREF="#EXAMPLE3">Example 3</A> is a simple MPI code, the
+	output of which is post-processed using Perl script
+	<em><b>parsegpltout.pl</b></em> to examine load imbalance.
 <HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
 
+<A name=EXAMPLE1></A>
+<h3>Example 1:</h3>
+This is an OpenMP Fortran
+	code manually instrumented with <b>GPTL</b> calls. The 
+	output produced by the embedded call to <b>gptlpr()</b> is
+	also shown.
+<p>
+<em>papiomptest.f90:</em>
 <pre>
 <div style="background-color:white;">
 program papiomptest
@@ -109,23 +131,17 @@ end program papiomptest
 </div>
 </pre>
 
-<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
-
 Compile and link, then run:
 <pre>
 % gfortran -fopenmp papiomptest.f90 -I/usr/local/include -lgptl -lpapi 
 % env OMP_NUM_THREADS=2 ./a.out
 </pre>
 
-<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
-
-The call to gptlpr wrote to a file named timing.0, which looks like:
-
-<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
+The call to gptlpr wrote a file named timing.0, which looks like this:
 
 <pre>
 <div style="background-color:white;">
-$Id: gptl_homepage.html,v 1.4 2008-07-18 19:51:14 rosinski Exp $
+$Id: gptl_homepage.html,v 1.5 2008-07-21 21:46:13 rosinski Exp $
 PAPI event multiplexing was OFF
 PAPI events enabled (including derived):
   Floating point operations executed
@@ -184,16 +200,21 @@ SUM CC          2   -       0.000     0.000     0.000       0.00        8     4.
 
 <HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
 
-The second example is a C code with auto-instrumentation turned on. Also note
-that region <em>B</em> has multiple parents.
-
-<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
-
+<A name=EXAMPLE2></A>
+<h3>Example 2:</h3>
+The next example is a C code with auto-instrumentation turned on. We
+also use <b>PAPI</b> to count total instructions (a <b>PAPI</b>
+preset event), and instructions per cycle (a derived event which
+uses <b>PAPI</b> counters). Note
+that function <em>B</em> has multiple parents, and <b>GPTL</b> reports the
+	multiple parent information in the output produced by the call
+	to <b>GPTLpr_file()</b>. 
+<p>
 <em>main.c:</em>
 <pre>
 <div style="background-color:white;">
-#include <gptl.h>
-#include <papi.h>
+#include &#60gptl.h&gt
+#include &#60papi.h&gt
 
 int main ()
 {
@@ -212,10 +233,9 @@ int main ()
 </pre>
 
 <em>subs.c:</em>
-<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
-<pre>
 <div style="background-color:white;">
-#include <unistd.h>
+<pre>
+#include &#60unistd.h&gt
 
 extern void A(void);
 extern void AA(void);
@@ -243,28 +263,26 @@ void B ()
 }
 </div>
 </pre>
-<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
-
-Compile all but main.c with auto-instrumentation, then link and run:
+Compile all but <em>main.c</em> with auto-instrumentation, then link and
+run. Useful auto-instrumentation of the main program is not possible,
+because the 
+call to <b>GPTLinitialize()</b> must be done manually and needs to 
+preceed all calls to <b>GPTLstart</b> and <b>GPTLstop</b>. 
 <pre>
 % gcc -c main.c
 % gcc -finstrument-functions subs.c main.o -lgptl -lpapi
 % ./a.out
 </pre>
 
-<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
-
 Now convert the auto-instrumented output to human-readable form:
 <pre>
 % hex2name.pl a.out outfile > outfile.converted
 </pre>
 
-<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
-
 Output file <em> outfile.converted</em> looks like this:
 <pre>
 <div style="background-color:white;">
-$Id: gptl_homepage.html,v 1.4 2008-07-18 19:51:14 rosinski Exp $
+$Id: gptl_homepage.html,v 1.5 2008-07-21 21:46:13 rosinski Exp $
 PAPI event multiplexing was OFF
 PAPI events enabled (including derived):
   Instructions per cycle
@@ -306,13 +324,143 @@ Count next to child is total number of times it was called
 
 <HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
 
-<h3>Author</h3>
+<A name=EXAMPLE3></A>
+<h3>Example 3:</h3>
+This hybrid OpenMP/MPI code simulates load imbalance at both the
+	thread and task level by sleeping a number of seconds equal to
+	the thread number plus the MPI rank, within a region being
+	timed. Utility script 
+	<em><b>parsegptlout.pl</b></em> is used after the code has
+	been run to examine timing statistics
+	for the region.
+<p>
+<em>mpi.c:</em>
+<pre>
+<div style="background-color:white;">
+#include &#60unistd.h&gt
+#include &#60omp.h&gt
+#include &#60mpi.h&gt
+#include &#60gptl.h&gt
+
+int main (int argc, char **argv)
+{
+  int i, ret, iam;
+  int nompiter = omp_get_max_threads ();       // Loop trip count matches number of threads
+
+  ret = MPI_Init (&argc, &argv);               // Initialize MPI
+  ret = MPI_Comm_rank (MPI_COMM_WORLD, &iam);  // Get my rank
+
+  ret = GPTLsetoption (GPTLoverhead, 0);       // Don't print overhead stats
+  ret = GPTLsetoption (GPTLabort_on_error, 1); // Abort on any GPTL error
+
+  ret = GPTLinitialize ();                     // Initialize GPTL
+  ret = GPTLstart ("total");                   // Time the whole program
+
+  /* Threaded loop with load imbalance across both OMP threads and MPI tasks */
+
+#pragma omp parallel for private (i, ret)
+  for (i = 0; i < nompiter; i++) {
+    ret = GPTLstart ("sleep_iam_plus_mythread");// Start timer for simulated work
+    ret = sleep (iam+i);                        // Load-imbalanced work
+    ret = GPTLstop ("sleep_iam_plus_mythread"); // Stop timer for simulated work
+  }
+
+  ret = GPTLstart ("barriersync");             // Time MPI task synchronization
+  ret = MPI_Barrier (MPI_COMM_WORLD);          // Synchronize MPI tasks
+  ret = GPTLstop ("barriersync");
+
+  ret = GPTLstart ("sleep_1");                // This region has a balanced load
+  ret = sleep (1);
+  ret = GPTLstop ("sleep_1");
+  ret = GPTLstop ("total");
+
+  ret = GPTLpr (iam);                          // Print the results
+  ret = MPI_Finalize ();                       // Clean up MPI
+  return 0;
+}
+</div>
+</pre>
+
+Compile and link, then run with 2 threads and 3 MPI tasks:
+<pre>
+% gcc -fopenmp mpi.c -lgptl 
+% env OMP_NUM_THREADS=2 mpiexec -n 3 ./a.out
+</pre>
+
+Output files <em>timing.0</em>, <em>timing.1</em>, and <em>timing.2</em> are created by the call
+to <b>GPTLpr()</b> First let's examine the <b>GPTL</b> output
+file for task 0. Preamble and postamble print has been deleted for
+brevity.
+<p>
+<em>timing.0:</em>
+<pre>
+<div style="background-color:white;">
+Stats for thread 0:
+                           Called Recurse Wallclock max       min       % of total 
+  total                           1   -       4.003     4.003     4.003     100.00 
+    sleep_iam_plus_mythread       1   -       0.000     0.000     0.000       0.00 
+    barriersync                   1   -       2.001     2.001     2.001      49.99 
+    sleep_1                       1   -       1.000     1.000     1.000      24.99 
+Total calls           = 4
+Total recursive calls = 0
+
+Stats for thread 1:
+                         Called Recurse Wallclock max       min       % of total 
+  sleep_iam_plus_mythread       1   -       1.000     1.000     1.000      24.98 
+Total calls           = 1
+Total recursive calls = 0
+
+Same stats sorted by timer for threaded regions:
+Thd                        Called Recurse Wallclock max       min       % of total 
+000 sleep_iam_plus_mythread       1   -       0.000     0.000     0.000       0.00 
+001 sleep_iam_plus_mythread       1   -       1.000     1.000     1.000      24.98 
+SUM sleep_iam_plus_mythread       2   -       1.000     1.000     0.000      24.98 
+</div>
+</pre>
+
+The results are fairly straightforward and as expected. Note
+though that for thread 0, region "total" took 4 seconds, while
+the sum of all the other regions it surrounded adds up to only
+3. What's going on? The reason is that
+there is an implied (and untimed) OpenMP barrier before the end of the threaded loop.
+Thread 0 slept 0 seconds, then had to wait for thread 1 to finish
+sleeping for 1 second before it exited the loop.
+<p>
+Next we'll use <em><b>parsegpltout.pl</b></em> to examine the
+timing files for all MPI tasks and gather load balance statistics for one of the regions
+being timed:
+<pre>
+% parsegptlout.pl sleep_iam_plus_mythread
+</pre>
+Here's the output:
+<pre>
+<div style="background-color:white;">
+Found 6 values spread across 3 tasks
+Heading is Wallclock
+Max   =  3.000 on thread 1 task 2
+Min   =  0.000 on thread 0 task 0
+Mean  = 1.50016666666667
+Total = 9.001
+</div>
+</pre>
+We see that the max time for this region was spent in thread 1, task
+2. The three seconds reported is due to the call
+to <em>sleep(iam+mythread)</em>. Likewise, thread 0 on task 0 spent
+the least amount of time in this region, 0 seconds.
+
+<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
+
+<h2>Bug Reports</h2>
+Please <a HREF="mailto:rosinskijm@ornl.gov">email</a> me bug reports
+	and/or feature requests.
+
+<h2>Author</h2>
 <b>GPTL</b> was written
 by <a HREF="http://www.burningserver.net/rosinski">Jim Rosinski</a>,
 currently at <a HREF="http://www.ornl.gov">ORNL</a>, formerly
   of <a HREF="http://www.sicortex.com">SiCortex</a>,
 and <a HREF="http://www.ncar.edu">NCAR</a>. 
-<h3>Copyright</h3>
+<h2>Copyright</h2>
 This software is <b>Open Source</b>. My only request is that you don't
-embed it in software that you intend to sell. 
+embed it in software that you intend to sell.
 </html>
