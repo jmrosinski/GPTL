@@ -10,14 +10,18 @@
 <body bgcolor="lightblue">
 
 <b>GPTL</b> is a library to instrument C, C++, and Fortran codes for
-    performance analysis and profiling. Instrumentation can be done
+    performance analysis and profiling. You can download
+    it <A HREF="latest.tgz">here</A>.
+    The instrumentation can be done
     manually by inserting calls to <b>GPTLstart()</b> and
     <b>GPTLstop()</b> around regions of interest, or it can be done automatically at 
     function entry and exit 
     points if the application to be profiled is built with either 
     the GNU or PathScale compilers. Auto-instrumentation is accomplished by adding the
     option <b><em>-finstrument-functions</em></b> to the application's compile
-    flags, then linking with <b><em>-lgptl</em></b>.
+    flags, then linking
+    with <b><em>-lgptl</em></b>. See <A HREF="#EXAMPLES">EXAMPLES</A> below
+    for some sample codes which use the library.
 <p>
     If the <a HREF="http://icl.cs.utk.edu/papi">PAPI</a> library is
     available on the target platform, <b>GPTL</b> can be used to
@@ -29,9 +33,11 @@
     ret = GPTLsetoption (PAPI_FP_OPS, 1);
     </pre>
 
-    Multiple <b>GPTL</b> or <b>PAPI</b> options can be included with additional
-    calls to <b>GPTLsetoption()</b>. See "man GPTLsetoption" for further
-    details.
+    Multiple <b>GPTL</b> or <b>PAPI</b> options can be specified with additional
+    calls to <b>GPTLsetoption()</b>. The man pages provided with the
+    distribution describe the full API specification for each function. The
+    interface is identical for both Fortran and C/C++ 
+    codes. 
 <p>
     Calls to <b>GPTLstart()</b> and <b>GPTLstop()</b> can be nested to an
     arbitrary depth. <b>GPTL</b> handles multiply nested regions by
@@ -95,7 +101,7 @@ This is an OpenMP Fortran
 	output produced by the embedded call to <b>gptlpr()</b> is
 	also shown.
 <p>
-<em>papiomptest.f90:</em>
+<b><em>papiomptest.f90:</em></b>
 <pre>
 <div style="background-color:white;">
 program papiomptest
@@ -141,7 +147,7 @@ The call to gptlpr wrote a file named timing.0, which looks like this:
 
 <pre>
 <div style="background-color:white;">
-$Id: gptl_homepage.html,v 1.5 2008-07-21 21:46:13 rosinski Exp $
+$Id: gptl_homepage.html,v 1.6 2008-07-22 21:24:17 rosinski Exp $
 PAPI event multiplexing was OFF
 PAPI events enabled (including derived):
   Floating point operations executed
@@ -198,6 +204,55 @@ SUM CC          2   -       0.000     0.000     0.000       0.00        8     4.
 </div>
 </pre>
 
+<h3>Explanation of the above output</h3>
+The output file contains a preamble which lists some <b>PAPI</b>
+settings such as whether multiplexing was on or off, and
+what <b>PAPI</b> events were enabled. In this case we counted
+"Floating point operations executed". Other preamble contents
+include estimates of underlying timing routine (UTR)
+overhead, <b>PAPI</b> overhead, and explanations of the printed
+statistics. 
+<p>
+The statistics themselves begin with the line which reads "Stats for
+thread 0:". The region names are listed on the far left. Indenting of
+the names preserves parent-child relationships between the regions. In
+the example, we see that region "A" was contained in "total", "B"
+contained in "A", and regions "C" and "CC" both contained in "B". 
+<p>
+Reading across the output from left to right, the next column is labelled
+"Called". This is the number of times the region was invoked, i.e. the number
+of pairs of calls to <b>GPTLstart</b> and <b>GPTLstop</b>. If any regions
+were called recursively, that information is printed next. In this case there
+were no recursive calls so just a "-" is printed. Total wallclock time for
+each region is printed next, followed by the max and min values for any
+single invocation. In this simple example each region was called only once, so
+"Wallclock", "max", and "min" are all the same. The next column lists the
+percentage of wallclock time each region took compared to the very first
+region timed. This is generally useful only if there is a single region
+wrapping the entire execution ("total" in the above example). This column can
+be turned off with a call to <b>GPTLsetoption (GPTLpercent, 0);</b>. Again
+referring to the above output, PAPI-based statistics are presented next. In
+the example we counted PAPI_FP_OPS. The name is shortened to FP_OPS to
+confine the printed output to as few columns as possible. Finally all PAPI
+counts are divided by wallclock time and printed as millions per second (in
+this case millions of floating point operations per second). This column can
+also be turned off, with a call to <b>GPTLsetoption (GPTLpersec, 0)</b>. 
+
+<p>
+Since this was a threaded code run with OMP_NUM_THREADS=2, statistics
+for the second thread (see "Stats for thread 1:") are also printed. The
+output shows that thread 1
+participated in the computations for regions "A", "B", "C", and "CC", but not
+"total". This is also reflected in the code itself, since only the master
+thread is active when region "total" is started and stopped.
+
+<p>
+After the per-thread statistics, the same statistics are reprinted sorted by
+region name if more than one thread was active (see "Same stats sorted by
+timer for threaded regions:" above). This makes it easier to inspect for load
+balance across threads. The leftmost column is thread number, and the region
+names are not indented.
+
 <HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
 
 <A name=EXAMPLE2></A>
@@ -210,7 +265,7 @@ that function <em>B</em> has multiple parents, and <b>GPTL</b> reports the
 	multiple parent information in the output produced by the call
 	to <b>GPTLpr_file()</b>. 
 <p>
-<em>main.c:</em>
+<b><em>main.c:</em></b>
 <pre>
 <div style="background-color:white;">
 #include &#60gptl.h&gt
@@ -232,7 +287,7 @@ int main ()
 </div>
 </pre>
 
-<em>subs.c:</em>
+<b><em>subs.c:</em></b>
 <div style="background-color:white;">
 <pre>
 #include &#60unistd.h&gt
@@ -265,9 +320,8 @@ void B ()
 </pre>
 Compile all but <em>main.c</em> with auto-instrumentation, then link and
 run. Useful auto-instrumentation of the main program is not possible,
-because the 
-call to <b>GPTLinitialize()</b> must be done manually and needs to 
-preceed all calls to <b>GPTLstart</b> and <b>GPTLstop</b>. 
+because the call to <b>GPTLinitialize()</b> must be done manually and
+needs to preceed all calls to <b>GPTLstart</b> and <b>GPTLstop</b>. 
 <pre>
 % gcc -c main.c
 % gcc -finstrument-functions subs.c main.o -lgptl -lpapi
@@ -282,7 +336,7 @@ Now convert the auto-instrumented output to human-readable form:
 Output file <em> outfile.converted</em> looks like this:
 <pre>
 <div style="background-color:white;">
-$Id: gptl_homepage.html,v 1.5 2008-07-21 21:46:13 rosinski Exp $
+$Id: gptl_homepage.html,v 1.6 2008-07-22 21:24:17 rosinski Exp $
 PAPI event multiplexing was OFF
 PAPI events enabled (including derived):
   Instructions per cycle
@@ -321,6 +375,19 @@ Count next to child is total number of times it was called
        2   B                         
 </div>
 </pre>
+<h3>Explanation of the above output</h3>
+Compared to the output from <A HREF="#EXAMPLE1">example 1</A> above, there
+are some differences. In addition to "Total instructions executed"
+(PAPI_TOT_INS), a derived event was enabled. GPTL_IPC, or "Instructions per
+cycle" was also enabled. To compute this metric, PAPI counter PAPI_TOT_CYC
+also had to be enabled.
+PAPI_TOT_CYC al
+PAPI counters : "Instructions per
+cycle" and "Total instructions executed" were needed to produce requested
+events "Instructions per cycle" and "Total instructions executed". Note the asterisk in front of region "B". This
+indicates that region "B" had multiple parents. It is presented as a child of
+region "A" because that is the first region that invokes it. Information
+about other parents is presented after the main call tree.
 
 <HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
 
@@ -334,7 +401,7 @@ This hybrid OpenMP/MPI code simulates load imbalance at both the
 	been run to examine timing statistics
 	for the region.
 <p>
-<em>mpi.c:</em>
+<b><em>mpi.c:</em></b>
 <pre>
 <div style="background-color:white;">
 #include &#60unistd.h&gt
@@ -392,7 +459,7 @@ to <b>GPTLpr()</b> First let's examine the <b>GPTL</b> output
 file for task 0. Preamble and postamble print has been deleted for
 brevity.
 <p>
-<em>timing.0:</em>
+<b><em>timing.0:</em></b>
 <pre>
 <div style="background-color:white;">
 Stats for thread 0:
