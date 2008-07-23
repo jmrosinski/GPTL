@@ -101,6 +101,7 @@ for ($task = 0; -e "${fnroot}.$task"; $task++) {
 
 die ("Found no occurrences of $target in any of $task files\n") if ( ! $found );
 
+print (STDOUT "Searched for region $target\n");
 print (STDOUT "Found $nval values spread across $task tasks\n");
 print (STDOUT "Heading is $heading[$hidx]\n");
 print (STDOUT "Max   =  $maxval on thread $threadmax task $taskmax\n");
