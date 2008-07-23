@@ -10,8 +10,8 @@
 <body bgcolor="lightblue">
 
 <b>GPTL</b> is a library to instrument C, C++, and Fortran codes for
-    performance analysis and profiling. You can download
-    it <A HREF="latest.tgz">here</A>.
+    performance analysis, profiling, and generating a dynamic call tree. You can download
+    it <A HREF="latest.tgz">here</A>. 
     The instrumentation can be done
     manually by inserting calls to <b>GPTLstart()</b> and
     <b>GPTLstop()</b> around regions of interest, or it can be done automatically at 
@@ -207,15 +207,15 @@ SUM CC          2   -       0.000     0.000     0.000       0.00        8     4.
 <h3>Explanation of the above output</h3>
 The output file contains a preamble which lists <b>PAPI</b>
 settings such as whether multiplexing was on or off, and
-which <b>PAPI</b> events were enabled. In this case we counted
-"Floating point operations executed". Other preamble contents
+which <b>PAPI</b> events were enabled. In this case 
+"Floating point operations executed" were counted. Other preamble contents
 include estimates of underlying timing routine (UTR)
 overhead, <b>PAPI</b> overhead, and explanations of the printed
 statistics. 
 <p>
 The statistics themselves begin with the line which reads "Stats for
 thread 0:". The region names are listed on the far left. A 
-"region" is defined in the application code by calls to 
+"region" is defined in the application by calling
 <b>GPTLstart()</b>, then <b>GPTLstop()</b> for the same input (character
 string) argument.
 Indenting of 
