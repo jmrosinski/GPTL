@@ -76,7 +76,7 @@ for ($task = 0; -e "${fnroot}.$task"; $task++) {
 	    $line = <FILE>;
 	    chomp ($line);
 	    @heading = split (/\s+/, $line);
-	} elsif ($started && ($line =~ /^[* ]\s*${target}\s*(.*)$/)) {
+	} elsif ($started && ($line =~ /^[* ]\s*${target}\s+(.*)$/)) {
 	    $found = 1;
 	    @vals = split (/\s+/, $1);
 	    print (STDOUT "vals=@vals\n") if ($verbose);
