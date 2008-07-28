@@ -7,21 +7,21 @@
 <h2>(with optional PAPI interface)</h2>
 </head>
 <body bgcolor="peachpuff">
-<body bgcolor="lightblue">
 
 <b>GPTL</b> is a library to instrument C, C++, and Fortran codes for
-    performance analysis, profiling, and generating a dynamic call tree. You can download
-    it <A HREF="latest.tgz">here</A>. 
-    The instrumentation can be done
-    manually by inserting calls to <b>GPTLstart()</b> and
-    <b>GPTLstop()</b> around regions of interest, or it can be done automatically at 
-    function entry and exit 
-    points if the application to be profiled is built with either 
-    the GNU or PathScale compilers. Auto-instrumentation is accomplished by adding the
-    option <b><em>-finstrument-functions</em></b> to the application's compile
+    performance analysis and profiling. The instrumentation can be inserted
+    manually wherever the user wishes, or automatically at
+    function entry and 
+    exit points if the application being profiled is built with either the
+    GNU or PathScale compilers. Here is an output snippet from
+    running the HPCC benchmark with automatic instrumentation.
+<pre>
+</pre>
+    The auto-instrumentation was accomplished by
+    adding <b><em>-finstrument-functions</em></b> to the compile 
     flags, then linking
-    with <b><em>-lgptl</em></b>. See <A HREF="#EXAMPLES">EXAMPLES</A> below
-    for some sample codes which use the library.
+    with <b><em>-lgptl</em></b>. See <A HREF="#EXAMPLES">Examples</A> below
+    for further details on using the library.
 <p>
     If the <a HREF="http://icl.cs.utk.edu/papi">PAPI</a> library is
     available on the target platform, <b>GPTL</b> can be used to

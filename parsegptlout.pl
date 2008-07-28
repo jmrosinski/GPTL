@@ -41,7 +41,7 @@ while ($arg = shift (@ARGV)) {
 	$fnroot = shift (@ARGV);    # change root of file name
     } else {
 	if ( ! defined $target ) {
-	    $target = $arg;         # region name
+	    $target = "$arg";         # region name
 	    chomp ($target);
 	} else {
 	    die_usemsg ("Unknown argument $arg\n");
