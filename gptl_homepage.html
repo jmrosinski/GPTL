@@ -52,11 +52,10 @@ Stats for thread 0:
     parent, and depth in the call tree. An asterisk next to an entry means it
     has more than one parent. Other entries in this output show the number of
     invocations, number of recursive invocations, and wallclock timing
-    statistics. See <A HREF="#EXAMPLES">Examples</A> below
-    for further details on using the library, and interpreting its output.
+    statistics.
 <p>
     If the <a HREF="http://icl.cs.utk.edu/papi">PAPI</a> library is
-    available on the target platform, <b>GPTL</b> can be used to
+    installed on the target platform, <b>GPTL</b> can be used to
     access all available <b>PAPI</b> events.
     To count floating point operations for example, one need only add
     a call that looks like: 
@@ -99,13 +98,15 @@ Stats for thread 0:
 <ul> 
 <li> The most recent release is <a href="gptl3_2.tar.gz">gptl3_2.tar.gz</a>
 <li> To build and install <b>GPTL</b>, see the <A
-	      HREF="INSTALL">INSTALL</a> file. Unfortunately I
-	    don't know GNU Autoconf well enough to write a good "configure"
-	    procedure, so you'll need to create a "macros.make" file 
+	      HREF="INSTALL">INSTALL</a> file.
+	    You'll need to create a "macros.make" file 
 	    appropriate for your target platform. Example macros.make files for various
-	    architectures are included in the tar file. An autoconf-based
+	    architectures are included in the tar file
+	  (e.g. macros.make.linux). An autoconf-based 
 	    script named "suggestions" is included to help in editing
-	    this file.
+	    this file. Example usage might be "./suggestions FC=gfortran
+	  CC=gcc". Comments in the sample macros.make files describe
+	  each required setting.
 <li> For information on using <b>GPTL</b>, refer
 	      to <A HREF="EXAMPLES">EXAMPLES</A> below, and the
 	      man pages provided with the distribution.
@@ -127,7 +128,7 @@ Below are three simple codes which illustrate the use of some features of
 <HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
 
 <A name=EXAMPLE1></A>
-<h3>Example 1:</h3>
+<h3>Example 1: Simple manual instrumentation</h3>
 This is an OpenMP Fortran
 	code manually instrumented with <b>GPTL</b> calls. The 
 	output produced by the embedded call to <b>gptlpr()</b> is
@@ -257,11 +258,11 @@ contained in "A", and regions "C" and "CC" both contained in "B".
 Reading across the output from left to right, the next column is labelled
 "Called". This is the number of times the region was invoked. If any regions
 were called recursively, that information is printed next. In this case there
-were no recursive calls so just a "-" is printed. Total wallclock time for
+were no recursive calls, so just a "-" is printed. Total wallclock time for
 each region is printed next, followed by the max and min values for any
 single invocation. In this simple example each region was called only once, so
 "Wallclock", "max", and "min" are all the same. The next column lists the
-percentage of wallclock time each region took compared to the very first
+percentage of wallclock time each region took compared to the first
 region timed. This is generally useful only if there is a single region
 wrapping the entire execution ("total" in the above example). This output can
 be turned off with a call that looks like <b>GPTLsetoption (GPTLpercent, 0)</b>. 
@@ -291,11 +292,9 @@ names are not indented.
 <HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
 
 <A name=EXAMPLE2></A>
-<h3>Example 2:</h3>
+<h3>Example 2: Auto-instrumentation</h3>
 The next example is a C code compiled with auto-instrumentation enabled. It
-uses <b>PAPI</b> to count total instructions (a <b>PAPI</b>
-preset event), and instructions per cycle (a derived event 
-requiring <b>PAPI</b> counters). Note
+uses <b>PAPI</b> to count total instructions, and instructions per cycle. Note
 that function <em>B</em> has multiple parents, and <b>GPTL</b> reports the
 	multiple parent information in the output produced by the call
 	to <b>GPTLpr_file()</b>. 
@@ -412,9 +411,13 @@ Count next to child is total number of times it was called
 <h3>Explanation of the above output</h3>
 Compared to the output from <A HREF="#EXAMPLE1">Example 1</A> above, there
 are some differences. In addition to "Total instructions executed"
-(PAPI_TOT_INS), derived event GPTL_IPC ("Instructions per
-cycle") was also enabled. To compute this metric, PAPI counter PAPI_TOT_CYC
-also needed to be enabled. This was done automatically by <b>GPTL</b>.
+(PAPI_TOT_INS), derived event "Instructions per
+cycle" (GPTL_IPC) was also enabled. To compute this metric, <b>GPTL</b> instructed
+the <b>PAPI</b> library to count total cycles (PAPI_TOT_CYC). When
+<b>GPTLpr_file()</b> was called, it computed 
+<pre>
+      GPTL_IPC = PAPI_TOT_INS / PAPI_TOT_CYC
+</pre>
 <p>
 Note the asterisk in front of region "B". This
 indicates that region "B" had multiple parents. It is presented as a child of
@@ -426,14 +429,13 @@ for a total of 2 calls.
 <HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
 
 <A name=EXAMPLE3></A>
-<h3>Example 3:</h3>
+<h3>Example 3: Load imbalance</h3>
 This hybrid OpenMP/MPI code simulates load imbalance at both the
 	thread and task level by sleeping a number of seconds equal to
 	the thread number plus the MPI rank, within a region being
-	timed. Utility script 
-	<em><b>parsegptlout.pl</b></em> is used after the code has
-	been run to examine timing statistics
-	for the region.
+	timed. After running the code, we use utility script 
+	<em><b>parsegptlout.pl</b></em> 
+	to examine timing statistics for the region.
 <p>
 <b><em>mpi.c:</em></b>
 <pre>
@@ -546,7 +548,7 @@ Total = 9.001
 </pre>
 We see that the max time for this region was spent in thread 1, task
 2. The three seconds reported is due to the call
-to <em>sleep(iam+mythread)</em>. Likewise, thread 0 on task 0 spent
+to <b>sleep (iam+i)</b>. Likewise, thread 0 on task 0 spent
 the least amount of time in this region, 0 seconds.
 
 <HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
