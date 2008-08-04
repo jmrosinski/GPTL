@@ -13,19 +13,51 @@
     manually wherever the user wishes, or automatically at
     function entry and 
     exit points if the application being profiled is built with either the
-    GNU or PathScale compilers. Here is an output snippet from
-    running the HPCC benchmark with automatic instrumentation.
+    GNU or PathScale compilers. To auto-instrument an application using
+    either of these compilers, add <b><em>-finstrument-functions</em></b> to
+    the compile flags of each source file to be profiled. Here is a portion of
+    <b>GPTL</b> printout
+    after running the HPCC benchmark with automatic instrumentation
+    enabled: 
 <pre>
+<div style="background-color:white;">
+Stats for thread 0:
+                                             Called Recurse Wallclock max       min       
+  total                                            1    -      14.091    14.091    14.091 
+    HPCC_Init                                      5      4     0.051     0.051     0.000 
+*     HPL_pdinfo                                  58     56     0.027     0.026     0.000 
+*       HPL_all_reduce                             6    -       0.036     0.023     0.000 
+*         HPL_reduce                              17    -       0.036     0.023     0.000 
+            HPL_max                               17    -       0.000     0.000     0.000 
+            HPL_sum                                6    -       0.000     0.000     0.000 
+*         HPL_broadcast                           19    -       0.066     0.051     0.000 
+        HPL_pdlamch                                2    -       0.026     0.026     0.000 
+*       HPL_fprintf                              122    -       0.001     0.000     0.000 
+      HPCC_InputFileInit                           5      4     0.000     0.000     0.000 
+        ReadInts                                   2    -       0.000     0.000     0.000 
+    HPL_main                                       1    -       2.193     2.193     2.193 
+      HPL_grid_init                                1    -       0.001     0.001     0.001 
+*     HPL_grid_info                               10    -       0.000     0.000     0.000 
+      HPL_pdtest                                   1    -       2.191     2.191     2.191 
+*       HPL_numroc                                 3    -       0.000     0.000     0.000 
+*         HPL_numrocI                             38    -       0.000     0.000     0.000 
+        HPL_pdmatgen                               2    -       1.591     0.808     0.783 
+          HPL_xjumpm                              14    -       0.002     0.001     0.000 
+*           HPL_lmul                          555784    -       0.216     0.024     0.000 
+*           HPL_ladd                          552992    -       0.081     0.024     0.000 
+...
+</div>
 </pre>
-    The auto-instrumentation was accomplished by
-    adding <b><em>-finstrument-functions</em></b> to the compile 
-    flags, then linking
-    with <b><em>-lgptl</em></b>. See <A HREF="#EXAMPLES">Examples</A> below
-    for further details on using the library.
+    Function names on the left of the output are indented to indicate their
+    parent, and depth in the call tree. An asterisk next to an entry means it
+    has more than one parent. Other entries in this output show the number of
+    invocations, number of recursive invocations, and wallclock timing
+    statistics. See <A HREF="#EXAMPLES">Examples</A> below
+    for further details on using the library, and interpreting its output.
 <p>
     If the <a HREF="http://icl.cs.utk.edu/papi">PAPI</a> library is
     available on the target platform, <b>GPTL</b> can be used to
-    access all available <b>PAPI</b> events (including native events).
+    access all available <b>PAPI</b> events.
     To count floating point operations for example, one need only add
     a call that looks like: 
 
@@ -38,15 +70,14 @@
     Multiple <b>GPTL</b> or <b>PAPI</b> options can be specified with additional
     calls to <b>GPTLsetoption()</b>. The man pages provided with the
     distribution describe the full API specification for each <b>GPTL</b>
-    function. Except for the case-insensitivity of Fortran, the
-    interface is identical for both Fortran and C/C++ 
-    codes. 
+    function. The interface is identical for both Fortran and C/C++ 
+    codes, modulo the case-insensitivity of Fortran. 
 <p>
     Calls to <b>GPTLstart()</b> and <b>GPTLstop()</b> can be nested to an
     arbitrary depth. <b>GPTL</b> handles multiply nested regions by
     presenting output in an indented fashion. If auto-instrumentation
     is used, this provides an easy way to get a dynamic call tree of
-    the application being profiled.
+    the application being profiled. The HPCC example above shows this.
 
 <h2>Features</h2>
 <ul>
