@@ -21,6 +21,10 @@ int main(int argc, char **argv)
   for (iter = 0; iter < 10; iter++) {
     GPTLstart ("A");
     GPTLstart ("B");
+    GPTLstart ("B");  // simulate recursion
+    GPTLstart ("child_of_B_recurselvl_1");
+    GPTLstop ("child_of_B_recurselvl_1");
+    GPTLstop ("B");
     GPTLstart ("C");
 
     GPTLstart ("D");

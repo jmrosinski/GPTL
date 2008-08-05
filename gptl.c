@@ -7,7 +7,10 @@
 #include <ctype.h>         /* isdigit */
 #include <sys/types.h>     /* u_int8_t, u_int16_t */
 #include <assert.h>
+
+#ifdef LINUX
 #include <endian.h>
+#endif
 
 #ifdef HAVE_PAPI
 #include <papi.h>          /* PAPI_get_real_usec */
@@ -40,7 +43,7 @@ static volatile bool disabled = false;    /* Timers disabled? */
 static volatile bool initialized = false; /* GPTLinitialize has been called */
 static bool dousepapi = false;   /* saves a function call if stays false */
 static bool verbose = false;     /* output verbosity */
-static bool percent = true;      /* print wallclock also as percent of 1st timers[0] */
+static bool percent = false;     /* print wallclock also as percent of 1st timers[0] */
 
 static time_t ref_gettimeofday = -1; /* ref start point for gettimeofday */
 static time_t ref_clock_gettime = -1;/* ref start point for clock_gettime */
@@ -1107,7 +1110,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.89 2008-07-15 21:15:23 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.90 2008-08-05 21:30:50 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
