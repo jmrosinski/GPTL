@@ -7,6 +7,8 @@ our ($maxval);        # max value across all processes/threads
 our ($minval);        # min value across all processes/threads
 our ($sum);           # total
 our ($nval);          # number of entries found across all processes/threads
+our ($totcalls);      # number of calls found across all processes/threads
+our ($numthreads);    # number of threads
 
 my ($fn);             # file name
 my ($fnroot) = "timing";
@@ -25,6 +27,7 @@ my ($idx);            # index
 my ($hidx);           # heading index
 my ($mean);           # mean value
 my ($found);          # flag indicates region name found
+my ($totposs);        # number of threads * number of tasks
 
 my (@vals);           # values for region
 my (@heading);        # heading appropriate to col (e.g. "Wallclock")
@@ -70,6 +73,7 @@ for ($task = 0; -e "${fnroot}.$task"; $task++) {
 	if ($line =~ /^Stats for thread (\d*):/) {
 	    $started = 1;
 	    $thread = $1;
+	    $numthreads = $thread if ($thread > $numthreads);
 
 # Next line contains the headings. Parse for later printing
 
@@ -81,8 +85,10 @@ for ($task = 0; -e "${fnroot}.$task"; $task++) {
 	    @vals = split (/\s+/, $1);
 	    print (STDOUT "vals=@vals\n") if ($verbose);
 	    ($#vals >= $idx) || die ("No column $col found in input:\n$line\n");
+	    $totcalls += $vals[0];
 	    $sum += $vals[$idx];
 	    $nval++;
+
 	    if ($vals[$idx] > $maxval) {
 		$maxval = $vals[$idx];
 		$taskmax = $task;
@@ -102,7 +108,10 @@ for ($task = 0; -e "${fnroot}.$task"; $task++) {
 die ("Found no occurrences of $target in any of $task files\n") if ( ! $found );
 
 print (STDOUT "Searched for region $target\n");
-print (STDOUT "Found $nval values spread across $task tasks\n");
+$numthreads++;  # convert from 0-based to 1-based
+print (STDOUT "Found $totcalls calls across $task tasks and $numthreads threads per task\n");
+$totposs = $numthreads * $task;
+print (STDOUT "$nval of a possible $totposs tasks and threads had entries for $target\n");
 print (STDOUT "Heading is $heading[$hidx]\n");
 print (STDOUT "Max   =  $maxval on thread $threadmax task $taskmax\n");
 print (STDOUT "Min   =  $minval on thread $threadmin task $taskmin\n");
@@ -118,7 +127,11 @@ sub initstats {
     our ($minval);
     our ($sum);
     our ($nval);
+    our ($totcalls);
+    our ($numthreads);
 
+    $totcalls = 0;
+    $numthreads = 0;
     $minval = 9.99e19;
     $maxval = -9.99e19;
     $nval = 0;
@@ -133,7 +146,7 @@ sub die_usemsg {
     defined $_[0] && print (STDOUT "$_[0]");
     print (STDOUT "Usage: $0 [-v] [-c column] [-f file-root] region\n",
 	   " -v           => verbose\n",
-	   " -f file-root => look for files named <file-root>.<taskid>\n",
+	   " -f file-root => look for files named <file-root>.<taskid> (default file-root is 'timing')\n",
 	   " -c column    => use numbers in this column\n",
 	   " region       => region name to search for\n");
     exit 1;

@@ -22,15 +22,19 @@ ifeq ($(LINUX),yes)
   CFLAGS += -DLINUX
 endif
 
-ifeq ($(FORTRAN),yes)
- OBJS += f_wrappers.o
- TESTS += ftests/all
-endif
-
 ifeq ($(OPENMP),yes)
   CFLAGS  += -DTHREADED_OMP $(COMPFLAG)
   LDFLAGS += $(COMPFLAG)
   FFLAGS  += $(FOMPFLAG)
+else
+  ifeq ($(PTHREADS),yes)
+    LDFLAGS += -lpthread
+  endif
+endif
+
+ifeq ($(FORTRAN),yes)
+ OBJS  += f_wrappers.o
+ TESTS += ftests/all
 endif
 
 CFLAGS += $(INLINEFLAG) $(UNDERSCORING)

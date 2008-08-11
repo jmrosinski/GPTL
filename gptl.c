@@ -126,15 +126,12 @@ static const int nfuncentries = sizeof (funclist) / sizeof (Funcentry);
 
 static double (*ptr2wtimefunc)() = 0; /* init to invalid */
 
+static int funcidx = 0;                           /* default timer is gettimeofday*/  
 #ifdef HAVE_NANOTIME
-/* If nanotime is available make it the default due to huge granularity/overhead advantage */
-static int funcidx = 1;                           /* default timer is nanotime */  
 static float cpumhz = -1.;                        /* init to bad value */
 static double cyc2sec = -1;                       /* init to bad value */
 static unsigned inline long long nanotime (void); /* read counter (assembler) */
 static float get_clockfreq (void);                /* cycles/sec */
-#else
-static int funcidx = 0;                           /* default timer is gettimeofday*/  
 #endif
 
 #ifdef UNICOSMP
@@ -404,9 +401,9 @@ int GPTLfinalize (void)
 
 int GPTLstart_instr (void *self)
 {
-  Timer *ptr = 0;
-  int t;
-  int indx;
+  Timer *ptr;      /* linked list pointer */
+  int t;           /* thread index (of this thread) */
+  int indx;        /* hash table index */
 
   if (disabled)
     return 0;
@@ -439,6 +436,11 @@ int GPTLstart_instr (void *self)
     ++ptr->recurselvl;
     return 0;
   }
+
+  /*
+  ** Increment stackidx[t] unconditionally. This is necessary to ensure the correct
+  ** behavior when GPTLstop_instr decrements stackidx[t] unconditionally.
+  */
 
   if (++stackidx[t].val > MAX_STACK-1)
     return GPTLerror ("GPTLstart_instr: stack too big\n");
@@ -527,6 +529,11 @@ int GPTLstart (const char *name)               /* timer name */
     return 0;
   }
 
+  /*
+  ** Increment stackidx[t] unconditionally. This is necessary to ensure the correct
+  ** behavior when GPTLstop decrements stackidx[t] unconditionally.
+  */
+
   if (++stackidx[t].val > MAX_STACK-1)
     return GPTLerror ("GPTLstart: stack too big\n");
 
@@ -571,7 +578,6 @@ static inline int update_ll_hash (Timer *ptr, const int t, const int indx)
   if (nchars > max_name_len[t])
     max_name_len[t] = nchars;
 
-  ptr->depth = stackidx[t].val;
   if (timers[t]) {
     last[t]->next = ptr;
   } else {
@@ -654,14 +660,21 @@ static inline int update_parent (Timer *ptr, Timer **callstackt, int stackidxt)
     return GPTLerror ("update_parent: called with negative stackidx\n");
 
   callstackt[stackidxt] = ptr;
-  if (stackidxt-1 < 0) {
+
+  /* 
+  ** If the region has no parent, bump its orphan count, set its depth to
+  ** zero and return.
+  */
+
+  if (stackidxt == 0) {
+    ptr->depth = 0;
     ++ptr->norphan;
     return 0;
   }
 
   pptr = callstackt[stackidxt-1];
 
-  /* Bump parent count if parent found */
+  /* If this parent occurred before, just bump its count and return */
 
   for (n = 0; n < ptr->nparent; ++n) {
     if (ptr->parent[n] == pptr) {
@@ -690,7 +703,12 @@ static inline int update_parent (Timer *ptr, Timer **callstackt, int stackidxt)
     ** printed once because all depth 0 timers are printed in GPTLpr_file()
     */
 
-    if (ptr->nparent == 1 && ptr->depth > 0) {
+    if (ptr->nparent == 1) {
+      /*
+      ** Depth is first parent's depth plus one, because the print order
+      ** is always for the *first* parent
+      */
+      ptr->depth = pptr->depth + 1;
       ++pptr->nchildren;
       nchildren = pptr->nchildren;
       chptr = (Timer **) realloc (pptr->children, nchildren * sizeof (Timer *));
@@ -1110,7 +1128,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.90 2008-08-05 21:30:50 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.91 2008-08-11 03:17:16 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -2137,3 +2155,4 @@ static void printself_andchildren (int t,
   for (n = 0; n < ptr->nchildren; n++)
     printself_andchildren (t, ptr->children[n], fp, tot_overhead);
 }
+

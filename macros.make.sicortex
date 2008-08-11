@@ -5,7 +5,7 @@ INSTALLDIR = /usr/local
 MANDIR =
 
 # C compiler
-CC     = pathcc
+CC = pathcc
 
 # Whether to build debug lib or optimized lib, and associated flags
 DEBUG = no
@@ -23,22 +23,28 @@ LINUX = yes
 
 # To enable OpenMP threading, set OPENMP=yes and define the compiler flag. Otherwise,
 # set OPENMP=no. OpenMP applications linked with GPTL as built with OPENMP=no will NOT
-# be thread-safe
+# be thread-safe. If not doing OpenMP, check for PTHREADS
 OPENMP = yes
 ifeq ($(OPENMP),yes)
   COMPFLAG = -mp
 else
 # Check for PTHREADS
+  PTHREADS = yes
   ifeq ($(PTHREADS),yes)
     CFLAGS  += -DTHREADED_PTHREADS
-    LDFLAGS += -lpthread
   endif
 endif
 
 # For gcc, -Dinline=inline is a no-op. For other C compilers, things like 
-# -Dinline=__inline__ may be required. Autoconf test AC_C_INLINE can find the 
-# right definition. If unsure, try running "./suggestions CC=<your_C_compiler>"
-INLINEFLAG  = -Dinline=inline
+# -Dinline=__inline__ may be required. To find your compiler's definition, try 
+# running "./suggestions CC=<your_C_compiler>".
+INLINEFLAG = -Dinline=inline
+
+# To get some C compilers such as gcc to behave properly with -O0 and no inlining, 
+# need to effectively delete the "inline" keyword
+ifeq ($(DEBUG),yes)
+  INLINEFLAG = -Dinline=
+endif
 
 # To build the Fortran interface, set FORTRAN=yes and define the entries under
 # ifeq ($(FORTRAN),yes). Otherwise, set FORTRAN=no and skip this section.
@@ -49,13 +55,13 @@ ifeq ($(FORTRAN),yes)
 # (e.g. gfortran, pathf95)
 #
 #  UNDERSCORING =
-  UNDERSCORING = -DFORTRANUNDERSCORE
+#  UNDERSCORING = -DFORTRANUNDERSCORE
   UNDERSCORING = -DFORTRANDOUBLEUNDERSCORE
 
-# Set Fortran compiler, flags, and (if OpenMP enabled) OpenMP compiler flag
-# These settings are only used for the Fortran test applications.
+# Set Fortran compiler, flags, and (if OpenMP enabled) OpenMP compiler flag.
+# These settings are needed by the Fortran test applications.
   FC     = pathf95
-  FFLAGS = -g -O2
+  FFLAGS = -g
   ifeq ($(OPENMP),yes)
     FOMPFLAG = -mp
   endif
@@ -64,27 +70,26 @@ endif
 # Archiver: normally it's just ar
 AR = ar
 
-# PAPI: To enable, set HAVE_PAPI=yes. Then set inc and lib info if needed.
-# PAPI_LIBNAME: Test applications will be linked with -l$(PAPI_LIBNAME)
+# PAPI: To enable, set HAVE_PAPI=yes and set inc and lib info if needed.
+# The inc and lib settings are needed by the applications in ctests/ and ftests/.
 HAVE_PAPI = yes
 ifeq ($(HAVE_PAPI),yes)
-  PAPI_INCFLAGS  = 
-  PAPI_LIBFLAGS  = -lpapi
+  PAPI_INCFLAGS = 
+  PAPI_LIBFLAGS = -lpapi
 endif
 
-# MPI: This is needed only for MPI_Wtime, and some of the test codes in ctests and ftests
-# To enable, set HAVE_MPI=yes. Then set inc and lib info if needed.
-# If CC=mpicc for example, MPI_INCDIR MPI_LIBDIR and MPI_LIBNAME can all be blank.
-# If MPI_LIBNAME is set, test applications will be linked with -l$(MPI_LIBNAME)
-HAVE_MPI    = yes
+# MPI: Set HAVE_MPI=yes only if you intend to use MPI_Wtime as the underlying wallclock
+# timer. Then set inc and lib info if needed. These settings are needed by test codes in 
+# ctests/ and ftests/. If CC=mpicc, MPI_INCFLAGS and MPI_LIBFLAGS can be blank. 
+HAVE_MPI = no
 ifeq ($(HAVE_MPI),yes)
-  MPI_INCFLAGS  = 
+  MPI_INCFLAGS = 
   MPI_LIBFLAGS = -lscmpi
 endif
 
-# librt.a is an option for gathering wallclock time stats on some machines. Setting
+# librt.a is an option for gathering wallclock time stats. Setting
 # HAVE_LIBRT=yes enables this, but will probably require linking with -lrt
-HAVE_LIBRT = yes
+HAVE_LIBRT = no
 
 # Only define HAVE_NANOTIME if this is a x86
 # If HAVE_NANOTIME=yes, set BIT64=yes if this is an x86_64
