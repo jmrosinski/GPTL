@@ -22,29 +22,32 @@
 <pre>
 <div style="background-color:white;">
 Stats for thread 0:
-                                             Called Recurse Wallclock max       min       
-  total                                            1    -      14.091    14.091    14.091 
-    HPCC_Init                                      5      4     0.051     0.051     0.000 
-*     HPL_pdinfo                                  58     56     0.027     0.026     0.000 
-*       HPL_all_reduce                             6    -       0.036     0.023     0.000 
-*         HPL_reduce                              17    -       0.036     0.023     0.000 
-            HPL_max                               17    -       0.000     0.000     0.000 
-            HPL_sum                                6    -       0.000     0.000     0.000 
-*         HPL_broadcast                           19    -       0.066     0.051     0.000 
-        HPL_pdlamch                                2    -       0.026     0.026     0.000 
-*       HPL_fprintf                              122    -       0.001     0.000     0.000 
-      HPCC_InputFileInit                           5      4     0.000     0.000     0.000 
-        ReadInts                                   2    -       0.000     0.000     0.000 
-    HPL_main                                       1    -       2.193     2.193     2.193 
-      HPL_grid_init                                1    -       0.001     0.001     0.001 
-*     HPL_grid_info                               10    -       0.000     0.000     0.000 
-      HPL_pdtest                                   1    -       2.191     2.191     2.191 
-*       HPL_numroc                                 3    -       0.000     0.000     0.000 
-*         HPL_numrocI                             38    -       0.000     0.000     0.000 
-        HPL_pdmatgen                               2    -       1.591     0.808     0.783 
-          HPL_xjumpm                              14    -       0.002     0.001     0.000 
-*           HPL_lmul                          555784    -       0.216     0.024     0.000 
-*           HPL_ladd                          552992    -       0.081     0.024     0.000 
+                                             Called Recurse Wallclock max       min
+  total                                            1    -      36.798    36.798    36.798
+    HPCC_Init                                      5      4     0.020     0.020     0.000
+*     HPL_pdinfo                                  58     56     0.012     0.012     0.000
+*       HPL_all_reduce                             6    -       0.009     0.009     0.000
+*         HPL_reduce                              17    -       0.009     0.009     0.000
+            HPL_max                               17    -       0.000     0.000     0.000
+            HPL_sum                                6    -       0.000     0.000     0.000
+*         HPL_broadcast                           19    -       0.059     0.046     0.000
+        HPL_pdlamch                                2    -       0.011     0.011     0.000
+*       HPL_fprintf                              122    -       0.001     0.000     0.000
+      HPCC_InputFileInit                           5      4     0.000     0.000     0.000
+        ReadInts                                   2    -       0.000     0.000     0.000
+    PTRANS                                        15     14    13.135    13.135     0.000
+*     Cblacs_pinfo                                 7      1     0.000     0.000     0.000
+      MaxMem                                       5      4     0.000     0.000     0.000
+*       numroc_                                   96    -       0.000     0.000     0.000
+*       iceil_                                   132    -       0.000     0.000     0.000
+*       ilcm_                                     14    -       0.000     0.000     0.000
+      Cblacs_get                                   5    -       0.000     0.000     0.000
+*     setran_                                     25    -       0.000     0.000     0.000
+*     pdrand                                 1.2e+06    -       9.262     0.056     0.000
+*       HPL_lmul                             1.8e+06    -       2.065     0.040     0.000
+*       HPL_ladd                             1.8e+06    -       2.265     0.056     0.000
+      Cblacs_gridmap                              35     30     0.003     0.001     0.000
+*     Cblacs_gridinfo                             60     50     0.000     0.000     0.000
 ...
 </div>
 </pre>
@@ -73,10 +76,11 @@ Stats for thread 0:
     codes, modulo the case-insensitivity of Fortran. 
 <p>
     Calls to <b>GPTLstart()</b> and <b>GPTLstop()</b> can be nested to an
-    arbitrary depth. <b>GPTL</b> handles multiply nested regions by
-    presenting output in an indented fashion. If auto-instrumentation
-    is used, this provides an easy way to get a dynamic call tree of
-    the application being profiled. The HPCC example above shows this.
+    arbitrary depth. As shown above, <b>GPTL</b> handles multiply nested regions by
+    presenting output in an indented fashion. It also shows how auto-instrumentation
+    can be used to easily produce a dynamic call tree of
+    the application being profiled, where region names correspond to function
+	entry and exit points.
 
 <h2>Features</h2>
 <ul>
@@ -96,7 +100,7 @@ Stats for thread 0:
 
 <h2>Download and Installation</h2>
 <ul> 
-<li> The most recent release is <a href="gptl3_3.tar.gz">gptl3_2.tar.gz</a>
+<li> The most recent release is <a href="gptl3_3.tar.gz">gptl3_3.tar.gz</a>
 <li> To build and install <b>GPTL</b>, see the <A
 	      HREF="INSTALL">INSTALL</a> file.
 	    You'll need to create a "macros.make" file 
@@ -147,6 +151,7 @@ program papiomptest
   ret = gptlsetoption (gptlabort_on_error, 1) ! Abort on GPTL error
   ret = gptlsetoption (PAPI_FP_OPS, 1)        ! Count floating point ops
   ret = gptlsetoption (gptlnarrowprint, 1)    ! Print fewer sig figs
+  ret = gptlsetoption (gptlpercent, 1)        ! Turn on "% of" print
   ret = gptlsetoption (gptloverhead, 0)       ! Turn off overhead estimate
   ret = gptlinitialize ()                     ! Initialize GPTL
   ret = gptlstart ('total')                   ! Start a timer
@@ -176,7 +181,7 @@ Compile and link, then run:
 % env OMP_NUM_THREADS=2 ./a.out
 </pre>
 
-The call to gptlpr wrote a file named timing.0, which looks like this:
+The call to <b>gptlpr(0)</b> wrote a file named timing.0, which looks like this:
 
 <pre>
 <div style="background-color:white;">
@@ -242,7 +247,7 @@ settings such as whether multiplexing was on or off, and
 which <b>PAPI</b> events were enabled. In this case 
 "Floating point operations executed" were counted. Other preamble contents
 include estimates of underlying timing routine (UTR)
-overhead, <b>PAPI</b> overhead, and explanations of the printed
+overhead, <b>PAPI</b> overhead, and an explanation of the printed
 statistics. 
 <p>
 The statistics themselves begin with the line which reads "Stats for
@@ -263,15 +268,15 @@ each region is printed next, followed by the max and min values for any
 single invocation. In this simple example each region was called only once, so
 "Wallclock", "max", and "min" are all the same. The next column lists the
 percentage of wallclock time each region took compared to the first
-region timed. This is generally useful only if there is a single region
-wrapping the entire execution ("total" in the above example). This output can
-be turned off with a call that looks like <b>GPTLsetoption (GPTLpercent, 0)</b>. 
+region timed, and was produced due to the call to <b>GPTLsetoption (GPTLpercent,1)</b>. 
+Turning this option on is generally useful only if there is a single region
+wrapping the entire execution ("total" in the above example).
 PAPI-based statistics are presented next. In
-the example we counted PAPI_FP_OPS. The name is shortened to FP_OPS to
+the example, the counter PAPI_FP_OPS was enabled. The name was shortened to FP_OPS to
 confine the printed output to as few columns as possible. Finally, each PAPI
 count is divided by wallclock time and printed as millions per second (in
 this case millions of floating point operations per second). This column can
-also be turned off, with a call to <b>GPTLsetoption (GPTLpersec, 0)</b>. 
+be turned off, with a call to <b>GPTLsetoption (GPTLpersec, 0)</b>. 
 
 <p>
 Since this was a threaded code run with OMP_NUM_THREADS=2, statistics
@@ -279,15 +284,17 @@ for the second thread (see "Stats for thread 1:") are also printed. The
 output shows that thread 1
 participated in the computations for regions "A", "B", "C", and "CC", but not
 "total". This is reflected in the code itself, since only the master
-thread was active when region "total" was started and stopped.
+thread was active when start and stop calls were made for region "total".
 
 <p>
 After the per-thread statistics section, the same information is repeated, sorted by
 region name if more than one thread was active. This section is delimited by
 the string "Same stats sorted by
-timer for threaded regions:". This makes it easier to inspect for load
+timer for threaded regions:". This region presentation order makes it easier
+	to inspect for load 
 balance across threads. The leftmost column is thread number, and the region
-names are not indented.
+names are not indented. A sum across threads for each region is also printed,
+and labeled "SUM".
 
 <HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
 
@@ -371,7 +378,7 @@ Output file <em> outfile.converted</em> looks like this:
 <pre>
 <div style="background-color:white;">
 PAPI event multiplexing was OFF
-PAPI events enabled (including derived):
+PAPI events enabled (including those required for derived events):
   Instructions per cycle
   Total instructions executed
 
@@ -379,7 +386,7 @@ Underlying timing routine was gettimeofday.
 Per-call utr overhead est: 2.8e-07 sec.
 Per-call PAPI overhead est: 1.4e-07 sec.
 If overhead stats are printed, roughly half the estimated number is
-embedded in the wallclock (and/or PAPI counter) stats for each timer
+embedded in the wallclock stats for each timer
 
 If a '% of' field is present, it is w.r.t. the first timer for thread 0.
 If a 'e6 per sec' field is present, it is in millions of PAPI counts per sec.
@@ -389,20 +396,21 @@ values printed are for all calls. Further down the listing is more detailed
 information about multiple parents. Look for 'Multiple parent info'
 
 Stats for thread 0:
-                     Called Recurse Wallclock max       min       % of  main GPTL_IPC  TOT_INS e6 / sec 
-  main                     1    -       2.000     2.000     2.000     100.00 1.31e-01    16654     0.01 
-    do_work                1    -       2.000     2.000     2.000     100.00 1.20e-01    12278     0.01 
-      A                    1    -       1.000     1.000     1.000      50.00 1.31e-01     4910     0.00 
-*       B                  2    -       2.000     1.000     1.000     100.00 5.14e-02     2739     0.00 
-      AA                   1    -       0.000     0.000     0.000       0.00 3.14e-01      429   429.00 
+                     Called Recurse Wallclock max       min       GPTL_IPC  TOT_INS e6 / sec 
+  main                     1    -       2.000     2.000     2.000 1.35e-01    16575     0.01 
+    do_work                1    -       2.000     2.000     2.000 1.24e-01    12221     0.01 
+      A                    1    -       1.000     1.000     1.000 1.33e-01     4890     0.00 
+*       B                  2    -       2.000     1.000     1.000 5.23e-02     2739     0.00 
+      AA                   1    -       0.000     0.000     0.000 4.46e-01      429   429.00 
 Total calls           = 6
 Total recursive calls = 0
 
 Multiple parent info (if any) for thread 0:
-The 2 columns are number of child invocations
-The rows are each parent, with their common child being the last entry, which is indented
-Counts next to parents are number of times they called the child
-Count next to child is total number of times it was called
+Columns are count and name for the listed child
+Rows are each parent, with their common child being the last entry, which is indented
+Count next to each parent is the number of times it called the child
+Count next to child is total number of times it was called by the listed parents
+
        1 A                         
        1 do_work                         
        2   B                         
@@ -421,7 +429,7 @@ the <b>PAPI</b> library to count total cycles (PAPI_TOT_CYC). When
 <p>
 Note the asterisk in front of region "B". This
 indicates that region "B" had multiple parents. It is presented as a child of
-region "A" because that is the first region that invokes it. Information
+region "A" because that is the first region that invoked it. Information
 about other parents is presented after the main call tree. It shows that
 region "B" had two parents, "A", and "do_work". Each parent invoked "B" once,
 for a total of 2 calls.
@@ -454,6 +462,7 @@ int main (int argc, char **argv)
   ret = MPI_Comm_rank (MPI_COMM_WORLD, &iam);  // Get my rank
 
   ret = GPTLsetoption (GPTLoverhead, 0);       // Don't print overhead stats
+  ret = GPTLsetoption (GPTLpercent, 1);        // Print percentage stats
   ret = GPTLsetoption (GPTLabort_on_error, 1); // Abort on any GPTL error
 
   ret = GPTLinitialize ();                     // Initialize GPTL
@@ -486,7 +495,7 @@ int main (int argc, char **argv)
 
 Compile and link, then run with 2 threads and 3 MPI tasks:
 <pre>
-% gcc -fopenmp mpi.c -lgptl 
+% gcc -fopenmp mpi.c -lmpich -lgptl
 % env OMP_NUM_THREADS=2 mpiexec -n 3 ./a.out
 </pre>
 
@@ -521,7 +530,7 @@ SUM sleep_iam_plus_mythread       2   -       1.000     1.000     0.000      24.
 </div>
 </pre>
 
-The results are fairly straightforward and as expected. Note
+The results are fairly straightforward and mostly as expected. Note
 though that for thread 0, region "total" took 4 seconds, while
 the sum of all the other regions it surrounded adds up to only
 3. What's going on? The reason is that
@@ -538,16 +547,18 @@ being timed:
 Here's the output:
 <pre>
 <div style="background-color:white;">
-Found 6 values spread across 3 tasks
+Searched for region sleep_iam_plus_mythread
+Found 6 calls across 3 tasks and 2 threads per task
+6 of a possible 6 tasks and threads had entries for sleep_iam_plus_mythread
 Heading is Wallclock
 Max   =  3.000 on thread 1 task 2
 Min   =  0.000 on thread 0 task 0
-Mean  = 1.50016666666667
-Total = 9.001
+Mean  = 1.5
+Total = 9
 </div>
 </pre>
 We see that the max time for this region was spent in thread 1, task
-2. The three seconds reported is due to the call
+2 (though only task 0 output is shown above). The three seconds reported is due to the call
 to <b>sleep (iam+i)</b>. Likewise, thread 0 on task 0 spent
 the least amount of time in this region, 0 seconds.
 
@@ -562,8 +573,8 @@ Please <a HREF="mailto:rosinskijm@ornl.gov">email</a> me bug reports
 by <a HREF="http://www.burningserver.net/rosinski">Jim Rosinski</a>,
 currently at <a HREF="http://www.ornl.gov">ORNL</a>, formerly
   of <a HREF="http://www.sicortex.com">SiCortex</a>,
-and <a HREF="http://www.ncar.edu">NCAR</a>. 
+and <a HREF="http://www.ucar.edu">NCAR</a>. 
 <h2>Copyright</h2>
 This software is <b>Open Source</b>. My only request is that you don't
-embed it in software that you intend to sell.
+embed <b>GPTL</b> library source itself in software that you intend to sell.
 </html>
