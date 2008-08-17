@@ -2,7 +2,7 @@
 <head>
 <title>GPTL Home Page</title>
 <meta name="Author" content="Jim Rosinski">
-<meta name="Keywords" content="gptl","timing","papi", "performance analysis">
+<meta name="Keywords" content="gptl","papi","profile","timing","performance analysis">
 <h1>GPTL - General Purpose Timing Library</h1>
 <h2>(with optional PAPI interface)</h2>
 </head>
@@ -10,15 +10,16 @@
 
 <b>GPTL</b> is a library to instrument C, C++, and Fortran codes for
     performance analysis and profiling. The instrumentation can be inserted
-    manually wherever the user wishes, or automatically at
-    function entry and 
-    exit points if the application being profiled is built with either the
-    GNU or PathScale compilers. To auto-instrument an application using
-    either of these compilers, add <b><em>-finstrument-functions</em></b> to
-    the compile flags of each source file to be profiled. Here is a portion of
-    <b>GPTL</b> printout
-    after running the HPCC benchmark with automatic instrumentation
-    enabled: 
+    manually by the user wherever they wish, or it can be done automatically
+    by the compiler at
+    function entry and exit points if the application being
+    profiled is built 
+    with either the GNU or PathScale compilers. To auto-instrument an
+    application,
+    add <b><em>-finstrument-functions</em></b> to 
+    the compile flags of the source files to be profiled. Here is a portion of
+    <b>GPTL</b> printout after running the HPCC benchmark with automatic
+    instrumentation enabled: 
 <pre>
 <div style="background-color:white;">
 Stats for thread 0:
@@ -53,7 +54,8 @@ Stats for thread 0:
 </pre>
     Function names on the left of the output are indented to indicate their
     parent, and depth in the call tree. An asterisk next to an entry means it
-    has more than one parent. Other entries in this output show the number of
+    has more than one parent (see <A HREF="#EXAMPLE2">Example 2</A> below for
+    further details). Other entries in this output show the number of
     invocations, number of recursive invocations, and wallclock timing
     statistics.
 <p>
@@ -77,7 +79,8 @@ Stats for thread 0:
 <p>
     Calls to <b>GPTLstart()</b> and <b>GPTLstop()</b> can be nested to an
     arbitrary depth. As shown above, <b>GPTL</b> handles multiply nested regions by
-    presenting output in an indented fashion. It also shows how auto-instrumentation
+    presenting output in an indented fashion. The example also shows how
+    auto-instrumentation 
     can be used to easily produce a dynamic call tree of
     the application being profiled, where region names correspond to function
 	entry and exit points.
@@ -101,36 +104,36 @@ Stats for thread 0:
 <h2>Download and Installation</h2>
 <ul> 
 <li> The most recent release is <a href="gptl3_3.tar.gz">gptl3_3.tar.gz</a>
-<li> To build and install <b>GPTL</b>, see the <A
-	      HREF="INSTALL">INSTALL</a> file.
-	    You'll need to create a "macros.make" file 
-	    appropriate for your target platform. Example macros.make files for various
-	    architectures are included in the tar file
-	  (e.g. macros.make.linux). An autoconf-based 
-	    script named "suggestions" is included to help in editing
-	    this file. Example usage might be "./suggestions FC=gfortran
-	  CC=gcc". Comments in the sample macros.make files describe
-	  each required setting.
-<li> For information on using <b>GPTL</b>, refer
-	      to <A HREF="#EXAMPLES">EXAMPLES</A> below, and the
-	      man pages provided with the distribution.
+<li> To build and install <b>GPTL</b>, see the <A HREF="INSTALL">INSTALL</a> file.
+  You'll need to create a <b><em>macros.make</em></b> file appropriate for your target
+  platform. Example files for various architectures are
+  included in the tar file (e.g. <b><em>macros.make.linux</em></b>). An autoconf-based 
+  script named <b><em>suggestions</em></b> is included to help in editing this
+  file. Example usage might be:
+<pre>
+./suggestions FC=gfortran CC=gcc
+</pre>
+Comments in the sample <b><em>macros.make</em></b> files describe 
+  each required setting.
+<li> For information on using <b>GPTL</b>, refer to 
+  <A HREF="#EXAMPLES">EXAMPLES</A> below, and the man pages provided with the
+  distribution. 
 </ul>
 
 <HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
 <A name=EXAMPLES></A>
 <h2>Examples</h2>
-Below are three simple codes which illustrate the use of some features of
-	<b>GPTL</b>. They were all run on a Linux x86 using GNU
-	compilers. <A
-	  HREF="#EXAMPLE1">Example 1</A> is a manually-instrumented
-	Fortran code which uses <b>PAPI</b> to count floating point
-	operations. <A HREF="#EXAMPLE2">Example 2</A> is C code compiled
-	with gcc's auto-instrumentation hooks to print a dynamic call tree. <A
-	  HREF="#EXAMPLE3">Example 3</A> is a simple MPI code, the
-	output of which is post-processed using Perl script
-	<em><b>parsegpltout.pl</b></em> to examine load imbalance.
-<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
+  Below are three simple codes which illustrate the use of some features of
+  <b>GPTL</b>. They were all run on a Linux x86 using GNU compilers. 
+  <A HREF="#EXAMPLE1">Example 1</A> is a manually-instrumented
+  Fortran code which uses <b>PAPI</b> to count floating point
+  operations. <A HREF="#EXAMPLE2">Example 2</A> is C code compiled
+  with gcc's auto-instrumentation hooks to print a dynamic call tree. 
+  <A HREF="#EXAMPLE3">Example 3</A> is a simple MPI code, the
+  output of which is post-processed using Perl script
+  <em><b>parsegpltout.pl</b></em> to examine load imbalance.
 
+<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
 <A name=EXAMPLE1></A>
 <h3>Example 1: Simple manual instrumentation</h3>
 This is an OpenMP Fortran
@@ -271,16 +274,16 @@ percentage of wallclock time each region took compared to the first
 region timed, and was produced due to the call to <b>GPTLsetoption (GPTLpercent,1)</b>. 
 Turning this option on is generally useful only if there is a single region
 wrapping the entire execution ("total" in the above example).
-PAPI-based statistics are presented next. In
+<b>PAPI</b>-based statistics are presented next. In
 the example, the counter PAPI_FP_OPS was enabled. The name was shortened to FP_OPS to
-confine the printed output to as few columns as possible. Finally, each PAPI
+confine the printed output to as few columns as possible. Finally, each <b>PAPI</b>
 count is divided by wallclock time and printed as millions per second (in
 this case millions of floating point operations per second). This column can
 be turned off, with a call to <b>GPTLsetoption (GPTLpersec, 0)</b>. 
 
 <p>
 Since this was a threaded code run with OMP_NUM_THREADS=2, statistics
-for the second thread (see "Stats for thread 1:") are also printed. The
+for the second thread are also printed. It starts at "Stats for thread 1:" The
 output shows that thread 1
 participated in the computations for regions "A", "B", "C", and "CC", but not
 "total". This is reflected in the code itself, since only the master
@@ -417,14 +420,15 @@ Count next to child is total number of times it was called by the listed parents
 </div>
 </pre>
 <h3>Explanation of the above output</h3>
-Compared to the output from <A HREF="#EXAMPLE1">Example 1</A> above, there
-are some differences. In addition to "Total instructions executed"
-(PAPI_TOT_INS), derived event "Instructions per
-cycle" (GPTL_IPC) was also enabled. To compute this metric, <b>GPTL</b> instructed
-the <b>PAPI</b> library to count total cycles (PAPI_TOT_CYC). When
-<b>GPTLpr_file()</b> was called, it computed 
+<b>PAPI</b> event "Total instructions executed"
+(PAPI_TOT_INS) and derived event "Instructions per
+cycle" (GPTL_IPC) were enabled. To compute instructions per
+cycle, <b>GPTL</b> made the 
+<b>PAPI</b> library call to count total cycles (PAPI_TOT_CYC) in addition to
+the already-enabled event PAPI_TOT_INS. When
+<b>GPTLpr_file()</b> was called, it computed:
 <pre>
-      GPTL_IPC = PAPI_TOT_INS / PAPI_TOT_CYC
+      GPTL_IPC = PAPI_TOT_INS / PAPI_TOT_CYC;
 </pre>
 <p>
 Note the asterisk in front of region "B". This
