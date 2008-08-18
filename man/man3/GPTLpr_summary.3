@@ -1,4 +1,4 @@
-.\" $Id: GPTLpr_summary.3,v 1.5 2008-08-18 22:54:46 rosinski Exp $
+.\" $Id: GPTLpr_summary.3,v 1.6 2008-08-18 23:01:08 rosinski Exp $
 .TH GPTLpr_summary 3 "August, 2008" "GPTL"
 
 .SH NAME
@@ -41,10 +41,10 @@ printed.
 None yet provided.
 
 .SH BUGS
-Only regions specified by task 0, thread 0 are checked. No indentation is
+Only regions in task 0, thread 0 are checked. No indentation is
 performed. Building GPTL with MPI enabled means all executables
-linked with it will require MPI also be linked in, whether or not it's
-needed. This could be fixed by building GPTL as a shared library.
+linked with GPTL will require linking with the MPI library as well.
+This could be fixed by building GPTL as a shared library.
 
 .SH SEE ALSO
 .BR GPTLpr "(3)" 
