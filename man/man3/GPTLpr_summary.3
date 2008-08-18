@@ -1,5 +1,5 @@
-.\" $Id: GPTLpr_summary.3,v 1.4 2008-08-18 22:47:25 rosinski Exp $
-.TH GPTLpr_summary 3 "April, 2007" "GPTL"
+.\" $Id: GPTLpr_summary.3,v 1.5 2008-08-18 22:54:46 rosinski Exp $
+.TH GPTLpr_summary 3 "August, 2008" "GPTL"
 
 .SH NAME
 GPTLpr_summary \- Print a counter summary across all threads and tasks
@@ -30,10 +30,7 @@ regions which exist for thread 0, task 0 are considered.
 
 .SH RESTRICTIONS
 .B GPTLinitialize()
-must have been called. To obtain any useful data, one or more
-pairs of 
-.B GPTLstart()/GPTLstop()
-calls need to have been exercised.
+must have been called.
 
 .SH RETURN VALUES
 On success, this function returns 0.
