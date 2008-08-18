@@ -2,7 +2,7 @@
 INSTALLDIR = /usr/local
 
 # Where to install man pages (if blank, defaults to $INSTALLDIR)
-MANDIR = $(HOME)
+MANDIR = 
 
 # C compiler
 CC = gcc
@@ -72,7 +72,7 @@ AR = ar
 HAVE_PAPI = yes
 ifeq ($(HAVE_PAPI),yes)
   PAPI_INCFLAGS = -I/usr/local/include
-  PAPI_LIBFLAGS = "-L/usr/local/lib -lpapi"
+  PAPI_LIBFLAGS = -L/usr/local/lib -lpapi
   ifeq ($(FORTRAN),yes)
     FFLAGS += -DHAVE_PAPI
   endif
@@ -85,7 +85,7 @@ endif
 HAVE_MPI = no
 ifeq ($(HAVE_MPI),yes)
   MPI_INCFLAGS = -I/usr/local/include
-  MPI_LIBFLAGS = "-L/usr/local/lib -lmpich"
+  MPI_LIBFLAGS = -L/usr/local/lib -lmpich
   ifeq ($(FORTRAN),yes)
     FFLAGS += -DHAVE_MPI
   endif
