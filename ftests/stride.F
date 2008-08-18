@@ -28,8 +28,8 @@
       if (gptlsetoption (gptlwall, 1) .lt. 0) stop 99
 
 #ifdef HAVE_PAPI
-! Test gptl_papiname2id
-      id = gptl_papiname2id ('PAPI_TOT_CYC')
+      if (gptl_papilibraryinit () < 0) stop 99
+      call papif_event_name_to_code ('PAPI_TOT_CYC', id)
       if (id .ge. 0) call exit (1)
       if (gptlsetoption (id, 1) .lt. 0) stop 99
 #endif

@@ -2,7 +2,7 @@
 INSTALLDIR = /usr/local
 
 # Where to install man pages (if blank, defaults to $INSTALLDIR)
-MANDIR =
+MANDIR = $(HOME)
 
 # C compiler
 CC = pathcc
@@ -32,13 +32,14 @@ else
   PTHREADS = yes
   ifeq ($(PTHREADS),yes)
     CFLAGS  += -DTHREADED_PTHREADS
+    LDFLAGS += -lpthread
   endif
 endif
 
 # For gcc, -Dinline=inline is a no-op. For other C compilers, things like 
 # -Dinline=__inline__ may be required. To find your compiler's definition, try 
 # running "./suggestions CC=<your_C_compiler>".
-INLINEFLAG = -Dinline=inline
+INLINEFLAG  = -Dinline=inline
 
 # To get some C compilers such as gcc to behave properly with -O0 and no inlining, 
 # need to effectively delete the "inline" keyword
@@ -59,9 +60,9 @@ ifeq ($(FORTRAN),yes)
   UNDERSCORING = -DFORTRANDOUBLEUNDERSCORE
 
 # Set Fortran compiler, flags, and (if OpenMP enabled) OpenMP compiler flag.
-# These settings are needed by the Fortran test applications.
+# These settings are only used for the Fortran test applications.
   FC     = pathf95
-  FFLAGS = -g
+  FFLAGS = -g -O2
   ifeq ($(OPENMP),yes)
     FOMPFLAG = -mp
   endif
@@ -70,32 +71,40 @@ endif
 # Archiver: normally it's just ar
 AR = ar
 
-# PAPI: To enable, set HAVE_PAPI=yes and set inc and lib info if needed.
-# The inc and lib settings are needed by the applications in ctests/ and ftests/.
+# PAPI: To enable, set HAVE_PAPI=yes. Then set inc and lib info if needed.
+# Modify FFLAGS for ftests/: Normally it's -D, but AIX requires -WF,-D
 HAVE_PAPI = yes
 ifeq ($(HAVE_PAPI),yes)
   PAPI_INCFLAGS = 
-  PAPI_LIBFLAGS = -lpapi
+  PAPI_LIBFLAGS = "-lpapi"
+  ifeq ($(FORTRAN),yes)
+    FFLAGS += -DHAVE_PAPI
+  endif
 endif
 
 # MPI: Set HAVE_MPI=yes only if you intend to use MPI_Wtime as the underlying wallclock
-# timer. Then set inc and lib info if needed. These settings are needed by test codes in 
-# ctests/ and ftests/. If CC=mpicc, MPI_INCFLAGS and MPI_LIBFLAGS can be blank. 
-HAVE_MPI = no
+# timer. Then set inc and lib info if needed (e.g. if CC=mpicc, MPI_INCFLAGS and
+# MPI_LIBFLAGS can be blank).
+# Modify FFLAGS for ftests/: Normally it's -D, but AIX requires -WF,-D
+HAVE_MPI = yes
 ifeq ($(HAVE_MPI),yes)
   MPI_INCFLAGS = 
-  MPI_LIBFLAGS = -lscmpi
+  MPI_LIBFLAGS = "-lscmpi"
+  ifeq ($(FORTRAN),yes)
+    FFLAGS += -DHAVE_MPI
+  endif
 endif
 
-# librt.a is an option for gathering wallclock time stats. Setting
-# HAVE_LIBRT=yes enables this, but will probably require linking with -lrt
+# clock_gettime() in librt.a is an option for gathering wallclock time stats
+# on some machines. Setting HAVE_LIBRT=yes enables this, but will probably
+# require linking with -lrt 
 HAVE_LIBRT = no
 
 # Only define HAVE_NANOTIME if this is a x86
 # If HAVE_NANOTIME=yes, set BIT64=yes if this is an x86_64
 HAVE_NANOTIME = no
 ifeq ($(HAVE_NANOTIME),yes)
-  BIT64 = no
+  BIT64 = yes
 endif
 
 # Some old compilers don't support vprintf. Set to "no" in this case

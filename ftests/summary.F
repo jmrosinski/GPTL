@@ -1,4 +1,5 @@
       program main 
+#include <mpif.h>
 #include "../gptl.inc"
       double precision, external :: sub
       double precision result

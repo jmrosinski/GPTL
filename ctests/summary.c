@@ -108,7 +108,8 @@ double sub (int iter)
   double sum;
 
   (void) GPTLstart ("sub");
-  usec = nproc * nthreads - (iam * iter);
+  /* Sleep msec is mpi rank + thread number */
+  usec = 1000 * (iam * iter);
   printf ("sleeping %ld usec\n", usec);
 
   (void) GPTLstart ("sleep");
