@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "private.h"
 
 #if ( defined THREADED_OMP )
