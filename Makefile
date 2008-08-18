@@ -35,6 +35,7 @@ ifeq ($(OPENMP),yes)
   FFLAGS  += $(FOMPFLAG)
 else
   ifeq ($(PTHREADS),yes)
+    CFLAGS  += -DTHREADED_PTHREADS
     LDFLAGS += -lpthread
   endif
 endif

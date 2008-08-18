@@ -28,18 +28,14 @@ OPENMP = yes
 ifeq ($(OPENMP),yes)
   COMPFLAG = -fopenmp
 else
-# Check for PTHREADS
-  PTHREADS = yes
-  ifeq ($(PTHREADS),yes)
-    CFLAGS  += -DTHREADED_PTHREADS
-    LDFLAGS += -lpthread
-  endif
+# Set PTHREADS if available
+  PTHREADS = no
 endif
 
 # For gcc, -Dinline=inline is a no-op. For other C compilers, things like 
 # -Dinline=__inline__ may be required. To find your compiler's definition, try 
 # running "./suggestions CC=<your_C_compiler>".
-INLINEFLAG  = -Dinline=inline
+INLINEFLAG = -Dinline=inline
 
 # To get some C compilers such as gcc to behave properly with -O0 and no inlining, 
 # need to effectively delete the "inline" keyword

@@ -28,12 +28,8 @@ OPENMP = yes
 ifeq ($(OPENMP),yes)
   COMPFLAG = -mp
 else
-# Check for PTHREADS
-  PTHREADS = yes
-  ifeq ($(PTHREADS),yes)
-    CFLAGS  += -DTHREADED_PTHREADS
-    LDFLAGS += -lpthread
-  endif
+# Set PTHREADS if available
+  PTHREADS = no
 endif
 
 # For gcc, -Dinline=inline is a no-op. For other C compilers, things like 
