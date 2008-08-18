@@ -242,7 +242,13 @@ int GPTLsetoption (const int option,  /* option */
       dousepapi = true;
     return 0;
   }
+#else
+  /* Make GPTLnarrowprint a placebo if PAPI not enabled */
+
+  if (option == GPTLnarrowprint)
+    return 0;
 #endif
+
   return GPTLerror ("GPTLsetoption: option %d not available\n", option);
 }
 
@@ -1152,7 +1158,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.92 2008-08-18 17:39:27 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.93 2008-08-18 21:06:44 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1602,7 +1608,7 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.92 2008-08-18 17:39:27 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.93 2008-08-18 21:06:44 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");
