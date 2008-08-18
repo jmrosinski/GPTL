@@ -1,5 +1,5 @@
-OBJS = errtest.o papiomptest.o stride.o ugex.o utrtest.o
-EXES = errtest   papiomptest   stride   ugex   utrtest
+OBJS = errtest.o papiomptest.o stride.o ugex.o utrtest.o summary.o
+EXES = errtest   papiomptest   stride   ugex   utrtest   summary
 
 all: $(EXES)
 
@@ -20,3 +20,6 @@ ugex: ugex.o
 
 utrtest: utrtest.o
 	$(FC) $(FFLAGS) -o $@ utrtest.o $(LDFLAGS)
+
+summary: summary.o
+	$(FC) $(FFLAGS) -o $@ summary.o $(LDFLAGS)

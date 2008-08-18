@@ -48,7 +48,7 @@ int main (int argc, char **argv)
 	case 'p':
 #ifdef HAVE_PAPI
 	  if ((ret = PAPI_event_name_to_code (optarg, &papiopt)) != 0) {
-	    printf ("Failure from GPTL_PAPIname2id\n");
+	    printf ("Failure from PAPI_event_name_to_code\n");
 	    exit (1);
 	  }
 	  if (GPTLsetoption (papiopt, 1) < 0) {

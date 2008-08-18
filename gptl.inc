@@ -47,6 +47,7 @@
       integer gptlstamp 
       integer gptlpr
       integer gptlpr_file
+      integer gptlpr_summary
       integer gptlreset 
       integer gptlfinalize
       integer gptlget_memusage
@@ -67,6 +68,7 @@
       external gptlstamp 
       external gptlpr
       external gptlpr_file
+      external gptlpr_summary
       external gptlreset 
       external gptlfinalize
       external gptlget_memusage

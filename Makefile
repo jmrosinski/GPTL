@@ -1,3 +1,9 @@
+# Initialize some macros to null before including arch-specific settings.
+# CFLAGS_TESTS differs from CFLAGS for optimization (esp. inlining), and leaving off
+# unused library-specific settings.
+
+CFLAGS_TESTS =
+
 include macros.make
 
 null =
@@ -24,6 +30,7 @@ endif
 
 ifeq ($(OPENMP),yes)
   CFLAGS  += -DTHREADED_OMP $(COMPFLAG)
+  CFLAGS_TESTS += -DTHREADED_OMP $(COMPFLAG)
   LDFLAGS += $(COMPFLAG)
   FFLAGS  += $(FOMPFLAG)
 else

@@ -31,7 +31,7 @@ else
 # Check for PTHREADS
   PTHREADS = yes
   ifeq ($(PTHREADS),yes)
-    CFLAGS  += -DTHREADED_PTHREADS
+    CFLAGS += -DTHREADED_PTHREADS
   endif
 endif
 

@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.29 2008-07-16 17:52:23 rosinski Exp $
+** $Id: f_wrappers.c,v 1.30 2008-08-18 17:39:27 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines
 */
@@ -15,6 +15,7 @@
 #define gptlfinalize GPTLFINALIZE
 #define gptlpr GPTLPR
 #define gptlpr_file GPTLPR_FILE
+#define gptlpr_summary GPTLPR_SUMMARY
 #define gptlreset GPTLRESET
 #define gptlstamp GPTLSTAMP
 #define gptlstart GPTLSTART
@@ -37,6 +38,7 @@
 #define gptlfinalize gptlfinalize_
 #define gptlpr gptlpr_
 #define gptlpr_file gptlpr_file_
+#define gptlpr_summary gptlpr_summary_
 #define gptlreset gptlreset_
 #define gptlstamp gptlstamp_
 #define gptlstart gptlstart_
@@ -59,6 +61,7 @@
 #define gptlfinalize gptlfinalize_
 #define gptlpr gptlpr_
 #define gptlpr_file gptlpr_file__
+#define gptlpr_summary gptlpr_summary__
 #define gptlreset gptlreset_
 #define gptlstamp gptlstamp_
 #define gptlstart gptlstart_
@@ -106,6 +109,11 @@ int gptlpr_file (char *file, int nc1)
   ret = GPTLpr_file (locfile);
   free (locfile);
   return ret;
+}
+
+int gptlpr_summary (int *comm)
+{
+  return GPTLpr_summary (*comm);
 }
 
 void gptlreset ()

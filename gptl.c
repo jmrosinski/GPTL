@@ -55,6 +55,28 @@ typedef struct {
   bool enabled;                  /* flag */
 } Settings;
 
+/* For Summary stats */
+
+typedef struct {
+  double wallmax;
+  double wallmin;
+#ifdef HAVE_PAPI
+  long long papimax[MAX_AUX];
+  long long papimin[MAX_AUX];
+#endif
+  unsigned long count;
+  int wallmax_p;               /* over processes */
+  int wallmax_t;               /* over threads */
+  int wallmin_p;
+  int wallmin_t;
+#ifdef HAVE_PAPI
+  int papimax_p[MAX_AUX];      /* over processes */
+  int papimax_t[MAX_AUX];      /* over threads */
+  int papimin_p[MAX_AUX];
+  int papimin_t[MAX_AUX];
+#endif
+} Summarystats;
+
 /* Options, print strings, and default enable flags */
 
 static Settings cpustats =      {GPTLcpu,      "Usr       sys       usr+sys   ", false};
@@ -75,6 +97,8 @@ static Nofalse *stackidx;        /* index into callstack: */
 
 static void printstats (const Timer *, FILE *, const int, const bool, double);
 static void add (Timer *, const Timer *);
+static void get_threadstats (const char *, Summarystats *);
+static void get_summarystats (Summarystats *, const Summarystats *, int);
 static void print_multparentinfo (FILE *, Timer *);
 static inline int get_cpustamp (long *, long *);
 
@@ -1128,7 +1152,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.91 2008-08-11 03:17:16 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.92 2008-08-18 17:39:27 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1530,6 +1554,266 @@ static void add (Timer *tout,
   }
 #ifdef HAVE_PAPI
   GPTL_PAPIadd (&tout->aux, &tin->aux);
+#endif
+}
+
+/* 
+** GPTLpr_summary: gather and print summary stats across threads and 
+**                 (if applicable) MPI tasks
+**
+** Input arguments:
+**   comm: commuicator (e.g. MPI_COMM_WORLD). If zero, use MPI_COMM_WORLD
+*/
+
+int GPTLpr_summary (int comm)
+{
+  const char *outfile = "timing.summary";
+  int iam = 0;                     /* MPI rank: default master */
+  int n;                           /* index */
+  int extraspace;                  /* for padding to length of longest name */
+  Summarystats summarystats;       /* stats to be printed */
+  Timer *ptr;                      /* timer */
+  FILE *fp = 0;                    /* output file */
+
+#ifdef HAVE_MPI
+  int nproc;                                /* number of procs in MPI communicator */
+  int p;                                    /* process index */
+  int ret;                                  /* return code */
+  const int nbytes = sizeof (Summarystats); /* number of bytes to be sent */
+  const int tag = 99;                       /* tag for MPI message */
+  char name[MAX_CHARS+1];                   /* timer name requested by master */
+  Summarystats summarystats_slave;          /* stats sent to master */
+  MPI_Status status;                        /* required by MPI_Recv */
+
+  if (comm == 0)
+    comm = MPI_COMM_WORLD;
+
+  ret = MPI_Comm_rank (comm, &iam);
+  ret = MPI_Comm_size (comm, &nproc);
+#endif
+
+  /*
+  ** Master loops over thread 0 timers. Each process gathers stats for its threads,
+  ** master gathers these results.
+  ** End of requests signaled by requesting the null string.
+  */
+
+  if (iam == 0) {
+    if ( ! (fp = fopen (outfile, "w")))
+      fp = stderr;
+
+    fprintf (fp, "$Id: gptl.c,v 1.92 2008-08-18 17:39:27 rosinski Exp $\n");
+    fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
+#ifndef HAVE_MPI
+    fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");
+    fprintf (fp, "This is even for MPI codes.\n");
+#endif
+
+    /* Print heading */
+
+    fprintf (fp, "name");
+    extraspace = max_name_len[0] - strlen ("name");
+    for (n = 0; n < extraspace; ++n)
+      fprintf (fp, " ");
+    fprintf (fp, " count      wallmax (proc thrd)   wallmin (proc thrd)");
+
+    for (n = 0; n < nevents; ++n) {
+      if (strncmp (eventlist[n].counterstr, "PAPI_", 5) == 0) {  /* 5 => lop off "PAPI_" */
+	fprintf (fp, " %8.8smax (proc thrd)", &eventlist[n].counterstr[5]);
+	fprintf (fp, " %8.8smin (proc thrd)", &eventlist[n].counterstr[5]);
+      } else {
+	fprintf (fp, " %8.8smax (proc thrd)", &eventlist[n].counterstr[0]);
+	fprintf (fp, " %8.8smin (proc thrd)", &eventlist[n].counterstr[0]);
+      }
+    }
+
+    fprintf (fp, "\n");
+
+    /*
+    ** Gather and print stats based on list of thread 0 timers
+    */
+
+    for (ptr = timers[0]; ptr; ptr = ptr->next) {
+
+      /* First, master gathers his own stats */
+
+      get_threadstats (ptr->name, &summarystats);
+
+#ifdef HAVE_MPI
+
+      /* Broadcast a message to slaves asking for their results for this timer */
+
+      ret = MPI_Bcast (ptr->name, MAX_CHARS+1, MPI_CHAR, 0, comm);
+
+      /* Loop over slaves, receiving and processing the results */
+
+      for (p = 1; p < nproc; ++p) {
+	ret = MPI_Recv (&summarystats_slave, nbytes, MPI_BYTE, p, tag, comm, &status);
+	if (summarystats_slave.count > 0)   /* timer found in slave */
+	  get_summarystats (&summarystats, &summarystats_slave, p);
+      }
+#endif
+
+      /* Print the results for this timer */
+
+      fprintf (fp, "%s", ptr->name);
+      extraspace = max_name_len[0] - strlen (ptr->name);
+      for (n = 0; n < extraspace; ++n)
+	fprintf (fp, " ");
+      fprintf (fp, " %8ld %9.3f (%4d %4d) %9.3f (%4d %4d)", 
+	       summarystats.count, 
+	       summarystats.wallmax, summarystats.wallmax_p, summarystats.wallmax_t, 
+	       summarystats.wallmin, summarystats.wallmin_p, summarystats.wallmin_t);
+#ifdef HAVE_PAPI
+      for (n = 0; n < nevents; ++n) {
+	if (summarystats.papimax[n] < 1000000)
+	  fprintf (fp, " %8ld    (%4d %4d)", 
+		   (long) summarystats.papimax[n], summarystats.papimax_p[n], 
+		   summarystats.papimax_t[n]);
+	else
+	  fprintf (fp, " %8.2e    (%4d %4d)", 
+		   (double) summarystats.papimax[n], summarystats.papimax_p[n], 
+		   summarystats.papimax_t[n]);
+
+	if (summarystats.papimin[n] < 1000000)
+	  fprintf (fp, " %8ld    (%4d %4d)", 
+		   (long) summarystats.papimin[n], summarystats.papimin_p[n], 
+		   summarystats.papimin_t[n]);
+	else
+	  fprintf (fp, " %8.2e    (%4d %4d)", 
+		   (double) summarystats.papimin[n], summarystats.papimin_p[n], 
+		   summarystats.papimin_t[n]);
+      }
+#endif
+      fprintf (fp, "\n");
+    }
+
+#ifdef HAVE_MPI
+    /* Signal that we're done */
+
+    ret = MPI_Bcast ("", 1, MPI_CHAR, 0, comm);
+#endif
+
+  } else {   /* iam != 0 (slave) */
+
+#ifdef HAVE_MPI
+    /* Loop until null message received from master */
+
+    while (1) {
+      ret = MPI_Bcast (name, MAX_CHARS+1, MPI_CHAR, 0, comm);
+      if (strcmp (name, "") == 0)
+	break;
+      get_threadstats (name, &summarystats_slave);
+      ret = MPI_Send (&summarystats_slave, nbytes, MPI_BYTE, 0, tag, comm);
+    }
+#endif
+  }
+  if (iam == 0 && fclose (fp) != 0)
+    fprintf (stderr, "Attempt to close %s failed\n", outfile);
+  return 0;
+}
+
+/* 
+** get_threadstats: gather stats for timer "name" over all threads
+**
+** Input arguments:
+**   name:  timer name
+** Output arguments:
+**   summarystats: max/min stats over all threads
+*/
+
+void get_threadstats (const char *name, 
+		      Summarystats *summarystats)
+{
+  int n;       /* event index */
+  int t;       /* thread index */
+  int indx;    /* returned from getentry() */
+  Timer *ptr;  /* timer */
+
+  /*
+  ** This memset fortuitiously initializes the process values (_p) to master (0)
+  */
+
+  memset (summarystats, 0, sizeof (Summarystats));
+
+  for (t = 0; t < GPTLnthreads; ++t) {
+    if ((ptr = getentry (hashtable[t], name, &indx))) {
+
+      summarystats->count += ptr->count;
+
+      if (ptr->wall.accum > summarystats->wallmax) {
+	summarystats->wallmax   = ptr->wall.accum;
+	summarystats->wallmax_t = t;
+      }
+
+      if (ptr->wall.accum < summarystats->wallmin || summarystats->wallmin == 0.) {
+	summarystats->wallmin   = ptr->wall.accum;
+	summarystats->wallmin_t = t;
+      }
+#ifdef HAVE_PAPI
+      for (n = 0; n < nevents; ++n) {
+	if (ptr->aux.accum[n] > summarystats->papimax[n]) {
+	  summarystats->papimax[n]   = ptr->aux.accum[n];
+	  summarystats->papimax_t[n] = t;
+	}
+
+	if (ptr->aux.accum[n] < summarystats->papimin[n] || summarystats->papimin[n] == 0.) {
+	  summarystats->papimin[n]   = ptr->aux.accum[n];
+	  summarystats->papimin_t[n] = t;
+	}
+      }
+#endif
+    }
+  }
+}
+
+/* 
+** get_summarystats: write max/min stats into mpistats based on comparison
+**                   with  summarystats_slave
+**
+** Input arguments:
+**   p:              rank of summarystats_slave
+**   summarystats_slave: stats from a slave process
+** Input/Output arguments:
+**   summarystats:       stats (starts out as master stats)
+*/
+
+void get_summarystats (Summarystats *summarystats, 
+		       const Summarystats *summarystats_slave,
+		       const int p)
+{
+  summarystats->count += summarystats_slave->count;
+
+  if (summarystats_slave->wallmax > summarystats->wallmax) {
+    summarystats->wallmax   = summarystats_slave->wallmax;
+    summarystats->wallmax_p = p;
+    summarystats->wallmax_t = summarystats_slave->wallmax_t;
+  }
+    
+  if (summarystats_slave->wallmin < summarystats->wallmin || summarystats->wallmin == 0.) {
+    summarystats->wallmin   = summarystats_slave->wallmin;
+    summarystats->wallmin_p = p;
+    summarystats->wallmin_t = summarystats_slave->wallmin_t;
+  }
+  
+#ifdef HAVE_PAPI
+  {
+    int n;
+    for (n = 0; n < nevents; ++n) {
+      if (summarystats_slave->papimax[n] > summarystats->papimax[n]) {
+	summarystats->papimax[n]   = summarystats_slave->papimax[n];
+	summarystats->papimax_p[n] = p;
+	summarystats->papimax_t[n] = summarystats_slave->papimax_t[n];
+      }
+
+      if (summarystats_slave->papimin[n] < summarystats->papimin[n] || 
+	  summarystats->papimin[n] == 0) {
+	summarystats->papimin[n]   = summarystats_slave->papimin[n];
+	summarystats->papimin_p[n] = p;
+	summarystats->papimin_t[n] = summarystats_slave->papimin_t[n];
+      }
+    }
+  }
 #endif
 }
 

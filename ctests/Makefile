@@ -1,12 +1,12 @@
 OBJS = avail.o depth.o rawpapitest.o recursion.o stride.o memusage.o utrtest.o \
        papiomptest.o cygprofile.o cygprofilesubs.o scale.o parentchild.o mpi.o \
-       gran_overhead.o load_imbalance.o
+       gran_overhead.o load_imbalance.o summary.o
 EXES = avail depth     rawpapitest recursion stride memusage utrtest \
        papiomptest parentchild \
-       gran_overhead  
+       gran_overhead summary
 
 ifeq ($(HAVE_MPI),yes)
-  EXES += scale mpi load_imbalance
+  EXES += scale mpi load_imbalance 
 endif
 
 ifeq ($(CC),gcc)
