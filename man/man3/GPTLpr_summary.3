@@ -1,0 +1,53 @@
+.\" $Id: GPTLpr_summary.3,v 1.3 2008-08-18 22:09:24 rosinski Exp $
+.TH GPTLpr_summary 3 "April, 2007" "GPTL"
+
+.SH NAME
+GPTLpr_summary \- Print a counter summary across all threads and tasks
+
+.SH SYNOPSIS
+.B C Interface:
+.nf
+int GPTLpr_summary (int comm); /* communicator: 0 means use MPI_COMM_WORLD */
+.fi
+
+.B Fortran Interface:
+.nf
+integer gptlpr_summary (integer comm)  ! communicator: 0 means use MPI_COMM_WORLD
+.fi
+
+.SH DESCRIPTION
+Opens a file named timing.summary and writes results to it. If MPI is
+enabled, MPI_Finalize must not yet have been called in order to use this
+function. Timing region summary info is gathered across all threads and all
+MPI tasks (if applicable) for the input communicator. Only regions which
+exist for thread 0, task 0 are considered. This should be made more
+general. But this routine is brand new and should be considered
+experimental. Testing so far has produced correct results.
+
+.SH ARGUMENTS
+.I comm
+-- MPI communicator to sum across. An input of 0 means use MPI_COMM_WORLD
+
+.SH RESTRICTIONS
+.B GPTLinitialize()
+must have been called. To obtain any useful data, one or more
+pairs of 
+.B GPTLstart()/GPTLstop()
+calls need to have been exercised.
+
+.SH RETURN VALUES
+On success, this function returns 0.
+On error, a negative error code is returned and a descriptive message
+printed. 
+
+.SH EXAMPLE OUTPUT
+None yet provided.
+
+.SH BUGS
+Only regions specified by task 0, thread 0 are checked. No indentation is
+performed. Building GPTL with MPI enabled means all executables
+linked with it will require MPI also be linked in, whether or not it's
+needed. This could be fixed by building GPTL as a shared library.
+
+.SH SEE ALSO
+.BR GPTLpr "(3)" 
