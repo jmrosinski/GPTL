@@ -1,5 +1,7 @@
       program main 
+#ifdef HAVE_MPI
 #include <mpif.h>
+#endif
 #include "../gptl.inc"
       double precision, external :: sub
       double precision result
