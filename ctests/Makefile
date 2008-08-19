@@ -1,6 +1,7 @@
 OBJS = depth.o recursion.o stride.o memusage.o utrtest.o \
        papiomptest.o cygprofile.o cygprofilesubs.o scale.o parentchild.o mpi.o \
        gran_overhead.o load_imbalance.o summary.o
+
 EXES = depth   recursion stride memusage utrtest \
        papiomptest parentchild \
        gran_overhead summary
