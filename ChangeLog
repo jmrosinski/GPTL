@@ -1,3 +1,6 @@
+gptl3_4: Put back GPTLpr_summary. Some people were using it.
+	 Get ctests/ and ftests/ into a usable state.
+	 Proper handling of input defines by Fortran.
 gptl3_2: Handle multiple parents
 	 Add parsegptlout.pl for handling MPI output
 	 Add capability for derived counters (currently just IPC and CI)
