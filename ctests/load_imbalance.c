@@ -1,5 +1,6 @@
 #include <mpi.h>
 #include <unistd.h>
+#include <stdio.h>
 #ifdef HAVE_PAPI
 #include <papi.h>
 #endif

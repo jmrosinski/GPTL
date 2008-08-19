@@ -2,7 +2,7 @@
 # CFLAGS_TESTS differs from CFLAGS for optimization (esp. inlining), and leaving off
 # unused library-specific settings.
 
-CFLAGS_TESTS =
+CFLAGS_TESTS = -g
 
 include macros.make
 
@@ -50,25 +50,21 @@ CFLAGS += $(INLINEFLAG) $(UNDERSCORING)
 ifeq ($(HAVE_PAPI),yes)
   CFLAGS       += -DHAVE_PAPI
   CFLAGS_TESTS += -DHAVE_PAPI
-  ifneq ($(PAPI_INCFLAGS),$(null))
-    CFLAGS       += $(PAPI_INCFLAGS)
-    CFLAGS_TESTS += $(PAPI_INCFLAGS)
-  endif
-  ifneq ($(PAPI_LIBFLAGS),$(null))
-    LDFLAGS += $(PAPI_LIBFLAGS)
-  endif
+  CFLAGS       += $(PAPI_INCFLAGS)
+  CFLAGS_TESTS += $(PAPI_INCFLAGS)
+  LDFLAGS      += $(PAPI_LIBFLAGS)
+else
+  HAVE_PAPI = no
 endif
 
 ifeq ($(HAVE_MPI),yes)
   CFLAGS       += -DHAVE_MPI
   CFLAGS_TESTS += -DHAVE_MPI
-  ifneq ($(MPI_INCFLAGS),$(null))
-    CFLAGS       += $(MPI_INCFLAGS)
-    CFLAGS_TESTS += $(MPI_INCFLAGS)
-  endif
-  ifneq ($(MPI_LIBFLAGS),$(null))
-    LDFLAGS += $(MPI_LIBFLAGS)
-  endif
+  CFLAGS       += $(MPI_INCFLAGS)
+  CFLAGS_TESTS += $(MPI_INCFLAGS)
+  LDFLAGS      += $(MPI_LIBFLAGS)
+else
+  HAVE_MPI = no
 endif
 
 ifeq ($(HAVE_LIBRT),yes)
@@ -116,7 +112,8 @@ uninstall:
 	rm -f $(MANDIR)/man/man3/GPTL*.3
 
 ctests/all:
-	(cd ctests && $(MAKE) all CC=$(CC) CFLAGS="$(CFLAGS_TESTS)" LDFLAGS="$(LDFLAGS)")
+	(cd ctests && $(MAKE) all CC=$(CC) HAVE_MPI=$(HAVE_MPI) HAVE_PAPI=$(HAVE_PAPI) \
+        CFLAGS="$(CFLAGS_TESTS)" LDFLAGS="$(LDFLAGS)")
 
 ftests/all:
 	(cd ftests && $(MAKE) all FC=$(FC) FFLAGS="$(FFLAGS)" LDFLAGS="$(LDFLAGS)")

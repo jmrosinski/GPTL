@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 
 #ifdef HAVE_PAPI
 
@@ -63,21 +64,19 @@ int main ()
   }
 
   while (1) {
-    printf ("Enter option to be enabled, or positive number when done:\n");
-    scanf ("%d", &counter);
+    printf ("Enter option to be enabled, or 'done' when done:\n");
+    scanf ("%s", &papiname);
 
-    if (counter > 0)
+    if (strncmp (papiname, "done", 4) == 0)
       break;
 
+    (void) PAPI_event_name_to_code (papiname, &counter);
     if ((ret = PAPI_query_event (counter)) != PAPI_OK) {
-      (void) PAPI_event_code_to_name (counter, papiname);
       printf ("Event %s not available on this arch\n", papiname);
     } else {
       if (nevents+1 > MAX_AUX) {
-	(void) PAPI_event_code_to_name (counter, papiname);
 	printf ("Event %s is too many\n", papiname);
       } else {
-	(void) PAPI_event_code_to_name (counter, papiname);
 	eventlist[nevents].counter = counter;
 	eventlist[nevents].str     = papiname;
 	printf ("Event %s enabled\n", eventlist[nevents].str);

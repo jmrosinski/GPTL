@@ -1,9 +1,15 @@
-OBJS = avail.o depth.o rawpapitest.o recursion.o stride.o memusage.o utrtest.o \
+OBJS = depth.o recursion.o stride.o memusage.o utrtest.o \
        papiomptest.o cygprofile.o cygprofilesubs.o scale.o parentchild.o mpi.o \
        gran_overhead.o load_imbalance.o summary.o
-EXES = avail depth     rawpapitest recursion stride memusage utrtest \
+EXES = depth   recursion stride memusage utrtest \
        papiomptest parentchild \
        gran_overhead summary
+
+# Don't build these tests for now
+ifeq (FALSE,TRUE)
+  OBJS += avail.o rawpapitest.o
+  EXES += avail rawpapitest
+endif
 
 ifeq ($(HAVE_MPI),yes)
   EXES += scale mpi load_imbalance 

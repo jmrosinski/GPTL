@@ -18,7 +18,7 @@ double compare (int, int);
 int main (int argc, char **argv)
 {
   int nompiter = 128;
-  int looplen = 1000000;
+  int looplen = 100000;
   int iter;
   int papiopt;
   int c;

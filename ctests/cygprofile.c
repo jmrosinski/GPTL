@@ -10,7 +10,7 @@ extern void callsubs (int);
 
 int main (int argc, char **argv)
 {
-  int niter = 1000;  /* default number of */
+  int niter = 1000;
   int ret;
   
   printf ("Purpose: test library with automatic per-function timing enabled\n");
