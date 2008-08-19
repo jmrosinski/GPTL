@@ -34,7 +34,7 @@
       real zero
 
       nompiter = 128
-      looplen = 1000000
+      looplen = 100000
 
       write(6,*) 'Purpose: test known-length loops with various'
       write(6,*) 'floating point ops'
