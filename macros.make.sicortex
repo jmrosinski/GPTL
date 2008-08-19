@@ -72,7 +72,7 @@ AR = ar
 HAVE_PAPI = yes
 ifeq ($(HAVE_PAPI),yes)
   PAPI_INCFLAGS = 
-  PAPI_LIBFLAGS = "-lpapi"
+  PAPI_LIBFLAGS = -lpapi
   ifeq ($(FORTRAN),yes)
     FFLAGS += -DHAVE_PAPI
   endif
@@ -85,7 +85,7 @@ endif
 HAVE_MPI = yes
 ifeq ($(HAVE_MPI),yes)
   MPI_INCFLAGS = 
-  MPI_LIBFLAGS = "-lscmpi"
+  MPI_LIBFLAGS = -lscmpi
   ifeq ($(FORTRAN),yes)
     FFLAGS += -DHAVE_MPI
   endif
