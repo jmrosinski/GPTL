@@ -863,6 +863,9 @@ int GPTLstop (const char *name)               /* timer name */
   if (disabled)
     return 0;
 
+  if ( ! initialized)
+    return GPTLerror ("GPTLstop: GPTLinitialize has not been called\n");
+
   /* Get the timestamp */
     
   if (wallstats.enabled) {
@@ -871,9 +874,6 @@ int GPTLstop (const char *name)               /* timer name */
 
   if (cpustats.enabled && get_cpustamp (&usr, &sys) < 0)
     return GPTLerror (0);
-
-  if ( ! initialized)
-    return GPTLerror ("GPTLstop: GPTLinitialize has not been called\n");
 
   if ((t = get_thread_num (&GPTLnthreads, &maxthreads)) < 0)
     return GPTLerror ("GPTLstop\n");
@@ -1158,7 +1158,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.93 2008-08-18 21:06:44 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.94 2008-08-19 21:05:40 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1608,7 +1608,7 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.93 2008-08-18 21:06:44 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.94 2008-08-19 21:05:40 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");

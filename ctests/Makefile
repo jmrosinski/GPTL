@@ -6,8 +6,7 @@ EXES = depth   recursion stride memusage utrtest \
        papiomptest parentchild \
        gran_overhead summary
 
-# Don't build these tests for now
-ifeq (FALSE,TRUE)
+ifeq ($(HAVE_PAPI),yes)
   OBJS += avail.o rawpapitest.o
   EXES += avail rawpapitest
 endif

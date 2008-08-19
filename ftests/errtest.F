@@ -21,7 +21,7 @@
       end if
 
       if (val .eq. 0) then
-        if (gptlsetoption (7, 1) .lt. 0) write(6,*)'setoption failure'
+        if (gptlsetoption (100, 1) .lt. 0) write(6,*)'setoption failure'
         if (gptlinitialize () .lt. 0) write(6,*)'initialize failure'
       else if (val .eq. 3) then
         if (gptlinitialize () .lt. 0) write(6,*)'initialize failure'
