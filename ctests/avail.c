@@ -19,41 +19,9 @@ int main ()
     return -1;
   }
 
-  printf ("Purpose: print PAPI-based events enabled on this architecture\n");
-  printf ("Preset events:\n");
-  printf ("Name                Code        Description\n");
-
-  i = PAPI_PRESET_MASK;
-  do {
-    ret = PAPI_get_event_info (i, &info);
-    if (ret == PAPI_OK && info.count > 0) {
-      printf("%-20s %-10d %s\n", info.symbol, i & info.event_code, info.long_descr);
-    }
-    /*
-    ** Should use PAPI_ENUM_ALL below, but papivi.h doesn't always
-    ** automatically get installed
-    */
-  } while (PAPI_enum_event (&i, 0) == PAPI_OK);
-  /*
-  } while (PAPI_enum_event (&i, PAPI_ENUM_ALL) == PAPI_OK);
-  */
-
-  printf ("\n\n\n");
-  printf ("Native events:\n");
-  printf ("Name                Code        Description\n");
-  i = PAPI_NATIVE_MASK;
-  do {
-    ret = PAPI_get_event_info (i, &info);
-    if (ret == PAPI_OK && info.count > 0) {
-      printf("%-20s %-10d %s\n", info.symbol, i & info.event_code, info.long_descr);
-    }
-    /*
-    ** Should use PAPI_ENUM_ALL below, but papivi.h doesn't always
-    ** automatically get installed
-    */
-  } while (PAPI_enum_event (&i, 0) == PAPI_OK);
-
-  printf ("\n\n\n");
+  printf ("Purpose: print derived events available on this architecture\n");
+  printf ("For PAPI-specific events, run papi_avail and papi_native_avail"
+	  " from the PAPI distribution\n\n");
   printf ("Derived events:\n");
   printf ("Name                Code        Description\n");
 
