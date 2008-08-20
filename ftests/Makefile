@@ -1,11 +1,5 @@
-OBJS = errtest.o papiomptest.o ugex.o utrtest.o summary.o
-EXES = errtest   papiomptest   ugex   utrtest   summary
-
-# Don't build these tests for now
-ifeq (TRUE,TRUE)
-  OBJS += stride.o
-  EXES += stride
-endif
+OBJS = errtest.o papiomptest.o ugex.o utrtest.o summary.o stride.o
+EXES = errtest   papiomptest   ugex   utrtest   summary   stride
 
 all: $(EXES)
 

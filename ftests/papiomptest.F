@@ -3,10 +3,6 @@
 
 #include "../gptl.inc"
 
-#ifdef HAVE_PAPI
-#include <f77papi.h>
-#endif
-
       real add
       real multiply
       real multadd
@@ -47,15 +43,23 @@
       if (gptlsetoption (gptlabort_on_error, 1) .lt. 0) call exit(3)
 
 #ifdef HAVE_PAPI
-      if (gptlsetoption (PAPI_FP_OPS, 1) .lt. 0) call exit (4)
-      if (gptlsetoption (PAPI_TOT_CYC, 1) .lt. 0) call exit (4)
+      if (gptl_papilibraryinit () .lt. 0) call exit (4)
+      call PAPIf_event_name_to_code("PAPI_FP_OPS", event, ret)
+      if (gptlsetoption (event, 1) .lt. 0) call exit (4)
+
+      call PAPIf_event_name_to_code("PAPI_TOT_CYC", event, ret)
+      if (gptlsetoption (event, 1) .lt. 0) call exit (4)
 
       ! Try some native events:
 
       eventname(1) = 'resource_stall_SBFULL'
       call PAPIf_event_name_to_code(eventname(1), event, ret)
-      if (ret .ne. 0) call exit (6)
-      if (gptlsetoption (event, 1) .lt. 0) call exit (7)
+      if (ret .eq. 0) then
+        if (gptlsetoption (event, 1) .lt. 0) call exit (7)
+      else
+        write(6,*)'Event ', eventname(1), ' not available.'
+        stop
+      end if
       if (gptlsetoption (gptlnarrowprint, 0) < 0) call exit (4)
 #endif
 

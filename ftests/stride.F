@@ -3,20 +3,18 @@
       save
 
 #include "../gptl.inc"
-#ifdef HAVE_PAPI
-#include <f77papi.h>
-#endif
 
       integer len
       integer nstride
       integer looplen
 
-      parameter (len=100000000)
+      parameter (len=10000000)
       parameter (nstride=64)
       parameter (looplen=len/nstride)
 
       integer id
       integer n
+      integer ierr
 
       real arr(len)
       
@@ -29,7 +27,7 @@
 
 #ifdef HAVE_PAPI
       if (gptl_papilibraryinit () < 0) stop 99
-      call papif_event_name_to_code ('PAPI_TOT_CYC', id)
+      call papif_event_name_to_code ('PAPI_TOT_CYC', id, ierr)
       if (id .ge. 0) call exit (1)
       if (gptlsetoption (id, 1) .lt. 0) stop 99
 #endif
