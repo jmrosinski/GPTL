@@ -7,8 +7,15 @@ EXES = depth   recursion stride memusage utrtest \
        gran_overhead summary
 
 ifeq ($(HAVE_PAPI),yes)
-  OBJS += avail.o rawpapitest.o
-  EXES += avail rawpapitest
+  OBJS += avail.o 
+  EXES += avail 
+endif
+
+# Disable rawpapitest for now
+
+ifeq (FALSE,TRUE)
+  OBJS += rawpapitest.o
+  EXES += rawpapitest
 endif
 
 ifeq ($(HAVE_MPI),yes)
