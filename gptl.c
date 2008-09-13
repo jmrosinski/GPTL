@@ -148,9 +148,9 @@ static Funcentry funclist[] = {
 };
 static const int nfuncentries = sizeof (funclist) / sizeof (Funcentry);
 
-static double (*ptr2wtimefunc)() = 0; /* init to invalid */
-
+static double (*ptr2wtimefunc)() = utr_gettimeofday; /* init to default timer */
 static int funcidx = 0;                           /* default timer is gettimeofday*/  
+
 #ifdef HAVE_NANOTIME
 static float cpumhz = -1.;                        /* init to bad value */
 static double cyc2sec = -1;                       /* init to bad value */
@@ -781,6 +781,9 @@ int GPTLstop_instr (void *self)
   if (disabled)
     return 0;
 
+  if ( ! initialized)
+    return GPTLerror ("GPTLstop_instr: GPTLinitialize has not been called\n");
+
   /* Get the timestamp */
     
   if (wallstats.enabled) {
@@ -789,9 +792,6 @@ int GPTLstop_instr (void *self)
 
   if (cpustats.enabled && get_cpustamp (&usr, &sys) < 0)
     return GPTLerror (0);
-
-  if ( ! initialized)
-    return GPTLerror ("GPTLstop_instr: GPTLinitialize has not been called\n");
 
   if ((t = get_thread_num (&GPTLnthreads, &maxthreads)) < 0)
     return GPTLerror ("GPTLstop_instr\n");
@@ -1158,7 +1158,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.94 2008-08-19 21:05:40 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.95 2008-09-13 14:17:25 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1608,7 +1608,7 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.94 2008-08-19 21:05:40 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.95 2008-09-13 14:17:25 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");
