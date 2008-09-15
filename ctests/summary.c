@@ -74,8 +74,7 @@ int main (int argc, char **argv)
   ret = MPI_Comm_size (MPI_COMM_WORLD, &nproc);
 #endif
   if (iam == 0) {
-    printf ("Purpose: test behavior of summary stats\n");
-    printf ("Include PAPI and OpenMP, respectively, if enabled\n");
+    printf ("summary: test GPTLpr_summary, including PAPI, MPI, and OpenMP if enabled\n");
   }
 
 #ifdef THEADED_OMP
@@ -110,7 +109,6 @@ double sub (int iter)
   (void) GPTLstart ("sub");
   /* Sleep msec is mpi rank + thread number */
   usec = 1000 * (iam * iter);
-  printf ("sleeping %ld usec\n", usec);
 
   (void) GPTLstart ("sleep");
   usleep (usec);

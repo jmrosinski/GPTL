@@ -86,6 +86,7 @@ HAVE_MPI = yes
 ifeq ($(HAVE_MPI),yes)
   MPI_INCFLAGS = 
   MPI_LIBFLAGS = -lscmpi
+  MPICMD = srun
   ifeq ($(FORTRAN),yes)
     FFLAGS += -DHAVE_MPI
   endif

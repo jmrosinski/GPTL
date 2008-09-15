@@ -86,6 +86,7 @@ HAVE_MPI = no
 ifeq ($(HAVE_MPI),yes)
   MPI_INCFLAGS = -I/usr/local/include
   MPI_LIBFLAGS = -L/usr/local/lib -lmpich
+  MPICMD = mpirun
   ifeq ($(FORTRAN),yes)
     FFLAGS += -DHAVE_MPI
   endif

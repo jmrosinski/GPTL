@@ -1,20 +1,34 @@
-OBJS = depth.o recursion.o stride.o memusage.o utrtest.o \
-       papiomptest.o cygprofile.o cygprofilesubs.o scale.o parentchild.o mpi.o \
-       gran_overhead.o load_imbalance.o summary.o
+# This Makefile inherits a number of macros such as HAVE_MPI from its parent,
+# so it's best to invoke it from above with "make all" or "make test".
+# TESTS defines which of EXES have a built-in testing procedure.
 
-EXES = depth   recursion stride memusage utrtest \
+TESTS = summary
+
+# Profiling is possible with GNU or Pathscale compilers
+ifeq ($(CC),gcc)
+  PROFILE = yes
+endif
+ifeq ($(CC),pathcc)
+  PROFILE = yes
+endif
+ifeq ($(PROFILE),yes)
+  TESTS += cygprofile
+# Initialize OBJS
+  OBJS = cygprofilesubs.o
+  INSTRFLAGS = -finstrument-functions
+endif
+
+EXES = $(TESTS) depth recursion stride memusage utrtest \
        papiomptest parentchild \
-       gran_overhead summary
+       gran_overhead 
 
 ifeq ($(HAVE_PAPI),yes)
-  OBJS += avail.o 
   EXES += avail 
 endif
 
 # Disable rawpapitest for now
 
 ifeq (FALSE,TRUE)
-  OBJS += rawpapitest.o
   EXES += rawpapitest
 endif
 
@@ -22,20 +36,12 @@ ifeq ($(HAVE_MPI),yes)
   EXES += scale mpi load_imbalance 
 endif
 
-ifeq ($(CC),gcc)
-  EXES += cygprofile
-  INSTRFLAGS = -finstrument-functions
-endif
-
-ifeq ($(CC),pathcc)
-  EXES += cygprofile
-  INSTRFLAGS = -finstrument-functions
-endif
+OBJS += $(patsubst %,%.o,$(EXES))
 
 all: $(EXES)
 
 clean:
-	rm $(OBJS) $(EXES)
+	$(RM) $(OBJS) $(EXES) timing.*
 
 avail: avail.o
 	$(CC) -o $@ avail.o $(LDFLAGS)
@@ -89,3 +95,20 @@ gran_overhead: gran_overhead.o
 
 load_imbalance: load_imbalance.o
 	$(CC) -o $@ load_imbalance.o $(LDFLAGS)
+
+# Built-in tests to ensure that GPTL is behaving as expected
+# Invoke as "make test" from above
+
+test: $(TESTS)
+ifeq ($(HAVE_MPI),yes)
+	@env OMP_NUM_THREADS=2 $(MPICMD) -n 2 ./summary || (echo "Failure to run" && exit 1)
+else
+	@env OMP_NUM_THREADS=2 ./summary || (echo "Failure to run" && exit 1)
+endif
+	@grep -q sleep timing.summary && echo "Success" || (echo "Failure" && exit 1)
+ifeq ($(PROFILE),yes)
+	@echo "Testing auto-instrumentation..."
+	@./cygprofile || (echo "Failure to run" && exit 1)
+	@(../hex2name.pl ./cygprofile timing.0 | grep -q callutil100times) && echo "Success" || (echo "Failure" && exit 1)
+endif
+	@echo "All C tests passed"

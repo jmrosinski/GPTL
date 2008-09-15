@@ -20,6 +20,10 @@ TESTS = ctests/all
 
 LDFLAGS += $(ABIFLAGS)
 
+ifeq ($(MPICMD),$(null))
+  MPICMD = mpirun
+endif
+
 ifeq ($(MANDIR),$(null))
   MANDIR = $(INSTALLDIR)
 endif
@@ -95,6 +99,10 @@ endif
 
 all: lib$(LIBNAME).a $(TESTS)
 libonly: lib$(LIBNAME).a 
+test: $(TESTS)
+	(cd ctests && $(MAKE) test CC=$(CC) MPICMD=$(MPICMD) HAVE_MPI=$(HAVE_MPI) HAVE_PAPI=$(HAVE_PAPI) \
+        CFLAGS="$(CFLAGS_TESTS)" LDFLAGS="$(LDFLAGS)")
+	(cd ftests && $(MAKE) test FC=$(FC) FFLAGS="$(FFLAGS)" LDFLAGS="$(LDFLAGS)")
 
 lib$(LIBNAME).a: $(OBJS)
 	$(AR)  ruv $@ $(OBJS)

@@ -13,13 +13,11 @@ int main (int argc, char **argv)
   int niter = 1000;
   int ret;
   
-  printf ("Purpose: test library with automatic per-function timing enabled\n");
   if (argc == 2) {
     niter = atoi (argv[1]);
   } else if (argc > 2) {
     printf ("Usage: %s loop_length\n", argv[0]);
   }
-  printf ("Using %d iterations\n", niter);
 
   GPTLsetoption (GPTLabort_on_error, 0);
 

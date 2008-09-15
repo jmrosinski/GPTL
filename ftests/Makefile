@@ -1,10 +1,20 @@
-OBJS = errtest.o papiomptest.o ugex.o utrtest.o summary.o stride.o
-EXES = errtest   papiomptest   ugex   utrtest   summary   stride
+# This Makefile inherits a number of macros such as HAVE_PAPI from its parent,
+# so it's best to invoke it from above with "make all" or "make test".
+# TESTS defines which of EXES have a built-in testing procedure.
+
+TESTS = testbasics
+
+ifeq ($(HAVE_PAPI),yes)
+  TESTS += testinit testpapi
+endif
+EXES = $(TESTS) errtest papiomptest ugex utrtest summary stride
+
+OBJS = $(patsubst %,%.o,$(EXES))
 
 all: $(EXES)
 
 clean:
-	rm -f $(OBJS) $(EXES)
+	$(RM) $(OBJS) $(EXES) timing.*
 
 errtest: errtest.o
 	$(FC) $(FFLAGS) -o $@ errtest.o $(LDFLAGS)
@@ -23,3 +33,25 @@ utrtest: utrtest.o
 
 summary: summary.o
 	$(FC) $(FFLAGS) -o $@ summary.o $(LDFLAGS)
+
+testinit: testinit.o
+	$(FC) $(FFLAGS) -o $@ testinit.o $(LDFLAGS)
+
+testpapi: testpapi.o
+	$(FC) $(FFLAGS) -o $@ testpapi.o $(LDFLAGS)
+
+testbasics: testbasics.o
+	$(FC) $(FFLAGS) -o $@ testbasics.o $(LDFLAGS)
+
+# Built-in tests to ensure that GPTL is behaving as expected
+# Invoke as "make test" from above
+
+test: $(TESTS)
+	@$(RM) timing.0
+	@./testbasics || exit 1
+	@grep -q testbasics timing.0 || exit 2
+ifeq ($(HAVE_PAPI),yes)
+	@./testinit || exit 1
+	@./testpapi || exit 1
+endif
+	@echo "All Fortran tests passed"

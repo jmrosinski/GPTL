@@ -442,7 +442,7 @@ int GPTL_PAPIlibraryinit ()
 
   if ((ret = PAPI_is_initialized ()) == PAPI_NOT_INITED) {
     if ((ret = PAPI_library_init (PAPI_VER_CURRENT)) != PAPI_VER_CURRENT) {
-      printf("GPTL_PAPIlibraryinit: PAPI_library_init failure:%s\n",PAPI_strerror (ret));
+      printf("GPTL_PAPIlibraryinit: ret=%d PAPI_VER_CURRENT=%d\n", ret, PAPI_VER_CURRENT);
       return GPTLerror ("GPTL_PAPIlibraryinit: PAPI_library_init failure:%s\n",
 			PAPI_strerror (ret));
     }

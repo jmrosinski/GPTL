@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.30 2008-08-18 17:39:27 rosinski Exp $
+** $Id: f_wrappers.c,v 1.31 2008-09-15 19:14:44 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines
 */
@@ -118,7 +118,7 @@ int gptlpr_summary (int *comm)
 
 void gptlreset ()
 {
-  GPTLreset();
+  (void) GPTLreset();
   return;
 }
 
@@ -221,7 +221,7 @@ int gptlprint_memusage (const char *str, int nc)
 #ifdef HAVE_PAPI
 void gptl_papilibraryinit ()
 {
-  GPTL_PAPIlibraryinit ();
+  (void) GPTL_PAPIlibraryinit ();
   return;
 }
 #endif

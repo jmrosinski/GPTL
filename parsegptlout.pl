@@ -116,8 +116,8 @@ print (STDOUT "Heading is $heading[$hidx]\n");
 print (STDOUT "Max   =  $maxval on thread $threadmax task $taskmax\n");
 print (STDOUT "Min   =  $minval on thread $threadmin task $taskmin\n");
 $mean = $sum / $nval;
-print (STDOUT "Mean  = $mean\n");
-print (STDOUT "Total = $sum\n");
+printf (STDOUT "Mean  = %f\n", $mean);
+printf (STDOUT "Total = %f\n", $sum);
 
 exit 0;
 

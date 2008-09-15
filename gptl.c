@@ -148,7 +148,7 @@ static Funcentry funclist[] = {
 };
 static const int nfuncentries = sizeof (funclist) / sizeof (Funcentry);
 
-static double (*ptr2wtimefunc)() = utr_gettimeofday; /* init to default timer */
+static double (*ptr2wtimefunc)() = 0;             /* init to invalid */
 static int funcidx = 0;                           /* default timer is gettimeofday*/  
 
 #ifdef HAVE_NANOTIME
@@ -1158,7 +1158,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.95 2008-09-13 14:17:25 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.96 2008-09-15 19:14:44 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1608,7 +1608,7 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.95 2008-09-13 14:17:25 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.96 2008-09-15 19:14:44 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");
