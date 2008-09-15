@@ -29,7 +29,11 @@ ifeq ($(OPENMP),yes)
   COMPFLAG = -fopenmp
 else
 # Set PTHREADS if available
-  PTHREADS = no
+  PTHREADS = yes
+  ifeq ($(PTHREADS),yes)
+    CFLAGS  += -DTHREADED_PTHREADS
+    LDFLAGS += -lpthread
+  endif
 endif
 
 # For gcc, -Dinline=inline is a no-op. For other C compilers, things like 
@@ -58,7 +62,7 @@ ifeq ($(FORTRAN),yes)
 # Set Fortran compiler, flags, and (if OpenMP enabled) OpenMP compiler flag.
 # These settings are only used for the Fortran test applications.
   FC     = gfortran
-  FFLAGS = -g -O2
+  FFLAGS = -g
   ifeq ($(OPENMP),yes)
     FOMPFLAG = -fopenmp
   endif

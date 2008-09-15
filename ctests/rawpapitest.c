@@ -141,7 +141,9 @@ void parsub (int iter)
     }
 
     for (n = 0; n < nevents; n++) {
-      printf ("papicounters[%d][%d]=%ld\n", mythread, n, (long) papicounters[mythread][n]);
+      if (n % 1000000 == 0) {
+	printf ("papicounters[%d][%d]=%ld\n", mythread, n, (long) papicounters[mythread][n]);
+      }
       if (papicounters[mythread][n] < prvcounters[mythread][n]) {
 	printf ("papicounters[%d][%d]=%ld %ld\n", 
 		mythread, n, (long) papicounters[mythread][n], (long) prvcounters[mythread][n]);

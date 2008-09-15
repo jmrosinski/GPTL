@@ -2,7 +2,7 @@
 #include <stdlib.h>  /* exit */
 #include <unistd.h>  /* getopt */
 #include "../gptl.h"
-#if ( defined HAVE_LIBMPI ) || ( defined HAVE_LIBMPICH )
+#ifdef HAVE_MPI
 #include <mpi.h>
 #endif
 
@@ -15,7 +15,7 @@ int main (int argc, char **argv)
   extern void sub (int, int, char *, double *);
   extern char *optarg;
 
-#if ( defined HAVE_LIBMPI ) || ( defined HAVE_LIBMPICH )
+#ifdef HAVE_MPI
   MPI_Init (&argc, &argv);
 #endif
 
@@ -53,10 +53,10 @@ int main (int argc, char **argv)
 
   GPTLsetutr (GPTLmpiwtime);
   GPTLsetutr (GPTLrtc);
-  GPTLsetutr (GPTLnanotime);
   GPTLsetutr (GPTLclockgettime);
   GPTLsetutr (GPTLgettimeofday);
   GPTLsetutr (GPTLpapitime);
+  GPTLsetutr (GPTLnanotime);
 
   if (disable) {
     printf ("Disabling timing\n");
