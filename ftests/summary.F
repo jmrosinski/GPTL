@@ -36,7 +36,7 @@
         write (6,*) "Include OpenMP if enabled"
       end if
 
-#ifdef THEADED_OMP
+#ifdef THREADED_OMP
       nthreads = omp_get_max_threads ()
 #endif
 

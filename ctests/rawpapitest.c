@@ -64,7 +64,7 @@ int main ()
   }
 
   while (1) {
-    printf ("Enter option to be enabled, or 'done' when done:\n");
+    printf ("Enter PAPI option name to be enabled, or 'done' when done:\n");
     scanf ("%s", &papiname);
 
     if (strncmp (papiname, "done", 4) == 0)
@@ -85,7 +85,7 @@ int main ()
     }
   }
 
-  printf ("Enter number of parallel iterations\n");
+  printf ("Enter loop limit for OMP loop\n");
   scanf ("%d", &nompiter);
 
 #pragma omp parallel for private (ompiter)
@@ -100,7 +100,7 @@ void parsub (int iter)
 {
   int mythread;
   int ret;
-  int i, n;
+  int i, n, j;
   float sum;
 
   /*
@@ -134,18 +134,18 @@ void parsub (int iter)
     started[mythread] = true;
   }
 
-  while (1) {
+  for (j = 0; ; ++j) {
     if ((ret = PAPI_read (EventSet[mythread], papicounters[mythread])) != PAPI_OK) {
       printf ("PAPI_read error\n");
       exit (1);
     }
 
     for (n = 0; n < nevents; n++) {
-      if (n % 1000000 == 0) {
+      if (j % 1000000 == 0) {
 	printf ("papicounters[%d][%d]=%ld\n", mythread, n, (long) papicounters[mythread][n]);
       }
       if (papicounters[mythread][n] < prvcounters[mythread][n]) {
-	printf ("papicounters[%d][%d]=%ld %ld\n", 
+	printf ("strange papicounters[%d][%d]=%ld %ld\n", 
 		mythread, n, (long) papicounters[mythread][n], (long) prvcounters[mythread][n]);
 	exit (1);
       }
