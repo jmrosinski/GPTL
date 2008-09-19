@@ -1,5 +1,5 @@
 # This Makefile inherits a number of macros such as HAVE_PAPI from its parent,
-# so it's best to invoke it from above with "make all" or "make test".
+# so it's best to invoke it from one dir higher via "make all" or "make test".
 # TESTS defines which of EXES have a built-in testing procedure.
 
 TESTS = testbasics
@@ -44,7 +44,7 @@ testbasics: testbasics.o
 	$(FC) $(FFLAGS) -o $@ testbasics.o $(LDFLAGS)
 
 # Built-in tests to ensure that GPTL is behaving as expected
-# Invoke as "make test" from above
+# Invoke as "make test" from one dir above
 
 test: $(TESTS)
 	@$(RM) timing.0
