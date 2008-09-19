@@ -1,6 +1,5 @@
-# Initialize some macros to null before including arch-specific settings.
-# CFLAGS_TESTS differs from CFLAGS for optimization (esp. inlining), and leaving off
-# unused library-specific settings.
+# CFLAGS_TESTS differs from CFLAGS for optimization (esp. inlining), and 
+# leaving off unused library-specific settings.
 
 CFLAGS_TESTS = -g
 
@@ -121,7 +120,7 @@ uninstall:
 
 ctests/all:
 	(cd ctests && $(MAKE) all CC=$(CC) HAVE_MPI=$(HAVE_MPI) HAVE_PAPI=$(HAVE_PAPI) \
-        CFLAGS="$(CFLAGS_TESTS)" LDFLAGS="$(LDFLAGS)")
+          CFLAGS="$(CFLAGS_TESTS)" LDFLAGS="$(LDFLAGS)")
 
 ftests/all:
 	(cd ftests && $(MAKE) all FC=$(FC) FFLAGS="$(FFLAGS)" LDFLAGS="$(LDFLAGS)" HAVE_PAPI=$(HAVE_PAPI))

@@ -77,12 +77,12 @@ int main (int argc, char **argv)
     printf ("summary: test GPTLpr_summary, including PAPI, MPI, and OpenMP if enabled\n");
   }
 
-#ifdef THEADED_OMP
+#ifdef THREADED_OMP
   nthreads = omp_get_max_threads ();
 #endif
 
 #pragma omp parallel for private (iter, ret)
-      
+
   for (iter = 1; iter <= nthreads; iter++) {
     ret = sub (iter);
   }

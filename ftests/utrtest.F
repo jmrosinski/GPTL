@@ -1,16 +1,16 @@
       program utrtest
       implicit none
       external sub
-#if ( defined HAVE_LIBMPI ) || ( defined HAVE_LIBMPICH )
-#include "mpi.h"
+#ifdef HAVE_MPI
+#include "mpif.h"
 #endif
 #include "../gptl.inc"
       double precision sum
       integer ret
       sum = 0.
 
-#if ( defined HAVE_LIBMPI ) || ( defined HAVE_LIBMPICH )
-      ret = mpi_nit ()
+#ifdef HAVE_MPI
+      call mpi_init ()
 #endif
 
       write(6,*) 'Purpose: estimate overhead of GPTL timing (UTR)'

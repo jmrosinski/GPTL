@@ -78,8 +78,9 @@ ifeq ($(HAVE_PAPI),yes)
   endif
 endif
 
-# MPI: Set HAVE_MPI=yes only if you intend to use MPI_Wtime as the underlying wallclock
-# timer. Then set inc and lib info if needed (e.g. if CC=mpicc, MPI_INCFLAGS and
+# MPI: Set HAVE_MPI=yes if you intend to use MPI_Wtime as the underlying 
+# wallclock timer, and/or to test GPTL routine which uses MPI (GPTLpr_summary).
+# Then set inc and lib info if needed (e.g. if CC=mpicc, MPI_INCFLAGS and 
 # MPI_LIBFLAGS can be blank).
 # Modify FFLAGS for ftests/: Normally it's -D, but AIX requires -WF,-D
 HAVE_MPI = yes
