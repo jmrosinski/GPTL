@@ -2,16 +2,18 @@
       implicit none
 
 #include "../gptl.inc"
-#include 'papif77.h'
+#include <f77papi.h>
 
       integer :: ret
+      integer :: i, code
       integer(8) :: pc ! papi counters
       real(8) :: sum
 
       write(6,*)'testpapi: Testing PAPI interface...'
       ret = PAPI_VER_CURRENT
       call papif_library_init (ret)
-      if (ret /= 0) then
+      if (ret /= PAPI_VER_CURRENT) then
+        write(6,*)'ret, PAPI_VER_CURRENT=', ret, PAPI_VER_CURRENT
         write(6,*)'Failure to initialize PAPI library...'
         stop 1
       end if
@@ -24,6 +26,13 @@
 
       write(6,*)'Testing enabling PAPI_TOT_CYC...'
       if (gptlsetoption (code, 1) /= 0) then
+        write(6,*)'Failure'
+        stop 3
+      end if
+      write(6,*)'Success'
+
+      write(6,*)'Testing gptlinitialize'
+      if (gptlinitialize () /= 0) then
         write(6,*)'Failure'
         stop 3
       end if
@@ -49,4 +58,4 @@
         write(6,*)'Success'
       end if
 
-      end progrem testpapi
+      end program testpapi

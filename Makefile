@@ -102,7 +102,7 @@ libonly: lib$(LIBNAME).a
 test: $(TESTS)
 	(cd ctests && $(MAKE) test CC=$(CC) MPICMD=$(MPICMD) HAVE_MPI=$(HAVE_MPI) HAVE_PAPI=$(HAVE_PAPI) \
         CFLAGS="$(CFLAGS_TESTS)" LDFLAGS="$(LDFLAGS)")
-	(cd ftests && $(MAKE) test FC=$(FC) FFLAGS="$(FFLAGS)" LDFLAGS="$(LDFLAGS)")
+	(cd ftests && $(MAKE) test FC=$(FC) FFLAGS="$(FFLAGS)" LDFLAGS="$(LDFLAGS)" HAVE_PAPI=$(HAVE_PAPI))
 
 lib$(LIBNAME).a: $(OBJS)
 	$(AR)  ruv $@ $(OBJS)
@@ -124,7 +124,7 @@ ctests/all:
         CFLAGS="$(CFLAGS_TESTS)" LDFLAGS="$(LDFLAGS)")
 
 ftests/all:
-	(cd ftests && $(MAKE) all FC=$(FC) FFLAGS="$(FFLAGS)" LDFLAGS="$(LDFLAGS)")
+	(cd ftests && $(MAKE) all FC=$(FC) FFLAGS="$(FFLAGS)" LDFLAGS="$(LDFLAGS)" HAVE_PAPI=$(HAVE_PAPI))
 
 clean:
 	rm -f $(OBJS) lib$(LIBNAME).a
