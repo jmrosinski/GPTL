@@ -1,8 +1,12 @@
 # This Makefile inherits a number of macros such as HAVE_MPI from its parent,
-# so it's best to invoke it from above with "make all" or "make test".
-# TESTS defines which of EXES have a built-in testing procedure.
+# so it's best to invoke it from one dir higher via "make all" or "make test".
 
+# TESTS defines which EXES to run when "make test" is done.
+# Always run "summary". Add others depending on settings.
 TESTS = summary
+ifeq ($(HAVE_PAPI),yes)
+  TESTS += testpapi
+endif
 
 # Profiling is possible with GNU or Pathscale compilers
 ifeq ($(CC),gcc)
@@ -18,18 +22,15 @@ ifeq ($(PROFILE),yes)
   INSTRFLAGS = -finstrument-functions
 endif
 
+# EXES is TESTS plus some other sample codes.
+# Items in EXES but not TESTS are built by "make all" but
+# not run by "make test"
+
 EXES = $(TESTS) depth recursion stride memusage utrtest \
-       papiomptest parentchild \
-       gran_overhead 
+       papiomptest parentchild gran_overhead rawpapitest
 
 ifeq ($(HAVE_PAPI),yes)
-  EXES += avail 
-endif
-
-# Disable rawpapitest for now
-
-ifeq (FALSE,TRUE)
-  EXES += rawpapitest
+  EXES += avail
 endif
 
 ifeq ($(HAVE_MPI),yes)
@@ -96,10 +97,16 @@ gran_overhead: gran_overhead.o
 load_imbalance: load_imbalance.o
 	$(CC) -o $@ load_imbalance.o $(LDFLAGS)
 
+testpapi: testpapi.o
+	$(CC) -o $@ testpapi.o $(LDFLAGS)
+
 # Built-in tests to ensure that GPTL is behaving as expected
-# Invoke as "make test" from above
+# Invoke as "make test" from one dir above
 
 test: $(TESTS)
+ifeq ($(HAVE_PAPI),yes)
+	@./testpapi || exit 1
+endif
 ifeq ($(HAVE_MPI),yes)
 	@env OMP_NUM_THREADS=2 $(MPICMD) -n 2 ./summary || (echo "Failure to run" && exit 1)
 else
