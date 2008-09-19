@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <stdlib.h>  /* atoi,exit */
+#include <stdlib.h>  /* atoi */
 #include <unistd.h>  /* getopt */
 #include <string.h>  /* memset */
 
@@ -31,12 +31,18 @@ int main (int argc, char **argv)
   extern char *optarg;
 
 #ifdef HAVE_MPI
-  (void) MPI_Init (&argc, &argv);
+  if (MPI_Init (&argc, &argv) != MPI_SUCCESS) {
+    printf ("Failure from MPI_Init\n");
+    return 1;
+  }
   comm = MPI_COMM_WORLD;
 #endif
 
 #ifdef HAVE_PAPI
-  (void) GPTL_PAPIlibraryinit ();
+  if (GPTL_PAPIlibraryinit () != 0) {
+    printf ("Failure from GPTL_PAPIlibraryinit\n");
+    return 1;
+  }
 #endif
 
   while ((c = getopt (argc, argv, "p:")) != -1) {
@@ -45,11 +51,11 @@ int main (int argc, char **argv)
 #ifdef HAVE_PAPI
       if ((ret = PAPI_event_name_to_code (optarg, &papiopt)) != 0) {
 	printf ("Failure from GPTL_PAPIname2id\n");
-	exit (1);
+	return 1;
       }
       if (GPTLsetoption (papiopt, 1) < 0) {
 	printf ("Failure from GPTLsetoption (%s,1)\n", optarg);
-	exit (1);
+	return 1;
       }
 #else
       printf ("HAVE_PAPI is false so -p ignored\n");
@@ -58,7 +64,7 @@ int main (int argc, char **argv)
     default:
       printf ("unknown option %c\n", c);
       printf ("Usage: %s [-p papi_option_name]\n", argv[0]);
-      exit (2);
+      return 2;
     }
   }
   
@@ -73,9 +79,6 @@ int main (int argc, char **argv)
   ret = MPI_Comm_rank (MPI_COMM_WORLD, &iam);
   ret = MPI_Comm_size (MPI_COMM_WORLD, &nproc);
 #endif
-  if (iam == 0) {
-    printf ("summary: test GPTLpr_summary, including PAPI, MPI, and OpenMP if enabled\n");
-  }
 
 #ifdef THREADED_OMP
   nthreads = omp_get_max_threads ();
@@ -89,9 +92,20 @@ int main (int argc, char **argv)
 
   (void) GPTLstop ("total");
   (void) GPTLpr (iam);
-  (void) GPTLpr_summary (comm);
-  if (GPTLfinalize () < 0)
-    exit (6);
+
+  if (iam == 0)
+    printf ("summary: testing GPTLpr_summary...\n");
+
+  if (GPTLpr_summary (comm) == 0) {
+    if (iam == 0)
+      printf ("Success\n");
+  } else {
+    if (iam == 0)
+      printf ("Failure\n");
+    return 1;
+  }
+  if (GPTLfinalize () != 0)
+    return 1;
 
 #ifdef HAVE_MPI
   MPI_Finalize ();
