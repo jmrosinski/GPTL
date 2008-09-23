@@ -49,7 +49,7 @@ testbasics: testbasics.o
 test: $(TESTS)
 	@$(RM) timing.0
 	@./testbasics || exit 1
-	@echo Checking timing.0...
+	@echo testbasics complete. Checking contents of timing.0 file it should have produced...
 	@grep -q testbasics timing.0 || exit 2
 	@echo Success
 ifeq ($(HAVE_PAPI),yes)

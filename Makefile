@@ -20,7 +20,7 @@ TESTS = ctests/all
 LDFLAGS += $(ABIFLAGS)
 
 ifeq ($(MPICMD),$(null))
-  MPICMD = mpirun
+  MPICMD = mpiexec
 endif
 
 ifeq ($(MANDIR),$(null))
@@ -101,7 +101,8 @@ libonly: lib$(LIBNAME).a
 test: $(TESTS)
 	(cd ctests && $(MAKE) test CC=$(CC) MPICMD=$(MPICMD) HAVE_MPI=$(HAVE_MPI) HAVE_PAPI=$(HAVE_PAPI) \
         CFLAGS="$(CFLAGS_TESTS)" LDFLAGS="$(LDFLAGS)")
-	(cd ftests && $(MAKE) test FC=$(FC) FFLAGS="$(FFLAGS)" LDFLAGS="$(LDFLAGS)" HAVE_PAPI=$(HAVE_PAPI))
+	(cd ftests && $(MAKE) test FC=$(FC) MPICMD=$(MPICMD) HAVE_MPI=$(HAVE_MPI) HAVE_PAPI=$(HAVE_PAPI) \
+        FFLAGS="$(FFLAGS)" LDFLAGS="$(LDFLAGS)")
 
 lib$(LIBNAME).a: $(OBJS)
 	$(AR)  ruv $@ $(OBJS)
@@ -127,8 +128,8 @@ ftests/all:
 
 clean:
 	rm -f $(OBJS) lib$(LIBNAME).a
-	(cd ctests && $(MAKE) clean)
-	(cd ftests && $(MAKE) clean)
+	(cd ctests && $(MAKE) clean HAVE_MPI=$(HAVE_MPI) HAVE_PAPI=$(HAVE_PAPI))
+	(cd ftests && $(MAKE) clean HAVE_MPI=$(HAVE_MPI) HAVE_PAPI=$(HAVE_PAPI))
 
 f_wrappers.o: f_wrappers.c gptl.h private.h
 gptl.o: gptl.c gptl.h private.h

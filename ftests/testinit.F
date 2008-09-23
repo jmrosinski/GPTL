@@ -5,7 +5,7 @@
 
       integer ret
 
-      write(6,*)'testinit: Test enabling PAPI from GPTL...'
+      write(6,*)'testinit: Testing gptl_papilibraryinit...'
       ret = gptl_papilibraryinit ()
 
       if (ret == 0) then

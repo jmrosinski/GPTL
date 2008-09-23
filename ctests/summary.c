@@ -93,8 +93,11 @@ int main (int argc, char **argv)
   (void) GPTLstop ("total");
   (void) GPTLpr (iam);
 
-  if (iam == 0)
+  if (iam == 0) {
     printf ("summary: testing GPTLpr_summary...\n");
+    printf ("Number of threads was %d\n", nthreads);
+    printf ("Number of tasks was %d\n", nproc);
+  }
 
   if (GPTLpr_summary (comm) == 0) {
     if (iam == 0)
