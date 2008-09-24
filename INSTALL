@@ -11,10 +11,8 @@ been modified to just print suggestions, rather than creating any output
 files. After creating macros.make:
 
 % make all
+% make test
 % make install
 
-In addition to building the library, the "make all" step will build
-test codes in subdirectories ctests/ and ftests/. Currently there's
-not an automated testing procedure. To test the library and see how it
-works, you'll need to "cd" into ctests/ or ftests/ and run the desired
-test executables individually.
+The "make test" step runs some of the example codes in ctests/ and ftests/
+and checks the results.
