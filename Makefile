@@ -128,8 +128,8 @@ ftests/all:
 
 clean:
 	rm -f $(OBJS) lib$(LIBNAME).a
-	(cd ctests && $(MAKE) clean HAVE_MPI=$(HAVE_MPI) HAVE_PAPI=$(HAVE_PAPI))
-	(cd ftests && $(MAKE) clean HAVE_MPI=$(HAVE_MPI) HAVE_PAPI=$(HAVE_PAPI))
+	(cd ctests && $(MAKE) clean CC=$(CC) HAVE_MPI=$(HAVE_MPI) HAVE_PAPI=$(HAVE_PAPI))
+	(cd ftests && $(MAKE) clean FC=$(FC) HAVE_MPI=$(HAVE_MPI) HAVE_PAPI=$(HAVE_PAPI))
 
 f_wrappers.o: f_wrappers.c gptl.h private.h
 gptl.o: gptl.c gptl.h private.h
