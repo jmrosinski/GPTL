@@ -345,8 +345,9 @@ int GPTLinitialize (void)
   */
 
   if ((*funclist[funcidx].funcinit)() < 0) {
-    printf ("GPTLinitialize: failure initializing %s: reverting underlying timer"
-	    " to %s\n", funclist[funcidx].name, funclist[0].name);
+    fprintf (stderr, "GPTLinitialize: failure initializing %s: "
+	     "reverting underlying timer to %s\n", 
+	     funclist[funcidx].name, funclist[0].name);
     funcidx = 0;
   }
 
@@ -356,7 +357,7 @@ int GPTLinitialize (void)
     t1 = (*ptr2wtimefunc) ();
     t2 = (*ptr2wtimefunc) ();
     if (t1 > t2)
-      printf ("GPTLinitialize: negative delta-t=%g\n", t2-t1);
+      fprintf (stderr, "GPTLinitialize: negative delta-t=%g\n", t2-t1);
     printf ("Per call overhead est. t2-t1=%g should be near zero\n", t2-t1);
     printf ("Underlying wallclock timing routine is %s\n", funclist[funcidx].name);
   }
@@ -954,7 +955,7 @@ static inline int update_stats (Timer *ptr,
     ptr->wall.accum += delta;
 
     if (delta < 0.) {
-      printf ("update_stats: negative delta=%g\n", delta);
+      fprintf (stderr, "update_stats: negative delta=%g\n", delta);
     }
 
     if (ptr->count == 1) {
@@ -1158,7 +1159,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.96 2008-09-15 19:14:44 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.97 2008-09-24 16:03:03 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1608,7 +1609,7 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.96 2008-09-15 19:14:44 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.97 2008-09-24 16:03:03 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");
@@ -2220,7 +2221,7 @@ static float get_clockfreq ()
   int is;
 
   if ( ! (fd = fopen ("/proc/cpuinfo", "r"))) {
-    printf ("get_clockfreq: can't open /proc/cpuinfo\n");
+    fprintf (stderr, "get_clockfreq: can't open /proc/cpuinfo\n");
     return -1.;
   }
 

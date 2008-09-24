@@ -127,7 +127,7 @@ int get_thread_num (int *nthreads, int *maxthreads)
   if (n == *nthreads) {
     if (*nthreads >= MAX_THREADS) {
       if (unlock_mutex () < 0)
-	printf ("get_thread_num: mutex unlock failure\n");
+	fprintf (stderr, "get_thread_num: mutex unlock failure\n");
       return GPTLerror ("get_thread_num: nthreads=%d is too big Recompile "
 			"with larger value of MAX_THREADS\n", *nthreads);
     }    

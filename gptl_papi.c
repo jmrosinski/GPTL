@@ -442,7 +442,8 @@ int GPTL_PAPIlibraryinit ()
 
   if ((ret = PAPI_is_initialized ()) == PAPI_NOT_INITED) {
     if ((ret = PAPI_library_init (PAPI_VER_CURRENT)) != PAPI_VER_CURRENT) {
-      printf("GPTL_PAPIlibraryinit: ret=%d PAPI_VER_CURRENT=%d\n", ret, PAPI_VER_CURRENT);
+      fprintf(stderr, "GPTL_PAPIlibraryinit: ret=%d PAPI_VER_CURRENT=%d\n", 
+	      ret, PAPI_VER_CURRENT);
       return GPTLerror ("GPTL_PAPIlibraryinit: PAPI_library_init failure:%s\n",
 			PAPI_strerror (ret));
     }
@@ -560,9 +561,10 @@ static int create_and_start_events (const int t)  /* thread number */
   for (n = 0; n < npapievents; n++) {
     if ((ret = PAPI_add_event (EventSet[t], papieventlist[n])) != PAPI_OK) {
       if (verbose) {
-	printf ("%s\n", PAPI_strerror (ret));
+	fprintf (stderr, "%s\n", PAPI_strerror (ret));
 	ret = PAPI_event_code_to_name (papieventlist[n], papiname);
-	printf ("create_and_start_events: failure adding event:%s\n", papiname);
+	fprintf (stderr, "create_and_start_events: failure adding event:%s\n",
+		 papiname);
       }
 
       if (enable_multiplexing) {
