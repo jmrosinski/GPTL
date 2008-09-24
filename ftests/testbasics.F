@@ -16,30 +16,35 @@
         call exit (1)
       end if
       write(6,*)'Success'
+
       write(6,*)'Testing gptlstart...'
       if (gptlstart ('testbasics') /= 0) then
         write(6,*)'Failure in gptlstart'
         call exit(1)
       end if
       write(6,*)'Success'
+
       write(6,*)'Testing gptlstop...'
       if (gptlstop ('testbasics') /= 0) then
         write(6,*)'Failure in gptlstop'
         call exit(1)
       end if
       write(6,*)'Success'
+
       write(6,*)'Testing gptlpr...'
       if (gptlpr (0) /= 0) then
         write(6,*)'Failure in gptlpr(0)'
         call exit(1)
       end if
       write(6,*)'Success'
+
       write(6,*)'Testing gptlprint_memusage...'
       if (gptlprint_memusage ('testbasics') /= 0) then
         write(6,*)'Failure in gptlprint_memusage'
         call exit(1)
       end if
       write(6,*)'Success'
+
       write(6,*)'Testing gptldisable/gptlenable...'
       if (gptldisable () /= 0) then
         write(6,*)'Failure in gptldisable'
@@ -57,6 +62,7 @@
         write(6,*)'Failure in gptlenable'
         call exit(1)
       end if
+
       write(6,*)'Sub-testing gptlget_nregions...'
       if (gptlget_nregions (0, nregions) /= 0) then
         write(6,*)'Failure in gptlget_nregions'
@@ -66,7 +72,8 @@
         write(6,*)'Failure: expected nregions=1 got', nregions
         call exit(1)
       end if
-      write (6,*)'Success'
+      write(6,*)'Success in gptlget_nregions'
+      write(6,*)'Success'
 
       write(6,*)'Testing gptlquery...'
       ret = gptlquery ('testbasics', 0, count, of, wc, usr, sys, pc, 0)
@@ -92,13 +99,14 @@
       end if
       ret = gptlquery ('testbasics', 0, count, of, wc, usr, sys, pc, 0)
       if (ret /= 0) then
-        write(6,*)'Failure'
+        write(6,*)'Failure from gptlquery'
         call exit(1)
       end if
       if (count/=0 .or. of/=0 .or. wc/=0. .or. usr/=0.) then
-        write(6,*)'Failure'
+        write(6,*)'Failure: one or more counts were not zeroed'
         call exit(1)
       end if
       write (6,*)'Success'
+
       write (6,*)'testbasics: All tests succeeded'
       end program testbasics
