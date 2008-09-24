@@ -1,3 +1,5 @@
+gptl3_4_2: Enable "make test". Error call to stop_instr won't invoke null
+        pointer to function.
 gptl3_4_1: Fix tests for robustness. Move initialized check in GPTLstop
 	higher to avoid one of the error tests in ftests/errtest
 gptl3_4: Put back GPTLpr_summary. Some people were using it.

@@ -1,8 +1,16 @@
+# This file contains macro settings which are used by the Makefile. Some require
+# "yes" or "no", where various subflags are required if the value is
+# "yes". The intent is for the user to edit whichever parts of this file are
+# necessary, save to a file named "macros.make", then run "make" to build the
+# GPTL library.
+
+##########################################################################
+
 # Where to install GPTL library and include files
 INSTALLDIR = /usr/local
 
 # Where to install man pages (if blank, defaults to $INSTALLDIR)
-MANDIR = $(HOME)
+MANDIR = 
 
 # C compiler
 CC = pathcc
@@ -15,27 +23,29 @@ else
   CFLAGS = -g -O3 -finline-functions -Winline -Wall
 endif
 
-# Set ABI flags for non-default ABIs (e.g. 64-bit addressing)
+# Set compiler flags for non-default ABIs (e.g. 64-bit addressing). 
+# Normally this can be blank.
 ABIFLAGS =
 
-# Linux system or not? Used by get_memusage
+# Linux system or not? If "yes", get_memusage() will use the /proc interface.
 LINUX = yes
 
 # To enable OpenMP threading, set OPENMP=yes and define the compiler flag. Otherwise,
 # set OPENMP=no. OpenMP applications linked with GPTL as built with OPENMP=no will NOT
-# be thread-safe. If not doing OpenMP, check for PTHREADS
+# be thread-safe. On the other hand, if OPENMP=yes, unthreaded applications
+# using GPTL will need to be linked with the OpenMP flag. 
 OPENMP = yes
 ifeq ($(OPENMP),yes)
   COMPFLAG = -mp
 else
-# Set PTHREADS if available
-  PTHREADS = no
+# Set PTHREADS if available and OPENMP=no
+  PTHREADS = yes
 endif
 
 # For gcc, -Dinline=inline is a no-op. For other C compilers, things like 
 # -Dinline=__inline__ may be required. To find your compiler's definition, try 
 # running "./suggestions CC=<your_C_compiler>".
-INLINEFLAG  = -Dinline=inline
+INLINEFLAG = -Dinline=inline
 
 # To get some C compilers such as gcc to behave properly with -O0 and no inlining, 
 # need to effectively delete the "inline" keyword
@@ -56,7 +66,7 @@ ifeq ($(FORTRAN),yes)
   UNDERSCORING = -DFORTRANDOUBLEUNDERSCORE
 
 # Set Fortran compiler, flags, and (if OpenMP enabled) OpenMP compiler flag.
-# These settings are only used for the Fortran test applications.
+# These settings are only used by the Fortran test applications in ftests/.
   FC     = pathf95
   FFLAGS = -g -O2
   ifeq ($(OPENMP),yes)
@@ -67,38 +77,41 @@ endif
 # Archiver: normally it's just ar
 AR = ar
 
-# PAPI: To enable, set HAVE_PAPI=yes. Then set inc and lib info if needed.
-# Modify FFLAGS for ftests/: Normally it's -D, but AIX requires -WF,-D
+# PAPI: If the PAPI library is already installed, set HAVE_PAPI=yes and set inc and lib 
+# info as appropriate. 
 HAVE_PAPI = yes
 ifeq ($(HAVE_PAPI),yes)
   PAPI_INCFLAGS = 
   PAPI_LIBFLAGS = -lpapi
   ifeq ($(FORTRAN),yes)
+# Modify FFLAGS for PAPI use by some codes in ftests/: Normally 
+# Fortran ifdefs are done with -D, though AIX requires -WF,-D.
     FFLAGS += -DHAVE_PAPI
   endif
 endif
 
 # MPI: Set HAVE_MPI=yes if you intend to use MPI_Wtime as the underlying 
-# wallclock timer, and/or to test GPTL routine which uses MPI (GPTLpr_summary).
+# wallclock timer, and/or intend to call GPTLpr_summary from an MPI code.
 # Then set inc and lib info if needed (e.g. if CC=mpicc, MPI_INCFLAGS and 
 # MPI_LIBFLAGS can be blank).
-# Modify FFLAGS for ftests/: Normally it's -D, but AIX requires -WF,-D
 HAVE_MPI = yes
 ifeq ($(HAVE_MPI),yes)
   MPI_INCFLAGS = 
   MPI_LIBFLAGS = -lscmpi
   MPICMD = srun
   ifeq ($(FORTRAN),yes)
+# Modify FFLAGS for ftests/: Normally it's -D, but AIX requires -WF,-D
     FFLAGS += -DHAVE_MPI
   endif
 endif
 
 # clock_gettime() in librt.a is an option for gathering wallclock time stats
 # on some machines. Setting HAVE_LIBRT=yes enables this, but will probably
-# require linking with -lrt 
+# require linking applications with -lrt 
 HAVE_LIBRT = no
 
-# Only define HAVE_NANOTIME if this is a x86
+# Only define HAVE_NANOTIME if this is a x86. It provides by far the finest grained,
+# lowest overhead wallclock timer on that architecture.
 # If HAVE_NANOTIME=yes, set BIT64=yes if this is an x86_64
 HAVE_NANOTIME = no
 ifeq ($(HAVE_NANOTIME),yes)

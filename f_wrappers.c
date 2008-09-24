@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.31 2008-09-15 19:14:44 rosinski Exp $
+** $Id: f_wrappers.c,v 1.32 2008-09-24 01:26:11 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines
 */
@@ -116,10 +116,9 @@ int gptlpr_summary (int *comm)
   return GPTLpr_summary (*comm);
 }
 
-void gptlreset ()
+int gptlreset ()
 {
-  (void) GPTLreset();
-  return;
+  return GPTLreset();
 }
 
 int gptlstamp (double *wall, double *usr, double *sys)
