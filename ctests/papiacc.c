@@ -16,11 +16,13 @@ int main (int argc, char **argv)
   extern void sub (int, double *, double *, int *, int *);
   extern char *optarg;
 
+  (void) GPTL_PAPIlibraryinit ();
+
   while ((c = getopt (argc, argv, "p:")) != -1) {
     switch (c) {
     case 'p':
       if ((PAPI_event_name_to_code (optarg, &papiopt)) != 0) {
-	printf ("Failure from PAPI_event_name_to_code\n");
+	printf ("Failure from PAPI_event_name_to_code for %s\n", optarg);
 	exit (1);
       }
       if (GPTLsetoption (papiopt, 1) < 0) {
@@ -58,9 +60,9 @@ int main (int argc, char **argv)
   }
   memset (ib, 0, looplen*sizeof (ib));
 
-  (void) GPTL_PAPIlibraryinit ();
   (void) GPTLsetoption (GPTL_CI, 1);
   (void) GPTLsetoption (GPTL_IPC, 1);
+  (void) GPTLsetoption (GPTLoverhead, 0);
 
   if (GPTLinitialize () != 0) {
     printf ("Failure from GPTLinitialize\n");
