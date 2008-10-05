@@ -30,7 +30,7 @@ EXES = $(TESTS) depth recursion stride memusage utrtest \
        papiomptest parentchild gran_overhead rawpapitest
 
 ifeq ($(HAVE_PAPI),yes)
-  EXES += avail
+  EXES += avail papiacc
 endif
 
 ifeq ($(HAVE_MPI),yes)
@@ -99,6 +99,9 @@ load_imbalance: load_imbalance.o
 
 testpapi: testpapi.o
 	$(CC) -o $@ testpapi.o $(LDFLAGS)
+
+papiacc: papiacc.o
+	$(CC) -o $@ papiacc.o $(LDFLAGS)
 
 # Built-in tests to ensure that GPTL is behaving as expected
 # Invoke as "make test" from one dir above
