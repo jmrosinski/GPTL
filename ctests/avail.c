@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "../private.h"
+#include "../gptl.h"
 
 #ifdef HAVE_PAPI
 #include <papi.h>
@@ -30,14 +30,12 @@ int main ()
   ** This should be done with a "getter" function for the derived counter name
   */
 
-  if ((ret == PAPI_query_event (PAPI_TOT_INS)) == PAPI_OK &&
-      (ret == PAPI_query_event (PAPI_TOT_CYC)) == PAPI_OK)
+  if (GPTLsetoption (GPTL_IPC, 1) == 0)
     printf("%-20s %-10d %s\n", "GPTL_IPC", GPTL_IPC, "Instructions per cycle");
 
-  if ((ret == PAPI_query_event (PAPI_FP_OPS)) == PAPI_OK &&
-      (ret == PAPI_query_event (PAPI_LST_INS)) == PAPI_OK)
+  if (GPTLsetoption (GPTL_CI, 1) == 0)
     printf("%-20s %-10d %s\n", "GPTL_CI", GPTL_CI, "Computational intensity");
-  
+
 #else
   printf ("PAPI not enabled so this code does nothing\n");
 #endif
