@@ -222,14 +222,18 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
     ++nevents;
     return 0;
   case GPTL_CI:
-    if ( ! canenable2 (PAPI_FP_OPS, PAPI_LST_INS))
-      return GPTLerror ("GPTL_PAPIsetoption: canenable2 return says GPTL_CI unavailable\n");
-
     idx = getderivedidx (GPTL_CI);
-    pr_event[nevents].event    = derivedtable[idx];
-    pr_event[nevents].numidx   = enable (PAPI_FP_OPS);
-    pr_event[nevents].denomidx = enable (PAPI_LST_INS);
-    ++nevents;
+    if (canenable2 (PAPI_FP_OPS, PAPI_LST_INS)) {
+      pr_event[++nevents].event  = derivedtable[idx];
+      pr_event[nevents].numidx   = enable (PAPI_FP_OPS);
+      pr_event[nevents].denomidx = enable (PAPI_LST_INS);
+    } else if (canenable2 (PAPI_FP_OPS, PAPI_L1_DCA)) {
+      pr_event[++nevents].event  = derivedtable[idx];
+      pr_event[nevents].numidx   = enable (PAPI_FP_OPS);
+      pr_event[nevents].denomidx = enable (PAPI_L1_DCA);
+    } else {
+      return GPTLerror ("GPTL_PAPIsetoption: canenable2 return says GPTL_CI unavailable\n");
+    }
     return 0;
   default:
     break;
@@ -918,6 +922,27 @@ void read_counters100 ()
   return;
 }
 
+/*
+** GPTLevent_name_to_code: convert an option string to a PAPI-based GPTL
+** option index.
+**
+** Input arguments:
+**   arg: string to convert
+**
+** Return value: 0 (success) or GPTLerror (failure)
+*/
+
+int GPTLevent_name_to_code (const char *arg)
+{
+  int n;
+
+  for (n = 0; n < nderivedentries; ++n) {
+    if (strcmp (arg, derivedtable[n].counterstr) == 0)
+      return derivedtable[n].counter;
+  }
+  return GPTLerror ("GPTLevent_name_to_code: counter %s not found\n", arg);
+}
+
 #else
 
 /*
@@ -930,6 +955,11 @@ void GPTL_PAPIprinttable ()
 {
   printf ("PAPI not enabled: GPTL_PAPIprinttable does nothing\n");
   return;
+}
+
+int GPTLevent_name_to_code (const char *arg)
+{
+  return GPTLerror ("GPTLevent_name_to_code: PAPI not enabled\n");
 }
 
 #endif  /* HAVE_PAPI */

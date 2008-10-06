@@ -1,5 +1,5 @@
 /*
-$Id: gptl.h,v 1.36 2008-08-18 17:39:27 rosinski Exp $
+$Id: gptl.h,v 1.37 2008-10-06 21:22:40 rosinski Exp $
 */
 #ifndef GPTL_H
 #define GPTL_H
@@ -64,4 +64,5 @@ extern int GPTLquerycounters (const char *, int, long long *);
 extern int GPTLget_nregions (int, int *);
 extern int GPTLget_regionname (int, int, char *, int);
 extern int GPTL_PAPIlibraryinit ();
+extern int GPTLevent_name_to_code (const char *);
 #endif

@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.32 2008-09-24 01:26:11 rosinski Exp $
+** $Id: f_wrappers.c,v 1.33 2008-10-06 21:22:40 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines
 */
@@ -31,6 +31,7 @@
 #define gptlget_memusage GPTLGET_MEMUSAGE
 #define gptlprint_memusage GPTLPRINT_MEMUSAGE
 #define gptl_papilibraryinit GPTL_PAPILIBRARYINIT
+#define gptlevent_name_to_code GPTLEVENT_NAME_TO_CODE
 
 #elif ( defined FORTRANUNDERSCORE )
 
@@ -54,6 +55,7 @@
 #define gptlget_memusage gptlget_memusage_
 #define gptlprint_memusage gptlprint_memusage_
 #define gptl_papilibraryinit gptl_papilibraryinit_
+#define gptlevent_name_to_code gptlevent_name_to_code_
 
 #elif ( defined FORTRANDOUBLEUNDERSCORE )
 
@@ -77,6 +79,7 @@
 #define gptlget_memusage gptlget_memusage__
 #define gptlprint_memusage gptlprint_memusage__
 #define gptl_papilibraryinit gptl_papilibraryinit__
+#define gptlevent_name_to_code gptlevent_name_to_code__
 
 #endif
 
@@ -222,5 +225,15 @@ void gptl_papilibraryinit ()
 {
   (void) GPTL_PAPIlibraryinit ();
   return;
+}
+
+int gptl_event_name_to_code (const char *str, int nc)
+{
+  char cname[16+1];
+  int numchars = MIN (nc, 16);
+
+  strncpy (cname, str, numchars);
+  cname[numchars] = '\0';
+  return GPTLevent_name_to_code (cname);
 }
 #endif
