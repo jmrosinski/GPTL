@@ -224,16 +224,17 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
   case GPTL_CI:
     idx = getderivedidx (GPTL_CI);
     if (canenable2 (PAPI_FP_OPS, PAPI_LST_INS)) {
-      pr_event[++nevents].event  = derivedtable[idx];
+      pr_event[nevents].event  = derivedtable[idx];
       pr_event[nevents].numidx   = enable (PAPI_FP_OPS);
       pr_event[nevents].denomidx = enable (PAPI_LST_INS);
     } else if (canenable2 (PAPI_FP_OPS, PAPI_L1_DCA)) {
-      pr_event[++nevents].event  = derivedtable[idx];
+      pr_event[nevents].event  = derivedtable[idx];
       pr_event[nevents].numidx   = enable (PAPI_FP_OPS);
       pr_event[nevents].denomidx = enable (PAPI_L1_DCA);
     } else {
       return GPTLerror ("GPTL_PAPIsetoption: canenable2 return says GPTL_CI unavailable\n");
     }
+    ++nevents;
     return 0;
   default:
     break;
@@ -814,8 +815,9 @@ void GPTL_PAPIprintenabled (FILE *fp)
   int n;
 
   fprintf (fp, "PAPI events enabled (including those required for derived events):\n");
-  for (n = 0; n < nevents; n++)
-    fprintf (fp, "  %s\n", pr_event[n].event.str);
+  for (n = 0; n < npapievents; n++)
+    if (PAPI_event_code_to_name (papieventlist[n], papiname) == PAPI_OK)
+      fprintf (fp, "  %s\n", papiname);
   fprintf (fp, "\n");
 }  
 

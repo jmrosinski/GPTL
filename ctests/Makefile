@@ -45,31 +45,31 @@ clean:
 	$(RM) $(OBJS) $(EXES) timing.*
 
 avail: avail.o
-	$(CC) -o $@ avail.o $(LDFLAGS)
+	$(CC) -o $@ $< $(LDFLAGS)
 
 depth: depth.o
-	$(CC) -o $@ depth.o $(LDFLAGS)
+	$(CC) -o $@ $< $(LDFLAGS)
 
 overhead: overhead.o
-	$(CC) -o $@ overhead.o $(LDFLAGS)
+	$(CC) -o $@ $< $(LDFLAGS)
 
 rawpapitest: rawpapitest.o
-	$(CC) -o $@ rawpapitest.o $(LDFLAGS)
+	$(CC) -o $@ $< $(LDFLAGS)
 
 recursion: recursion.o
-	$(CC) -o $@ recursion.o $(LDFLAGS)
+	$(CC) -o $@ $< $(LDFLAGS)
 
 exception: exception.o
-	$(CC) -o $@ exception.o $(LDFLAGS)
+	$(CC) -o $@ $< $(LDFLAGS)
 
 memusage: memusage.o
-	$(CC) -o $@ memusage.o $(LDFLAGS)
+	$(CC) -o $@ $< $(LDFLAGS)
 
 utrtest: utrtest.o
-	$(CC) -o $@ utrtest.o $(LDFLAGS)
+	$(CC) -o $@ $< $(LDFLAGS)
 
 papiomptest: papiomptest.o
-	$(CC) $(THREADFLAGS) -o $@ papiomptest.c $(LDFLAGS)
+	$(CC) $(THREADFLAGS) -o $@ $< $(LDFLAGS)
 
 cygprofile: cygprofile.o cygprofilesubs.o
 	$(CC) -o $@ cygprofile.o cygprofilesubs.o $(LDFLAGS)
@@ -77,31 +77,32 @@ cygprofilesubs.o: cygprofilesubs.c
 	$(CC) -c $(CFLAGS) $(INSTRFLAGS) -o $@ $<
 
 stride: stride.o
-	$(CC) -o $@ stride.o $(LDFLAGS)
+	$(CC) -o $@ $< $(LDFLAGS)
 
 scale: scale.o
-	$(CC) -o $@ scale.o $(LDFLAGS)
+	$(CC) -o $@ $< $(LDFLAGS)
 
 parentchild: parentchild.o
-	$(CC) -o $@ parentchild.o $(LDFLAGS)
+	$(CC) -o $@ $< $(LDFLAGS)
 
 summary: summary.o
-	$(CC) -o $@ summary.o $(LDFLAGS)
+	$(CC) -o $@ $< $(LDFLAGS)
 
 mpi: mpi.o
-	$(CC) -o $@ mpi.o $(LDFLAGS)
+	$(CC) -o $@ $< $(LDFLAGS)
 
 gran_overhead: gran_overhead.o
-	$(CC) -o $@ gran_overhead.o $(LDFLAGS)
+	$(CC) -o $@ $< $(LDFLAGS)
 
 load_imbalance: load_imbalance.o
-	$(CC) -o $@ load_imbalance.o $(LDFLAGS)
+	$(CC) -o $@ $< $(LDFLAGS)
 
 testpapi: testpapi.o
-	$(CC) -o $@ testpapi.o $(LDFLAGS)
+	$(CC) -o $@ $< $(LDFLAGS)
 
-papiacc: papiacc.o
-	$(CC) -o $@ papiacc.o $(LDFLAGS)
+#Optimize papiacc to get good estimate of GPTL_CI
+papiacc: papiacc.c
+	$(CC) -O -o $@ $< $(LDFLAGS)
 
 # Built-in tests to ensure that GPTL is behaving as expected
 # Invoke as "make test" from one dir above

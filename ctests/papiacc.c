@@ -70,8 +70,6 @@ int main (int argc, char **argv)
   }
   memset (ib, 0, looplen*sizeof (ib));
 
-  (void) GPTLsetoption (GPTL_CI, 1);
-  (void) GPTLsetoption (GPTL_IPC, 1);
   (void) GPTLsetoption (GPTLoverhead, 0);
 
   if (GPTLinitialize () != 0) {
