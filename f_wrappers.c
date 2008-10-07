@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.34 2008-10-07 19:34:00 rosinski Exp $
+** $Id: f_wrappers.c,v 1.35 2008-10-07 20:57:17 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines
 */
@@ -257,7 +257,7 @@ int gptlevent_code_to_name (int *code, char *str, int nc)
     for (i = strlen(str); i < nc; ++i)
       str[i] = ' ';
   } else {
-    return GPTLerror ("gptl_event_code_to_name\n");
+    return GPTLerror ("");
   }
   return 0;
 }

@@ -58,6 +58,7 @@
         write(6,*)'Failure of gptlevent_code_to_name to fail'
         call exit(1)
       end if
+      write(6,*)'Success at catching too short output var name'
 
       write(6,*)'Testing gptlevent_code_to_name for derived GPTL_CI...'
       if (gptlevent_code_to_name (code, name) /= 0) then
@@ -73,19 +74,20 @@
         call exit(1)
       end if
 
-      write(6,*)'Testing bogus input to GPTLevent_name_to_code...'
+      write(6,*)'Testing bogus input to gptlevent_name_to_code...'
       if (gptlevent_name_to_code ('zzz', code) == 0) then
         write(6,*)'Failure of gptlevent_name_to_code to fail'
         call exit(1)
       end if
-      write(6,*)'Success: GPTL_CI=',code
+      write(6,*)'Success at catching bogus input name'
 
-      write(6,*)'Testing gptlevent_code_to_name for a derived event...'
+      write(6,*)'Testing bogus input to gptlevent_code_to_name...'
       code = -1
       if (gptlevent_code_to_name (code, name) == 0) then
         write(6,*)'Failure of gptlevent_code_to_name to fail'
         call exit(1)
       end if
+      write(6,*)'Success at catching bogus input code'
 
       write(6,*)'Testing gptlinitialize'
       if (gptlinitialize () /= 0) then
