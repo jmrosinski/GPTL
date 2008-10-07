@@ -925,43 +925,105 @@ void read_counters100 ()
 }
 
 /*
-** GPTLevent_name_to_code: convert an option string to a PAPI-based GPTL
-** option index.
+** GPTLevent_name_to_code: convert a string to a PAPI code
+** or derived event code.
 **
 ** Input arguments:
 **   arg: string to convert
 **
+** Output arguments:
+**   code: PAPI or GPTL derived code
+**
 ** Return value: 0 (success) or GPTLerror (failure)
 */
 
-int GPTLevent_name_to_code (const char *arg)
+int GPTLevent_name_to_code (const char *name, int *code)
 {
-  int n;
+  int ret;   /* return code */
+  int n;     /* loop over derived entries */
+
+  /*
+  ** First check derived events 
+  */
 
   for (n = 0; n < nderivedentries; ++n) {
-    if (strcmp (arg, derivedtable[n].counterstr) == 0)
-      return derivedtable[n].counter;
+    if (strcmp (name, derivedtable[n].counterstr) == 0) {
+      *code = derivedtable[n].counter;
+      return 0;
+    }
   }
-  return GPTLerror ("GPTLevent_name_to_code: counter %s not found\n", arg);
+
+  /*
+  ** Next check PAPI events--note that PAPI must be initialized before the
+  ** name_to_code function can be invoked.
+  */
+
+  if ((ret = GPTL_PAPIlibraryinit ()) < 0)
+    return GPTLerror ("GPTL_event_name_to_code: GPTL_PAPIlibraryinit failure\n");
+
+  if (PAPI_event_name_to_code (name, code) != PAPI_OK)
+    return GPTLerror ("GPTL_event_name_to_code: PAPI_event_name_to_code failure\n");
+
+  return 0;
+}
+
+/*
+** GPTLevent_code_to_name: convert a string to a PAPI code
+** or derived event code.
+**
+** Input arguments:
+**   code: event code (PAPI or derived)
+**
+** Output arguments:
+**   name: string corresponding to code
+**
+** Return value: 0 (success) or GPTLerror (failure)
+*/
+
+int GPTLevent_code_to_name (const int code, char *name)
+{
+  int ret;   /* return code */
+  int n;     /* loop over derived entries */
+
+  /*
+  ** First check derived events 
+  */
+
+  for (n = 0; n < nderivedentries; ++n) {
+    if (code == derivedtable[n].counter) {
+      strcpy (name, derivedtable[n].counterstr);
+      return 0;
+    }
+  }
+
+  /*
+  ** Next check PAPI events--note that PAPI must be initialized before the
+  ** code_to_name function can be invoked.
+  */
+
+  if ((ret = GPTL_PAPIlibraryinit ()) < 0)
+    return GPTLerror ("GPTL_event_code_to_name: GPTL_PAPIlibraryinit failure\n");
+
+  if (PAPI_event_code_to_name (code, name) != PAPI_OK)
+    return GPTLerror ("GPTL_event_code_to_name: PAPI_event_code_to_name failure\n");
+
+  return 0;
 }
 
 #else
 
 /*
-** "Should not be called" entry points for publicly available GPTL_PAPI routines
+** "Should not be called" entry points for public routines
 */
 
-#include <stdio.h>
-
-void GPTL_PAPIprinttable ()
-{
-  printf ("PAPI not enabled: GPTL_PAPIprinttable does nothing\n");
-  return;
-}
-
-int GPTLevent_name_to_code (const char *arg)
+int GPTLevent_name_to_code (const char *name, int *code)
 {
   return GPTLerror ("GPTLevent_name_to_code: PAPI not enabled\n");
+}
+
+int GPTLevent_code_to_name (int code, char *name)
+{
+  return GPTLerror ("GPTLevent_code_to_name: PAPI not enabled\n");
 }
 
 #endif  /* HAVE_PAPI */

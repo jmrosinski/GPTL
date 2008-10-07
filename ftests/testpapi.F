@@ -7,23 +7,23 @@
       integer :: i, code
       integer(8) :: pc ! papi counters
       real(8) :: sum
+      character(len=256) :: name
+      character(len=2) :: tooshort
 
       write(6,*)'testpapi: Testing PAPI interface...'
       write(6,*)'Calling gptl_papilibraryinit...'
-      ret = gptl_papilibraryinit ()
-      if (ret /= 0) then
+      if (gptl_papilibraryinit () /= 0) then
         write(6,*)'Failure from gptl_papilibraryinit...'
         call exit(1)
       end if
       write(6,*)'Success'
       
-      write(6,*)'Calling papif_event_name_to_code...'
-      call papif_event_name_to_code ('PAPI_TOT_CYC', code, ret)
-      if (ret /= 0) then
-        write(6,*)'Failure from papif_event_name_to_code'
+      write(6,*)'Testing gptlevent_name_to_code for PAPI_TOT_CYC...'
+      if (gptlevent_name_to_code ('PAPI_TOT_CYC', code) /= 0) then
+        write(6,*)'Failure from gptlevent_name_to_code'
         call exit(1)
       end if
-      write(6,*)'Success'
+      write(6,*)'Success: PAPI_TOT_CYC=',code
 
       write(6,*)'Testing passing PAPI_TOT_CYC to gptlsetoption...'
       if (gptlsetoption (code, 1) /= 0) then
@@ -31,6 +31,61 @@
         call exit(1)
       end if
       write(6,*)'Success'
+
+      write(6,*)'Testing gptlevent_code_to_name for PAPI_TOT_CYC...'
+      if (gptlevent_code_to_name (code, name) /= 0) then
+        write(6,*)'Failure from gptlevent_code_to_name'
+        call exit(1)
+      end if
+
+      if (trim(name) == 'PAPI_TOT_CYC') then
+        write(6,*)'Success'
+      else
+        write(6,*)'Failure: got ',trim(name)
+        write(6,*)'Expected PAPI_TOT_CYC'
+        call exit(1)
+      end if
+
+      write(6,*)'Testing gptlevent_name_to_code for derived GPTL_CI...'
+      if (gptlevent_name_to_code ('GPTL_CI', code) /= 0) then
+        write(6,*)'Failure from gptlevent_name_to_code'
+        call exit(1)
+      end if
+      write(6,*)'Success: GPTL_CI=',code
+
+      write(6,*)'Testing too short output for gptlevent_code_name...'
+      if (gptlevent_code_to_name (code, tooshort) == 0) then
+        write(6,*)'Failure of gptlevent_code_to_name to fail'
+        call exit(1)
+      end if
+
+      write(6,*)'Testing gptlevent_code_to_name for derived GPTL_CI...'
+      if (gptlevent_code_to_name (code, name) /= 0) then
+        write(6,*)'Failure from gptlevent_code_to_name'
+        call exit(1)
+      end if
+
+      if (name == 'GPTL_CI') then
+        write(6,*)'Success'
+      else
+        write(6,*)'Failure: got ',trim(name)
+        write(6,*)'Expected GPTL_CI'
+        call exit(1)
+      end if
+
+      write(6,*)'Testing bogus input to GPTLevent_name_to_code...'
+      if (gptlevent_name_to_code ('zzz', code) == 0) then
+        write(6,*)'Failure of gptlevent_name_to_code to fail'
+        call exit(1)
+      end if
+      write(6,*)'Success: GPTL_CI=',code
+
+      write(6,*)'Testing gptlevent_code_to_name for a derived event...'
+      code = -1
+      if (gptlevent_code_to_name (code, name) == 0) then
+        write(6,*)'Failure of gptlevent_code_to_name to fail'
+        call exit(1)
+      end if
 
       write(6,*)'Testing gptlinitialize'
       if (gptlinitialize () /= 0) then
@@ -45,6 +100,7 @@
         sum = sum + i
       end do
       ret = gptlstop ('sum')
+
       write(6,*)'Testing gptlquerycounters...'
       if (gptlquerycounters ('sum', 0, pc) /= 0) then
         write(6,*)'Failure'

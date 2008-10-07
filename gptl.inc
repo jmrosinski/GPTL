@@ -60,6 +60,8 @@
       integer gptlget_nregions
       integer gptlget_regionname
       integer gptl_papilibraryinit
+      integer gptlevent_name_to_code
+      integer gptlevent_code_to_name
 
       external gptlsetoption
       external gptlinitialize
@@ -81,3 +83,5 @@
       external gptlget_nregions
       external gptlget_regionname
       external gptl_papilibraryinit
+      external gptlevent_name_to_code
+      external gptlevent_code_to_name

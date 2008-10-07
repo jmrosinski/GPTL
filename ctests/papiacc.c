@@ -21,7 +21,7 @@ int main (int argc, char **argv)
   while ((c = getopt (argc, argv, "g:p:")) != -1) {
     switch (c) {
     case 'g':
-      if ((option = GPTLevent_name_to_code (optarg)) < 0) {
+      if (GPTLevent_name_to_code (optarg, &option) < 0) {
 	printf ("Failure from GPTLevent_name_to_code for %s\n", optarg);
 	exit (1);
       }
@@ -31,7 +31,7 @@ int main (int argc, char **argv)
       }
       break;
     case 'p':
-      if ((PAPI_event_name_to_code (optarg, &option)) != 0) {
+      if (PAPI_event_name_to_code (optarg, &option) != 0) {
 	printf ("Failure from PAPI_event_name_to_code for %s\n", optarg);
 	exit (1);
       }

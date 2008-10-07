@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.33 2008-10-06 21:22:40 rosinski Exp $
+** $Id: f_wrappers.c,v 1.34 2008-10-07 19:34:00 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines
 */
@@ -32,6 +32,7 @@
 #define gptlprint_memusage GPTLPRINT_MEMUSAGE
 #define gptl_papilibraryinit GPTL_PAPILIBRARYINIT
 #define gptlevent_name_to_code GPTLEVENT_NAME_TO_CODE
+#define gptlevent_code_to_name GPTLEVENT_CODE_TO_NAME
 
 #elif ( defined FORTRANUNDERSCORE )
 
@@ -56,6 +57,7 @@
 #define gptlprint_memusage gptlprint_memusage_
 #define gptl_papilibraryinit gptl_papilibraryinit_
 #define gptlevent_name_to_code gptlevent_name_to_code_
+#define gptlevent_code_to_name gptlevent_code_to_name_
 
 #elif ( defined FORTRANDOUBLEUNDERSCORE )
 
@@ -80,6 +82,7 @@
 #define gptlprint_memusage gptlprint_memusage__
 #define gptl_papilibraryinit gptl_papilibraryinit__
 #define gptlevent_name_to_code gptlevent_name_to_code__
+#define gptlevent_code_to_name gptlevent_code_to_name__
 
 #endif
 
@@ -221,19 +224,41 @@ int gptlprint_memusage (const char *str, int nc)
 }
 
 #ifdef HAVE_PAPI
+#include <papi.h>
+
 void gptl_papilibraryinit ()
 {
   (void) GPTL_PAPIlibraryinit ();
   return;
 }
 
-int gptl_event_name_to_code (const char *str, int nc)
+int gptlevent_name_to_code (const char *str, int *code, int nc)
 {
-  char cname[16+1];
-  int numchars = MIN (nc, 16);
+  char cname[PAPI_MAX_STR_LEN];
+  int numchars = MIN (nc, PAPI_MAX_STR_LEN);
 
   strncpy (cname, str, numchars);
   cname[numchars] = '\0';
-  return GPTLevent_name_to_code (cname);
+
+  /* "code" is an int* and is an output variable */
+
+  return GPTLevent_name_to_code (cname, code);
+}
+
+int gptlevent_code_to_name (int *code, char *str, int nc)
+{
+  int i;
+
+  if (nc < PAPI_MAX_STR_LEN)
+    return GPTLerror ("gptl_event_code_to_name: output name must hold at least %d characters\n",
+		      PAPI_MAX_STR_LEN);
+
+  if (GPTLevent_code_to_name (*code, str) == 0) {
+    for (i = strlen(str); i < nc; ++i)
+      str[i] = ' ';
+  } else {
+    return GPTLerror ("gptl_event_code_to_name\n");
+  }
+  return 0;
 }
 #endif
