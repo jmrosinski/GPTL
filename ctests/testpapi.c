@@ -23,7 +23,7 @@ int main ()
     return 2;
   }
   printf ("Success\n");
-  printf ("Testing GPTLsetoption(code,1) where code reflects PAPI_TOT_CYC...\n");
+  printf ("Testing GPTLsetoption(PAPI_TOT_CYC,1)...\n");
   if (GPTLsetoption (code, 1) != 0) {
     printf ("Failure\n");
     return 3;

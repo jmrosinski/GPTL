@@ -46,21 +46,21 @@
         call exit(1)
       end if
 
-      write(6,*)'Testing gptlevent_name_to_code for derived GPTL_CI...'
+      write(6,*)'Testing gptlevent_name_to_code for GPTL_CI...'
       if (gptlevent_name_to_code ('GPTL_CI', code) /= 0) then
         write(6,*)'Failure from gptlevent_name_to_code'
         call exit(1)
       end if
       write(6,*)'Success: GPTL_CI=',code
 
-      write(6,*)'Testing too short output for gptlevent_code_name...'
+      write(6,*)'Testing too short var for gptlevent_code_to_name...'
       if (gptlevent_code_to_name (code, tooshort) == 0) then
         write(6,*)'Failure of gptlevent_code_to_name to fail'
         call exit(1)
       end if
       write(6,*)'Success at catching too short output var name'
 
-      write(6,*)'Testing gptlevent_code_to_name for derived GPTL_CI...'
+      write(6,*)'Testing gptlevent_code_to_name for GPTL_CI...'
       if (gptlevent_code_to_name (code, name) /= 0) then
         write(6,*)'Failure from gptlevent_code_to_name'
         call exit(1)

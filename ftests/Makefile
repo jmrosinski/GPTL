@@ -47,9 +47,10 @@ testbasics: testbasics.o
 # Invoke as "make test" from one dir above
 
 test: $(TESTS)
+	@echo
 	@$(RM) timing.0
 	@./testbasics || exit 1
-	@echo testbasics complete. Checking contents of timing.0 file it should have produced...
+	@echo testbasics complete. Checking contents of timing.0 for a specific region name...
 	@grep -q testbasics timing.0 || exit 2
 	@echo Success
 ifeq ($(HAVE_PAPI),yes)

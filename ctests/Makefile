@@ -108,6 +108,7 @@ papiacc: papiacc.c
 # Invoke as "make test" from one dir above
 
 test: $(TESTS)
+	@echo
 ifeq ($(HAVE_PAPI),yes)
 	@./testpapi || exit 1
 endif
@@ -118,7 +119,7 @@ else
 	@echo Running env OMP_NUM_THREADS=2 ./summary...
 	@env OMP_NUM_THREADS=2 ./summary || (echo "Failure to run" && exit 1)
 endif
-	@echo "Shell is checking contents of timing.summary produced by ./summary..."
+	@echo "Shell is checking contents of timing.summary produced by ./summary for a specific region name..."
 	@grep -q sleep timing.summary && echo "Success" || (echo "Failure" && exit 1)
 ifeq ($(PROFILE),yes)
 	@echo "Testing auto-instrumentation..."
