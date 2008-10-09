@@ -101,8 +101,9 @@ testpapi: testpapi.o
 	$(CC) -o $@ $< $(LDFLAGS)
 
 #Optimize papiacc to get good estimate of GPTL_CI
-papiacc: papiacc.c
-	$(CC) -O -o $@ $< $(LDFLAGS)
+papiacc: papiacc.o
+	$(CC) -c -o papiacc.o papiacc.c $(CFLAGS)
+	$(CC) -o $@ papiacc.o $(LDFLAGS)
 
 # Built-in tests to ensure that GPTL is behaving as expected
 # Invoke as "make test" from one dir above

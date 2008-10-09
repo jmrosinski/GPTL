@@ -17,109 +17,109 @@
 /* Mapping of PAPI counters to short and long printed strings */
 
 static const Entry papitable [] = {
-  {PAPI_L1_DCM, "PAPI_L1_DCM", "L1 Dcache miss  ", "Level 1 data cache misses"},
-  {PAPI_L1_ICM, "PAPI_L1_ICM", "L1 Icache miss  ", "Level 1 instruction cache misses"},
-  {PAPI_L2_DCM, "PAPI_L2_DCM", "L2 Dcache miss  ", "Level 2 data cache misses"},
-  {PAPI_L2_ICM, "PAPI_L2_ICM", "L2 Icache miss  ", "Level 2 instruction cache misses"},
-  {PAPI_L3_DCM, "PAPI_L3_DCM", "L3 Dcache miss  ", "Level 3 data cache misses"},
-  {PAPI_L3_ICM, "PAPI_L3_ICM", "L3 Icache miss  ", "Level 3 instruction cache misses"},
-  {PAPI_L1_TCM, "PAPI_L1_TCM", "L1 cache miss   ", "Level 1 total cache misses"},
-  {PAPI_L2_TCM, "PAPI_L2_TCM", "L2 cache miss   ", "Level 2 total cache misses"},
-  {PAPI_L3_TCM, "PAPI_L3_TCM", "L3 cache miss   ", "Level 3 total cache misses"},
-  {PAPI_CA_SNP, "PAPI_CA_SNP", "Snoops          ", "Snoops          "},
-  {PAPI_CA_SHR, "PAPI_CA_SHR", "PAPI_CA_SHR     ", "Request for shared cache line (SMP)"},
-  {PAPI_CA_CLN, "PAPI_CA_CLN", "PAPI_CA_CLN     ", "Request for clean cache line (SMP)"},
-  {PAPI_CA_INV, "PAPI_CA_INV", "PAPI_CA_INV     ", "Request for cache line Invalidation (SMP)"},
-  {PAPI_CA_ITV, "PAPI_CA_ITV", "PAPI_CA_ITV     ", "Request for cache line Intervention (SMP)"},
-  {PAPI_L3_LDM, "PAPI_L3_LDM", "L3 load misses  ", "Level 3 load misses"},
-  {PAPI_L3_STM, "PAPI_L3_STM", "L3 store misses ", "Level 3 store misses"},
-  {PAPI_BRU_IDL,"PAPI_BRU_IDL","PAPI_BRU_IDL    ", "Cycles branch units are idle"},
-  {PAPI_FXU_IDL,"PAPI_FXU_IDL","PAPI_FXU_IDL    ", "Cycles integer units are idle"},
-  {PAPI_FPU_IDL,"PAPI_FPU_IDL","PAPI_FPU_IDL    ", "Cycles floating point units are idle"},
-  {PAPI_LSU_IDL,"PAPI_LSU_IDL","PAPI_LSU_IDL    ", "Cycles load/store units are idle"},
-  {PAPI_TLB_DM,"PAPI_TLB_DM"  ,"Data TLB misses ", "Data translation lookaside buffer misses"},
-  {PAPI_TLB_IM,"PAPI_TLB_IM", "Inst TLB misses ", "Instr translation lookaside buffer misses"},
-  {PAPI_TLB_TL,"PAPI_TLB_TL", "Tot TLB misses  ", "Total translation lookaside buffer misses"},
-  {PAPI_L1_LDM,"PAPI_L1_LDM", "L1 load misses  ", "Level 1 load misses"},
-  {PAPI_L1_STM,"PAPI_L1_STM", "L1 store misses ", "Level 1 store misses"},
-  {PAPI_L2_LDM,"PAPI_L2_LDM", "L2 load misses  ", "Level 2 load misses"},
-  {PAPI_L2_STM,"PAPI_L2_STM", "L2 store misses ", "Level 2 store misses"},
-  {PAPI_BTAC_M,"PAPI_BTAC_M", "BTAC miss       ", "BTAC miss"},
-  {PAPI_PRF_DM,"PAPI_PRF_DM", "PAPI_PRF_DM     ", "Prefetch data instruction caused a miss"},
-  {PAPI_L3_DCH,"PAPI_L3_DCH", "L3 DCache Hit   ", "Level 3 Data Cache Hit"},
-  {PAPI_TLB_SD,"PAPI_TLB_SD", "PAPI_TLB_SD     ", "Xlation lookaside buffer shootdowns (SMP)"},
-  {PAPI_CSR_FAL,"PAPI_CSR_FAL","PAPI_CSR_FAL    ", "Failed store conditional instructions"},
-  {PAPI_CSR_SUC,"PAPI_CSR_SUC","PAPI_CSR_SUC    ", "Successful store conditional instructions"},
-  {PAPI_CSR_TOT,"PAPI_CSR_TOT","PAPI_CSR_TOT    ", "Total store conditional instructions"},
-  {PAPI_MEM_SCY,"PAPI_MEM_SCY","Cyc Stalled Mem ", "Cycles Stalled Waiting for Memory Access"},
-  {PAPI_MEM_RCY,"PAPI_MEM_RCY","Cyc Stalled MemR", "Cycles Stalled Waiting for Memory Read"},
-  {PAPI_MEM_WCY,"PAPI_MEM_WCY","Cyc Stalled MemW", "Cycles Stalled Waiting for Memory Write"},
-  {PAPI_STL_ICY,"PAPI_STL_ICY","Cyc no InstrIss ", "Cycles with No Instruction Issue"},
-  {PAPI_FUL_ICY,"PAPI_FUL_ICY","Cyc Max InstrIss", "Cycles with Maximum Instruction Issue"},
-  {PAPI_STL_CCY,"PAPI_STL_CCY","Cyc No InstrComp", "Cycles with No Instruction Completion"},
-  {PAPI_FUL_CCY,"PAPI_FUL_CCY","Cyc Max InstComp", "Cycles with Maximum Instruction Completion"},
-  {PAPI_HW_INT,"PAPI_HW_INT", "HW interrupts   ", "Hardware interrupts"},
-  {PAPI_BR_UCN,"PAPI_BR_UCN", "Uncond br instr ", "Unconditional branch instructions executed"},
-  {PAPI_BR_CN,"PAPI_BR_CN",  "Cond br instr ex", "Conditional branch instructions executed"},
-  {PAPI_BR_TKN,"PAPI_BR_TKN", "Cond br instr tk", "Conditional branch instructions taken"},
-  {PAPI_BR_NTK,"PAPI_BR_NTK", "Cond br instrNtk", "Conditional branch instructions not taken"},
-  {PAPI_BR_MSP,"PAPI_BR_MSP", "Cond br instrMPR", "Conditional branch instructions mispred"},
-  {PAPI_BR_PRC,"PAPI_BR_PRC", "Cond br instrCPR", "Conditional branch instructions corr. pred"},
-  {PAPI_FMA_INS,"PAPI_FMA_INS","FMA instr comp  ", "FMA instructions completed"},
-  {PAPI_TOT_IIS,"PAPI_TOT_IIS","Total instr iss ", "Total instructions issued"},
-  {PAPI_TOT_INS,"PAPI_TOT_INS","Total instr ex  ", "Total instructions executed"},
-  {PAPI_INT_INS,"PAPI_INT_INS","Int instr ex    ", "Integer instructions executed"},
-  {PAPI_FP_INS, "PAPI_FP_INS", "FP instr ex     ", "Floating point instructions executed"},
-  {PAPI_LD_INS,"PAPI_LD_INS", "Load instr ex   ", "Load instructions executed"},
-  {PAPI_SR_INS,"PAPI_SR_INS", "Store instr ex  ", "Store instructions executed"},
-  {PAPI_BR_INS,"PAPI_BR_INS", "br instr ex     ", "Total branch instructions executed"},
-  {PAPI_VEC_INS,"PAPI_VEC_INS","Vec/SIMD instrEx", "Vector/SIMD instructions executed"},
-  {PAPI_RES_STL,"PAPI_RES_STL","Cyc proc stalled", "Cycles processor is stalled on resource"},
-  {PAPI_FP_STAL,"PAPI_FP_STAL","Cyc any FP stall", "Cycles any FP units are stalled"},
-  {PAPI_TOT_CYC,"PAPI_TOT_CYC","Total cycles    ", "Total cycles"},
-  {PAPI_LST_INS,"PAPI_LST_INS","Tot L/S inst ex ", "Total load/store inst. executed"},
-  {PAPI_SYC_INS,"PAPI_SYC_INS","Sync. inst. ex  ", "Sync. inst. executed"},
-  {PAPI_L1_DCH,"PAPI_L1_DCH", "L1 D Cache Hit  ", "L1 D Cache Hit"},
-  {PAPI_L2_DCH,"PAPI_L2_DCH", "L2 D Cache Hit  ", "L2 D Cache Hit"},
-  {PAPI_L1_DCA,"PAPI_L1_DCA", "L1 D Cache Acc  ", "L1 D Cache Access"},
-  {PAPI_L2_DCA,"PAPI_L2_DCA", "L2 D Cache Acc  ", "L2 D Cache Access"},
-  {PAPI_L3_DCA,"PAPI_L3_DCA", "L3 D Cache Acc  ", "L3 D Cache Access"},
-  {PAPI_L1_DCR,"PAPI_L1_DCR", "L1 D Cache Read ", "L1 D Cache Read"},
-  {PAPI_L2_DCR,"PAPI_L2_DCR", "L2 D Cache Read ", "L2 D Cache Read"},
-  {PAPI_L3_DCR,"PAPI_L3_DCR", "L3 D Cache Read ", "L3 D Cache Read"},
-  {PAPI_L1_DCW,"PAPI_L1_DCW", "L1 D Cache Write", "L1 D Cache Write"},
-  {PAPI_L2_DCW,"PAPI_L2_DCW", "L2 D Cache Write", "L2 D Cache Write"},
-  {PAPI_L3_DCW,"PAPI_L3_DCW", "L3 D Cache Write", "L3 D Cache Write"},
-  {PAPI_L1_ICH,"PAPI_L1_ICH", "L1 I cache hits ", "L1 instruction cache hits"},
-  {PAPI_L2_ICH,"PAPI_L2_ICH", "L2 I cache hits ", "L2 instruction cache hits"},
-  {PAPI_L3_ICH,"PAPI_L3_ICH", "L3 I cache hits ", "L3 instruction cache hits"},
-  {PAPI_L1_ICA,"PAPI_L1_ICA", "L1 I cache acc  ", "L1 instruction cache accesses"},
-  {PAPI_L2_ICA,"PAPI_L2_ICA", "L2 I cache acc  ", "L2 instruction cache accesses"},
-  {PAPI_L3_ICA,"PAPI_L3_ICA", "L3 I cache acc  ", "L3 instruction cache accesses"},
-  {PAPI_L1_ICR,"PAPI_L1_ICR", "L1 I cache reads", "L1 instruction cache reads"},
-  {PAPI_L2_ICR,"PAPI_L2_ICR", "L2 I cache reads", "L2 instruction cache reads"},
-  {PAPI_L3_ICR,"PAPI_L3_ICR", "L3 I cache reads", "L3 instruction cache reads"},
-  {PAPI_L1_ICW,"PAPI_L1_ICW", "L1 I cache write", "L1 instruction cache writes"},
-  {PAPI_L2_ICW,"PAPI_L2_ICW", "L2 I cache write", "L2 instruction cache writes"},
-  {PAPI_L3_ICW,"PAPI_L3_ICW", "L3 I cache write", "L3 instruction cache writes"},
-  {PAPI_L1_TCH,"PAPI_L1_TCH", "L1 cache hits   ", "L1 total cache hits"},
-  {PAPI_L2_TCH,"PAPI_L2_TCH", "L2 cache hits   ", "L2 total cache hits"},
-  {PAPI_L3_TCH,"PAPI_L3_TCH", "L3 cache hits   ", "L3 total cache hits"},
-  {PAPI_L1_TCA,"PAPI_L1_TCA", "L1 cache access ", "L1 total cache accesses"},
-  {PAPI_L2_TCA,"PAPI_L2_TCA", "L2 cache access ", "L2 total cache accesses"},
-  {PAPI_L3_TCA,"PAPI_L3_TCA", "L3 cache access ", "L3 total cache accesses"},
-  {PAPI_L1_TCR,"PAPI_L1_TCR", "L1 cache reads  ", "L1 total cache reads"},
-  {PAPI_L2_TCR,"PAPI_L2_TCR", "L2 cache reads  ", "L2 total cache reads"},
-  {PAPI_L3_TCR,"PAPI_L3_TCR", "L3 cache reads  ", "L3 total cache reads"},
-  {PAPI_L1_TCW,"PAPI_L1_TCW", "L1 cache writes ", "L1 total cache writes"},
-  {PAPI_L2_TCW,"PAPI_L2_TCW", "L2 cache writes ", "L2 total cache writes"},
-  {PAPI_L3_TCW,"PAPI_L3_TCW", "L3 cache writes ", "L3 total cache writes"},
-  {PAPI_FML_INS,"PAPI_FML_INS","FM ins          ", "FM ins"},
-  {PAPI_FAD_INS,"PAPI_FAD_INS","FA ins          ", "FA ins"},
-  {PAPI_FDV_INS,"PAPI_FDV_INS","FD ins          ", "FD ins"},
-  {PAPI_FSQ_INS,"PAPI_FSQ_INS","FSq ins         ", "FSq ins"},
-  {PAPI_FNV_INS,"PAPI_FNV_INS","Finv ins        ", "Finv ins"},
-  {PAPI_FP_OPS, "PAPI_FP_OPS", "FP ops executed ", "Floating point operations executed"}
+  {PAPI_L1_DCM, "PAPI_L1_DCM", "L1_DCM  ", "L1 Dcache miss  ", "Level 1 data cache misses"},
+  {PAPI_L1_ICM, "PAPI_L1_ICM", "L1_ICM  ", "L1 Icache miss  ", "Level 1 instruction cache misses"},
+  {PAPI_L2_DCM, "PAPI_L2_DCM", "L2_DCM  ", "L2 Dcache miss  ", "Level 2 data cache misses"},
+  {PAPI_L2_ICM, "PAPI_L2_ICM", "L2_ICM  ", "L2 Icache miss  ", "Level 2 instruction cache misses"},
+  {PAPI_L3_DCM, "PAPI_L3_DCM", "L3_DCM  ", "L3 Dcache miss  ", "Level 3 data cache misses"},
+  {PAPI_L3_ICM, "PAPI_L3_ICM", "L3_ICM  ", "L3 Icache miss  ", "Level 3 instruction cache misses"},
+  {PAPI_L1_TCM, "PAPI_L1_TCM", "L1_TCM  ", "L1 cache miss   ", "Level 1 total cache misses"},
+  {PAPI_L2_TCM, "PAPI_L2_TCM", "L2_TCM  ", "L2 cache miss   ", "Level 2 total cache misses"},
+  {PAPI_L3_TCM, "PAPI_L3_TCM", "L3_TCM  ", "L3 cache miss   ", "Level 3 total cache misses"},
+  {PAPI_CA_SNP, "PAPI_CA_SNP", "CA_SNP  ", "Snoops          ", "Snoops          "},
+  {PAPI_CA_SHR, "PAPI_CA_SHR", "CA_SHR  ", "PAPI_CA_SHR     ", "Request for shared cache line (SMP)"},
+  {PAPI_CA_CLN, "PAPI_CA_CLN", "CA_CLN  ", "PAPI_CA_CLN     ", "Request for clean cache line (SMP)"},
+  {PAPI_CA_INV, "PAPI_CA_INV", "CA_INV  ", "PAPI_CA_INV     ", "Request for cache line Invalidation (SMP)"},
+  {PAPI_CA_ITV, "PAPI_CA_ITV", "CA_ITV  ", "PAPI_CA_ITV     ", "Request for cache line Intervention (SMP)"},
+  {PAPI_L3_LDM, "PAPI_L3_LDM", "L3_LDM  ", "L3 load misses  ", "Level 3 load misses"},
+  {PAPI_L3_STM, "PAPI_L3_STM", "L3_STM  ", "L3 store misses ", "Level 3 store misses"},
+  {PAPI_BRU_IDL,"PAPI_BRU_IDL","BRU_IDL ", "PAPI_BRU_IDL    ", "Cycles branch units are idle"},
+  {PAPI_FXU_IDL,"PAPI_FXU_IDL","FXU_IDL ", "PAPI_FXU_IDL    ", "Cycles integer units are idle"},
+  {PAPI_FPU_IDL,"PAPI_FPU_IDL","FPU_IDL ", "PAPI_FPU_IDL    ", "Cycles floating point units are idle"},
+  {PAPI_LSU_IDL,"PAPI_LSU_IDL","LSU_IDL ", "PAPI_LSU_IDL    ", "Cycles load/store units are idle"},
+  {PAPI_TLB_DM, "PAPI_TLB_DM"  "TLB_DM  ", "Data TLB misses ", "Data translation lookaside buffer misses"},
+  {PAPI_TLB_IM, "PAPI_TLB_IM", "TLB_IM  ", "Inst TLB misses ", "Instr translation lookaside buffer misses"},
+  {PAPI_TLB_TL, "PAPI_TLB_TL", "TLB_TL  ", "Tot TLB misses  ", "Total translation lookaside buffer misses"},
+  {PAPI_L1_LDM, "PAPI_L1_LDM", "L1_LDM  ", "L1 load misses  ", "Level 1 load misses"},
+  {PAPI_L1_STM, "PAPI_L1_STM", "L1_STM  ", "L1 store misses ", "Level 1 store misses"},
+  {PAPI_L2_LDM, "PAPI_L2_LDM", "L2_LDM  ", "L2 load misses  ", "Level 2 load misses"},
+  {PAPI_L2_STM, "PAPI_L2_STM", "L2_STM  ", "L2 store misses ", "Level 2 store misses"},
+  {PAPI_BTAC_M, "PAPI_BTAC_M", "BTAC_M  ", "BTAC miss       ", "BTAC miss"},
+  {PAPI_PRF_DM, "PAPI_PRF_DM", "PRF_DM  ", "PAPI_PRF_DM     ", "Prefetch data instruction caused a miss"},
+  {PAPI_L3_DCH, "PAPI_L3_DCH", "L3_DCH  ", "L3 DCache Hit   ", "Level 3 Data Cache Hit"},
+  {PAPI_TLB_SD, "PAPI_TLB_SD", "TLB_SD  ", "PAPI_TLB_SD     ", "Xlation lookaside buffer shootdowns (SMP)"},
+  {PAPI_CSR_FAL,"PAPI_CSR_FAL","CSR_FAL ", "PAPI_CSR_FAL    ", "Failed store conditional instructions"},
+  {PAPI_CSR_SUC,"PAPI_CSR_SUC","CSR_SUC ", "PAPI_CSR_SUC    ", "Successful store conditional instructions"},
+  {PAPI_CSR_TOT,"PAPI_CSR_TOT","CSR_TOT ", "PAPI_CSR_TOT    ", "Total store conditional instructions"},
+  {PAPI_MEM_SCY,"PAPI_MEM_SCY","MEM_SCY ", "Cyc Stalled Mem ", "Cycles Stalled Waiting for Memory Access"},
+  {PAPI_MEM_RCY,"PAPI_MEM_RCY","MEM_RCY ", "Cyc Stalled MemR", "Cycles Stalled Waiting for Memory Read"},
+  {PAPI_MEM_WCY,"PAPI_MEM_WCY","MEM_WCY ", "Cyc Stalled MemW", "Cycles Stalled Waiting for Memory Write"},
+  {PAPI_STL_ICY,"PAPI_STL_ICY","STL_ICY ", "Cyc no InstrIss ", "Cycles with No Instruction Issue"},
+  {PAPI_FUL_ICY,"PAPI_FUL_ICY","FUL_ICY ", "Cyc Max InstrIss", "Cycles with Maximum Instruction Issue"},
+  {PAPI_STL_CCY,"PAPI_STL_CCY","STL_CCY ", "Cyc No InstrComp", "Cycles with No Instruction Completion"},
+  {PAPI_FUL_CCY,"PAPI_FUL_CCY","FUL_CCY ", "Cyc Max InstComp", "Cycles with Maximum Instruction Completion"},
+  {PAPI_HW_INT, "PAPI_HW_INT", "HW_INT  ", "HW interrupts   ", "Hardware interrupts"},
+  {PAPI_BR_UCN, "PAPI_BR_UCN", "BR_UCN  ", "Uncond br instr ", "Unconditional branch instructions executed"},
+  {PAPI_BR_CN,  "PAPI_BR_CN",  "BR_CN   ",  "Cond br instr ex", "Conditional branch instructions executed"},
+  {PAPI_BR_TKN, "PAPI_BR_TKN", "BR_TKN  ", "Cond br instr tk", "Conditional branch instructions taken"},
+  {PAPI_BR_NTK, "PAPI_BR_NTK", "BR_NTK  ", "Cond br instrNtk", "Conditional branch instructions not taken"},
+  {PAPI_BR_MSP, "PAPI_BR_MSP", "BR_MSP  ", "Cond br instrMPR", "Conditional branch instructions mispred"},
+  {PAPI_BR_PRC, "PAPI_BR_PRC", "BR_PRC  ", "Cond br instrCPR", "Conditional branch instructions corr. pred"},
+  {PAPI_FMA_INS,"PAPI_FMA_INS","FMA_INS ", "FMA instr comp  ", "FMA instructions completed"},
+  {PAPI_TOT_IIS,"PAPI_TOT_IIS","TOT_IIS ", "Total instr iss ", "Total instructions issued"},
+  {PAPI_TOT_INS,"PAPI_TOT_INS","TOT_INS ", "Total instr ex  ", "Total instructions executed"},
+  {PAPI_INT_INS,"PAPI_INT_INS","INT_INS ", "Int instr ex    ", "Integer instructions executed"},
+  {PAPI_FP_INS, "PAPI_FP_INS", "FP_INS  ", "FP instr ex     ", "Floating point instructions executed"},
+  {PAPI_LD_INS, "PAPI_LD_INS", "LD_INS  ", "Load instr ex   ", "Load instructions executed"},
+  {PAPI_SR_INS, "PAPI_SR_INS", "SR_INS  ", "Store instr ex  ", "Store instructions executed"},
+  {PAPI_BR_INS, "PAPI_BR_INS", "BR_INS  ", "br instr ex     ", "Total branch instructions executed"},
+  {PAPI_VEC_INS,"PAPI_VEC_INS","VEC_INS ", "Vec/SIMD instrEx", "Vector/SIMD instructions executed"},
+  {PAPI_RES_STL,"PAPI_RES_STL","RES_STL ", "Cyc proc stalled", "Cycles processor is stalled on resource"},
+  {PAPI_FP_STAL,"PAPI_FP_STAL","FP_STAL ", "Cyc any FP stall", "Cycles any FP units are stalled"},
+  {PAPI_TOT_CYC,"PAPI_TOT_CYC","TOT_CYC ", "Total cycles    ", "Total cycles"},
+  {PAPI_LST_INS,"PAPI_LST_INS","LST_INS ", "Tot L/S inst ex ", "Total load/store inst. executed"},
+  {PAPI_SYC_INS,"PAPI_SYC_INS","SYC_INS ", "Sync. inst. ex  ", "Sync. inst. executed"},
+  {PAPI_L1_DCH, "PAPI_L1_DCH", "L1_DCH  ", "L1 D Cache Hit  ", "L1 D Cache Hit"},
+  {PAPI_L2_DCH, "PAPI_L2_DCH", "L2_DCH  ", "L2 D Cache Hit  ", "L2 D Cache Hit"},
+  {PAPI_L1_DCA, "PAPI_L1_DCA", "L1_DCA  ", "L1 D Cache Acc  ", "L1 D Cache Access"},
+  {PAPI_L2_DCA, "PAPI_L2_DCA", "L2_DCA  ", "L2 D Cache Acc  ", "L2 D Cache Access"},
+  {PAPI_L3_DCA, "PAPI_L3_DCA", "L3_DCA  ", "L3 D Cache Acc  ", "L3 D Cache Access"},
+  {PAPI_L1_DCR, "PAPI_L1_DCR", "L1_DCR  ", "L1 D Cache Read ", "L1 D Cache Read"},
+  {PAPI_L2_DCR, "PAPI_L2_DCR", "L2_DCR  ", "L2 D Cache Read ", "L2 D Cache Read"},
+  {PAPI_L3_DCR, "PAPI_L3_DCR", "L3_DCR  ", "L3 D Cache Read ", "L3 D Cache Read"},
+  {PAPI_L1_DCW, "PAPI_L1_DCW", "L1_DCW  ", "L1 D Cache Write", "L1 D Cache Write"},
+  {PAPI_L2_DCW, "PAPI_L2_DCW", "L2_DCW  ", "L2 D Cache Write", "L2 D Cache Write"},
+  {PAPI_L3_DCW, "PAPI_L3_DCW", "L3_DCW  ", "L3 D Cache Write", "L3 D Cache Write"},
+  {PAPI_L1_ICH, "PAPI_L1_ICH", "L1_ICH  ", "L1 I cache hits ", "L1 instruction cache hits"},
+  {PAPI_L2_ICH, "PAPI_L2_ICH", "L2_ICH  ", "L2 I cache hits ", "L2 instruction cache hits"},
+  {PAPI_L3_ICH, "PAPI_L3_ICH", "L3_ICH  ", "L3 I cache hits ", "L3 instruction cache hits"},
+  {PAPI_L1_ICA, "PAPI_L1_ICA", "L1_ICA  ", "L1 I cache acc  ", "L1 instruction cache accesses"},
+  {PAPI_L2_ICA, "PAPI_L2_ICA", "L2_ICA  ", "L2 I cache acc  ", "L2 instruction cache accesses"},
+  {PAPI_L3_ICA, "PAPI_L3_ICA", "L3_ICA  ", "L3 I cache acc  ", "L3 instruction cache accesses"},
+  {PAPI_L1_ICR, "PAPI_L1_ICR", "L1_ICR  ", "L1 I cache reads", "L1 instruction cache reads"},
+  {PAPI_L2_ICR, "PAPI_L2_ICR", "L2_ICR  ", "L2 I cache reads", "L2 instruction cache reads"},
+  {PAPI_L3_ICR, "PAPI_L3_ICR", "L3_ICR  ", "L3 I cache reads", "L3 instruction cache reads"},
+  {PAPI_L1_ICW, "PAPI_L1_ICW", "L1_ICW  ", "L1 I cache write", "L1 instruction cache writes"},
+  {PAPI_L2_ICW, "PAPI_L2_ICW", "L2_ICW  ", "L2 I cache write", "L2 instruction cache writes"},
+  {PAPI_L3_ICW, "PAPI_L3_ICW", "L3_ICW  ", "L3 I cache write", "L3 instruction cache writes"},
+  {PAPI_L1_TCH, "PAPI_L1_TCH", "L1_TCH  ", "L1 cache hits   ", "L1 total cache hits"},
+  {PAPI_L2_TCH, "PAPI_L2_TCH", "L2_TCH  ", "L2 cache hits   ", "L2 total cache hits"},
+  {PAPI_L3_TCH, "PAPI_L3_TCH", "L3_TCH  ", "L3 cache hits   ", "L3 total cache hits"},
+  {PAPI_L1_TCA, "PAPI_L1_TCA", "L1_TCA  ", "L1 cache access ", "L1 total cache accesses"},
+  {PAPI_L2_TCA, "PAPI_L2_TCA", "L2_TCA  ", "L2 cache access ", "L2 total cache accesses"},
+  {PAPI_L3_TCA, "PAPI_L3_TCA", "L3_TCA  ", "L3 cache access ", "L3 total cache accesses"},
+  {PAPI_L1_TCR, "PAPI_L1_TCR", "L1_TCR  ", "L1 cache reads  ", "L1 total cache reads"},
+  {PAPI_L2_TCR, "PAPI_L2_TCR", "L2_TCR  ", "L2 cache reads  ", "L2 total cache reads"},
+  {PAPI_L3_TCR, "PAPI_L3_TCR", "L3_TCR  ", "L3 cache reads  ", "L3 total cache reads"},
+  {PAPI_L1_TCW, "PAPI_L1_TCW", "L1_TCW  ", "L1 cache writes ", "L1 total cache writes"},
+  {PAPI_L2_TCW, "PAPI_L2_TCW", "L2_TCW  ", "L2 cache writes ", "L2 total cache writes"},
+  {PAPI_L3_TCW, "PAPI_L3_TCW", "L3_TCW  ", "L3 cache writes ", "L3 total cache writes"},
+  {PAPI_FML_INS,"PAPI_FML_INS","FML_INS ", "FM ins          ", "FM ins"},
+  {PAPI_FAD_INS,"PAPI_FAD_INS","FAD_INS ", "FA ins          ", "FA ins"},
+  {PAPI_FDV_INS,"PAPI_FDV_INS","FDV_INS ", "FD ins          ", "FD ins"},
+  {PAPI_FSQ_INS,"PAPI_FSQ_INS","FSQ_INS ", "FSq ins         ", "FSq ins"},
+  {PAPI_FNV_INS,"PAPI_FNV_INS","FNV_INS ", "Finv ins        ", "Finv ins"},
+  {PAPI_FP_OPS, "PAPI_FP_OPS", "FP_OPS  ", "FP ops executed ", "Floating point operations executed"}
 };
 
 static const int npapientries = sizeof (papitable) / sizeof (Entry);
@@ -128,8 +128,13 @@ static Pr_event pr_event[MAX_AUX];        /* list of events (PAPI or derived) */
 
 /* Derived events */
 static const Entry derivedtable [] = {
-  {GPTL_IPC, "GPTL_IPC", "Instr per cycle ", "Instructions per cycle"},
-  {GPTL_CI,  "GPTL_CI",  "Comp Intensity  ", "Computational intensity"}
+  {GPTL_IPC,    "GPTL_IPC",     "IPC     ", "Instr per cycle ", "Instructions per cycle"},
+  {GPTL_CI,     "GPTL_CI",      "CI      ", "Comp Intensity  ", "Computational intensity"},
+  {GPTL_FPC,    "GPTL_FPC",     "Flop/Cyc", "FP Ops per cycle", "Floating point ops per cycle"},
+  {GPTL_FPI,    "GPTL_FPI",     "Flop/Ins", "FP Ops per instr", "Floating point ops per instruction"},
+  {GPTL_LSTPI,  "GPTL_LSTPI",   "LST frac", "LST fraction    ", "Load-store instruction fraction"},
+  {GPTL_DCMRT,  "GPTL_DCMRT",   "DCMISRAT", "L1 Miss Rate    ", "L1 Miss rate (fraction)"},
+  {GPTL_LSTPDCM,"GPTL_LSTPDCM", "LSTPDCM ", "LST per L1 miss ", "Load-store instructions per L1 miss"}
 };
 static const int nderivedentries = sizeof (derivedtable) / sizeof (Entry);
 
@@ -138,7 +143,7 @@ static int nevents = 0;                  /* number of events: initialize to 0 */
 static int *EventSet;                    /* list of events to be counted by PAPI */
 static long_long **papicounters;         /* counters returned from PAPI */
 
-static char papiname[PAPI_MAX_STR_LEN];  /* returned from PAPI_event_code_to_name */
+static char eventname[PAPI_MAX_STR_LEN];  /* returned from PAPI_event_code_to_name */
 static const int BADCOUNT = -999999;     /* Set counters to this when they are bad */
 static bool is_multiplexed = false;      /* whether multiplexed (always start false)*/
 static bool narrowprint = true;          /* only use 8 digits not 16 for counter prints */
@@ -213,7 +218,7 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
   switch (counter) {
   case GPTL_IPC:
     if ( ! canenable2 (PAPI_TOT_INS, PAPI_TOT_CYC))
-      return GPTLerror ("GPTL_PAPIsetoption: canenable2 return says GPTL_IPC unavailable\n");
+      return GPTLerror ("GPTL_PAPIsetoption: GPTL_IPC unavailable\n");
 
     idx = getderivedidx (GPTL_IPC);
     pr_event[nevents].event    = derivedtable[idx];
@@ -224,15 +229,81 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
   case GPTL_CI:
     idx = getderivedidx (GPTL_CI);
     if (canenable2 (PAPI_FP_OPS, PAPI_LST_INS)) {
-      pr_event[nevents].event  = derivedtable[idx];
+      pr_event[nevents].event    = derivedtable[idx];
       pr_event[nevents].numidx   = enable (PAPI_FP_OPS);
       pr_event[nevents].denomidx = enable (PAPI_LST_INS);
     } else if (canenable2 (PAPI_FP_OPS, PAPI_L1_DCA)) {
-      pr_event[nevents].event  = derivedtable[idx];
+      if (verbose)
+	printf ("GPTL_PAPIsetoption: using L1_DCA as proxy for LST_INS\n");
+      pr_event[nevents].event    = derivedtable[idx];
       pr_event[nevents].numidx   = enable (PAPI_FP_OPS);
       pr_event[nevents].denomidx = enable (PAPI_L1_DCA);
     } else {
-      return GPTLerror ("GPTL_PAPIsetoption: canenable2 return says GPTL_CI unavailable\n");
+      return GPTLerror ("GPTL_PAPIsetoption: GPTL_CI unavailable\n");
+    }
+    ++nevents;
+    return 0;
+  case GPTL_FPC:
+    if ( ! canenable2 (PAPI_FP_OPS, PAPI_TOT_CYC))
+      return GPTLerror ("GPTL_PAPIsetoption: GPTL_FPC unavailable\n");
+
+    idx = getderivedidx (GPTL_FPC);
+    pr_event[nevents].event    = derivedtable[idx];
+    pr_event[nevents].numidx   = enable (PAPI_FP_OPS);
+    pr_event[nevents].denomidx = enable (PAPI_TOT_CYC);
+    ++nevents;
+    return 0;
+  case GPTL_FPI:
+    if ( ! canenable2 (PAPI_FP_OPS, PAPI_TOT_INS))
+      return GPTLerror ("GPTL_PAPIsetoption: GPTL_FPI unavailable\n");
+
+    idx = getderivedidx (GPTL_FPI);
+    pr_event[nevents].event    = derivedtable[idx];
+    pr_event[nevents].numidx   = enable (PAPI_FP_OPS);
+    pr_event[nevents].denomidx = enable (PAPI_TOT_INS);
+    ++nevents;
+    return 0;
+  case GPTL_LSTPI:
+    idx = getderivedidx (GPTL_LSTPI);
+    if (canenable2 (PAPI_LST_INS, PAPI_TOT_INS)) {
+      pr_event[nevents].event    = derivedtable[idx];
+      pr_event[nevents].numidx   = enable (PAPI_LST_INS);
+      pr_event[nevents].denomidx = enable (PAPI_TOT_INS);
+    } else if (canenable2 (PAPI_L1_DCA, PAPI_TOT_INS)) {
+      if (verbose)
+	printf ("GPTL_PAPIsetoption: using L1_DCA as proxy for LST_INS\n");
+      pr_event[nevents].event    = derivedtable[idx];
+      pr_event[nevents].numidx   = enable (PAPI_L1_DCA);
+      pr_event[nevents].denomidx = enable (PAPI_TOT_INS);
+    } else {
+      return GPTLerror ("GPTL_PAPIsetoption: GPTL_LSTPI unavailable\n");
+    }
+    ++nevents;
+    return 0;
+  case GPTL_DCMRT:
+    if ( ! canenable2 (PAPI_L1_DCM, PAPI_L1_DCA))
+      return GPTLerror ("GPTL_PAPIsetoption: GPTL_DCMRT unavailable\n");
+
+    idx = getderivedidx (GPTL_DCMRT);
+    pr_event[nevents].event    = derivedtable[idx];
+    pr_event[nevents].numidx   = enable (PAPI_L1_DCM);
+    pr_event[nevents].denomidx = enable (PAPI_L1_DCA);
+    ++nevents;
+    return 0;
+  case GPTL_LSTPDCM:
+    idx = getderivedidx (GPTL_LSTPDCM);
+    if (canenable2 (PAPI_LST_INS, PAPI_L1_DCM)) {
+      pr_event[nevents].event    = derivedtable[idx];
+      pr_event[nevents].numidx   = enable (PAPI_LST_INS);
+      pr_event[nevents].denomidx = enable (PAPI_L1_DCM);
+    } else if (canenable2 (PAPI_L1_DCA, PAPI_L1_DCM)) {
+      if (verbose)
+	printf ("GPTL_PAPIsetoption: using L1_DCA as proxy for LST_INS\n");
+      pr_event[nevents].event    = derivedtable[idx];
+      pr_event[nevents].numidx   = enable (PAPI_L1_DCA);
+      pr_event[nevents].denomidx = enable (PAPI_L1_DCM);
+    } else {
+      return GPTLerror ("GPTL_PAPIsetoption: GPTL_LSTPDCM unavailable\n");
     }
     ++nevents;
     return 0;
@@ -252,11 +323,11 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
 	pr_event[nevents].numidx = enable (counter);
       } else {
 	return GPTLerror ("GPTL_PAPIsetoption: Can't enable event \n", 
-			  papitable[n].str);
+			  papitable[n].longstr);
       }
       if (verbose)
 	printf ("GPTL_PAPIsetoption: will print event %s\n", 
-		pr_event[nevents].event.str);
+		pr_event[nevents].event.longstr);
       ++nevents;
       return 0;
     }
@@ -266,50 +337,50 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
   ** Check native events last: If PAPI_event_code_to_name fails, give up
   */
   
-  if ((ret = PAPI_event_code_to_name (counter, papiname)) != PAPI_OK)
+  if ((ret = PAPI_event_code_to_name (counter, eventname)) != PAPI_OK)
     return GPTLerror ("GPTL_PAPIsetoption: PAPI_strerror: %s\n", PAPI_strerror (ret));
 
   /*
   ** A table with predefined names of various lengths does not exist for
-  ** native events. Just truncate papiname.
+  ** native events. Just truncate eventname.
   */
 
   if ((numidx = is_enabled (counter)) >= 0) {
-    pr_event[nevents].event.counter    = counter;
+    pr_event[nevents].event.counter = counter;
 
-    pr_event[nevents].event.counterstr = GPTLallocate (12+1);
-    strncpy (pr_event[nevents].event.counterstr, papiname, 12);
-    pr_event[nevents].event.counterstr[12] = '\0';
+    pr_event[nevents].event.namestr = GPTLallocate (12+1);
+    strncpy (pr_event[nevents].event.namestr, eventname, 12);
+    pr_event[nevents].event.namestr[12] = '\0';
 
-    pr_event[nevents].event.prstr      = GPTLallocate (16+1);
-    strncpy (pr_event[nevents].event.prstr, papiname, 16);
-    pr_event[nevents].event.prstr[16] = '\0';
+    pr_event[nevents].event.str16 = GPTLallocate (16+1);
+    strncpy (pr_event[nevents].event.str16, eventname, 16);
+    pr_event[nevents].event.str16[16] = '\0';
 
-    pr_event[nevents].event.str        = GPTLallocate (PAPI_MAX_STR_LEN);
-    strncpy (pr_event[nevents].event.str, papiname, PAPI_MAX_STR_LEN);
+    pr_event[nevents].event.longstr = GPTLallocate (PAPI_MAX_STR_LEN);
+    strncpy (pr_event[nevents].event.longstr, eventname, PAPI_MAX_STR_LEN);
 
-    pr_event[nevents].numidx           = numidx;
+    pr_event[nevents].numidx = numidx;
   } else if (canenable (counter)) {
-    pr_event[nevents].event.counter    = counter;
+    pr_event[nevents].event.counter = counter;
 
-    pr_event[nevents].event.counterstr = GPTLallocate (12+1);
-    strncpy (pr_event[nevents].event.counterstr, papiname, 12);
-    pr_event[nevents].event.counterstr[12] = '\0';
+    pr_event[nevents].event.namestr = GPTLallocate (12+1);
+    strncpy (pr_event[nevents].event.namestr, eventname, 12);
+    pr_event[nevents].event.namestr[12] = '\0';
 
-    pr_event[nevents].event.prstr      = GPTLallocate (16+1);
-    strncpy (pr_event[nevents].event.prstr, papiname, 16);
-    pr_event[nevents].event.prstr[16] = '\0';
+    pr_event[nevents].event.str16 = GPTLallocate (16+1);
+    strncpy (pr_event[nevents].event.str16, eventname, 16);
+    pr_event[nevents].event.str16[16] = '\0';
 
-    pr_event[nevents].event.str        = GPTLallocate (PAPI_MAX_STR_LEN);
-    strncpy (pr_event[nevents].event.str, papiname, PAPI_MAX_STR_LEN);
+    pr_event[nevents].event.longstr = GPTLallocate (PAPI_MAX_STR_LEN);
+    strncpy (pr_event[nevents].event.longstr, eventname, PAPI_MAX_STR_LEN);
 
-    pr_event[nevents].numidx           = enable (counter);
+    pr_event[nevents].numidx = enable (counter);
   } else {
-    return GPTLerror ("GPTL_PAPIsetoption: Can't enable event %s\n", papiname);
+    return GPTLerror ("GPTL_PAPIsetoption: Can't enable event %s\n", eventname);
   }
 
   if (verbose)
-    printf ("GPTL_PAPIsetoption: will print event %s\n", pr_event[nevents].event.str);
+    printf ("GPTL_PAPIsetoption: will print event %s\n", pr_event[nevents].event.longstr);
 
   ++nevents;
   return 0;
@@ -330,8 +401,8 @@ int canenable (int counter)
     return false;
 
   if (PAPI_query_event (counter) != PAPI_OK) {
-    (void) PAPI_event_code_to_name (counter, papiname);
-    fprintf (stderr, "canenable: event %s not available on this arch\n", papiname);
+    (void) PAPI_event_code_to_name (counter, eventname);
+    fprintf (stderr, "canenable: event %s not available on this arch\n", eventname);
     return false;
   }
 
@@ -354,14 +425,14 @@ int canenable2 (int counter1, int counter2)
     return false;
 
   if (PAPI_query_event (counter1) != PAPI_OK) {
-    (void) PAPI_event_code_to_name (counter1, papiname);
-    fprintf (stderr, "canenable2: event %s not available on this arch\n", papiname);
+    (void) PAPI_event_code_to_name (counter1, eventname);
+    fprintf (stderr, "canenable2: event %s not available on this arch\n", eventname);
     return false;
   }
 
   if (PAPI_query_event (counter2) != PAPI_OK) {
-    (void) PAPI_event_code_to_name (counter2, papiname);
-    fprintf (stderr, "canenable2: event %s not available on this arch\n", papiname);
+    (void) PAPI_event_code_to_name (counter2, eventname);
+    fprintf (stderr, "canenable2: event %s not available on this arch\n", eventname);
     return false;
   }
 
@@ -531,10 +602,11 @@ int GPTL_PAPIinitialize (const int maxthreads,     /* number of threads */
 
   *nevents_out = nevents;
   for (n = 0; n < nevents; ++n) {
-    pr_event_out[n].counter    = pr_event[n].event.counter;
-    pr_event_out[n].counterstr = pr_event[n].event.counterstr;
-    pr_event_out[n].prstr      = pr_event[n].event.prstr;
-    pr_event_out[n].str        = pr_event[n].event.str;
+    pr_event_out[n].counter = pr_event[n].event.counter;
+    pr_event_out[n].namestr = pr_event[n].event.namestr;
+    pr_event_out[n].str8    = pr_event[n].event.str8;
+    pr_event_out[n].str16   = pr_event[n].event.str16;
+    pr_event_out[n].longstr = pr_event[n].event.longstr;
   }
   return 0;
 }
@@ -567,9 +639,9 @@ static int create_and_start_events (const int t)  /* thread number */
     if ((ret = PAPI_add_event (EventSet[t], papieventlist[n])) != PAPI_OK) {
       if (verbose) {
 	fprintf (stderr, "%s\n", PAPI_strerror (ret));
-	ret = PAPI_event_code_to_name (papieventlist[n], papiname);
+	ret = PAPI_event_code_to_name (papieventlist[n], eventname);
 	fprintf (stderr, "create_and_start_events: failure adding event:%s\n",
-		 papiname);
+		 eventname);
       }
 
       if (enable_multiplexing) {
@@ -606,9 +678,9 @@ static int create_and_start_events (const int t)  /* thread number */
 
     for (n = 0; n < npapievents; n++) {
       if ((ret = PAPI_add_event (EventSet[t], papieventlist[n])) != PAPI_OK) {
-	ret = PAPI_event_code_to_name (papieventlist[n], papiname);
+	ret = PAPI_event_code_to_name (papieventlist[n], eventname);
 	return GPTLerror ("create_and_start_events: failure adding event:%s\n"
-			  "  Error was: %s\n", papiname, PAPI_strerror (ret));
+			  "  Error was: %s\n", eventname, PAPI_strerror (ret));
       }
     }
   }
@@ -721,10 +793,7 @@ void GPTL_PAPIprstr (FILE *fp)
   
   if (narrowprint) {
     for (n = 0; n < nevents; n++) {
-      if (strncmp (pr_event[n].event.counterstr, "PAPI_", 5) == 0)
-	fprintf (fp, "%8.8s ", &pr_event[n].event.counterstr[5]); /* 5 => lop off "PAPI_" */
-      else
-	fprintf (fp, "%8.8s ", &pr_event[n].event.counterstr[0]);
+      fprintf (fp, "%8.8s ", pr_event[n].event.str8);
 
       /* Test on < 0 says it's a PAPI counter not a derived counter */
 
@@ -733,7 +802,7 @@ void GPTL_PAPIprstr (FILE *fp)
     }
   } else {
     for (n = 0; n < nevents; n++) {
-      fprintf (fp, "%16.16s ", pr_event[n].event.prstr);
+      fprintf (fp, "%16.16s ", pr_event[n].event.str16);
 
       /* Test on < 0 says it's a PAPI counter not a derived counter */
 
@@ -812,13 +881,30 @@ void GPTL_PAPIpr (FILE *fp,                          /* file descriptor to write
 
 void GPTL_PAPIprintenabled (FILE *fp)
 {
-  int n;
+  int n, nn;
+  PAPI_event_info_t info;  /* returned from PAPI_get_event_info */
 
-  fprintf (fp, "PAPI events enabled (including those required for derived events):\n");
-  for (n = 0; n < npapievents; n++)
-    if (PAPI_event_code_to_name (papieventlist[n], papiname) == PAPI_OK)
-      fprintf (fp, "  %s\n", papiname);
-  fprintf (fp, "\n");
+  if (nevents > 0) {
+    fprintf (fp, "Description of enabled events (PAPI and derived):\n");
+    for (n = 0; n < nevents; n++) {
+      if (strncmp (pr_event[n].event.namestr, "GPTL", 4) == 0) {
+	fprintf (fp, "  %s: %s\n", pr_event[n].event.namestr, pr_event[n].event.longstr);
+      } else {
+	nn = pr_event[n].event.counter;
+	if (PAPI_get_event_info (nn, &info) == PAPI_OK) {
+	  fprintf (fp, "  %s\n", info.short_descr);
+	  fprintf (fp, "  %s\n", info.note);
+	}
+      }
+    }
+    fprintf (fp, "\n");
+
+    fprintf (fp, "PAPI events enabled (including those required for derived events):\n");
+    for (n = 0; n < npapievents; n++)
+      if (PAPI_event_code_to_name (papieventlist[n], eventname) == PAPI_OK)
+	fprintf (fp, "  %s\n", eventname);
+    fprintf (fp, "\n");
+  }
 }  
 
 /*
@@ -947,7 +1033,7 @@ int GPTLevent_name_to_code (const char *name, int *code)
   */
 
   for (n = 0; n < nderivedentries; ++n) {
-    if (strcmp (name, derivedtable[n].counterstr) == 0) {
+    if (strcmp (name, derivedtable[n].namestr) == 0) {
       *code = derivedtable[n].counter;
       return 0;
     }
@@ -961,7 +1047,7 @@ int GPTLevent_name_to_code (const char *name, int *code)
   if ((ret = GPTL_PAPIlibraryinit ()) < 0)
     return GPTLerror ("GPTL_event_name_to_code: GPTL_PAPIlibraryinit failure\n");
 
-  if (PAPI_event_name_to_code (name, code) != PAPI_OK)
+  if ((PAPI_event_name_to_code ((char *) name, code)) != PAPI_OK)
     return GPTLerror ("GPTL_event_name_to_code: PAPI_event_name_to_code failure\n");
 
   return 0;
@@ -991,7 +1077,7 @@ int GPTLevent_code_to_name (const int code, char *name)
 
   for (n = 0; n < nderivedentries; ++n) {
     if (code == derivedtable[n].counter) {
-      strcpy (name, derivedtable[n].counterstr);
+      strcpy (name, derivedtable[n].namestr);
       return 0;
     }
   }

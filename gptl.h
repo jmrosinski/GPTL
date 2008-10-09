@@ -1,5 +1,5 @@
 /*
-$Id: gptl.h,v 1.38 2008-10-07 19:34:00 rosinski Exp $
+$Id: gptl.h,v 1.39 2008-10-09 20:50:46 rosinski Exp $
 */
 #ifndef GPTL_H
 #define GPTL_H
@@ -20,10 +20,15 @@ typedef enum {
   GPTLpersec         = 10, /* Add a PAPI column that prints "per second" stats (true) */
   GPTLmultiplex      = 11, /* Allow PAPI multiplexing (true) */
   /*
-  ** These are derived counters based on PAPI counters
+  ** These are derived counters based on PAPI counters. All default to false
   */
-  GPTL_IPC           = 12, /* Instructions per cycle (false) */
-  GPTL_CI            = 13  /* Computational intensity (false) */
+  GPTL_IPC           = 12, /* Instructions per cycle */
+  GPTL_CI            = 13, /* Computational intensity */
+  GPTL_FPC           = 14, /* FP ops per cycle */
+  GPTL_FPI           = 15, /* FP ops per instruction */
+  GPTL_LSTPI         = 16, /* Load-store instruction fraction */
+  GPTL_DCMRT         = 17, /* L1 miss rate (fraction) */
+  GPTL_LSTPDCM       = 18  /* Load-stores per L1 miss */
 } Option;
 
 /*

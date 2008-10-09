@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.48 2008-06-30 00:45:33 rosinski Exp $
+$Id: private.h,v 1.49 2008-10-09 20:50:46 rosinski Exp $
 */
 
 #include <stdio.h>
@@ -53,9 +53,10 @@ typedef struct {
   
 typedef struct {
   int counter;      /* PAPI or Derived counter */
-  char *counterstr; /* PAPI or Derived counter as string */
-  char *prstr;      /* print string for output timers (16 chars) */
-  char *str;        /* descriptive print string (more descriptive than prstr) */
+  char *namestr;    /* PAPI or Derived counter as string */
+  char *str8;       /* print string for output timers (8 chars) */
+  char *str16;      /* print string for output timers (16 chars) */
+  char *longstr;    /* long descriptive print string */
 } Entry;
 
 typedef struct {

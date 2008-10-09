@@ -10,6 +10,11 @@
       integer GPTLmultiplex
       integer GPTL_IPC
       integer GPTL_CI
+      integer GPTL_FPC
+      integer GPTL_FPI
+      integer GPTL_LSTPI
+      integer GPTL_DCMRT
+      integer GPTL_LSTPDCM
 
       integer GPTLnanotime
       integer GPTLrtc
@@ -30,6 +35,11 @@
       parameter (GPTLmultiplex      = 11)
       parameter (GPTL_IPC           = 12)
       parameter (GPTL_CI            = 13)
+      parameter (GPTL_FPC           = 14)
+      parameter (GPTL_FPI           = 15)
+      parameter (GPTL_LSTPI         = 16)
+      parameter (GPTL_DCMRT         = 17)
+      parameter (GPTL_LSTPDCM       = 18)
 
       parameter (GPTLgettimeofday   = 22)
       parameter (GPTLnanotime       = 23)

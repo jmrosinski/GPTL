@@ -34,7 +34,7 @@ static Timer **timers = 0;       /* linked list of timers */
 static Timer **last = 0;         /* last element in list */
 static int *max_depth;           /* maximum indentation level encountered */
 static int *max_name_len;        /* max length of timer name */
-static Entry eventlist[MAX_AUX]; /* list of PAPI events to be counted */
+static Entry eventlist[MAX_AUX]; /* list of PAPI-based events to be counted */
 static int GPTLnthreads= -1;     /* num threads. Init to bad value */
 static int maxthreads  = -1;     /* max threads (=GPTLnthreads for OMP). Init to bad value */
 static int depthlimit  = 99999;  /* max depth for timers (99999 is effectively infinite) */
@@ -1159,7 +1159,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.97 2008-09-24 16:03:03 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.98 2008-10-09 20:50:46 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1609,7 +1609,7 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.97 2008-09-24 16:03:03 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.98 2008-10-09 20:50:46 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");
@@ -1625,13 +1625,8 @@ int GPTLpr_summary (int comm)
     fprintf (fp, " count      wallmax (proc thrd)   wallmin (proc thrd)");
 
     for (n = 0; n < nevents; ++n) {
-      if (strncmp (eventlist[n].counterstr, "PAPI_", 5) == 0) {  /* 5 => lop off "PAPI_" */
-	fprintf (fp, " %8.8smax (proc thrd)", &eventlist[n].counterstr[5]);
-	fprintf (fp, " %8.8smin (proc thrd)", &eventlist[n].counterstr[5]);
-      } else {
-	fprintf (fp, " %8.8smax (proc thrd)", &eventlist[n].counterstr[0]);
-	fprintf (fp, " %8.8smin (proc thrd)", &eventlist[n].counterstr[0]);
-      }
+      fprintf (fp, " %8.8smax (proc thrd)", eventlist[n].str8);
+      fprintf (fp, " %8.8smin (proc thrd)", eventlist[n].str8);
     }
 
     fprintf (fp, "\n");

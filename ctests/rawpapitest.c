@@ -78,8 +78,8 @@ int main ()
 	printf ("Event %s is too many\n", papiname);
       } else {
 	eventlist[nevents].counter = counter;
-	eventlist[nevents].str     = papiname;
-	printf ("Event %s enabled\n", eventlist[nevents].str);
+	eventlist[nevents].longstr = papiname;
+	printf ("Event %s enabled\n", eventlist[nevents].longstr);
 	++nevents;
       }
     }
@@ -125,7 +125,7 @@ void parsub (int iter)
     for (n = 0; n < nevents; n++) {
       if ((ret = PAPI_add_event (EventSet[mythread], eventlist[n].counter)) != PAPI_OK) {
 	printf ("%s\n", PAPI_strerror (ret));
-	printf ("Failure attempting to add event: %s\n", eventlist[n].str);
+	printf ("Failure attempting to add event: %s\n", eventlist[n].longstr);
       }
     }
     if ((ret = PAPI_start (EventSet[mythread])) != PAPI_OK)

@@ -18,21 +18,11 @@ int main (int argc, char **argv)
 
   (void) GPTL_PAPIlibraryinit ();
 
-  while ((c = getopt (argc, argv, "g:p:")) != -1) {
+  while ((c = getopt (argc, argv, "p:")) != -1) {
     switch (c) {
-    case 'g':
-      if (GPTLevent_name_to_code (optarg, &option) < 0) {
-	printf ("Failure from GPTLevent_name_to_code for %s\n", optarg);
-	exit (1);
-      }
-      if (GPTLsetoption (option, 1) < 0) {
-	printf ("Failure from GPTLsetoption (%s,1)\n", optarg);
-	exit (1);
-      }
-      break;
     case 'p':
-      if (PAPI_event_name_to_code (optarg, &option) != 0) {
-	printf ("Failure from PAPI_event_name_to_code for %s\n", optarg);
+      if (GPTLevent_name_to_code (optarg, &option) != 0) {
+	printf ("Failure from GPTLevent_name_to_code for %s\n", optarg);
 	exit (1);
       }
       if (GPTLsetoption (option, 1) < 0) {
