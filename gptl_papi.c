@@ -885,7 +885,7 @@ void GPTL_PAPIprintenabled (FILE *fp)
   PAPI_event_info_t info;  /* returned from PAPI_get_event_info */
 
   if (nevents > 0) {
-    fprintf (fp, "Description of enabled events (PAPI and derived):\n");
+    fprintf (fp, "Description of printed events (PAPI and derived):\n");
     for (n = 0; n < nevents; n++) {
       if (strncmp (pr_event[n].event.namestr, "GPTL", 4) == 0) {
 	fprintf (fp, "  %s: %s\n", pr_event[n].event.namestr, pr_event[n].event.longstr);
