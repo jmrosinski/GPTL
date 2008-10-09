@@ -1,3 +1,5 @@
+gptl3_4_4: Added GPTLevent_name_to_code and GPTLevent_code_to_name. Add
+	some derived events. More description to print.
 gptl3_4_2: Enable "make test". Error call to stop_instr won't invoke null
         pointer to function.
 gptl3_4_1: Fix tests for robustness. Move initialized check in GPTLstop
