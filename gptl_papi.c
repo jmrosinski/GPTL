@@ -426,13 +426,11 @@ int canenable2 (int counter1, int counter2)
 
   if (PAPI_query_event (counter1) != PAPI_OK) {
     (void) PAPI_event_code_to_name (counter1, eventname);
-    fprintf (stderr, "canenable2: event %s not available on this arch\n", eventname);
     return false;
   }
 
   if (PAPI_query_event (counter2) != PAPI_OK) {
     (void) PAPI_event_code_to_name (counter2, eventname);
-    fprintf (stderr, "canenable2: event %s not available on this arch\n", eventname);
     return false;
   }
 
