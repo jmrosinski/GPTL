@@ -793,7 +793,7 @@ void GPTL_PAPIprstr (FILE *fp)
     for (n = 0; n < nevents; n++) {
       fprintf (fp, "%8.8s ", pr_event[n].event.str8);
 
-      /* Test on < 0 says it's a PAPI counter not a derived counter */
+      /* Test on < 0 says it's a PAPI preset */
 
       if (persec && pr_event[n].event.counter < 0)
 	fprintf (fp, "e6 / sec ");
@@ -802,7 +802,7 @@ void GPTL_PAPIprstr (FILE *fp)
     for (n = 0; n < nevents; n++) {
       fprintf (fp, "%16.16s ", pr_event[n].event.str16);
 
-      /* Test on < 0 says it's a PAPI counter not a derived counter */
+      /* Test on < 0 says it's a PAPI preset */
 
       if (persec && pr_event[n].event.counter < 0)
 	fprintf (fp, "e6 / sec ");

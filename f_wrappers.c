@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.35 2008-10-07 20:57:17 rosinski Exp $
+** $Id: f_wrappers.c,v 1.36 2008-10-29 23:25:53 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines
 */
@@ -109,8 +109,7 @@ int gptlpr_file (char *file, int nc1)
   if ( ! (locfile = malloc (nc1+1)))
     return GPTLerror ("gptlpr_file: malloc error\n");
 
-  snprintf (locfile, nc1, "%s", file);
-  locfile[nc1] = '\0';
+  snprintf (locfile, nc1+1, "%s", file);
 
   ret = GPTLpr_file (locfile);
   free (locfile);

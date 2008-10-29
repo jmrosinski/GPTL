@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.49 2008-10-09 20:50:46 rosinski Exp $
+$Id: private.h,v 1.50 2008-10-29 23:25:53 rosinski Exp $
 */
 
 #include <stdio.h>
@@ -89,8 +89,8 @@ typedef struct TIMER {
 } Timer;
 
 typedef struct {
-  unsigned int nument;      /* number of entries hashed to the same value */
   Timer **entries;          /* array of timers hashed to the same value */
+  unsigned int nument;      /* number of entries hashed to the same value */
 } Hashentry;
 
 /* Function prototypes */

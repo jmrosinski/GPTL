@@ -1,11 +1,15 @@
 /*
-$Id: gptl.h,v 1.39 2008-10-09 20:50:46 rosinski Exp $
+$Id: gptl.h,v 1.40 2008-10-29 23:25:53 rosinski Exp $
 */
 #ifndef GPTL_H
 #define GPTL_H
 
 /*
 ** Options settable by a call to GPTLsetoption() (default in parens)
+** These numbers need to be small integers because GPTLsetoption can
+** be passed PAPI counters, and we need to avoid collisions in that
+** integer space. PAPI presets are big negative integers, and PAPI
+** native events are big positive integers.
 */
 
 typedef enum {
@@ -19,29 +23,35 @@ typedef enum {
   GPTLpercent        = 9,  /* Add a column for percent of first timer (true) */
   GPTLpersec         = 10, /* Add a PAPI column that prints "per second" stats (true) */
   GPTLmultiplex      = 11, /* Allow PAPI multiplexing (true) */
+  GPTLdopr_preamble  = 12, /* Print preamble info (true) */
+  GPTLdopr_threadsort= 13, /* Print sorted thread stats (true) */
+  GPTLdopr_multparent= 14, /* Print multiple parent info (true) */
+  GPTLdopr_collision = 15, /* Print hastable collision info (true) */
   /*
   ** These are derived counters based on PAPI counters. All default to false
   */
-  GPTL_IPC           = 12, /* Instructions per cycle */
-  GPTL_CI            = 13, /* Computational intensity */
-  GPTL_FPC           = 14, /* FP ops per cycle */
-  GPTL_FPI           = 15, /* FP ops per instruction */
-  GPTL_LSTPI         = 16, /* Load-store instruction fraction */
-  GPTL_DCMRT         = 17, /* L1 miss rate (fraction) */
-  GPTL_LSTPDCM       = 18  /* Load-stores per L1 miss */
+  GPTL_IPC           = 16, /* Instructions per cycle */
+  GPTL_CI            = 17, /* Computational intensity */
+  GPTL_FPC           = 18, /* FP ops per cycle */
+  GPTL_FPI           = 19, /* FP ops per instruction */
+  GPTL_LSTPI         = 20, /* Load-store instruction fraction */
+  GPTL_DCMRT         = 21, /* L1 miss rate (fraction) */
+  GPTL_LSTPDCM       = 22  /* Load-stores per L1 miss */
 } Option;
 
 /*
-** Underlying wallclock timer: optimize for best granularity with least overhead
+** Underlying wallclock timer: optimize for best granularity with least overhead.
+** These numbers need not be distinct from the above because these are passed
+** to GPTLsetutr() and the above are passed to GPTLsetoption()
 */
 
 typedef enum {
-  GPTLgettimeofday   = 22, /* the default */
-  GPTLnanotime       = 23, /* only available on x86 */
-  GPTLrtc            = 24, /* real time clock (UNICOSMP only) */
-  GPTLmpiwtime       = 25, /* MPI_Wtime */
-  GPTLclockgettime   = 26, /* clock_gettime */
-  GPTLpapitime       = 27  /* only if PAPI is available */
+  GPTLgettimeofday   = 1, /* the default */
+  GPTLnanotime       = 2, /* only available on x86 */
+  GPTLrtc            = 3, /* real time clock (UNICOSMP only) */
+  GPTLmpiwtime       = 4, /* MPI_Wtime */
+  GPTLclockgettime   = 5, /* clock_gettime */
+  GPTLpapitime       = 6  /* only if PAPI is available */
 } Funcoption;
 
 /*

@@ -30,29 +30,33 @@
 
 #include "private.h"
 
-static Timer **timers = 0;       /* linked list of timers */
-static Timer **last = 0;         /* last element in list */
-static int *max_depth;           /* maximum indentation level encountered */
-static int *max_name_len;        /* max length of timer name */
-static Entry eventlist[MAX_AUX]; /* list of PAPI-based events to be counted */
-static int GPTLnthreads= -1;     /* num threads. Init to bad value */
-static int maxthreads  = -1;     /* max threads (=GPTLnthreads for OMP). Init to bad value */
-static int depthlimit  = 99999;  /* max depth for timers (99999 is effectively infinite) */
-static int nevents = 0;          /* number of PAPI events (init to 0) */
+static Timer **timers = 0;          /* linked list of timers */
+static Timer **last = 0;            /* last element in list */
+static int *max_depth;              /* maximum indentation level encountered */
+static int *max_name_len;           /* max length of timer name */
+static Entry eventlist[MAX_AUX];    /* list of PAPI-based events to be counted */
+static int GPTLnthreads= -1;        /* num threads. Init to bad value */
+static int maxthreads  = -1;        /* max threads (=GPTLnthreads for OMP). Init to bad value */
+static int depthlimit  = 99999;     /* max depth for timers (99999 is effectively infinite) */
+static int nevents = 0;             /* number of PAPI events (init to 0) */
 static volatile bool disabled = false;    /* Timers disabled? */
 static volatile bool initialized = false; /* GPTLinitialize has been called */
-static bool dousepapi = false;   /* saves a function call if stays false */
-static bool verbose = false;     /* output verbosity */
-static bool percent = false;     /* print wallclock also as percent of 1st timers[0] */
+static bool dousepapi = false;      /* saves a function call if stays false */
+static bool verbose = false;        /* output verbosity */
+static bool percent = false;        /* print wallclock also as percent of 1st timers[0] */
+static bool dopr_preamble = true;   /* whether to print preamble info */
+static bool dopr_threadsort = true; /* whether to print sorted thread stats */
+static bool dopr_multparent = true; /* whether to print multiple parent info */
+static bool dopr_collision = true;  /* whether to print hash collision info */
 
 static time_t ref_gettimeofday = -1; /* ref start point for gettimeofday */
 static time_t ref_clock_gettime = -1;/* ref start point for clock_gettime */
 static long long ref_papitime = -1;  /* ref start point for PAPI_get_real_usec */
 
 typedef struct {
-  const Option option;           /* wall, cpu, etc. */
-  const char *str;               /* descriptive string for printing */
-  bool enabled;                  /* flag */
+  const Option option;  /* wall, cpu, etc. */
+  const char *str;      /* descriptive string for printing */
+  bool enabled;         /* flag */
 } Settings;
 
 /* For Summary stats */
@@ -224,6 +228,26 @@ int GPTLsetoption (const int option,  /* option */
     percent = (bool) val; 
     if (verbose)
       printf ("GPTLsetoption: set percent to %d\n", val);
+    return 0;
+  case GPTLdopr_preamble: 
+    dopr_preamble = (bool) val; 
+    if (verbose)
+      printf ("GPTLsetoption: set dopr_preamble to %d\n", val);
+    return 0;
+  case GPTLdopr_threadsort: 
+    dopr_threadsort = (bool) val; 
+    if (verbose)
+      printf ("GPTLsetoption: set dopr_threadsort to %d\n", val);
+    return 0;
+  case GPTLdopr_multparent: 
+    dopr_multparent = (bool) val; 
+    if (verbose)
+      printf ("GPTLsetoption: set dopr_multparent to %d\n", val);
+    return 0;
+  case GPTLdopr_collision: 
+    dopr_collision = (bool) val; 
+    if (verbose)
+      printf ("GPTLsetoption: set dopr_collision to %d\n", val);
     return 0;
 
   /* 
@@ -485,8 +509,7 @@ int GPTLstart_instr (void *self)
     ** name by an offline tool.
     */
 
-    snprintf (ptr->name, MAX_CHARS, "%lx", (unsigned long) self);
-    ptr->name[MAX_CHARS] = '\0';
+    snprintf (ptr->name, MAX_CHARS+1, "%lx", (unsigned long) self);
     ptr->address = self;
 
     if (update_ll_hash (ptr, t, indx) != 0)
@@ -1159,7 +1182,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.98 2008-10-09 20:50:46 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.99 2008-10-29 23:25:53 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1194,13 +1217,15 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   }
 #endif
   tot_overhead = utr_overhead + papi_overhead;
-  fprintf (fp, "If overhead stats are printed, roughly half the estimated number is\n");
-  fprintf (fp, "embedded in the wallclock stats for each timer\n\n");
-  fprintf (fp, "If a \'%% of\' field is present, it is w.r.t. the first timer for thread 0.\n");
-  fprintf (fp, "If a \'e6 per sec\' field is present, it is in millions of PAPI counts per sec.\n\n");
-  fprintf (fp, "A '*' in column 1 below means the timer had multiple parents, though the\n");
-  fprintf (fp, "values printed are for all calls. Further down the listing is more detailed\n");
-  fprintf (fp, "information about multiple parents. Look for 'Multiple parent info'\n\n");
+  if (dopr_preamble) {
+    fprintf (fp, "If overhead stats are printed, roughly half the estimated number is\n");
+    fprintf (fp, "embedded in the wallclock stats for each timer\n\n");
+    fprintf (fp, "If a \'%% of\' field is present, it is w.r.t. the first timer for thread 0.\n");
+    fprintf (fp, "If a \'e6 per sec\' field is present, it is in millions of PAPI counts per sec.\n\n");
+    fprintf (fp, "A '*' in column 1 below means the timer had multiple parents, though the\n");
+    fprintf (fp, "values printed are for all calls. Further down the listing is more detailed\n");
+    fprintf (fp, "information about multiple parents. Look for 'Multiple parent info'\n\n");
+  }
 
   sum = (float *) GPTLallocate (GPTLnthreads * sizeof (float));
   
@@ -1213,7 +1238,6 @@ int GPTLpr_file (const char *outfile) /* output file to write */
       fprintf (fp, "  ");
     for (n = 0; n < max_name_len[t]; ++n) /* longest timer name */
       fprintf (fp, " ");
-
     fprintf (fp, "Called Recurse ");
 
     /* Print strings for enabled timer types */
@@ -1268,7 +1292,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   /* Print per-name stats for all threads */
 
-  if (GPTLnthreads > 1) {
+  if (dopr_threadsort && GPTLnthreads > 1) {
     fprintf (fp, "\nSame stats sorted by timer for threaded regions:\n");
     fprintf (fp, "Thd ");
 
@@ -1346,43 +1370,48 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   /* Print info about timers with multiple parents */
 
-  for (t = 0; t < GPTLnthreads; ++t) {
-    fprintf (fp, "\nMultiple parent info (if any) for thread %d:\n", t);
-    if (t == 0) {
-      fprintf (fp, "Columns are count and name for the listed child\n");
-      fprintf (fp, "Rows are each parent, with their common child being the last entry, "
-	       "which is indented\n");
-      fprintf (fp, "Count next to each parent is the number of times it called the "
-	       "child\n");
-      fprintf (fp, "Count next to child is total number of times it was called by the "
-	       "listed parents\n\n");
+  if (dopr_multparent) {
+    for (t = 0; t < GPTLnthreads; ++t) {
+      fprintf (fp, "\nMultiple parent info (if any) for thread %d:\n", t);
+      if (dopr_preamble && t == 0) {
+	fprintf (fp, "Columns are count and name for the listed child\n");
+	fprintf (fp, "Rows are each parent, with their common child being the last entry, "
+		 "which is indented\n");
+	fprintf (fp, "Count next to each parent is the number of times it called the "
+		 "child\n");
+	fprintf (fp, "Count next to child is total number of times it was called by the "
+		 "listed parents\n\n");
+      }
+
+      for (ptr = timers[t]; ptr; ptr = ptr->next)
+	if (ptr->nparent > 1)
+	  print_multparentinfo (fp, ptr);
     }
-    for (ptr = timers[t]; ptr; ptr = ptr->next)
-      if (ptr->nparent > 1)
-	print_multparentinfo (fp, ptr);
   }
 
   /* Print hash table stats */
 
-  for (t = 0; t < GPTLnthreads; t++) {
-    first = true;
-    totent = 0;
-    for (i = 0; i < tablesize; i++) {
-      nument = hashtable[t][i].nument;
-      if (nument > 1) {
-	totent += nument;
-	if (first) {
-	  first = false;
-	  fprintf (fp, "\nthread %d had some hash collisions:\n", t);
+  if (dopr_collision) {
+    for (t = 0; t < GPTLnthreads; t++) {
+      first = true;
+      totent = 0;
+      for (i = 0; i < tablesize; i++) {
+	nument = hashtable[t][i].nument;
+	if (nument > 1) {
+	  totent += nument;
+	  if (first) {
+	    first = false;
+	    fprintf (fp, "\nthread %d had some hash collisions:\n", t);
+	  }
+	  fprintf (fp, "hashtable[%d][%d] had %d entries:", t, i, nument);
+	  for (ii = 0; ii < nument; ii++)
+	    fprintf (fp, " %s", hashtable[t][i].entries[ii]->name);
+	  fprintf (fp, "\n");
 	}
-	fprintf (fp, "hashtable[%d][%d] had %d entries:", t, i, nument);
-	for (ii = 0; ii < nument; ii++)
-	  fprintf (fp, " %s", hashtable[t][i].entries[ii]->name);
-	fprintf (fp, "\n");
       }
+      if (totent > 0)
+	fprintf (fp, "Total collisions thread %d = %d\n", t, totent);
     }
-    if (totent > 0)
-      fprintf (fp, "Total collisions thread %d = %d\n", t, totent);
   }
 
   free (sum);
@@ -1609,7 +1638,7 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.98 2008-10-09 20:50:46 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.99 2008-10-29 23:25:53 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");

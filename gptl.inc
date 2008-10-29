@@ -8,6 +8,10 @@
       integer GPTLpercent
       integer GPTLpersec
       integer GPTLmultiplex
+      integer GPTLdopr_preamble
+      integer GPTLdopr_threadsort
+      integer GPTLdopr_multparent
+      integer GPTLdopr_collision
       integer GPTL_IPC
       integer GPTL_CI
       integer GPTL_FPC
@@ -33,20 +37,24 @@
       parameter (GPTLpercent        = 9)
       parameter (GPTLpersec         = 10)
       parameter (GPTLmultiplex      = 11)
-      parameter (GPTL_IPC           = 12)
-      parameter (GPTL_CI            = 13)
-      parameter (GPTL_FPC           = 14)
-      parameter (GPTL_FPI           = 15)
-      parameter (GPTL_LSTPI         = 16)
-      parameter (GPTL_DCMRT         = 17)
-      parameter (GPTL_LSTPDCM       = 18)
+      parameter (GPTLdopr_preamble  = 12)
+      parameter (GPTLdopr_threadsort= 13)
+      parameter (GPTLdopr_multparent= 14)
+      parameter (GPTLdopr_collision = 15)
+      parameter (GPTL_IPC           = 16)
+      parameter (GPTL_CI            = 17)
+      parameter (GPTL_FPC           = 18)
+      parameter (GPTL_FPI           = 19)
+      parameter (GPTL_LSTPI         = 20)
+      parameter (GPTL_DCMRT         = 21)
+      parameter (GPTL_LSTPDCM       = 22)
 
-      parameter (GPTLgettimeofday   = 22)
-      parameter (GPTLnanotime       = 23)
-      parameter (GPTLrtc            = 24)
-      parameter (GPTLmpiwtime       = 25)
-      parameter (GPTLclockgettime   = 26)
-      parameter (GPTLpapitime       = 27)
+      parameter (GPTLgettimeofday   = 1)
+      parameter (GPTLnanotime       = 2)
+      parameter (GPTLrtc            = 3)
+      parameter (GPTLmpiwtime       = 4)
+      parameter (GPTLclockgettime   = 5)
+      parameter (GPTLpapitime       = 6)
 
 ! Externals
 
