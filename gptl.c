@@ -687,7 +687,7 @@ static inline int update_ptr (Timer *ptr, const int t)
 }
 
 /*
-** update_parent: update info about parent
+** update_parent: update info about parent, and in the parent about this child
 **
 ** Input arguments:
 **   ptr:  pointer to timer
@@ -716,12 +716,13 @@ static inline int update_parent (Timer *ptr, Timer **callstackt, int stackidxt)
   callstackt[stackidxt] = ptr;
 
   /* 
-  ** If the region has no parent, bump its orphan count, set its depth to
-  ** zero and return.
+  ** If the region has no parent, bump its orphan count.
+  ** Don't set depth=0, since the region may have had a parent earlier.
+  ** If the region is always an orphan, the initial memset already set its
+  ** depth to 0.
   */
 
   if (stackidxt == 0) {
-    ptr->depth = 0;
     ++ptr->norphan;
     return 0;
   }
@@ -757,7 +758,7 @@ static inline int update_parent (Timer *ptr, Timer **callstackt, int stackidxt)
     ** printed once because all depth 0 timers are printed in GPTLpr_file()
     */
 
-    if (ptr->nparent == 1) {
+    if (ptr->nparent == 1 && ptr->norphan == 0) {
       /*
       ** Depth is first parent's depth plus one, because the print order
       ** is always for the *first* parent
@@ -1182,7 +1183,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.99 2008-10-29 23:25:53 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.100 2008-11-02 21:31:07 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1384,7 +1385,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
       }
 
       for (ptr = timers[t]; ptr; ptr = ptr->next)
-	if (ptr->nparent > 1)
+	if (ptr->nparent > 1 || (ptr->nparent == 1 && ptr->norphan > 0))
 	  print_multparentinfo (fp, ptr);
     }
   }
@@ -1462,7 +1463,7 @@ static void printstats (const Timer *timer,     /* timer to print */
 
     /* Flag ambiguous timer indentation levels with a * in column 1 */
 
-    if (timer->nparent > 1)
+    if (timer->nparent > 1 || (timer->nparent == 1 && timer->norphan > 0))
       fprintf (fp, "* ");
     else
       fprintf (fp, "  ");
@@ -1638,7 +1639,7 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.99 2008-10-29 23:25:53 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.100 2008-11-02 21:31:07 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");
