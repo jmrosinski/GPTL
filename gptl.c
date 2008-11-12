@@ -744,9 +744,15 @@ static inline int update_parent (Timer *ptr, Timer **callstackt, int stackidxt)
     ++ptr->nparent;
     nparent = ptr->nparent;
     pptrtmp = (Timer **) realloc (ptr->parent, nparent * sizeof (Timer *));
+    if ( ! pptrtmp)
+      return GPTLerror ("update_parent: realloc error pptrtmp nparent=%d\n", nparent);
+
     ptr->parent = pptrtmp;
     ptr->parent[nparent-1] = pptr;
     parent_count = (int *) realloc (ptr->parent_count, nparent * sizeof (int));
+    if ( ! parent_count)
+      return GPTLerror ("update_parent: realloc error parent_count nparent=%d\n", nparent);
+
     ptr->parent_count = parent_count;
     ptr->parent_count[nparent-1] = 1;
 
@@ -1183,7 +1189,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.100 2008-11-02 21:31:07 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.101 2008-11-12 22:21:10 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1639,7 +1645,7 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.100 2008-11-02 21:31:07 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.101 2008-11-12 22:21:10 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");
