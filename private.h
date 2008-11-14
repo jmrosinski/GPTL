@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.50 2008-10-29 23:25:53 rosinski Exp $
+$Id: private.h,v 1.51 2008-11-14 03:38:32 rosinski Exp $
 */
 
 #include <stdio.h>
@@ -61,8 +61,8 @@ typedef struct {
 
 typedef struct {
   Entry event;
-  int numidx;
-  int denomidx;
+  int numidx;       /* derived event: PAPI counter array index for numerator */
+  int denomidx;     /* derived event: PAPI counter array index for denominator */
 } Pr_event;
 
 typedef struct TIMER {
@@ -81,7 +81,6 @@ typedef struct TIMER {
   int *parent_count;        /* array of call counts, one for each parent */
   unsigned int depth;       /* depth in "calling" tree */
   unsigned int recurselvl;  /* recursion level */
-  unsigned int max_recurse; /* max recursion level */
   unsigned int nchildren;   /* number of children */
   unsigned int nparent;     /* number of parents */
   unsigned int norphan;     /* number of times this timer was an orphan */

@@ -759,7 +759,7 @@ static inline int update_parent (Timer *ptr, Timer **callstackt, int stackidxt)
     /* 
     ** Update parent only for first parent found. This minimizes the size of
     ** the printed call tree.
-    ** Also: when a depth 0 timer encounters a parent (e.g. it's called in
+    ** Also: when an orphan timer encounters a parent (e.g. it's called in
     ** multiple places), don't make the parent point to it. Instead, it will be
     ** printed once because all depth 0 timers are printed in GPTLpr_file()
     */
@@ -1189,7 +1189,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.101 2008-11-12 22:21:10 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.102 2008-11-14 03:38:32 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1645,7 +1645,7 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.101 2008-11-12 22:21:10 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.102 2008-11-14 03:38:32 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");

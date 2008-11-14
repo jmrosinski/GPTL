@@ -143,7 +143,7 @@ static int nevents = 0;                  /* number of events: initialize to 0 */
 static int *EventSet;                    /* list of events to be counted by PAPI */
 static long_long **papicounters;         /* counters returned from PAPI */
 
-static char eventname[PAPI_MAX_STR_LEN];  /* returned from PAPI_event_code_to_name */
+static char eventname[PAPI_MAX_STR_LEN]; /* returned from PAPI_event_code_to_name */
 static const int BADCOUNT = -999999;     /* Set counters to this when they are bad */
 static bool is_multiplexed = false;      /* whether multiplexed (always start false)*/
 static bool narrowprint = true;          /* only use 8 digits not 16 for counter prints */
@@ -686,7 +686,8 @@ static int create_and_start_events (const int t)  /* thread number */
   /* Start the event set.  It will only be read from now on--never stopped */
 
   if ((ret = PAPI_start (EventSet[t])) != PAPI_OK)
-    return GPTLerror ("create_and_start_events: failed to start event set: %s\n", PAPI_strerror (ret));
+    return GPTLerror ("create_and_start_events: failed to start event set: %s\n", 
+		      PAPI_strerror (ret));
 
   return 0;
 }
