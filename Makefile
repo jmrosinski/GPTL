@@ -116,7 +116,7 @@ install: lib$(LIBNAME).a
 
 uninstall:
 	rm -f $(INSTALLDIR)/lib/lib$(LIBNAME).a
-	rm -f $(INSTALLDIR)/include gptl.h $(INSTALLDIR)/include/gptl.inc
+	rm -f $(INSTALLDIR)/include/gptl.h $(INSTALLDIR)/include/gptl.inc
 	rm -f $(MANDIR)/man/man3/GPTL*.3
 
 ctests/all:
