@@ -1162,6 +1162,12 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   bool foundany;            /* whether summation print necessary */
   bool first;               /* flag 1st time entry found */
 
+  int num_zero;             /* number of buckets with 0 collisions */
+  int num_one;              /* number of buckets with 1 collision */
+  int num_two;              /* number of buckets with 2 collisions */
+  int num_more;             /* number of buckets with more than 2 collisions */
+  int most;                 /* biggest collision count */
+
   if ( ! initialized)
     return GPTLerror ("GPTLpr_file: GPTLinitialize() has not been called\n");
 
@@ -1189,7 +1195,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.102 2008-11-14 03:38:32 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.103 2008-11-17 19:53:14 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1401,7 +1407,12 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   if (dopr_collision) {
     for (t = 0; t < GPTLnthreads; t++) {
       first = true;
-      totent = 0;
+      totent   = 0;
+      num_zero = 0;
+      num_one  = 0;
+      num_two  = 0;
+      num_more = 0;
+      most     = 0;
       for (i = 0; i < tablesize; i++) {
 	nument = hashtable[t][i].nument;
 	if (nument > 1) {
@@ -1415,9 +1426,29 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 	    fprintf (fp, " %s", hashtable[t][i].entries[ii]->name);
 	  fprintf (fp, "\n");
 	}
+	switch (nument) {
+	case 0:
+	  ++num_zero;
+	  break;
+	case 1:
+	  ++num_one;
+	  break;
+	case 2:
+	  ++num_two;
+	  break;
+	default:
+	  ++num_more;
+	  break;
+	}
+	most = MAX (most, nument);
       }
-      if (totent > 0)
+      if (totent > 0) {
 	fprintf (fp, "Total collisions thread %d = %d\n", t, totent);
+	fprintf (fp, "Entry information:\n");
+	fprintf (fp, "num_zero = %d num_one = %d num_two = %d num_more = %d\n",
+		 num_zero, num_one, num_two, num_more);
+	fprintf (fp, "Most = %d\n", most);
+      }
     }
   }
 
@@ -1645,7 +1676,7 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.102 2008-11-14 03:38:32 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.103 2008-11-17 19:53:14 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");
