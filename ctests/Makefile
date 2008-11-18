@@ -5,7 +5,7 @@
 # Always run "summary". Add others depending on settings.
 TESTS = summary
 ifeq ($(HAVE_PAPI),yes)
-  TESTS += testpapi
+  TESTS += testpapi toomanycounters
 endif
 
 # Profiling is possible with GNU or Pathscale compilers
@@ -100,6 +100,9 @@ load_imbalance: load_imbalance.o
 testpapi: testpapi.o
 	$(CC) -o $@ $< $(LDFLAGS)
 
+toomanycounters: toomanycounters.o
+	$(CC) -o $@ $< $(LDFLAGS)
+
 #Optimize papiacc to get good estimate of GPTL_CI
 papiacc: papiacc.o
 	$(CC) -O -c -o papiacc.o papiacc.c $(CFLAGS)
@@ -111,7 +114,8 @@ papiacc: papiacc.o
 test: $(TESTS)
 	@echo
 ifeq ($(HAVE_PAPI),yes)
-	@./testpapi || exit 1
+	@./testpapi        || exit 1
+	@./toomanycounters || exit 1
 endif
 ifeq ($(HAVE_MPI),yes)
 	@echo Running env OMP_NUM_THREADS=2 $(MPICMD) -n 2 ./summary...

@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.51 2008-11-14 03:38:32 rosinski Exp $
+$Id: private.h,v 1.52 2008-11-18 19:54:37 rosinski Exp $
 */
 
 #include <stdio.h>
@@ -25,8 +25,8 @@ $Id: private.h,v 1.51 2008-11-14 03:38:32 rosinski Exp $
 /* longest timer name allowed (probably safe to just change) */
 #define MAX_CHARS 63
 
-/* max allowable number of PAPI counters */
-#define MAX_AUX 16
+/* max allowable number of PAPI counters, or derived events */
+#define MAX_AUX 8
 
 #ifndef __cplusplus
 typedef enum {false = 0, true = 1} bool;  /* mimic C++ */

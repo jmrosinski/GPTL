@@ -273,7 +273,7 @@ int GPTLsetoption (const int option,  /* option */
     return 0;
 #endif
 
-  return GPTLerror ("GPTLsetoption: option %d not available\n", option);
+  return GPTLerror ("GPTLsetoption: faiure to enable option %d\n", option);
 }
 
 /*
@@ -1203,7 +1203,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.104 2008-11-18 16:12:17 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.105 2008-11-18 19:54:37 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1462,14 +1462,12 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 	fprintf (fp, "Most = %d\n", most);
       }
 
-      /*
-      ** Stats on GPTL memory usage
-      */
+      /* Stats on GPTL memory usage */
 
       hashmem = sizeof (Hashentry) * tablesize;
       regionmem = numtimers * sizeof (Timer);
 #ifdef HAVE_PAPI
-      papimem = numtimers * MAX_AUX * sizeof (Papistats);
+      papimem = numtimers * sizeof (Papistats);
 #else
       papimem = 0.;
 #endif
@@ -1477,9 +1475,11 @@ int GPTLpr_file (const char *outfile) /* output file to write */
       for (ptr = timers[t]; ptr; ptr = ptr->next)
 	pchmem += (sizeof (Timer *)) * (ptr->nchildren + ptr->nparent);
 
-      gptlmem = hashmem + regionmem + papimem + pchmem;
+      gptlmem = hashmem + regionmem + pchmem;
       fprintf (fp, "Thread %d total memory usage=%g KB\n", t, gptlmem*1.e-3);
-      fprintf (fp, "hashmem = %g KB regionmem = %g KB papimem = %g KB parent/child arrays = %g KB\n",
+      fprintf (fp, "hashmem = %g KB\n" 
+	       "regionmem = %g KB (papimem portion = %g KB)\n"
+	       "parent/child arrays = %g KB\n",
 	       hashmem*.001, regionmem*.001, papimem*.001, pchmem*.001);
     }
   }
@@ -1708,7 +1708,7 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.104 2008-11-18 16:12:17 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.105 2008-11-18 19:54:37 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");
