@@ -11,6 +11,26 @@ dynamic call tree">
 </head>
 <body bgcolor="peachpuff">
 
+<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
+<h2>What's new in the latest release (<a href="gptl3_4_5.tar.gz">gptl3_4_5.tar.gz</a>)</h2>
+<ul>
+<li> Derived events based on PAPI:
+  <ul>
+  <li> Computational intensity (GPTL_CI)
+  <li> Instructions per cycle (GPTL_IPC)
+  <li> FP ops per cycle (GPTL_FPC)
+  <li> FP ops per instruction (GPTL_FPI)
+  <li> Load-store instruction fraction (GPTL_LSTPI)
+  <li> L1 miss rate (GPTL_DCMRT)
+  <li> Load-stores per L1 miss (GPTL_LSTPDCM)
+  </ul>
+<li> New entry points GPTLevent_code_to name() and GPTLevent_name_to_code()
+<li> Ability to disable portions of printed output (e.g. GPTLdopr_preamble)
+<li> Better description of enabled events
+</ul>
+
+<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
+<h2>Description</h2>
 <b>GPTL</b> is a library to instrument C, C++, and Fortran codes for
     performance analysis and profiling. The instrumentation can be inserted
     manually by the user wherever they wish, or it can be done automatically
@@ -88,6 +108,7 @@ Stats for thread 0:
     the application being profiled, where region names correspond to function
 	entry and exit points.
 
+<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
 <h2>Features</h2>
 <ul>
 <li> Low overhead.
@@ -105,9 +126,10 @@ Stats for thread 0:
 	available events.
 </ul>
 
+<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
 <h2>Download and Installation</h2>
 <ul> 
-<li> Download the most recent release by clicking this link: <a href="gptl3_4_4.tar.gz">gptl3_4_4.tar.gz</a>.
+<li> Download the most recent release by clicking this link: <a href="gptl3_4_5.tar.gz">gptl3_4_5.tar.gz</a>.
 <li> Earlier versions can be found <a href="older/">here</a>.
 <li> To build and install <b>GPTL</b>, see the <A HREF="INSTALL">INSTALL</a> file.
   You'll need to create a <b><em>macros.make</em></b> file appropriate for your target
