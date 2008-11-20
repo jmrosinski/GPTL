@@ -143,7 +143,6 @@ static int nevents = 0;                  /* number of events: initialize to 0 */
 static int *EventSet;                    /* list of events to be counted by PAPI */
 static long_long **papicounters;         /* counters returned from PAPI */
 
-static char eventname[PAPI_MAX_STR_LEN]; /* returned from PAPI_event_code_to_name */
 static const int BADCOUNT = -999999;     /* Set counters to this when they are bad */
 static bool is_multiplexed = false;      /* whether multiplexed (always start false)*/
 static bool narrowprint = true;          /* only use 8 digits not 16 for counter prints */
@@ -178,7 +177,8 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
   int n;       /* loop index */
   int ret;     /* return code */
   int numidx;  /* numerator index */
-  int idx;
+  int idx;     /* derived counter index */
+  char eventname[PAPI_MAX_STR_LEN]; /* returned from PAPI_event_code_to_name */
 
   /*
   ** First, check for option which is not an actual counter
@@ -397,6 +397,8 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
  
 int canenable (int counter)
 {
+  char eventname[PAPI_MAX_STR_LEN]; /* returned from PAPI_event_code_to_name */
+
   if (npapievents+1 > MAX_AUX)
     return false;
 
@@ -421,6 +423,8 @@ int canenable (int counter)
  
 int canenable2 (int counter1, int counter2)
 {
+  char eventname[PAPI_MAX_STR_LEN]; /* returned from PAPI_event_code_to_name */
+
   if (npapievents+2 > MAX_AUX)
     return false;
 
@@ -622,8 +626,9 @@ int GPTL_PAPIinitialize (const int maxthreads,     /* number of threads */
 
 static int create_and_start_events (const int t)  /* thread number */
 {
-  int ret;
-  int n;
+  int ret; /* return code */
+  int n;   /* loop index over events */
+  char eventname[PAPI_MAX_STR_LEN]; /* returned from PAPI_event_code_to_name */
 
   /* Create the event set */
 
@@ -881,7 +886,8 @@ void GPTL_PAPIpr (FILE *fp,                          /* file descriptor to write
 void GPTL_PAPIprintenabled (FILE *fp)
 {
   int n, nn;
-  PAPI_event_info_t info;  /* returned from PAPI_get_event_info */
+  PAPI_event_info_t info;           /* returned from PAPI_get_event_info */
+  char eventname[PAPI_MAX_STR_LEN]; /* returned from PAPI_event_code_to_name */
 
   if (nevents > 0) {
     fprintf (fp, "Description of printed events (PAPI and derived):\n");
