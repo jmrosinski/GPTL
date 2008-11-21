@@ -23,6 +23,7 @@ int main ()
       ret = PAPI_event_name_to_code (event[i], &code);
       if (GPTLsetoption (code, 1) != 0) {
 	printf ("Too many at index %d (MAX_AUX=%d)\n", i, MAX_AUX);
+	printf ("Success\n");
 	return 0;
       }
     }
@@ -32,6 +33,5 @@ int main ()
     printf ("toomanycounters: can't test anything: MAX_AUX=%d needs to be smaller than nevents=%d\n",
 	    MAX_AUX, nevents);
   }
-  printf ("Success\n");
   return 0;
 }
