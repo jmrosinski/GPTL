@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.36 2008-10-29 23:25:53 rosinski Exp $
+** $Id: f_wrappers.c,v 1.37 2008-11-21 18:48:39 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines
 */
@@ -233,7 +233,7 @@ void gptl_papilibraryinit ()
 
 int gptlevent_name_to_code (const char *str, int *code, int nc)
 {
-  char cname[PAPI_MAX_STR_LEN];
+  char cname[PAPI_MAX_STR_LEN+1];
   int numchars = MIN (nc, PAPI_MAX_STR_LEN);
 
   strncpy (cname, str, numchars);
