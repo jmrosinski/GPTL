@@ -1,4 +1,4 @@
-.\" $Id: GPTLsetoption.3,v 1.2 2007-04-17 20:09:03 rosinski Exp $
+.\" $Id: GPTLsetoption.3,v 1.3 2008-11-21 15:59:44 rosinski Exp $
 .TH GPTLsetoption 3 "February, 2007" "GPTL"
 
 .SH NAME
@@ -14,13 +14,13 @@ int GPTLsetoption (const int option, const int val);
 .B Fortran Interface:
 .nf
 #include <gptl.inc>
-#include <fpapi.h> (for PAPI options if PAPI support is enabled)
 integer gptlsetoption (integer option, integer val)
 .fi
 
 .SH DESCRIPTION
-enables or disables an option (e.g. gathering CPU stats, or enabling a PAPI
-option such as PAPI_FP_OPS).  This function MUST be called BEFORE
+Enables or disables an option (e.g. gathering CPU stats, enabling a PAPI
+counter such as PAPI_FP_OPS or a derived event such as computational intensity
+if PAPI is available).  This function MUST be called BEFORE
 .B GPTLinitialize().
 
 .SH ARGUMENTS
@@ -40,7 +40,41 @@ for Fortran) if PAPI support is enabled.
 .I val
 -- an integer defining whether to enable or disable
 .BR option.
-Non-zero values mean enable, and a zero value means to disable the option.
+Non-zero values mean enable, and zero means to disable the option. Available
+options, along with default settings in parens are listed here (using
+C-syntax. Case-insensitive Fortran names are identical):
+.nf         
+.if t .ft CW
+
+GPTLwall            // Collect wallclock time stats (true)
+GPTLcpu             // Collect CPU stats (false)
+GPTLabort_on_error  // Abort on failure (false)
+GPTLoverhead        // Estimate overhead of underlying timing routine (true)
+GPTLdepthlimit      // Only print timers this depth or less in the tree (inf)
+GPTLverbose         // Verbose output (false)
+GPTLnarrowprint     // Print PAPI and derived stats in 8 columns not 16 (true)
+GPTLpercent         // Add a column for percent of first timer (false)
+GPTLpersec          // Add a PAPI column that prints "per second" stats (true)
+GPTLmultiplex       // Allow PAPI multiplexing (true)
+GPTLdopr_preamble   // Print preamble info (true)
+GPTLdopr_threadsort // Print sorted thread stats (true)
+GPTLdopr_multparent // Print multiple parent info (true)
+GPTLdopr_collision  // Print hastable collision info (true)
+
+// In addition to the above options, GPTLsetoption accepts any available 
+// PAPI counter, and the following derived events. The event codes can be 
+// found by using GPTLevent_name_to_code().
+
+GPTL_IPC            // Instructions per cycle
+GPTL_CI             // Computational intensity
+GPTL_FPC            // FP ops per cycle
+GPTL_FPI            // FP ops per instruction
+GPTL_LSTPI          // Load-store instruction fraction
+GPTL_DCMRT          // L1 miss rate (fraction)
+GPTL_LSTPDCM        // Load-stores per L1 miss
+
+.if t .ft P
+.fi
 
 .SH RESTRICTIONS
 Zero or more invocations of this function must be made prior to

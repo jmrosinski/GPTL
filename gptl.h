@@ -1,5 +1,5 @@
 /*
-$Id: gptl.h,v 1.40 2008-10-29 23:25:53 rosinski Exp $
+$Id: gptl.h,v 1.41 2008-11-21 15:59:44 rosinski Exp $
 */
 #ifndef GPTL_H
 #define GPTL_H
@@ -17,10 +17,10 @@ typedef enum {
   GPTLcpu            = 2,  /* Collect CPU stats (false)*/
   GPTLabort_on_error = 3,  /* Abort on failure (false) */
   GPTLoverhead       = 4,  /* Estimate overhead of underlying timing routine (true) */
-  GPTLdepthlimit     = 5,  /* Print timers this depth or less in the tree (inf) */
+  GPTLdepthlimit     = 5,  /* Only print timers this depth or less in the tree (inf) */
   GPTLverbose        = 6,  /* Verbose output (false) */
-  GPTLnarrowprint    = 7,  /* Print PAPI stats in 8 columns not 16 (true) */
-  GPTLpercent        = 9,  /* Add a column for percent of first timer (true) */
+  GPTLnarrowprint    = 7,  /* Print PAPI and derived stats in 8 columns not 16 (true) */
+  GPTLpercent        = 9,  /* Add a column for percent of first timer (false) */
   GPTLpersec         = 10, /* Add a PAPI column that prints "per second" stats (true) */
   GPTLmultiplex      = 11, /* Allow PAPI multiplexing (true) */
   GPTLdopr_preamble  = 12, /* Print preamble info (true) */
