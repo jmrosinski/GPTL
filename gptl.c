@@ -1203,7 +1203,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.105 2008-11-18 19:54:37 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.106 2008-11-24 19:15:12 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1426,7 +1426,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
       for (i = 0; i < tablesize; i++) {
 	nument = hashtable[t][i].nument;
 	if (nument > 1) {
-	  totent += nument;
+	  totent += nument-1;
 	  if (first) {
 	    first = false;
 	    fprintf (fp, "\nthread %d had some hash collisions:\n", t);
@@ -1708,7 +1708,7 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.105 2008-11-18 19:54:37 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.106 2008-11-24 19:15:12 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");
