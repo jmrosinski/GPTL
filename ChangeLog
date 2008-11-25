@@ -1,3 +1,4 @@
+gptl3_4_7: Option to not run summary at all.
 gptl3_4_6: totent counts collisions not entries.
 	   Add target "testnompi" to only run tests that don't require MPI.
 gptl3_4_5: Add realloc memory checks. Fix typo in uninstall target. 
