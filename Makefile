@@ -104,6 +104,7 @@ test: $(TESTS)
 	(cd ftests && $(MAKE) test FC=$(FC) MPICMD=$(MPICMD) HAVE_MPI=$(HAVE_MPI) HAVE_PAPI=$(HAVE_PAPI) \
         FFLAGS="$(FFLAGS)" LDFLAGS="$(LDFLAGS)")
 
+# The following target disables all MPI tests
 testnompi: $(TESTS)
 	(cd ctests && $(MAKE) test CC=$(CC) MPICMD="" HAVE_MPI=no HAVE_PAPI=$(HAVE_PAPI) \
         CFLAGS="$(CFLAGS_TESTS)" LDFLAGS="$(LDFLAGS)")
