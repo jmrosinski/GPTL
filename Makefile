@@ -104,6 +104,12 @@ test: $(TESTS)
 	(cd ftests && $(MAKE) test FC=$(FC) MPICMD=$(MPICMD) HAVE_MPI=$(HAVE_MPI) HAVE_PAPI=$(HAVE_PAPI) \
         FFLAGS="$(FFLAGS)" LDFLAGS="$(LDFLAGS)")
 
+testnompi: $(TESTS)
+	(cd ctests && $(MAKE) test CC=$(CC) MPICMD="" HAVE_MPI=no HAVE_PAPI=$(HAVE_PAPI) \
+        CFLAGS="$(CFLAGS_TESTS)" LDFLAGS="$(LDFLAGS)")
+	(cd ftests && $(MAKE) test FC=$(FC) MPICMD="" HAVE_MPI=no HAVE_PAPI=$(HAVE_PAPI) \
+        FFLAGS="$(FFLAGS)" LDFLAGS="$(LDFLAGS)")
+
 lib$(LIBNAME).a: $(OBJS)
 	$(AR)  ruv $@ $(OBJS)
 	rm -f ctests/*.o ftests/*.o
