@@ -113,11 +113,11 @@ print (STDOUT "Found $totcalls calls across $task tasks and $numthreads threads 
 $totposs = $numthreads * $task;
 print (STDOUT "$nval of a possible $totposs tasks and threads had entries for $target\n");
 print (STDOUT "Heading is $heading[$hidx]\n");
-print (STDOUT "Max   =  $maxval on thread $threadmax task $taskmax\n");
-print (STDOUT "Min   =  $minval on thread $threadmin task $taskmin\n");
+printf (STDOUT "Max   = %.3g on thread %d task %d\n", $maxval, $threadmax, $taskmax);
+printf (STDOUT "Min   = %.3g on thread %d task %d\n", $minval, $threadmin, $taskmin);
 $mean = $sum / $nval;
-printf (STDOUT "Mean  = %f\n", $mean);
-printf (STDOUT "Total = %f\n", $sum);
+printf (STDOUT "Mean  = %.3g\n", $mean);
+printf (STDOUT "Total = %.3g\n", $sum);
 
 exit 0;
 
