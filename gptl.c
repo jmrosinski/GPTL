@@ -1203,7 +1203,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.108 2008-12-06 20:28:14 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.109 2008-12-08 17:08:26 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1571,20 +1571,20 @@ static void printstats (const Timer *timer,     /* timer to print */
     usr = timer->cpu.accum_utime / (float) ticks_per_sec;
     sys = timer->cpu.accum_stime / (float) ticks_per_sec;
     usrsys = usr + sys;
-    fprintf (fp, "%9.3g %9.3g %9.3g ", usr, sys, usrsys);
+    fprintf (fp, "%9.3f %9.3f %9.3f ", usr, sys, usrsys);
   }
 
   if (wallstats.enabled) {
     elapse = timer->wall.accum;
     wallmax = timer->wall.max;
     wallmin = timer->wall.min;
-    fprintf (fp, "%9.3g %9.3g %9.3g ", elapse, wallmax, wallmin);
+    fprintf (fp, "%9.3f %9.3f %9.3f ", elapse, wallmax, wallmin);
 
     if (percent) {
       ratio = 0.;
       if (timers[0]->wall.accum > 0.)
 	ratio = (timer->wall.accum * 100.) / timers[0]->wall.accum;
-      fprintf (fp, " %9.2g ", ratio);
+      fprintf (fp, " %9.2f ", ratio);
     }
 
     /*
@@ -1708,7 +1708,7 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.108 2008-12-06 20:28:14 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.109 2008-12-08 17:08:26 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");
@@ -1761,7 +1761,7 @@ int GPTLpr_summary (int comm)
       extraspace = max_name_len[0] - strlen (ptr->name);
       for (n = 0; n < extraspace; ++n)
 	fprintf (fp, " ");
-      fprintf (fp, " %8ld %9.3g (%4d %4d) %9.3g (%4d %4d)", 
+      fprintf (fp, " %8ld %9.3f (%4d %4d) %9.3f (%4d %4d)", 
 	       summarystats.count, 
 	       summarystats.wallmax, summarystats.wallmax_p, summarystats.wallmax_t, 
 	       summarystats.wallmin, summarystats.wallmin_p, summarystats.wallmin_t);

@@ -19,6 +19,8 @@
       integer GPTL_LSTPI
       integer GPTL_DCMRT
       integer GPTL_LSTPDCM
+      integer GPTL_L2MRT
+      integer GPTL_LSTPL2M
 
       integer GPTLnanotime
       integer GPTLrtc
@@ -48,6 +50,8 @@
       parameter (GPTL_LSTPI         = 20)
       parameter (GPTL_DCMRT         = 21)
       parameter (GPTL_LSTPDCM       = 22)
+      parameter (GPTL_L2MRT         = 23)
+      parameter (GPTL_LSTPL2M       = 24)
 
       parameter (GPTLgettimeofday   = 1)
       parameter (GPTLnanotime       = 2)

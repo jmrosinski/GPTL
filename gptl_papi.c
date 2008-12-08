@@ -134,7 +134,9 @@ static const Entry derivedtable [] = {
   {GPTL_FPI,    "GPTL_FPI",     "Flop/Ins", "FP Ops per instr", "Floating point ops per instruction"},
   {GPTL_LSTPI,  "GPTL_LSTPI",   "LST frac", "LST fraction    ", "Load-store instruction fraction"},
   {GPTL_DCMRT,  "GPTL_DCMRT",   "DCMISRAT", "L1 Miss Rate    ", "L1 Miss rate (fraction)"},
-  {GPTL_LSTPDCM,"GPTL_LSTPDCM", "LSTPDCM ", "LST per L1 miss ", "Load-store instructions per L1 miss"}
+  {GPTL_LSTPDCM,"GPTL_LSTPDCM", "LSTPDCM ", "LST per L1 miss ", "Load-store instructions per L1 miss"},
+  {GPTL_L2MRT,  "GPTL_L2MRT",   "L2MISRAT", "L2 Miss Rate    ", "L2 Miss rate (fraction)"},
+  {GPTL_LSTPL2M,"GPTL_LSTPL2M", "LSTPL2M ", "LST per L2 miss ", "Load-store instructions per L2 miss"}
 };
 static const int nderivedentries = sizeof (derivedtable) / sizeof (Entry);
 
@@ -155,7 +157,8 @@ static bool verbose = false;             /* output verbosity */
 static int create_and_start_events (const int);
 static int canenable (int);
 static int canenable2 (int, int);
-static int is_enabled (int);
+static int papievent_is_enabled (int);
+static int already_enabled (int);
 static int enable (int);
 static int getderivedidx (int);
 
@@ -200,10 +203,37 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
 
   if (counter == GPTLpersec) {
     persec = (bool) val;
+    if (verbose)
+      printf ("GPTL_PAPIsetoption: set GPTLpersec to %d\n", val);
     return 0;
   }
 
-  /* Initialize PAPI if it hasn't already been done */
+  /* 
+  ** If val is false, return an error if the event has already been enabled.
+  ** Otherwise just warn that attempting to disable a PAPI-based event
+  ** that has already been enabled doesn't work--for now it's just a no-op
+  */
+
+  if (! val) {
+    if (already_enabled (counter))
+      return GPTLerror ("GPTL_PAPIsetoption: already enabled counter %d cannot be disabled\n",
+			counter);
+    else
+      if (verbose)
+	printf ("GPTL_PAPIsetoption: 'disable' %d currently is just a no-op\n", counter);
+    return 0;
+  }
+
+  /* If the event has already been enabled for printing, exit */
+
+  if (already_enabled (counter))
+    return GPTLerror ("GPTL_PAPIsetoption: counter %d has already been enabled\n", 
+		      counter);
+
+  /* 
+  ** Initialize PAPI if it hasn't already been done.
+  ** From here on down we can assume the intent is to enable (not disable) an option
+  */
 
   if (GPTL_PAPIlibraryinit () < 0)
     return GPTLerror ("GPTL_PAPIsetoption: PAPI library init error\n");
@@ -307,6 +337,33 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
     }
     ++nevents;
     return 0;
+  case GPTL_L2MRT:
+    if ( ! canenable2 (PAPI_L2_DCM, PAPI_L2_DCA))
+      return GPTLerror ("GPTL_PAPIsetoption: GPTL_L2MRT unavailable\n");
+
+    idx = getderivedidx (GPTL_L2MRT);
+    pr_event[nevents].event    = derivedtable[idx];
+    pr_event[nevents].numidx   = enable (PAPI_L2_DCM);
+    pr_event[nevents].denomidx = enable (PAPI_L2_DCA);
+    ++nevents;
+    return 0;
+  case GPTL_LSTPL2M:
+    idx = getderivedidx (GPTL_LSTPL2M);
+    if (canenable2 (PAPI_LST_INS, PAPI_L2_DCM)) {
+      pr_event[nevents].event    = derivedtable[idx];
+      pr_event[nevents].numidx   = enable (PAPI_LST_INS);
+      pr_event[nevents].denomidx = enable (PAPI_L2_DCM);
+    } else if (canenable2 (PAPI_L1_DCA, PAPI_L2_DCM)) {
+      if (verbose)
+	printf ("GPTL_PAPIsetoption: using L1_DCA as proxy for LST_INS\n");
+      pr_event[nevents].event    = derivedtable[idx];
+      pr_event[nevents].numidx   = enable (PAPI_L1_DCA);
+      pr_event[nevents].denomidx = enable (PAPI_L2_DCM);
+    } else {
+      return GPTLerror ("GPTL_PAPIsetoption: GPTL_LSTPL2M unavailable\n");
+    }
+    ++nevents;
+    return 0;
   default:
     break;
   }
@@ -315,7 +372,7 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
 
   for (n = 0; n < npapientries; n++) {
     if (counter == papitable[n].counter) {
-      if ((numidx = is_enabled (counter)) >= 0) {
+      if ((numidx = papievent_is_enabled (counter)) >= 0) {
 	pr_event[nevents].event  = papitable[n];
 	pr_event[nevents].numidx = numidx;
       } else if (canenable (counter)) {
@@ -345,7 +402,7 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
   ** native events. Just truncate eventname.
   */
 
-  if ((numidx = is_enabled (counter)) >= 0) {
+  if ((numidx = papievent_is_enabled (counter)) >= 0) {
     pr_event[nevents].event.counter = counter;
 
     pr_event[nevents].event.namestr = GPTLallocate (12+1);
@@ -442,7 +499,11 @@ int canenable2 (int counter1, int counter2)
 }
 
 /*
-** is_enabled: determine whether a PAPI counter has already been enabled
+** papievent_is_enabled: determine whether a PAPI counter has already been
+**   enabled. Used internally to keep track of PAPI counters enabled. A given
+**   PAPI counter may occur in the computation of multiple derived events, as
+**   well as output directly. E.g. PAPI_FP_OPS is used to compute
+**   computational intensity, and floating point ops per instruction.
 **
 ** Input args: 
 **   counter: PAPI counter
@@ -450,7 +511,7 @@ int canenable2 (int counter1, int counter2)
 ** Return value: index into papieventlist (success) or negative (not found)
 */
  
-int is_enabled (int counter)
+int papievent_is_enabled (int counter)
 {
   int n;
 
@@ -458,6 +519,26 @@ int is_enabled (int counter)
     if (papieventlist[n] == counter)
       return n;
   return -1;
+}
+
+/*
+** already_enabled: determine whether a PAPI-based event has already been
+**   enabled for printing. 
+**
+** Input args: 
+**   counter: PAPI or derived counter
+**
+** Return value: 1 (true) or 0 (false)
+*/
+ 
+int already_enabled (int counter)
+{
+  int n;
+
+  for (n = 0; n < nevents; ++n)
+    if (pr_event[n].event.counter == counter)
+      return 1;
+  return 0;
 }
 
 /*

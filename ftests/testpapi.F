@@ -11,6 +11,14 @@
       character(len=2) :: tooshort
 
       write(6,*)'testpapi: Testing PAPI interface...'
+
+      write(6,*)'Testing enabling gptlverbose...'
+      if (gptlsetoption (gptlverbose, 1) /= 0) then
+        write(6,*)'Failure'
+        call exit(1)
+      end if
+      write(6,*)'Success'
+
       write(6,*)'Calling gptl_papilibraryinit...'
       if (gptl_papilibraryinit () /= 0) then
         write(6,*)'Failure from gptl_papilibraryinit...'
@@ -31,6 +39,20 @@
         call exit(1)
       end if
       write(6,*)'Success'
+
+      write(6,*)'Testing duplicate enable PAPI_TOT_CYC...'
+      if (gptlsetoption (code, 1) == 0) then
+        write(6,*)'Failure to fail!'
+        call exit(1)
+      end if
+      write(6,*)'Succeeded at failing!'
+
+      write(6,*)'Testing turning off an already-on counter...'
+      if (gptlsetoption (code, 0) == 0) then
+        write(6,*)'Failure'
+        call exit(1)
+      end if
+      write(6,*)'Succeeded at failing!'
 
       write(6,*)'Testing gptlevent_code_to_name for PAPI_TOT_CYC...'
       if (gptlevent_code_to_name (code, name) /= 0) then

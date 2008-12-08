@@ -13,7 +13,6 @@
 #include <pthread.h>
 #endif
 
-#define MAX_AUX 16
 static Entry eventlist[MAX_AUX];
 static int nevents = 0;                 /* number of events: initialize to 0 */ 
 static int *EventSet;
@@ -35,7 +34,7 @@ int main ()
   char papiname[PAPI_MAX_STR_LEN];
 
   if ((ret = PAPI_library_init (PAPI_VER_CURRENT)) != PAPI_VER_CURRENT) {
-    printf (PAPI_strerror (ret));
+    printf ("%s\n", PAPI_strerror (ret));
     return -1;
   }
 
@@ -65,7 +64,7 @@ int main ()
 
   while (1) {
     printf ("Enter PAPI option name to be enabled, or 'done' when done:\n");
-    scanf ("%s", &papiname);
+    scanf ("%s", papiname);
 
     if (strncmp (papiname, "done", 4) == 0)
       break;
@@ -142,11 +141,11 @@ void parsub (int iter)
 
     for (n = 0; n < nevents; n++) {
       if (j % 1000000 == 0) {
-	printf ("papicounters[%d][%d]=%ld\n", mythread, n, (long) papicounters[mythread][n]);
+	printf ("papicounters[%d][%d]=%lld\n", mythread, n, (long long) papicounters[mythread][n]);
       }
       if (papicounters[mythread][n] < prvcounters[mythread][n]) {
-	printf ("strange papicounters[%d][%d]=%ld %ld\n", 
-		mythread, n, (long) papicounters[mythread][n], (long) prvcounters[mythread][n]);
+	printf ("strange papicounters[%d][%d]=%lld %lld\n", 
+		mythread, n, (long long) papicounters[mythread][n], (long long) prvcounters[mythread][n]);
 	exit (1);
       }
       prvcounters[mythread][n] = papicounters[mythread][n];

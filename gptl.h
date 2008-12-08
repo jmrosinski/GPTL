@@ -1,5 +1,5 @@
 /*
-$Id: gptl.h,v 1.41 2008-11-21 15:59:44 rosinski Exp $
+$Id: gptl.h,v 1.42 2008-12-08 17:08:27 rosinski Exp $
 */
 #ifndef GPTL_H
 #define GPTL_H
@@ -36,7 +36,9 @@ typedef enum {
   GPTL_FPI           = 19, /* FP ops per instruction */
   GPTL_LSTPI         = 20, /* Load-store instruction fraction */
   GPTL_DCMRT         = 21, /* L1 miss rate (fraction) */
-  GPTL_LSTPDCM       = 22  /* Load-stores per L1 miss */
+  GPTL_LSTPDCM       = 22, /* Load-stores per L1 miss */
+  GPTL_L2MRT         = 23, /* L2 miss rate (fraction) */
+  GPTL_LSTPL2M       = 24  /* Load-stores per L2 miss */
 } Option;
 
 /*
