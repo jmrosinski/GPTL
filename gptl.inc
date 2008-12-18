@@ -22,12 +22,18 @@
       integer GPTL_L2MRT
       integer GPTL_LSTPL2M
 
+      integer GPTLprint_method
+
       integer GPTLnanotime
       integer GPTLrtc
       integer GPTLmpiwtime
       integer GPTLclockgettime
       integer GPTLgettimeofday
       integer GPTLpapitime
+
+      integer GPTLfirstparent
+      integer GPTLlastparent
+      integer GPTLmost_frequent
 
       parameter (GPTLwall           = 1)
       parameter (GPTLcpu            = 2)
@@ -53,12 +59,18 @@
       parameter (GPTL_L2MRT         = 23)
       parameter (GPTL_LSTPL2M       = 24)
 
+      parameter (GPTLprint_method   = 25)
+
       parameter (GPTLgettimeofday   = 1)
       parameter (GPTLnanotime       = 2)
       parameter (GPTLrtc            = 3)
       parameter (GPTLmpiwtime       = 4)
       parameter (GPTLclockgettime   = 5)
       parameter (GPTLpapitime       = 6)
+
+      parameter (GPTLfirstparent    = 1)
+      parameter (GPTLlastparent     = 2)
+      parameter (GPTLmost_frequent  = 3)
 
 ! Externals
 

@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.53 2008-12-08 17:08:27 rosinski Exp $
+$Id: private.h,v 1.54 2008-12-18 22:23:29 rosinski Exp $
 */
 
 #include <stdio.h>
@@ -83,12 +83,12 @@ typedef struct TIMER {
   struct TIMER **parent;    /* array of parents */
   struct TIMER **children;  /* array of children */
   int *parent_count;        /* array of call counts, one for each parent */
-  unsigned int depth;       /* depth in "calling" tree */
   unsigned int recurselvl;  /* recursion level */
   unsigned int nchildren;   /* number of children */
   unsigned int nparent;     /* number of parents */
   unsigned int norphan;     /* number of times this timer was an orphan */
   bool onflg;               /* timer currently on or off */
+  bool hasbeenadded;        /* this timer has already been entered as a child somewhere */
 } Timer;
 
 typedef struct {

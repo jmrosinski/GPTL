@@ -1,5 +1,5 @@
 /*
-$Id: gptl.h,v 1.42 2008-12-08 17:08:27 rosinski Exp $
+$Id: gptl.h,v 1.43 2008-12-18 22:23:29 rosinski Exp $
 */
 #ifndef GPTL_H
 #define GPTL_H
@@ -38,7 +38,9 @@ typedef enum {
   GPTL_DCMRT         = 21, /* L1 miss rate (fraction) */
   GPTL_LSTPDCM       = 22, /* Load-stores per L1 miss */
   GPTL_L2MRT         = 23, /* L2 miss rate (fraction) */
-  GPTL_LSTPL2M       = 24  /* Load-stores per L2 miss */
+  GPTL_LSTPL2M       = 24, /* Load-stores per L2 miss */
+
+  GPTLprint_method   = 25  /* Whether to print children in order first, last, or most frequent */
 } Option;
 
 /*
@@ -55,6 +57,16 @@ typedef enum {
   GPTLclockgettime   = 5, /* clock_gettime */
   GPTLpapitime       = 6  /* only if PAPI is available */
 } Funcoption;
+
+/*
+** How to report parent/child relationships at print time (for children with multiple parents)
+*/
+
+typedef enum {
+  GPTLfirstparent   = 1,  /* first parent found */
+  GPTLlastparent    = 2,  /* last parent found */
+  GPTLmost_frequent = 3   /* most frequent parent (default) */
+} Method;
 
 /*
 ** Function prototypes
