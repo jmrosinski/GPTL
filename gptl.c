@@ -1191,7 +1191,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.110 2008-12-18 22:23:29 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.111 2008-12-19 03:19:51 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1266,7 +1266,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
     if (wallstats.enabled) {
       fprintf (fp, "%s", wallstats.str);
       if (percent)
-	fprintf (fp, "%% of %5.5s ", timers[0]->name);
+	fprintf (fp, "%% of %5.5s ", timers[0]->next->name);
       if (overheadstats.enabled)
 	fprintf (fp, "%s", overheadstats.str);
     }
@@ -1291,7 +1291,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
     sum[t]     = 0;
     totcount   = 0;
     totrecurse = 0;
-    for (ptr = timers[t]; ptr; ptr = ptr->next) {
+    for (ptr = timers[t]->next; ptr; ptr = ptr->next) {
       sum[t]     += ptr->count * 2 * tot_overhead;
       totcount   += ptr->count;
       totrecurse += ptr->nrecurse;
@@ -1321,7 +1321,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
     if (wallstats.enabled) {
       fprintf (fp, "%s", wallstats.str);
       if (percent)
-	fprintf (fp, "%% of %5.5s ", timers[0]->name);
+	fprintf (fp, "%% of %5.5s ", timers[0]->next->name);
       if (overheadstats.enabled)
 	fprintf (fp, "%s", overheadstats.str);
     }
@@ -1332,7 +1332,9 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
     fprintf (fp, "\n");
 
-    for (ptr = timers[0]; ptr; ptr = ptr->next) {
+    /* Start at next to skip dummy */
+
+    for (ptr = timers[0]->next; ptr; ptr = ptr->next) {
       
       /* 
       ** To print sum stats, first create a new timer then copy thread 0
@@ -1344,7 +1346,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
       sumstats = *ptr;
       for (t = 1; t < GPTLnthreads; ++t) {
 	found = false;
-	for (tptr = timers[t]; tptr && ! found; tptr = tptr->next) {
+	for (tptr = timers[t]->next; tptr && ! found; tptr = tptr->next) {
 	  if (STRMATCH (ptr->name, tptr->name)) {
 
 	    /* Only print thread 0 when this timer found for other threads */
@@ -1398,7 +1400,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 		 "listed parents\n\n");
       }
 
-      for (ptr = timers[t]; ptr; ptr = ptr->next)
+      for (ptr = timers[t]->next; ptr; ptr = ptr->next)
 	if (ptr->nparent > 1)
 	  print_multparentinfo (fp, ptr);
     }
@@ -1466,7 +1468,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
       papimem = 0.;
 #endif
       pchmem = 0.;
-      for (ptr = timers[t]; ptr; ptr = ptr->next)
+      for (ptr = timers[t]->next; ptr; ptr = ptr->next)
 	pchmem += (sizeof (Timer *)) * (ptr->nchildren + ptr->nparent);
 
       gptlmem = hashmem + regionmem + pchmem;
@@ -1523,6 +1525,7 @@ int construct_tree (Timer *timerst, Method method)
 	if (newchild (pptr, ptr) != 0)
 	  return GPTLerror ("construct_tree: bad return from newchild\n");
       }
+      break;
     default:
       return GPTLerror ("construct_tree: method %d is not known\n", method);
     }
@@ -1680,8 +1683,8 @@ static void printstats (const Timer *timer,
 
     if (percent) {
       ratio = 0.;
-      if (timers[0]->wall.accum > 0.)
-	ratio = (timer->wall.accum * 100.) / timers[0]->wall.accum;
+      if (timers[0]->next->wall.accum > 0.)
+	ratio = (timer->wall.accum * 100.) / timers[0]->next->wall.accum;
       fprintf (fp, " %9.2f ", ratio);
     }
 
@@ -1806,7 +1809,7 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.110 2008-12-18 22:23:29 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.111 2008-12-19 03:19:51 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");
@@ -1832,7 +1835,7 @@ int GPTLpr_summary (int comm)
     ** Gather and print stats based on list of thread 0 timers
     */
 
-    for (ptr = timers[0]; ptr; ptr = ptr->next) {
+    for (ptr = timers[0]->next; ptr; ptr = ptr->next) {
 
       /* First, master gathers his own stats */
 
@@ -2177,7 +2180,7 @@ int GPTLget_nregions (int t,
   }
   
   *nregions = 0;
-  for (ptr = timers[t]; ptr; ptr = ptr->next) 
+  for (ptr = timers[t]->next; ptr; ptr = ptr->next) 
     ++*nregions;
 
   return 0;
@@ -2219,7 +2222,7 @@ int GPTLget_regionname (int t,      /* thread number */
       return GPTLerror ("GPTLget_regionname: requested thread %d is too big\n", t);
   }
   
-  ptr = timers[t];
+  ptr = timers[t]->next;
   for (i = 0; i < region; i++) {
     if ( ! ptr)
       return GPTLerror ("GPTLget_regionname: timer %d does not exist in thread %d\n",
