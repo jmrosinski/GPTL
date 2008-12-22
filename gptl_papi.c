@@ -887,7 +887,7 @@ void GPTL_PAPIprstr (FILE *fp)
       /* Test on < 0 says it's a PAPI preset */
 
       if (persec && pr_event[n].event.counter < 0)
-	fprintf (fp, "e6 / sec ");
+	fprintf (fp, "e6_/_sec ");
     }
   } else {
     for (n = 0; n < nevents; n++) {
@@ -896,7 +896,7 @@ void GPTL_PAPIprstr (FILE *fp)
       /* Test on < 0 says it's a PAPI preset */
 
       if (persec && pr_event[n].event.counter < 0)
-	fprintf (fp, "e6 / sec ");
+	fprintf (fp, "e6_/_sec ");
     }
   }
 }
@@ -1186,9 +1186,16 @@ int GPTLevent_code_to_name (const int code, char *name)
   return 0;
 }
 
-int GPTL_PAPIgeteventval (const Papistats *aux, int n, double *value)
+int GPTL_PAPIgeteventval (const Papistats *aux, const int n, double *value)
 {
-  if (aux->denomidx > -1) {      /* derived event */
+  int numidx;   /* numerator index into PAPI event list */
+  int denomidx; /* denominator index into PAPI event list */
+
+  if (n < 0 || n > nevents-1)
+    return GPTLerror ("GPTL_PAPIgeteventval: bad n=%d nevents=%d\n", n, nevents);
+
+  numidx = pr_event[n].numidx;
+  if ((denomidx = pr_event[n].denomidx) > -1) {
 
     /* Protect against divide by zero */
 
@@ -1199,6 +1206,7 @@ int GPTL_PAPIgeteventval (const Papistats *aux, int n, double *value)
   } else {
     *value = (double) aux->accum[numidx];
   }
+  return 0;
 }
 
 #else

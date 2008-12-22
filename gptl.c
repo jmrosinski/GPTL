@@ -85,7 +85,7 @@ typedef struct {
 
 static Settings cpustats =      {GPTLcpu,      "Usr       sys       usr+sys   ", false};
 static Settings wallstats =     {GPTLwall,     "Wallclock max       min       ", true };
-static Settings overheadstats = {GPTLoverhead, "UTR Overhead  "                , true };
+static Settings overheadstats = {GPTLoverhead, "UTR_Overhead  "                , true };
 
 static Hashentry **hashtable;    /* table of entries */
 static long ticks_per_sec;       /* clock ticks per second */
@@ -1191,7 +1191,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.112 2008-12-22 17:47:01 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.113 2008-12-22 21:46:32 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1810,7 +1810,7 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.112 2008-12-22 17:47:01 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.113 2008-12-22 21:46:32 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");
