@@ -65,8 +65,8 @@ typedef struct {
   double wallmax;
   double wallmin;
 #ifdef HAVE_PAPI
-  long long papimax[MAX_AUX];
-  long long papimin[MAX_AUX];
+  double papimax[MAX_AUX];
+  double papimin[MAX_AUX];
 #endif
   unsigned long count;
   int wallmax_p;               /* over processes */
@@ -1191,7 +1191,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.111 2008-12-19 03:19:51 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.112 2008-12-22 17:47:01 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1241,8 +1241,8 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   for (t = 0; t < GPTLnthreads; ++t) {
 
     /*
-    ** Construct tree for printing timers in parent/child form. get_max_depth() MUST be called AFTER
-    ** construct_tree() because it relies on the per-parent children arrays being complete.
+    ** Construct tree for printing timers in parent/child form. get_max_depth() must be called 
+    ** AFTER construct_tree() because it relies on the per-parent children arrays being complete.
     */
 
     if (construct_tree (timers[t], method) != 0)
@@ -1544,8 +1544,8 @@ int newchild (Timer *parent, Timer *child)
   */
 
   if (child->hasbeenadded) {
-    printf ("newchild: attempt to add child %s to parent %s failed: already a child of another parent\n",
-	    child->name, parent->name);
+    printf ("newchild: attempt to add child %s to parent %s failed: already a child of "
+	    "another parent\n", child->name, parent->name);
     return 0;
   }
 
@@ -1572,7 +1572,8 @@ int newchild (Timer *parent, Timer *child)
   parent->children[nchildren-1] = child;
 
   /*  
-  ** Set the flag indicating that the child has been added. This flag is used only in in this routine.
+  ** Set the flag indicating that the child has been added. This flag is used only in in 
+  ** this routine.
   */
 
   child->hasbeenadded = true;
@@ -1809,7 +1810,7 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.111 2008-12-19 03:19:51 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.112 2008-12-22 17:47:01 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");
@@ -1868,22 +1869,22 @@ int GPTLpr_summary (int comm)
 	       summarystats.wallmin, summarystats.wallmin_p, summarystats.wallmin_t);
 #ifdef HAVE_PAPI
       for (n = 0; n < nevents; ++n) {
-	if (summarystats.papimax[n] < 1000000)
+	if (summarystats.papimax[n] < 1000000.)
 	  fprintf (fp, " %8ld    (%4d %4d)", 
 		   (long) summarystats.papimax[n], summarystats.papimax_p[n], 
 		   summarystats.papimax_t[n]);
 	else
 	  fprintf (fp, " %8.2e    (%4d %4d)", 
-		   (double) summarystats.papimax[n], summarystats.papimax_p[n], 
+		   summarystats.papimax[n], summarystats.papimax_p[n], 
 		   summarystats.papimax_t[n]);
 
-	if (summarystats.papimin[n] < 1000000)
+	if (summarystats.papimin[n] < 1000000.)
 	  fprintf (fp, " %8ld    (%4d %4d)", 
 		   (long) summarystats.papimin[n], summarystats.papimin_p[n], 
 		   summarystats.papimin_t[n]);
 	else
 	  fprintf (fp, " %8.2e    (%4d %4d)", 
-		   (double) summarystats.papimin[n], summarystats.papimin_p[n], 
+		   summarystats.papimin[n], summarystats.papimin_p[n], 
 		   summarystats.papimin_t[n]);
       }
 #endif
@@ -1954,13 +1955,18 @@ void get_threadstats (const char *name,
       }
 #ifdef HAVE_PAPI
       for (n = 0; n < nevents; ++n) {
-	if (ptr->aux.accum[n] > summarystats->papimax[n]) {
-	  summarystats->papimax[n]   = ptr->aux.accum[n];
+	double value;
+	if (GPTL_PAPIgeteventval (&ptr->aux, n, &value) != 0) {
+	  fprintf (stderr, "Bad return from GPTL_PAPIgeteventval\n");
+	  return;
+	}
+	if (value > summarystats->papimax[n]) {
+	  summarystats->papimax[n]   = value;
 	  summarystats->papimax_t[n] = t;
 	}
-
-	if (ptr->aux.accum[n] < summarystats->papimin[n] || summarystats->papimin[n] == 0.) {
-	  summarystats->papimin[n]   = ptr->aux.accum[n];
+	
+	if (value < summarystats->papimin[n] || summarystats->papimin[n] == 0.) {
+	  summarystats->papimin[n]   = value;
 	  summarystats->papimin_t[n] = t;
 	}
       }
