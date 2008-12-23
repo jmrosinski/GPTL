@@ -34,6 +34,7 @@
       integer GPTLfirstparent
       integer GPTLlastparent
       integer GPTLmost_frequent
+      integer GPTLfull_tree
 
       parameter (GPTLwall           = 1)
       parameter (GPTLcpu            = 2)
@@ -71,6 +72,7 @@
       parameter (GPTLfirstparent    = 1)
       parameter (GPTLlastparent     = 2)
       parameter (GPTLmost_frequent  = 3)
+      parameter (GPTLfull_tree      = 4)
 
 ! Externals
 

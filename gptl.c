@@ -107,6 +107,10 @@ static void get_threadstats (const char *, Summarystats *);
 static void get_summarystats (Summarystats *, const Summarystats *, int);
 static void print_multparentinfo (FILE *, Timer *);
 static inline int get_cpustamp (long *, long *);
+static int newchild (Timer *, Timer *);
+static int get_max_depth (const Timer *, const int);
+static int num_descendants (Timer *);
+static int is_descendant (const Timer *, const Timer *);
 
 #if ( ! defined THREADED_PTHREADS )
 static inline int get_thread_num (int *, int *);      /* determine thread number */
@@ -137,7 +141,6 @@ static inline int update_stats (Timer *, const double, const double, const doubl
 static inline int update_ll_hash (Timer *, const int, const int);
 static inline int update_ptr (Timer *, const int);
 static int construct_tree (Timer *, Method);
-static int newchild (Timer *, Timer *);
 static int get_max_depth (const Timer *, const int);
 
 typedef struct {
@@ -1191,7 +1194,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.113 2008-12-22 21:46:32 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.114 2008-12-23 19:44:04 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1488,6 +1491,17 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   return 0;
 }
 
+/* 
+** construct_tree: Build the parent->children tree starting with knowledge of
+**                 parent list for each child.
+**
+** Input arguments:
+**   timerst: Linked list of timers
+**   method:  method to be used to define the links
+**
+** Return value: 0 (success) or GPTLerror (failure)
+*/
+
 int construct_tree (Timer *timerst, Method method)
 {
   Timer *ptr;       /* loop through linked list */
@@ -1502,17 +1516,17 @@ int construct_tree (Timer *timerst, Method method)
       if (ptr->nparent > 0) {
 	pptr = ptr->parent[0];
 	if (newchild (pptr, ptr) != 0)
-	  return GPTLerror ("construct_tree: bad return from newchild\n");
+	  fprintf (stderr, "construct_tree: failure from newchild\n");
       }
-      break;
+      return 0;
     case GPTLlastparent:
       if (ptr->nparent > 0) {
 	nparent = ptr->nparent;
 	pptr = ptr->parent[nparent-1];
 	if (newchild (pptr, ptr) != 0)
-	  return GPTLerror ("construct_tree: bad return from newchild\n");
+	  fprintf (stderr, "construct_tree: failure from newchild\n");
       }
-      break;
+      return 0;
     case GPTLmost_frequent:
       maxcount = 0;
       for (n = 0; n < ptr->nparent; ++n) {
@@ -1523,9 +1537,19 @@ int construct_tree (Timer *timerst, Method method)
       }
       if (maxcount > 0) {   /* not an orphan */
 	if (newchild (pptr, ptr) != 0)
-	  return GPTLerror ("construct_tree: bad return from newchild\n");
+	  fprintf (stderr, "construct_tree: failure from newchild\n");
       }
-      break;
+      return 0;
+    case GPTLfull_tree:
+      /* 
+      ** Careful: this one can create *lots* of output!
+      */
+      for (n = 0; n < ptr->nparent; ++n) {
+	pptr = ptr->parent[n];
+	if (newchild (pptr, ptr) != 0)
+	  fprintf (stderr, "construct_tree: failure from newchild\n");
+      }
+      return 0;
     default:
       return GPTLerror ("construct_tree: method %d is not known\n", method);
     }
@@ -1533,35 +1557,41 @@ int construct_tree (Timer *timerst, Method method)
   return 0;
 }
 
-int newchild (Timer *parent, Timer *child)
+/* 
+** newchild: Add an entry to the children list of parent. Use function
+**   is_descendant() to prevent infinite loops. 
+**
+** Input arguments:
+**   parent: parent node
+**   child:  child to be added
+**
+** Return value: 0 (success) or GPTLerror (failure)
+*/
+
+static int newchild (Timer *parent, Timer *child)
 {
   int nchildren;     /* number of children (temporary) */
   int n;             /* index over children */
   Timer **chptr;     /* array of pointers to children */
 
   /*
-  ** Ensure that the child has not been added to a parent elsewhere.
+  ** To guarantee no loops, ensure that 1) parent isn't a descendant of child; and 2)
+  ** none of parent's parents are a descendant of child
   */
 
-  if (child->hasbeenadded) {
-    printf ("newchild: attempt to add child %s to parent %s failed: already a child of "
-	    "another parent\n", child->name, parent->name);
-    return 0;
+  if (is_descendant (child, parent)) {
+    return GPTLerror ("newchild: loop detected: parent %s found in descendant list of child %s\n",
+		      parent->name, child->name);
   }
 
-  /*
-  ** To guarantee no loops, ensure that the parent is not a child of the child
-  */
-
-  for (n = 0; n < child->nchildren; ++n) {
-    if (child->children[n] == parent) {
-      printf ("newchild: parent %s of child %s is also a child of %s: infinite loop!\n",
-	      parent->name, child->name, child->name);
-      return 0;
+  for (n = 0; n < parent->nparent; ++n) {
+    if (is_descendant (child, parent->parent[n])) {
+      return GPTLerror ("newchild: loop detected: parent %s found in descendant list of child %s\n",
+			parent->parent[n]->name, child->name);
     }
   }
-
-  /* Add the child to the parent */
+    
+  /* Safe to add the child to the parent's list of children */
 
   ++parent->nchildren;
   nchildren = parent->nchildren;
@@ -1571,16 +1601,21 @@ int newchild (Timer *parent, Timer *child)
   parent->children = chptr;
   parent->children[nchildren-1] = child;
 
-  /*  
-  ** Set the flag indicating that the child has been added. This flag is used only in in 
-  ** this routine.
-  */
-
-  child->hasbeenadded = true;
   return 0;
 }
 
-int get_max_depth (const Timer *ptr, const int startdepth)
+/* 
+** get_max_depth: Determine the maximum call tree depth by traversing the
+**   tree recursively
+**
+** Input arguments:
+**   ptr:        Starting timer
+**   startdepth: current depth when function invoked 
+**
+** Return value: maximum depth
+*/
+
+static int get_max_depth (const Timer *ptr, const int startdepth)
 {
   int maxdepth = startdepth;
   int depth;
@@ -1591,6 +1626,56 @@ int get_max_depth (const Timer *ptr, const int startdepth)
       maxdepth = depth;
 
   return maxdepth;
+}
+
+/* 
+** num_descendants: Determine the number of descendants of a timer by traversing
+**   the tree recursively. This function is not currently used. It could be
+**   useful in a pruning algorithm
+**
+** Input arguments:
+**   ptr: Starting timer
+**
+** Return value: number of descendants
+*/
+
+static int num_descendants (Timer *ptr)
+{
+  int n;
+
+  ptr->num_desc = ptr->nchildren;
+  for (n = 0; n < ptr->nchildren; ++n) {
+    ptr->num_desc += num_descendants (ptr->children[n]);
+  }
+  return ptr->num_desc;
+}
+
+/* 
+** is_descendant: Determine whether node2 is in the descendant list for
+**   node1
+**
+** Input arguments:
+**   node1: starting node for recursive search
+**   node2: node to be searched for
+**
+** Return value: true or false
+*/
+
+static int is_descendant (const Timer *node1, const Timer *node2)
+{
+  int n;
+
+  /* Use 2 separate loops for optimal efficiency */
+
+  for (n = 0; n < node1->nchildren; ++n)
+    if (node1->children[n] == node2)
+      return 1;
+
+  for (n = 0; n < node1->nchildren; ++n)
+    if (is_descendant (node1->children[n], node2))
+      return 1;
+
+  return 0;
 }
 
 /* 
@@ -1810,7 +1895,7 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.113 2008-12-22 21:46:32 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.114 2008-12-23 19:44:04 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");

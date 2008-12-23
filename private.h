@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.56 2008-12-22 21:46:33 rosinski Exp $
+$Id: private.h,v 1.57 2008-12-23 19:44:04 rosinski Exp $
 */
 
 #include <stdio.h>
@@ -87,8 +87,8 @@ typedef struct TIMER {
   unsigned int nchildren;   /* number of children */
   unsigned int nparent;     /* number of parents */
   unsigned int norphan;     /* number of times this timer was an orphan */
+  int num_desc;             /* number of descendants */
   bool onflg;               /* timer currently on or off */
-  bool hasbeenadded;        /* this timer has already been entered as a child somewhere */
 } Timer;
 
 typedef struct {

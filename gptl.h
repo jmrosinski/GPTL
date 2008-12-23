@@ -1,5 +1,5 @@
 /*
-$Id: gptl.h,v 1.43 2008-12-18 22:23:29 rosinski Exp $
+$Id: gptl.h,v 1.44 2008-12-23 19:44:04 rosinski Exp $
 */
 #ifndef GPTL_H
 #define GPTL_H
@@ -65,7 +65,8 @@ typedef enum {
 typedef enum {
   GPTLfirstparent   = 1,  /* first parent found */
   GPTLlastparent    = 2,  /* last parent found */
-  GPTLmost_frequent = 3   /* most frequent parent (default) */
+  GPTLmost_frequent = 3,  /* most frequent parent (default) */
+  GPTLfull_tree     = 4   /* complete call tree */
 } Method;
 
 /*
