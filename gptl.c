@@ -1194,7 +1194,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.114 2008-12-23 19:44:04 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.115 2008-12-23 21:30:20 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1269,7 +1269,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
     if (wallstats.enabled) {
       fprintf (fp, "%s", wallstats.str);
       if (percent)
-	fprintf (fp, "%% of %5.5s ", timers[0]->next->name);
+	fprintf (fp, "%%_of_%5.5s ", timers[0]->next->name);
       if (overheadstats.enabled)
 	fprintf (fp, "%s", overheadstats.str);
     }
@@ -1895,7 +1895,7 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.114 2008-12-23 19:44:04 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.115 2008-12-23 21:30:20 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");
