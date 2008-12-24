@@ -43,7 +43,9 @@ else
   endif
 endif
 
+FOBJS =
 ifeq ($(FORTRAN),yes)
+ FOBJS = gptlprocess_namelist.o
  OBJS  += f_wrappers.o
  TESTS += ftests/all
 endif
@@ -111,8 +113,8 @@ testnompi: $(TESTS)
 	(cd ftests && $(MAKE) test FC=$(FC) MPICMD="" HAVE_MPI=no HAVE_PAPI=$(HAVE_PAPI) \
         FFLAGS="$(FFLAGS)" LDFLAGS="$(LDFLAGS)")
 
-lib$(LIBNAME).a: $(OBJS)
-	$(AR)  ruv $@ $(OBJS)
+lib$(LIBNAME).a: $(OBJS) $(FOBJS)
+	$(AR)  ruv $@ $(OBJS) $(FOBJS)
 	rm -f ctests/*.o ftests/*.o
 
 install: lib$(LIBNAME).a
@@ -134,7 +136,7 @@ ftests/all:
 	(cd ftests && $(MAKE) all FC=$(FC) FFLAGS="$(FFLAGS)" LDFLAGS="$(LDFLAGS)" HAVE_PAPI=$(HAVE_PAPI))
 
 clean:
-	rm -f $(OBJS) lib$(LIBNAME).a
+	rm -f $(OBJS) $(FOBJS) lib$(LIBNAME).a
 	(cd ctests && $(MAKE) clean CC=$(CC) HAVE_MPI=$(HAVE_MPI) HAVE_PAPI=$(HAVE_PAPI))
 	(cd ftests && $(MAKE) clean FC=$(FC) HAVE_MPI=$(HAVE_MPI) HAVE_PAPI=$(HAVE_PAPI))
 
@@ -143,3 +145,5 @@ gptl.o: gptl.c gptl.h private.h
 util.o: util.c gptl.h private.h
 threadutil.o: threadutil.c gptl.h private.h
 gptl_papi.o: gptl_papi.c gptl.h private.h
+gptlprocess_namelist.o: gptlprocess_namelist.f90 gptl.inc
+	$(FC) -c $(FFLAGS) $<

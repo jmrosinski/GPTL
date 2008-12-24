@@ -1195,7 +1195,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.117 2008-12-24 15:08:19 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.118 2008-12-24 22:14:41 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1570,7 +1570,6 @@ static char *methodstr (Method method)
     return "Unknown";
 }
 
-
 /* 
 ** newchild: Add an entry to the children list of parent. Use function
 **   is_descendant() to prevent infinite loops. 
@@ -1901,7 +1900,7 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.117 2008-12-24 15:08:19 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.118 2008-12-24 22:14:41 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");

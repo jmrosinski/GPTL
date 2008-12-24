@@ -102,7 +102,7 @@ sub main()
 	    $doparse = 0;
 	    print $_; 
 	} elsif ($doparse) {                # Inside main region
-	    if (/^ *(Called Recurse.*)$/) { # heading
+	    if (/^ *(Called  Recurse.*)$/) { # heading
 		$numsp = $max_chars[$thread];
 		$spaces = " " x $numsp;
 		printf ("%s   %s\n", $spaces, $1);
