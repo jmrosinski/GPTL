@@ -184,7 +184,7 @@ subroutine gptlprocess_namelist (filename, unitno)
   do j=1,maxevents
     if (eventlist(j) /= '                ') then
       ret = gptlevent_name_to_code (trim (eventlist(j)), code)
-      if (ret /= 0) then
+      if (ret == 0) then
         ret = gptlsetoption (code, 1)
       end if
     end if
