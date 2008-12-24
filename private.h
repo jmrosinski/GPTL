@@ -1,5 +1,5 @@
 /*
-$Id: private.h,v 1.57 2008-12-23 19:44:04 rosinski Exp $
+$Id: private.h,v 1.58 2008-12-24 15:08:19 rosinski Exp $
 */
 
 #include <stdio.h>
@@ -17,7 +17,7 @@ $Id: private.h,v 1.57 2008-12-23 19:44:04 rosinski Exp $
 #define STRMATCH(X,Y) (strcmp((X),(Y)) == 0)
 
 /* Output counts less than PRTHRESH will be printed as integers */
-#define PRTHRESH 1000000L
+#define PRTHRESH 100000L
 
 /* Maximum allowed callstack depth */
 #define MAX_STACK 128

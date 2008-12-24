@@ -337,28 +337,31 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
     }
     ++nevents;
     return 0;
+    /*
+    ** For L2 counts, use TC* instead of DC* to avoid PAPI derived events
+    */
   case GPTL_L2MRT:
-    if ( ! canenable2 (PAPI_L2_DCM, PAPI_L2_DCA))
+    if ( ! canenable2 (PAPI_L2_TCM, PAPI_L2_TCA))
       return GPTLerror ("GPTL_PAPIsetoption: GPTL_L2MRT unavailable\n");
 
     idx = getderivedidx (GPTL_L2MRT);
     pr_event[nevents].event    = derivedtable[idx];
-    pr_event[nevents].numidx   = enable (PAPI_L2_DCM);
-    pr_event[nevents].denomidx = enable (PAPI_L2_DCA);
+    pr_event[nevents].numidx   = enable (PAPI_L2_TCM);
+    pr_event[nevents].denomidx = enable (PAPI_L2_TCA);
     ++nevents;
     return 0;
   case GPTL_LSTPL2M:
     idx = getderivedidx (GPTL_LSTPL2M);
-    if (canenable2 (PAPI_LST_INS, PAPI_L2_DCM)) {
+    if (canenable2 (PAPI_LST_INS, PAPI_L2_TCM)) {
       pr_event[nevents].event    = derivedtable[idx];
       pr_event[nevents].numidx   = enable (PAPI_LST_INS);
-      pr_event[nevents].denomidx = enable (PAPI_L2_DCM);
-    } else if (canenable2 (PAPI_L1_DCA, PAPI_L2_DCM)) {
+      pr_event[nevents].denomidx = enable (PAPI_L2_TCM);
+    } else if (canenable2 (PAPI_L1_DCA, PAPI_L2_TCM)) {
       if (verbose)
 	printf ("GPTL_PAPIsetoption: using L1_DCA as proxy for LST_INS\n");
       pr_event[nevents].event    = derivedtable[idx];
       pr_event[nevents].numidx   = enable (PAPI_L1_DCA);
-      pr_event[nevents].denomidx = enable (PAPI_L2_DCM);
+      pr_event[nevents].denomidx = enable (PAPI_L2_TCM);
     } else {
       return GPTLerror ("GPTL_PAPIsetoption: GPTL_LSTPL2M unavailable\n");
     }

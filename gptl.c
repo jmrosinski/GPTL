@@ -261,7 +261,7 @@ int GPTLsetoption (const int option,  /* option */
   case GPTLprint_method:
     method = val; 
     if (verbose)
-      printf ("GPTLsetoption: set method to %d\n", val);
+      printf ("GPTLsetoption: set method to %s\n", methodstr (method));
     return 0;
 
   /* 
@@ -1195,7 +1195,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.116 2008-12-24 02:05:16 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.117 2008-12-24 15:08:19 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1233,7 +1233,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   if (dopr_preamble) {
     fprintf (fp, "If overhead stats are printed, roughly half the estimated number is\n");
     fprintf (fp, "embedded in the wallclock stats for each timer.\n");
-    fprintf (fp, "Print method was %s.\n", methodstr(method));
+    fprintf (fp, "Print method was %s.\n", methodstr (method));
     fprintf (fp, "If a \'%%_of\' field is present, it is w.r.t. the first timer for thread 0.\n");
     fprintf (fp, "If a \'e6_per_sec\' field is present, it is in millions of PAPI counts per sec.\n\n");
     fprintf (fp, "A '*' in column 1 below means the timer had multiple parents, though the\n");
@@ -1262,7 +1262,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
       fprintf (fp, "  ");
     for (n = 0; n < max_name_len[t]; ++n) /* longest timer name */
       fprintf (fp, " ");
-    fprintf (fp, "Called Recurse ");
+    fprintf (fp, "Called  Recurse ");
 
     /* Print strings for enabled timer types */
 
@@ -1320,7 +1320,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
     for (n = 0; n < max_name_len[0]; ++n) /* longest timer name */
       fprintf (fp, " ");
 
-    fprintf (fp, "Called Recurse ");
+    fprintf (fp, "Called  Recurse ");
 
     if (cpustats.enabled)
       fprintf (fp, "%s", cpustats.str);
@@ -1675,7 +1675,7 @@ static int is_descendant (const Timer *node1, const Timer *node2)
 {
   int n;
 
-  /* Use 2 separate loops for optimal efficiency */
+  /* Breadth before depth for efficiency */
 
   for (n = 0; n < node1->nchildren; ++n)
     if (node1->children[n] == node2)
@@ -1745,20 +1745,19 @@ static void printstats (const Timer *timer,
 
   /* Pad to max indent level */
 
-  if (depth > 0)
-    for (indent = depth; indent < max_depth[t]; ++indent)
-      fprintf (fp, "  ");
+  for (indent = depth; indent < max_depth[t]; ++indent)
+    fprintf (fp, "  ");
 
   if (timer->count < PRTHRESH) {
     if (timer->nrecurse > 0)
-      fprintf (fp, "%8ld %5ld ", timer->count, timer->nrecurse);
+      fprintf (fp, "%8ld %6ld ", timer->count, timer->nrecurse);
     else
-      fprintf (fp, "%8ld   -   ", timer->count);
+      fprintf (fp, "%8ld    -   ", timer->count);
   } else {
     if (timer->nrecurse > 0)
-      fprintf (fp, "%8.1e %5ld ", (float) timer->count, timer->nrecurse);
+      fprintf (fp, "%8.1e %6.0e ", (float) timer->count, (float) timer->nrecurse);
     else
-      fprintf (fp, "%8.1e   -   ", (float) timer->count);
+      fprintf (fp, "%8.1e    -   ", (float) timer->count);
   }
 
   if (cpustats.enabled) {
@@ -1902,7 +1901,7 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.116 2008-12-24 02:05:16 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.117 2008-12-24 15:08:19 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");
