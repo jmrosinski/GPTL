@@ -10,9 +10,10 @@ int main(int argc, char **argv)
   int i;
   int ret;
 
+  GPTLsetoption (GPTLabort_on_error, 1);
   GPTLsetoption (GPTLcpu, 0);
   GPTLsetoption (GPTLwall, 1);
-  GPTLsetoption (GPTLabort_on_error, 1);
+  GPTLsetoption (GPTLprint_method, GPTLfull_tree);
 
   if ((ret = GPTLinitialize ()) != 0) {
     printf ("GPTLinitialize failure\n");

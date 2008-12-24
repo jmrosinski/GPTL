@@ -111,6 +111,7 @@ static int newchild (Timer *, Timer *);
 static int get_max_depth (const Timer *, const int);
 static int num_descendants (Timer *);
 static int is_descendant (const Timer *, const Timer *);
+static char *methodstr (Method);
 
 #if ( ! defined THREADED_PTHREADS )
 static inline int get_thread_num (int *, int *);      /* determine thread number */
@@ -754,7 +755,7 @@ static inline int update_parent_info (Timer *ptr, Timer **callstackt, int stacki
 
   /* If this is a new parent, update info */
 
-  if (n == ptr->nparent) {    /* Update self */
+  if (n == ptr->nparent) {
     ++ptr->nparent;
     nparent = ptr->nparent;
     pptrtmp = (Timer **) realloc (ptr->parent, nparent * sizeof (Timer *));
@@ -1194,7 +1195,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.115 2008-12-23 21:30:20 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.116 2008-12-24 02:05:16 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1231,9 +1232,10 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   tot_overhead = utr_overhead + papi_overhead;
   if (dopr_preamble) {
     fprintf (fp, "If overhead stats are printed, roughly half the estimated number is\n");
-    fprintf (fp, "embedded in the wallclock stats for each timer\n\n");
-    fprintf (fp, "If a \'%% of\' field is present, it is w.r.t. the first timer for thread 0.\n");
-    fprintf (fp, "If a \'e6 per sec\' field is present, it is in millions of PAPI counts per sec.\n\n");
+    fprintf (fp, "embedded in the wallclock stats for each timer.\n");
+    fprintf (fp, "Print method was %s.\n", methodstr(method));
+    fprintf (fp, "If a \'%%_of\' field is present, it is w.r.t. the first timer for thread 0.\n");
+    fprintf (fp, "If a \'e6_per_sec\' field is present, it is in millions of PAPI counts per sec.\n\n");
     fprintf (fp, "A '*' in column 1 below means the timer had multiple parents, though the\n");
     fprintf (fp, "values printed are for all calls. Further down the listing is more detailed\n");
     fprintf (fp, "information about multiple parents. Look for 'Multiple parent info'\n\n");
@@ -1268,7 +1270,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
       fprintf (fp, "%s", cpustats.str);
     if (wallstats.enabled) {
       fprintf (fp, "%s", wallstats.str);
-      if (percent)
+      if (percent && timers[0]->next)
 	fprintf (fp, "%%_of_%5.5s ", timers[0]->next->name);
       if (overheadstats.enabled)
 	fprintf (fp, "%s", overheadstats.str);
@@ -1281,10 +1283,11 @@ int GPTLpr_file (const char *outfile) /* output file to write */
     fprintf (fp, "\n");        /* Done with titles, now print stats */
 
     /*
-    ** Print call tree and stats via recursive routine. "0" is initial depth
+    ** Print call tree and stats via recursive routine. "-1" is flag to
+    ** avoid printing dummy outermost timer, and initialize the depth.
     */
 
-    printself_andchildren (timers[t], fp, t, 0, tot_overhead);
+    printself_andchildren (timers[t], fp, t, -1, tot_overhead);
 
     /* 
     ** Sum of overhead across timers is meaningful.
@@ -1323,8 +1326,8 @@ int GPTLpr_file (const char *outfile) /* output file to write */
       fprintf (fp, "%s", cpustats.str);
     if (wallstats.enabled) {
       fprintf (fp, "%s", wallstats.str);
-      if (percent)
-	fprintf (fp, "%% of %5.5s ", timers[0]->next->name);
+      if (percent && timers[0]->next)
+	fprintf (fp, "%%_of_%5.5s ", timers[0]->next->name);
       if (overheadstats.enabled)
 	fprintf (fp, "%s", overheadstats.str);
     }
@@ -1515,18 +1518,16 @@ int construct_tree (Timer *timerst, Method method)
     case GPTLfirstparent:
       if (ptr->nparent > 0) {
 	pptr = ptr->parent[0];
-	if (newchild (pptr, ptr) != 0)
-	  fprintf (stderr, "construct_tree: failure from newchild\n");
+	if (newchild (pptr, ptr) != 0);
       }
-      return 0;
+      break;
     case GPTLlastparent:
       if (ptr->nparent > 0) {
 	nparent = ptr->nparent;
 	pptr = ptr->parent[nparent-1];
-	if (newchild (pptr, ptr) != 0)
-	  fprintf (stderr, "construct_tree: failure from newchild\n");
+	if (newchild (pptr, ptr) != 0);
       }
-      return 0;
+      break;
     case GPTLmost_frequent:
       maxcount = 0;
       for (n = 0; n < ptr->nparent; ++n) {
@@ -1536,26 +1537,39 @@ int construct_tree (Timer *timerst, Method method)
 	}
       }
       if (maxcount > 0) {   /* not an orphan */
-	if (newchild (pptr, ptr) != 0)
-	  fprintf (stderr, "construct_tree: failure from newchild\n");
+	if (newchild (pptr, ptr) != 0);
       }
-      return 0;
+      break;
     case GPTLfull_tree:
       /* 
       ** Careful: this one can create *lots* of output!
       */
       for (n = 0; n < ptr->nparent; ++n) {
 	pptr = ptr->parent[n];
-	if (newchild (pptr, ptr) != 0)
-	  fprintf (stderr, "construct_tree: failure from newchild\n");
+	if (newchild (pptr, ptr) != 0);
       }
-      return 0;
+      break;
     default:
       return GPTLerror ("construct_tree: method %d is not known\n", method);
     }
   }
   return 0;
 }
+
+static char *methodstr (Method method)
+{
+  if (method == GPTLfirstparent)
+    return "firstparent";
+  else if (method == GPTLlastparent)
+    return "lastparent";
+  else if (method == GPTLmost_frequent)
+    return "most_frequent";
+  else if (method == GPTLfull_tree)
+    return "full_tree";
+  else
+    return "Unknown";
+}
+
 
 /* 
 ** newchild: Add an entry to the children list of parent. Use function
@@ -1571,26 +1585,22 @@ int construct_tree (Timer *timerst, Method method)
 static int newchild (Timer *parent, Timer *child)
 {
   int nchildren;     /* number of children (temporary) */
-  int n;             /* index over children */
   Timer **chptr;     /* array of pointers to children */
 
+  if (parent == child)
+    return GPTLerror ("newchild: child %s can't be a parent of itself\n", child->name);
+
   /*
-  ** To guarantee no loops, ensure that 1) parent isn't a descendant of child; and 2)
-  ** none of parent's parents are a descendant of child
+  ** To guarantee no loops, ensure that proposed parent isn't already a descendant of 
+  ** proposed child
   */
 
   if (is_descendant (child, parent)) {
-    return GPTLerror ("newchild: loop detected: parent %s found in descendant list of child %s\n",
-		      parent->name, child->name);
+    return GPTLerror ("newchild: loop detected: NOT adding %s to descendant list of %s. "
+		      "Proposed parent is in child's descendant path.\n",
+		      child->name, parent->name);
   }
 
-  for (n = 0; n < parent->nparent; ++n) {
-    if (is_descendant (child, parent->parent[n])) {
-      return GPTLerror ("newchild: loop detected: parent %s found in descendant list of child %s\n",
-			parent->parent[n]->name, child->name);
-    }
-  }
-    
   /* Safe to add the child to the parent's list of children */
 
   ++parent->nchildren;
@@ -1713,20 +1723,17 @@ static void printstats (const Timer *timer,
   if (timer->onflg)
     fprintf (stderr, "printstats: timer %s had not been turned off\n", timer->name);
 
+    /* Flag ambiguous timer indentation levels with a "*" in column 1 */
+
+  if (timer->nparent > 1)
+    fprintf (fp, "* ");
+  else
+    fprintf (fp, "  ");
+
   /* Indent to depth of this timer */
 
-  if (depth > 0) {
-
-    /* Flag ambiguous timer indentation levels with a * in column 1 */
-
-    if (timer->nparent > 1)
-      fprintf (fp, "* ");
-    else
-      fprintf (fp, "  ");
-
-    for (indent = 0; indent < depth; ++indent)  /* note: depth starts at 0 */
-      fprintf (fp, "  ");
-  }
+  for (indent = 0; indent < depth; ++indent)
+    fprintf (fp, "  ");
 
   fprintf (fp, "%s", timer->name);
 
@@ -1767,7 +1774,7 @@ static void printstats (const Timer *timer,
     wallmin = timer->wall.min;
     fprintf (fp, "%9.3f %9.3f %9.3f ", elapse, wallmax, wallmin);
 
-    if (percent) {
+    if (percent && timers[0]->next) {
       ratio = 0.;
       if (timers[0]->next->wall.accum > 0.)
 	ratio = (timer->wall.accum * 100.) / timers[0]->next->wall.accum;
@@ -1895,7 +1902,7 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.115 2008-12-23 21:30:20 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.116 2008-12-24 02:05:16 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");
@@ -2733,7 +2740,7 @@ static void printself_andchildren (const Timer *ptr,
   ** Don't print stats for dummy outermost timer
   */
 
-  if (depth != 0)
+  if (depth > -1)
     printstats (ptr, fp, t, depth, tot_overhead);
 
   for (n = 0; n < ptr->nchildren; n++)
