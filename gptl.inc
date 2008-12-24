@@ -12,6 +12,8 @@
       integer GPTLdopr_threadsort
       integer GPTLdopr_multparent
       integer GPTLdopr_collision
+      integer GPTLprint_method
+
       integer GPTL_IPC
       integer GPTL_CI
       integer GPTL_FPC
@@ -21,8 +23,7 @@
       integer GPTL_LSTPDCM
       integer GPTL_L2MRT
       integer GPTL_LSTPL2M
-
-      integer GPTLprint_method
+      integer GPTL_L3MRT
 
       integer GPTLnanotime
       integer GPTLrtc
@@ -50,17 +51,18 @@
       parameter (GPTLdopr_threadsort= 13)
       parameter (GPTLdopr_multparent= 14)
       parameter (GPTLdopr_collision = 15)
-      parameter (GPTL_IPC           = 16)
-      parameter (GPTL_CI            = 17)
-      parameter (GPTL_FPC           = 18)
-      parameter (GPTL_FPI           = 19)
-      parameter (GPTL_LSTPI         = 20)
-      parameter (GPTL_DCMRT         = 21)
-      parameter (GPTL_LSTPDCM       = 22)
-      parameter (GPTL_L2MRT         = 23)
-      parameter (GPTL_LSTPL2M       = 24)
+      parameter (GPTLprint_method   = 16)
 
-      parameter (GPTLprint_method   = 25)
+      parameter (GPTL_IPC           = 17)
+      parameter (GPTL_CI            = 18)
+      parameter (GPTL_FPC           = 19)
+      parameter (GPTL_FPI           = 20)
+      parameter (GPTL_LSTPI         = 21)
+      parameter (GPTL_DCMRT         = 22)
+      parameter (GPTL_LSTPDCM       = 23)
+      parameter (GPTL_L2MRT         = 24)
+      parameter (GPTL_LSTPL2M       = 25)
+      parameter (GPTL_L3MRT         = 26)
 
       parameter (GPTLgettimeofday   = 1)
       parameter (GPTLnanotime       = 2)

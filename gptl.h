@@ -1,5 +1,5 @@
 /*
-$Id: gptl.h,v 1.44 2008-12-23 19:44:04 rosinski Exp $
+$Id: gptl.h,v 1.45 2008-12-24 15:46:45 rosinski Exp $
 */
 #ifndef GPTL_H
 #define GPTL_H
@@ -27,20 +27,20 @@ typedef enum {
   GPTLdopr_threadsort= 13, /* Print sorted thread stats (true) */
   GPTLdopr_multparent= 14, /* Print multiple parent info (true) */
   GPTLdopr_collision = 15, /* Print hastable collision info (true) */
+  GPTLprint_method   = 16, /* Tree print method: first, last, or most frequent */
   /*
   ** These are derived counters based on PAPI counters. All default to false
   */
-  GPTL_IPC           = 16, /* Instructions per cycle */
-  GPTL_CI            = 17, /* Computational intensity */
-  GPTL_FPC           = 18, /* FP ops per cycle */
-  GPTL_FPI           = 19, /* FP ops per instruction */
-  GPTL_LSTPI         = 20, /* Load-store instruction fraction */
-  GPTL_DCMRT         = 21, /* L1 miss rate (fraction) */
-  GPTL_LSTPDCM       = 22, /* Load-stores per L1 miss */
-  GPTL_L2MRT         = 23, /* L2 miss rate (fraction) */
-  GPTL_LSTPL2M       = 24, /* Load-stores per L2 miss */
-
-  GPTLprint_method   = 25  /* Whether to print children in order first, last, or most frequent */
+  GPTL_IPC           = 17, /* Instructions per cycle */
+  GPTL_CI            = 18, /* Computational intensity */
+  GPTL_FPC           = 19, /* FP ops per cycle */
+  GPTL_FPI           = 20, /* FP ops per instruction */
+  GPTL_LSTPI         = 21, /* Load-store instruction fraction */
+  GPTL_DCMRT         = 22, /* L1 miss rate (fraction) */
+  GPTL_LSTPDCM       = 23, /* Load-stores per L1 miss */
+  GPTL_L2MRT         = 24, /* L2 miss rate (fraction) */
+  GPTL_LSTPL2M       = 25, /* Load-stores per L2 miss */
+  GPTL_L3MRT         = 26  /* L3 read miss rate (fraction) */
 } Option;
 
 /*

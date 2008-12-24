@@ -133,10 +133,11 @@ static const Entry derivedtable [] = {
   {GPTL_FPC,    "GPTL_FPC",     "Flop/Cyc", "FP_Ops_per_cycle", "Floating point ops per cycle"},
   {GPTL_FPI,    "GPTL_FPI",     "Flop/Ins", "FP_Ops_per_instr", "Floating point ops per instruction"},
   {GPTL_LSTPI,  "GPTL_LSTPI",   "LST_frac", "LST_fraction    ", "Load-store instruction fraction"},
-  {GPTL_DCMRT,  "GPTL_DCMRT",   "DCMISRAT", "L1_Miss_Rate    ", "L1 Miss rate (fraction)"},
+  {GPTL_DCMRT,  "GPTL_DCMRT",   "DCMISRAT", "L1_Miss_Rate    ", "L1 miss rate (fraction)"},
   {GPTL_LSTPDCM,"GPTL_LSTPDCM", "LSTPDCM ", "LST_per_L1_miss ", "Load-store instructions per L1 miss"},
-  {GPTL_L2MRT,  "GPTL_L2MRT",   "L2MISRAT", "L2_Miss_Rate    ", "L2 Miss rate (fraction)"},
-  {GPTL_LSTPL2M,"GPTL_LSTPL2M", "LSTPL2M ", "LST_per_L2_miss ", "Load-store instructions per L2 miss"}
+  {GPTL_L2MRT,  "GPTL_L2MRT",   "L2MISRAT", "L2_Miss_Rate    ", "L2 miss rate (fraction)"},
+  {GPTL_LSTPL2M,"GPTL_LSTPL2M", "LSTPL2M ", "LST_per_L2_miss ", "Load-store instructions per L2 miss"},
+  {GPTL_L3MRT,  "GPTL_L3MRT",   "L3MISRAT", "L3_Miss_Rate    ", "L3 read miss rate (fraction)"}
 };
 static const int nderivedentries = sizeof (derivedtable) / sizeof (Entry);
 
@@ -365,6 +366,16 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
     } else {
       return GPTLerror ("GPTL_PAPIsetoption: GPTL_LSTPL2M unavailable\n");
     }
+    ++nevents;
+    return 0;
+  case GPTL_L3MRT:
+    if ( ! canenable2 (PAPI_L3_TCM, PAPI_L3_TCR))
+      return GPTLerror ("GPTL_PAPIsetoption: GPTL_L3MRT unavailable\n");
+
+    idx = getderivedidx (GPTL_L3MRT);
+    pr_event[nevents].event    = derivedtable[idx];
+    pr_event[nevents].numidx   = enable (PAPI_L3_TCM);
+    pr_event[nevents].denomidx = enable (PAPI_L3_TCR);
     ++nevents;
     return 0;
   default:
