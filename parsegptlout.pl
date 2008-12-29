@@ -14,7 +14,6 @@ my ($fn);             # file name
 my ($fnroot) = "timing";
 my ($target);         # region to search for
 my ($arg);            # element of @ARGV
-my ($col) = 1;        # column to use (default is wallclock)
 my ($started);        # flag indicates initial "Stats for thread" found
 my ($thread);         # thread number
 my ($threadmax);      # thread number for max value
@@ -28,20 +27,20 @@ my ($hidx);           # heading index
 my ($mean);           # mean value
 my ($found);          # flag indicates region name found
 my ($totposs);        # number of threads * number of tasks
+my ($heading) = "Wallclock"; # heading (column) to search for 
 
 my (@vals);           # values for region
-my (@heading);        # heading appropriate to col (e.g. "Wallclock")
+my (@headinglist);    # list of headings in input files
 
 # Parse arg list
 
 while ($arg = shift (@ARGV)) {
-    if ($arg eq "-v") {
-	$verbose = 1;
-    } elsif ($arg eq "-c") {
-	$col = shift (@ARGV);       # set column
-	($col > 0) || die_usemsg ("selected column ($col) must be 1 or greater\n");
-    } elsif ($arg eq "-f") {
+    if ($arg eq "-f") {
 	$fnroot = shift (@ARGV);    # change root of file name
+    } elsif ($arg eq "-h") {
+	$heading = shift (@ARGV);    # change root of file name
+    } elsif ($arg eq "-v") {
+	$verbose = 1;
     } else {
 	if ( ! defined $target ) {
 	    $target = "$arg";         # region name
@@ -55,8 +54,6 @@ while ($arg = shift (@ARGV)) {
 die_usemsg ("Target region name not defined\n") if ( ! defined $target );
 &initstats();     # Initialize stats
 $found = 0;       # false
-$idx = 1 + $col;  # index will always be the same
-$hidx = 1 + $idx;     
 
 # Loop through output files
 
@@ -76,26 +73,35 @@ for ($task = 0; -e "${fnroot}.$task"; $task++) {
 	    $numthreads = $thread if ($thread > $numthreads);
 
 # Next line contains the headings. Parse for later printing
+# Chop off leading whitespace--in can foul up later parsing
 
 	    $line = <FILE>;
 	    chomp ($line);
-	    @heading = split (/\s+/, $line);
+	    if ($line =~ /^\s+(.*)$/) {
+		$line = $1;
+	    }
+	    @headinglist = split (/\s+/, $line);
+	    for ($hidx = 0; $hidx <= $#headinglist; $hidx++) {
+		last if ($headinglist[$hidx] eq $heading);
+	    }
+	    if ($hidx > $#headinglist) {
+		die ("Heading $heading not found in $fn. Giving up\n");
+	    }
 	} elsif ($started && ($line =~ /^[* ]\s*${target}\s+(.*)$/)) {
 	    $found = 1;
 	    @vals = split (/\s+/, $1);
-	    print (STDOUT "vals=@vals\n") if ($verbose);
-	    ($#vals >= $idx) || die ("No column $col found in input:\n$line\n");
+	    ($#vals >= $hidx) || die ("$heading not found in input:\n$1\n");
 	    $totcalls += $vals[0];
-	    $sum += $vals[$idx];
+	    $sum += $vals[$hidx];
 	    $nval++;
 
-	    if ($vals[$idx] > $maxval) {
-		$maxval = $vals[$idx];
+	    if ($vals[$hidx] > $maxval) {
+		$maxval = $vals[$hidx];
 		$taskmax = $task;
 		$threadmax = $thread;
 	    }
-	    if ($vals[$idx] < $minval) {
-		$minval = $vals[$idx];
+	    if ($vals[$hidx] < $minval) {
+		$minval = $vals[$hidx];
 		$taskmin = $task;
 		$threadmin = $thread;
 	    }
@@ -112,7 +118,7 @@ $numthreads++;  # convert from 0-based to 1-based
 print (STDOUT "Found $totcalls calls across $task tasks and $numthreads threads per task\n");
 $totposs = $numthreads * $task;
 print (STDOUT "$nval of a possible $totposs tasks and threads had entries for $target\n");
-print (STDOUT "Heading is $heading[$hidx]\n");
+print (STDOUT "Heading is $heading\n");
 printf (STDOUT "Max   = %.3g on thread %d task %d\n", $maxval, $threadmax, $taskmax);
 printf (STDOUT "Min   = %.3g on thread %d task %d\n", $minval, $threadmin, $taskmin);
 $mean = $sum / $nval;
@@ -144,10 +150,10 @@ sub initstats {
 
 sub die_usemsg {
     defined $_[0] && print (STDOUT "$_[0]");
-    print (STDOUT "Usage: $0 [-v] [-c column] [-f file-root] region\n",
-	   " -v           => verbose\n",
+    print (STDOUT "Usage: $0 [-v] [-f file-root] [-h heading] region\n",
 	   " -f file-root => look for files named <file-root>.<taskid> (default file-root is 'timing')\n",
-	   " -c column    => use numbers in this column\n",
+	   " -h heading   => use <heading> as the default search target (default is Wallclock)\n",
+	   " -v           => verbose\n",
 	   " region       => region name to search for\n");
     exit 1;
 }
