@@ -1195,7 +1195,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.120 2008-12-29 03:25:42 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.121 2008-12-29 03:35:23 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1900,7 +1900,7 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.120 2008-12-29 03:25:42 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.121 2008-12-29 03:35:23 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");
@@ -2761,7 +2761,7 @@ static double utr_getoverhead ()
 }
 
 /*
-** Invoke printstats for self, then recursively for children
+** printself_andchildren: Recurse through call tree, printing stats for self, then children
 */
 
 static void printself_andchildren (const Timer *ptr,
@@ -2772,11 +2772,7 @@ static void printself_andchildren (const Timer *ptr,
 {
   int n;
 
-  /*
-  ** Don't print stats for dummy outermost timer
-  */
-
-  if (depth > -1)
+  if (depth > -1)     /* -1 flag is to avoid printing stats for dummy outer timer */
     printstats (ptr, fp, t, depth, tot_overhead);
 
   for (n = 0; n < ptr->nchildren; n++)
