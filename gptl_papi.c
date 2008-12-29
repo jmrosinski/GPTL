@@ -1103,8 +1103,8 @@ int GPTL_PAPIget_eventvalue (const char *eventname,
 
   for (n = 0; n < nevents; ++n) {
     if (STRMATCH (eventname, pr_event[n].event.namestr)) {
+      numidx = pr_event[n].numidx;
       if (pr_event[n].denomidx > -1) {  /* derived event */
-	numidx = pr_event[n].numidx;
 	denomidx = pr_event[n].denomidx;
 	if (aux->accum[denomidx] > 0)   /* protect against divide by zero */
 	  *value = (double) aux->accum[numidx] / (double) aux->accum[denomidx];
