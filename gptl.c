@@ -1195,7 +1195,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.118 2008-12-24 22:14:41 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.119 2008-12-29 02:25:40 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1900,7 +1900,7 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.118 2008-12-24 22:14:41 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.119 2008-12-29 02:25:40 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");
@@ -2203,6 +2203,7 @@ int GPTLquery (const char *name,
 
 /*
 ** GPTLquerycounters: return current PAPI counters for a timer.
+** THIS ROUTINE ID DEPRECATED. USE GPTLget_eventvalue() instead
 ** 
 ** Input args:
 **   name: timer name
@@ -2216,8 +2217,8 @@ int GPTLquerycounters (const char *name,
 		       int t,
 		       long long *papicounters_out)
 {
-  Timer *ptr;                /* linked list pointer */
-  int indx;
+  Timer *ptr;   /* linked list pointer */
+  int indx;     /* hash index returned from getentry */
   
   if ( ! initialized)
     return GPTLerror ("GPTLquerycounters: GPTLinitialize has not been called\n");
@@ -2243,6 +2244,53 @@ int GPTLquerycounters (const char *name,
   GPTL_PAPIquery (&ptr->aux, papicounters_out, 999);
 #endif
   return 0;
+}
+
+/*
+** GPTLget_eventvalue: return PAPI-based event value for a timer. All values will be
+**   returned as doubles, even if the event is not derived.
+** 
+** Input args:
+**   timername: timer name
+**   eventname: event name (must be currently enabled)
+**   t:         thread number (if < 0, the request is for the current thread)
+**
+** Output args:
+**   value: current value of the event for this timer
+*/
+
+int GPTLget_eventvalue (const char *timername,
+			const char *eventname,
+			int t,
+			double *value)
+{
+  Timer *ptr; /* linked list pointer */
+  int indx;   /* hash index returned from getentry (unused) */
+  
+  if ( ! initialized)
+    return GPTLerror ("GPTLquery_event: GPTLinitialize has not been called\n");
+  
+  /*
+  ** If t is < 0, assume the request is for the current thread
+  */
+  
+  if (t < 0) {
+    if ((t = get_thread_num (&GPTLnthreads, &maxthreads)) < 0)
+      return GPTLerror ("GPTLquery_event: get_thread_num failure\n");
+  } else {
+    if (t >= maxthreads)
+      return GPTLerror ("GPTLquery_event: requested thread %d is too big\n", t);
+  }
+  
+  ptr = getentry (hashtable[t], timername, &indx);
+  if ( !ptr)
+    return GPTLerror ("GPTLquery_event: requested timer %s does not exist\n", timername);
+
+#ifdef HAVE_PAPI
+  return GPTL_PAPIget_eventvalue (eventname, &ptr->aux, value);
+#else
+  return GPTLerror ("GPTLquery_event: PAPI not enabled\n"); 
+#endif
 }
 
 /*

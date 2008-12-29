@@ -95,6 +95,7 @@
       integer gptlsetutr
       integer gptlquery
       integer gptlquerycounters
+      integer gptlget_eventvalue
       integer gptlget_nregions
       integer gptlget_regionname
       integer gptl_papilibraryinit
@@ -118,6 +119,7 @@
       external gptlsetutr
       external gptlquery
       external gptlquerycounters
+      external gptlget_eventvalue
       external gptlget_nregions
       external gptlget_regionname
       external gptl_papilibraryinit

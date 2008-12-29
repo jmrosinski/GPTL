@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.37 2008-11-21 18:48:39 rosinski Exp $
+** $Id: f_wrappers.c,v 1.38 2008-12-29 02:25:39 rosinski Exp $
 ** 
 ** Fortran wrappers for timing library routines
 */
@@ -26,6 +26,7 @@
 #define gptlsetutr GPTLSETUTR
 #define gptlquery GPTLQUERY
 #define gptlquerycounters GPTLQUERYCOUNTERS
+#define gptlget_eventvalue GPTLGET_EVENTVALUE
 #define gptlget_nregions GPTLGET_NREGIONS
 #define gptlget_regionname GPTLGET_REGIONNAME
 #define gptlget_memusage GPTLGET_MEMUSAGE
@@ -51,6 +52,7 @@
 #define gptlsetutr gptlsetutr_
 #define gptlquery gptlquery_
 #define gptlquerycounters gptlquerycounters_
+#define gptlget_eventvalue gptlget_eventvalue_
 #define gptlget_nregions gptlget_nregions_
 #define gptlget_regionname gptlget_regionname_
 #define gptlget_memusage gptlget_memusage_
@@ -76,6 +78,7 @@
 #define gptlsetutr gptlsetutr_
 #define gptlquery gptlquery_
 #define gptlquerycounters gptlquerycounters_
+#define gptlget_eventvalue gptlget_eventvalue__
 #define gptlget_nregions gptlget_nregions__
 #define gptlget_regionname gptlget_regionname__
 #define gptlget_memusage gptlget_memusage__
@@ -195,6 +198,24 @@ int gptlquerycounters (const char *name, int *t, long long *papicounters_out, in
   strncpy (cname, name, numchars);
   cname[numchars] = '\0';
   return GPTLquerycounters (cname, *t, papicounters_out);
+}
+
+int gptlget_eventvalue (const char *timername, const char *eventname, int *t, double *value, 
+			int nc1, int nc2)
+{
+  char ctimername[MAX_CHARS+1];
+  char ceventname[MAX_CHARS+1];
+  int numchars;
+
+  numchars = MIN (nc1, MAX_CHARS);
+  strncpy (ctimername, timername, numchars);
+  ctimername[numchars] = '\0';
+
+  numchars = MIN (nc2, MAX_CHARS);
+  strncpy (ceventname, eventname, numchars);
+  ceventname[numchars] = '\0';
+
+  return GPTLget_eventvalue (ctimername, ceventname, *t, value);
 }
 
 int gptlget_nregions (int *t, int *nregions)

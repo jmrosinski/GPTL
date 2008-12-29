@@ -1081,6 +1081,47 @@ void GPTL_PAPIquery (const Papistats *aux,
 }
 
 /*
+** GPTL_PAPIget_eventvalue: return current value for an enabled event.
+**
+** Input args:
+**   eventname: event name to check (whether derived or raw PAPI counter)
+**   aux:       struct containing the counter(s) for the event
+**
+** Output args:
+**   value: current value of the event
+**
+** Return value: 0 (success) or GPTLerror (failure)
+*/
+
+int GPTL_PAPIget_eventvalue (const char *eventname,
+			     const Papistats *aux,
+			     double *value)
+{
+  int n;        /* loop index through enabled events */
+  int numidx;   /* numerator index into papicounters */
+  int denomidx; /* denominator index into papicounters */
+
+  for (n = 0; n < nevents; ++n) {
+    if (STRMATCH (eventname, pr_event[n].event.namestr)) {
+      if (pr_event[n].denomidx > -1) {  /* derived event */
+	numidx = pr_event[n].numidx;
+	denomidx = pr_event[n].denomidx;
+	if (aux->accum[denomidx] > 0)   /* protect against divide by zero */
+	  *value = (double) aux->accum[numidx] / (double) aux->accum[denomidx];
+	else
+	  *value = 0.;
+      } else {        /* Raw PAPI event */
+	*value = (double) aux->accum[numidx];
+      }
+      break;
+    }
+  }
+  if (n == nevents)
+    return GPTLerror ("GPTL_PAPIget_eventvalue: event %s not enabled\n", eventname);
+  return 0;
+}
+
+/*
 ** GPTL_PAPIis_multiplexed: return status of whether events are being multiplexed
 */
 
@@ -1137,7 +1178,7 @@ int GPTLevent_name_to_code (const char *name, int *code)
   */
 
   for (n = 0; n < nderivedentries; ++n) {
-    if (strcmp (name, derivedtable[n].namestr) == 0) {
+    if (STRMATCH (name, derivedtable[n].namestr)) {
       *code = derivedtable[n].counter;
       return 0;
     }
