@@ -1241,29 +1241,6 @@ int GPTLevent_code_to_name (const int code, char *name)
   return 0;
 }
 
-int GPTL_PAPIgeteventval (const Papistats *aux, const int n, double *value)
-{
-  int numidx;   /* numerator index into PAPI event list */
-  int denomidx; /* denominator index into PAPI event list */
-
-  if (n < 0 || n > nevents-1)
-    return GPTLerror ("GPTL_PAPIgeteventval: bad n=%d nevents=%d\n", n, nevents);
-
-  numidx = pr_event[n].numidx;
-  if ((denomidx = pr_event[n].denomidx) > -1) {
-
-    /* Protect against divide by zero */
-
-    if (aux->accum[denomidx] > 0)
-      *value = (double) aux->accum[numidx] / (double) aux->accum[denomidx];
-    else
-      *value = 0.;
-  } else {
-    *value = (double) aux->accum[numidx];
-  }
-  return 0;
-}
-
 #else
 
 /*

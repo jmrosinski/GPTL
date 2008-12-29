@@ -1195,7 +1195,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.119 2008-12-29 02:25:40 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.120 2008-12-29 03:25:42 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1900,7 +1900,7 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.119 2008-12-29 02:25:40 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.120 2008-12-29 03:25:42 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");
@@ -1959,23 +1959,13 @@ int GPTLpr_summary (int comm)
 	       summarystats.wallmin, summarystats.wallmin_p, summarystats.wallmin_t);
 #ifdef HAVE_PAPI
       for (n = 0; n < nevents; ++n) {
-	if (summarystats.papimax[n] < 1000000.)
-	  fprintf (fp, " %8ld    (%4d %4d)", 
-		   (long) summarystats.papimax[n], summarystats.papimax_p[n], 
-		   summarystats.papimax_t[n]);
-	else
-	  fprintf (fp, " %8.2e    (%4d %4d)", 
-		   summarystats.papimax[n], summarystats.papimax_p[n], 
-		   summarystats.papimax_t[n]);
+	fprintf (fp, " %8.2e    (%4d %4d)", 
+		 summarystats.papimax[n], summarystats.papimax_p[n], 
+		 summarystats.papimax_t[n]);
 
-	if (summarystats.papimin[n] < 1000000.)
-	  fprintf (fp, " %8ld    (%4d %4d)", 
-		   (long) summarystats.papimin[n], summarystats.papimin_p[n], 
-		   summarystats.papimin_t[n]);
-	else
-	  fprintf (fp, " %8.2e    (%4d %4d)", 
-		   summarystats.papimin[n], summarystats.papimin_p[n], 
-		   summarystats.papimin_t[n]);
+	fprintf (fp, " %8.2e    (%4d %4d)", 
+		 summarystats.papimin[n], summarystats.papimin_p[n], 
+		 summarystats.papimin_t[n]);
       }
 #endif
       fprintf (fp, "\n");
@@ -2046,8 +2036,8 @@ void get_threadstats (const char *name,
 #ifdef HAVE_PAPI
       for (n = 0; n < nevents; ++n) {
 	double value;
-	if (GPTL_PAPIgeteventval (&ptr->aux, n, &value) != 0) {
-	  fprintf (stderr, "Bad return from GPTL_PAPIgeteventval\n");
+	if (GPTL_PAPIget_eventvalue (eventlist[n].namestr, &ptr->aux, &value) != 0) {
+	  fprintf (stderr, "Bad return from GPTL_PAPIget_eventvalue\n");
 	  return;
 	}
 	if (value > summarystats->papimax[n]) {
@@ -2105,7 +2095,7 @@ void get_summarystats (Summarystats *summarystats,
       }
 
       if (summarystats_slave->papimin[n] < summarystats->papimin[n] || 
-	  summarystats->papimin[n] == 0) {
+	  summarystats->papimin[n] == 0.) {
 	summarystats->papimin[n]   = summarystats_slave->papimin[n];
 	summarystats->papimin_p[n] = p;
 	summarystats->papimin_t[n] = summarystats_slave->papimin_t[n];
