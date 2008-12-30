@@ -1,16 +1,23 @@
-subroutine gptlprocess_namelist (filename, unitno)
+subroutine gptlprocess_namelist (filename, unitno, outret)
+!
+! To follow GPTL conventions this should be a function not a subroutine.
+! But 'include ./gptl.inc' and then setting function gptlprocess_namelist
+! to a return value causes compiler to barf. So set return value in
+! output arg 'outret' instead.
+!
   implicit none
 
   character(len=*), intent(in) :: filename
   integer, intent(in) :: unitno
+  integer, intent(out) :: outret
 
   include './gptl.inc'
 
-  integer :: j
-  integer :: ios
-  integer :: code
-  integer :: ret
-  integer, parameter :: maxevents = 99
+  integer :: j    ! loop index
+  integer :: ios  ! status return from file open
+  integer :: code ! event code
+  integer :: ret  ! return value
+  integer, parameter :: maxevents = 99 ! space to hold more than enough events
 
 ! Default values for namelist variables
 
@@ -23,7 +30,7 @@ subroutine gptlprocess_namelist (filename, unitno)
   logical, parameter :: def_narrowprint     = .true.
   logical, parameter :: def_percent         = .false.
   logical, parameter :: def_persec          = .true.
-  logical, parameter :: def_multiplex       = .true.
+  logical, parameter :: def_multiplex       = .false.
   logical, parameter :: def_dopr_preamble   = .true.
   logical, parameter :: def_dopr_threadsort = .true.
   logical, parameter :: def_dopr_multparent = .true.
@@ -56,13 +63,15 @@ subroutine gptlprocess_namelist (filename, unitno)
 
   open (unit=unitno, file=filename, status='old', iostat=ios)
   if (ios /= 0) then
-    write(6,*)'process_gptl_namelist: cannot open namelist file ', filename
+    write(6,*)'gptlprocess_namelist: cannot open namelist file ', filename
+    outret = -1
     return
   end if
 
   read (unitno, gptlnl, iostat=ios)
   if (ios /= 0) then
-    write(6,*)'process_gptl_namelist: failure reading namelist'
+    write(6,*)'gptlprocess_namelist: failure reading namelist'
+    outret = -1
     return
   end if
 
@@ -186,11 +195,13 @@ subroutine gptlprocess_namelist (filename, unitno)
       ret = gptlevent_name_to_code (trim (eventlist(j)), code)
       if (ret == 0) then
         ret = gptlsetoption (code, 1)
+      else
+        write(6,*)'gptlprocess_namelist: no code found for event ', eventlist(j)
       end if
     end if
   end do
 
   close (unit=unitno)
+  outret = 0
   return
 end subroutine gptlprocess_namelist
-

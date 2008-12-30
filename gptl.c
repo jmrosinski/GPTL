@@ -230,6 +230,9 @@ int GPTLsetoption (const int option,  /* option */
     return 0;
   case GPTLverbose: 
     verbose = (bool) val; 
+#ifdef HAVE_PAPI
+    (void) GPTL_PAPIsetoption (GPTLverbose, val);
+#endif
     if (verbose)
       printf ("GPTLsetoption: set verbose to %d\n", val);
     return 0;
@@ -1195,7 +1198,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.121 2008-12-29 03:35:23 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.122 2008-12-30 20:16:47 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1900,7 +1903,7 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.121 2008-12-29 03:35:23 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.122 2008-12-30 20:16:47 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");

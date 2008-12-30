@@ -150,7 +150,7 @@ static const int BADCOUNT = -999999;     /* Set counters to this when they are b
 static bool is_multiplexed = false;      /* whether multiplexed (always start false)*/
 static bool narrowprint = true;          /* only use 8 digits not 16 for counter prints */
 static bool persec = true;               /* print PAPI stats per second */
-static bool enable_multiplexing = true;  /* whether to try multiplexing */
+static bool enable_multiplexing = false; /* whether to try multiplexing */
 static bool verbose = false;             /* output verbosity */
 
 /* Function prototypes */
@@ -187,6 +187,10 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
   /*
   ** First, check for option which is not an actual counter
   */
+
+  if (counter == GPTLverbose) {   /* don't printf here--that'd duplicate what's in gptl.c */
+    verbose = (bool) val;
+  }
 
   if (counter == GPTLmultiplex) {
     enable_multiplexing = (bool) val;
@@ -255,6 +259,9 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
     pr_event[nevents].event    = derivedtable[idx];
     pr_event[nevents].numidx   = enable (PAPI_TOT_INS);
     pr_event[nevents].denomidx = enable (PAPI_TOT_CYC);
+    if (verbose)
+      printf ("GPTL_PAPIsetoption: enabling derived event %s using PAPI_TOT_INS / PAPI_TOT_CYC\n", 
+	      pr_event[nevents].event.namestr);
     ++nevents;
     return 0;
   case GPTL_CI:
@@ -263,12 +270,16 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
       pr_event[nevents].event    = derivedtable[idx];
       pr_event[nevents].numidx   = enable (PAPI_FP_OPS);
       pr_event[nevents].denomidx = enable (PAPI_LST_INS);
-    } else if (canenable2 (PAPI_FP_OPS, PAPI_L1_DCA)) {
       if (verbose)
-	printf ("GPTL_PAPIsetoption: using L1_DCA as proxy for LST_INS\n");
+	printf ("GPTL_PAPIsetoption: enabling derived event %s using PAPI_FP_OPS / PAPI_LST_INS\n", 
+		pr_event[nevents].event.namestr);
+    } else if (canenable2 (PAPI_FP_OPS, PAPI_L1_DCA)) {
       pr_event[nevents].event    = derivedtable[idx];
       pr_event[nevents].numidx   = enable (PAPI_FP_OPS);
       pr_event[nevents].denomidx = enable (PAPI_L1_DCA);
+      if (verbose)
+	printf ("GPTL_PAPIsetoption: enabling derived event %s using PAPI_FP_OPS / PAPI_L1_DCA\n", 
+		pr_event[nevents].event.namestr);
     } else {
       return GPTLerror ("GPTL_PAPIsetoption: GPTL_CI unavailable\n");
     }
@@ -282,6 +293,9 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
     pr_event[nevents].event    = derivedtable[idx];
     pr_event[nevents].numidx   = enable (PAPI_FP_OPS);
     pr_event[nevents].denomidx = enable (PAPI_TOT_CYC);
+    if (verbose)
+      printf ("GPTL_PAPIsetoption: enabling derived event %s using PAPI_FP_OPS / PAPI_TOT_CYC\n", 
+	      pr_event[nevents].event.namestr);
     ++nevents;
     return 0;
   case GPTL_FPI:
@@ -292,6 +306,9 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
     pr_event[nevents].event    = derivedtable[idx];
     pr_event[nevents].numidx   = enable (PAPI_FP_OPS);
     pr_event[nevents].denomidx = enable (PAPI_TOT_INS);
+    if (verbose)
+      printf ("GPTL_PAPIsetoption: enabling derived event %s using PAPI_FP_OPS / PAPI_TOT_INS\n", 
+	      pr_event[nevents].event.namestr);
     ++nevents;
     return 0;
   case GPTL_LSTPI:
@@ -300,12 +317,16 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
       pr_event[nevents].event    = derivedtable[idx];
       pr_event[nevents].numidx   = enable (PAPI_LST_INS);
       pr_event[nevents].denomidx = enable (PAPI_TOT_INS);
-    } else if (canenable2 (PAPI_L1_DCA, PAPI_TOT_INS)) {
       if (verbose)
-	printf ("GPTL_PAPIsetoption: using L1_DCA as proxy for LST_INS\n");
+	printf ("GPTL_PAPIsetoption: enabling derived event %s using PAPI_LST_INS / PAPI_TOT_INS\n", 
+		pr_event[nevents].event.namestr);
+    } else if (canenable2 (PAPI_L1_DCA, PAPI_TOT_INS)) {
       pr_event[nevents].event    = derivedtable[idx];
       pr_event[nevents].numidx   = enable (PAPI_L1_DCA);
       pr_event[nevents].denomidx = enable (PAPI_TOT_INS);
+      if (verbose)
+	printf ("GPTL_PAPIsetoption: enabling derived event %s using PAPI_L1_DCA / PAPI_TOT_INS\n", 
+		pr_event[nevents].event.namestr);
     } else {
       return GPTLerror ("GPTL_PAPIsetoption: GPTL_LSTPI unavailable\n");
     }
@@ -319,6 +340,9 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
     pr_event[nevents].event    = derivedtable[idx];
     pr_event[nevents].numidx   = enable (PAPI_L1_DCM);
     pr_event[nevents].denomidx = enable (PAPI_L1_DCA);
+    if (verbose)
+      printf ("GPTL_PAPIsetoption: enabling derived event %s using PAPI_L1_DCM / PAPI_L1_DCA\n", 
+	      pr_event[nevents].event.namestr);
     ++nevents;
     return 0;
   case GPTL_LSTPDCM:
@@ -327,12 +351,16 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
       pr_event[nevents].event    = derivedtable[idx];
       pr_event[nevents].numidx   = enable (PAPI_LST_INS);
       pr_event[nevents].denomidx = enable (PAPI_L1_DCM);
-    } else if (canenable2 (PAPI_L1_DCA, PAPI_L1_DCM)) {
       if (verbose)
-	printf ("GPTL_PAPIsetoption: using L1_DCA as proxy for LST_INS\n");
+	printf ("GPTL_PAPIsetoption: enabling derived event %s using PAPI_LST_INS / PAPI_L1_DCM\n", 
+		pr_event[nevents].event.namestr);
+    } else if (canenable2 (PAPI_L1_DCA, PAPI_L1_DCM)) {
       pr_event[nevents].event    = derivedtable[idx];
       pr_event[nevents].numidx   = enable (PAPI_L1_DCA);
       pr_event[nevents].denomidx = enable (PAPI_L1_DCM);
+      if (verbose)
+	printf ("GPTL_PAPIsetoption: enabling derived event %s using PAPI_L1_DCA / PAPI_L1_DCM\n", 
+		pr_event[nevents].event.namestr);
     } else {
       return GPTLerror ("GPTL_PAPIsetoption: GPTL_LSTPDCM unavailable\n");
     }
@@ -349,6 +377,9 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
     pr_event[nevents].event    = derivedtable[idx];
     pr_event[nevents].numidx   = enable (PAPI_L2_TCM);
     pr_event[nevents].denomidx = enable (PAPI_L2_TCA);
+    if (verbose)
+      printf ("GPTL_PAPIsetoption: enabling derived event %s using PAPI_L2_TCM / PAPI_L2_TCA\n", 
+	      pr_event[nevents].event.namestr);
     ++nevents;
     return 0;
   case GPTL_LSTPL2M:
@@ -357,12 +388,16 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
       pr_event[nevents].event    = derivedtable[idx];
       pr_event[nevents].numidx   = enable (PAPI_LST_INS);
       pr_event[nevents].denomidx = enable (PAPI_L2_TCM);
-    } else if (canenable2 (PAPI_L1_DCA, PAPI_L2_TCM)) {
       if (verbose)
-	printf ("GPTL_PAPIsetoption: using L1_DCA as proxy for LST_INS\n");
+	printf ("GPTL_PAPIsetoption: enabling derived event %s using PAPI_LST_INS / PAPI_L2_TCM\n", 
+		pr_event[nevents].event.namestr);
+    } else if (canenable2 (PAPI_L1_DCA, PAPI_L2_TCM)) {
       pr_event[nevents].event    = derivedtable[idx];
       pr_event[nevents].numidx   = enable (PAPI_L1_DCA);
       pr_event[nevents].denomidx = enable (PAPI_L2_TCM);
+      if (verbose)
+	printf ("GPTL_PAPIsetoption: enabling derived event %s using PAPI_L1_DCA / PAPI_L2_TCM\n", 
+		pr_event[nevents].event.namestr);
     } else {
       return GPTLerror ("GPTL_PAPIsetoption: GPTL_LSTPL2M unavailable\n");
     }
@@ -376,6 +411,9 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
     pr_event[nevents].event    = derivedtable[idx];
     pr_event[nevents].numidx   = enable (PAPI_L3_TCM);
     pr_event[nevents].denomidx = enable (PAPI_L3_TCR);
+    if (verbose)
+      printf ("GPTL_PAPIsetoption: enabling derived event %s using PAPI_L3_TCM / PAPI_L3_TCR\n", 
+	      pr_event[nevents].event.namestr);
     ++nevents;
     return 0;
   default:
@@ -399,8 +437,8 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
 			  papitable[n].longstr);
       }
       if (verbose)
-	printf ("GPTL_PAPIsetoption: will print event %s\n", 
-		pr_event[nevents].event.longstr);
+	printf ("GPTL_PAPIsetoption: enabling PAPI preset event %s\n", 
+		pr_event[nevents].event.namestr);
       ++nevents;
       return 0;
     }
@@ -455,7 +493,7 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
   }
 
   if (verbose)
-    printf ("GPTL_PAPIsetoption: will print event %s\n", pr_event[nevents].event.longstr);
+    printf ("GPTL_PAPIsetoption: enabling native event %s\n", pr_event[nevents].event.longstr);
 
   ++nevents;
   return 0;

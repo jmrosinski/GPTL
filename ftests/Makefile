@@ -2,7 +2,7 @@
 # so it's best to invoke it from one dir higher via "make all" or "make test".
 # TESTS defines which of EXES have a built-in testing procedure.
 
-TESTS = testbasics
+TESTS = testbasics nlreader
 
 ifeq ($(HAVE_PAPI),yes)
   TESTS += testinit testpapi
@@ -43,6 +43,9 @@ testpapi: testpapi.o
 testbasics: testbasics.o
 	$(FC) $(FFLAGS) -o $@ $< $(LDFLAGS)
 
+nlreader: nlreader.o
+	$(FC) $(FFLAGS) -o $@ $< $(LDFLAGS)
+
 # Built-in tests to ensure that GPTL is behaving as expected
 # Invoke as "make test" from one dir above
 
@@ -52,6 +55,7 @@ test: $(TESTS)
 	@./testbasics || exit 1
 	@echo testbasics complete. Checking contents of timing.0 for a specific region name...
 	@grep -q testbasics timing.0 || exit 2
+	@./nlreader || exit 1
 	@echo Success
 ifeq ($(HAVE_PAPI),yes)
 	@./testinit || exit 1

@@ -1,5 +1,5 @@
 /*
-$Id: gptl.h,v 1.46 2008-12-29 02:25:40 rosinski Exp $
+$Id: gptl.h,v 1.47 2008-12-30 20:16:47 rosinski Exp $
 */
 #ifndef GPTL_H
 #define GPTL_H
@@ -22,12 +22,12 @@ typedef enum {
   GPTLnarrowprint    = 7,  /* Print PAPI and derived stats in 8 columns not 16 (true) */
   GPTLpercent        = 9,  /* Add a column for percent of first timer (false) */
   GPTLpersec         = 10, /* Add a PAPI column that prints "per second" stats (true) */
-  GPTLmultiplex      = 11, /* Allow PAPI multiplexing (true) */
+  GPTLmultiplex      = 11, /* Allow PAPI multiplexing (false) */
   GPTLdopr_preamble  = 12, /* Print preamble info (true) */
   GPTLdopr_threadsort= 13, /* Print sorted thread stats (true) */
   GPTLdopr_multparent= 14, /* Print multiple parent info (true) */
   GPTLdopr_collision = 15, /* Print hastable collision info (true) */
-  GPTLprint_method   = 16, /* Tree print method: first, last, or most frequent */
+  GPTLprint_method   = 16, /* Tree print method: first, last, or most frequent (most frequent)*/
   /*
   ** These are derived counters based on PAPI counters. All default to false
   */

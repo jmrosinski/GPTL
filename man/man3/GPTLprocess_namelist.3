@@ -1,0 +1,58 @@
+.\" $Id: GPTLprocess_namelist.3,v 1.1 2008-12-30 20:16:47 rosinski Exp $
+.TH GPTLprocess_namelist 3 "August, 2008" "GPTL"
+
+.SH NAME
+GPTLprocess_namelist \- Parse an input Fortran namelist and call
+GPTLsetoption/GPTLsetutr appropriately.
+
+.SH SYNOPSIS
+.B Fortran Interface:
+.nf
+subroutine gptlprocess_namelist (character(len=*) filename, integer unitno, integer ret)
+.fi
+
+.SH DESCRIPTION
+.B GPTLprocess_namelist
+is a utility subroutine provided for convenience to Fortran applications. It
+allows the specification of input to
+.B GPTLsetoption
+and
+.B GPTLsetutr
+via namelist input. This avoids the necessity of recompiling and relinking
+when changing
+.B GPTL
+options. The routine is provided as a subroutine rather than a function to
+get around problems encountered when 'include ./gptl.inc' declares the
+function to be external.
+
+.SH ARGUMENTS
+.TP
+.I filename
+-- file name containing the namelist (namelist group gptlpr).
+
+.TP
+.I unitno
+-- Fortran unit number to use when opening the namelist.
+
+.TP
+.I ret
+-- output return code
+
+.SH RESTRICTIONS
+.B GPTLinitialize()
+must 
+.B NOT
+have been called. Generally the user invokes
+.B GPTLinitialize()
+right after calling this function.
+
+.SH RETURN VALUES
+On success, this subroutine returns 0 in output argument
+.B ret .
+On error, 
+.B ret
+is negative and a descriptive message
+printed. As long as the namelist file can be opened and read, 
+.B ret 
+is set to 0. This is true even if some of the individual settings fail (e.g. if
+a requested PAPI event is not available).
