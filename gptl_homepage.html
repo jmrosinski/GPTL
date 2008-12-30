@@ -12,9 +12,25 @@ dynamic call tree">
 <body bgcolor="peachpuff">
 
 <HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
-<h2>What's new in the latest release (<a href="gptl3_4_7.tar.gz">gptl3_4_7.tar.gz</a>)</h2>
+<h2>What's new in the latest release (<a href="gptl3_5.tar.gz">gptl3_5.tar.gz</a>)</h2>
 <ul>
+<li> Options for call-tree generation based on number of invocations per
+parent: most_frequent (default), first_parent, last_parent, full_tree. 
+Previous GPTL versions always used first_parent. New option <em>full_tree</em> can
+produce <b>tons</b> of output depending the nature of the call tree. But it
+can also be very useful because it shows all parent-child relationships.
 <li> Derived events based on PAPI:
+  <ul>
+  <li> L2 miss rate (GPTL_L2MRT)
+  <li> Load-stores per L2 miss (GPTL_LSTPL2m)
+  <li> L3 miss rate (GPTL_L3MRT)
+  </ul>
+<li> New function <b>GPTLget_eventvalue()</b> allows an application to query
+the current value of any PAPI-based event, including derived events.
+<li> <em><b>parsegptlout.pl</b></em> now takes header name argument rather
+than an integer index.
+</ul>
+<h2>What was new in the previous release (<a href="gptl3_4_7.tar.gz">gptl3_4_7.tar.gz</a>)</h2>
   <ul>
   <li> Computational intensity (GPTL_CI)
   <li> Instructions per cycle (GPTL_IPC)
@@ -129,7 +145,7 @@ Stats for thread 0:
 <HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
 <h2>Download and Installation</h2>
 <ul> 
-<li> Download the most recent release by clicking this link: <a href="gptl3_4_7.tar.gz">gptl3_4_7.tar.gz</a>.
+<li> Download the most recent release by clicking this link: <a href="gptl3_5.tar.gz">gptl3_5.tar.gz</a>.
 <li> Earlier versions can be found <a href="older/">here</a>.
 <li> To build and install <b>GPTL</b>, see the <A HREF="INSTALL">INSTALL</a> file.
   You'll need to create a <b><em>macros.make</em></b> file appropriate for your target
