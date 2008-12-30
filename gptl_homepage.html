@@ -22,13 +22,13 @@ can also be very useful because it shows all parent-child relationships.
 <li> Derived events based on PAPI:
   <ul>
   <li> L2 miss rate (GPTL_L2MRT)
-  <li> Load-stores per L2 miss (GPTL_LSTPL2m)
+  <li> Load-stores per L2 miss (GPTL_LSTPL2M)
   <li> L3 miss rate (GPTL_L3MRT)
   </ul>
 <li> New subroutine <b>gptlprocess_namelist()</b> enables Fortran codes to
 use a namelist to set <b>GPTL</b> options. This allows changing settings
 without having to recompile or relink application codes. See
-ftests/nlreader.F for example usage. An example namelist file is in
+ftests/nlreader.F for example usage. An example namelist file is
 ftests/gptlnl. 
 <li> New function <b>GPTLget_eventvalue()</b> allows an application to query
 the current value of any PAPI-based event, including derived events.
@@ -36,7 +36,10 @@ the current value of any PAPI-based event, including derived events.
 than an integer index.
 </ul>
 <h2>What was new in the previous release (<a href="gptl3_4_7.tar.gz">gptl3_4_7.tar.gz</a>)</h2>
+<ul>
+<li> Derived events based on PAPI:
   <ul>
+  <li> Derived events based on PAPI:
   <li> Computational intensity (GPTL_CI)
   <li> Instructions per cycle (GPTL_IPC)
   <li> FP ops per cycle (GPTL_FPC)
