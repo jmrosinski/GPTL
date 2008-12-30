@@ -10,13 +10,12 @@ used to automatically instrument regions which are defined by function entry
 and exit points. This is an easy way to generate a dynamic call tree. See
 Auto-Instrumentation below for a description of how to use this feature.
 
-If the PAPI library is already installed (http://icl.cs.utk.edu/papi), GPTL
+If the PAPI library is installed (http://icl.cs.utk.edu/papi), GPTL
 also provides a convenient mechanism to access all available PAPI events. In
 addtion to PAPI preset and native events, GPTL defines derived events which
-are based on PAPI counters. Available derived events are instructions per
-cycle (GPTL_IPC) and computational intensity (GPTL_CI). Of course these events
-can only be enabled if the PAPI counters they require are available on the
-target architecture.
+are based on PAPI counters. See gptl.h for a list of available derived events.
+Of course these events can only be enabled if the PAPI counters they require
+are available on the target architecture.
 
 
 Using GPTL 

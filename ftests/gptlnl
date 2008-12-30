@@ -1,0 +1,18 @@
+&gptlnl
+ wall = .false.
+ cpu = .true.
+ abort_on_error = .true.
+ overhead = .true.
+ depthlimit = 1
+ verbose = .true.
+ narrowprint = .false.
+ percent = .true.
+ persec = .false.
+ multiplex = .true.
+ dopr_preamble = .false.
+ dopr_threadsort = .false.
+ dopr_multparent = .false.
+ dopr_collision = .false.
+ print_method = 4  ! full tree
+ eventlist = 'PAPI_FP_OPS','GPTL_CI'
+/
