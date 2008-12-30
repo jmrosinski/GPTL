@@ -188,29 +188,28 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
   ** First, check for option which is not an actual counter
   */
 
-  if (counter == GPTLverbose) {   /* don't printf here--that'd duplicate what's in gptl.c */
+  switch (counter) {
+  case GPTLverbose:
+  /* don't printf here--that'd duplicate what's in gptl.c */
     verbose = (bool) val;
-  }
-
-  if (counter == GPTLmultiplex) {
+    return 0;
+  case GPTLmultiplex:
     enable_multiplexing = (bool) val;
     if (verbose)
-      printf ("GPTL_PAPIsetoption: set GPTLmultiplex to %d\n", val);
+      printf ("GPTL_PAPIsetoption: boolean enable_multiplexing = %d\n", val);
     return 0;
-  }
-
-  if (counter == GPTLnarrowprint) {
+  case GPTLnarrowprint:
     narrowprint = (bool) val;
     if (verbose)
-      printf ("GPTL_PAPIsetoption: set GPTLnarrowprint to %d\n", val);
+      printf ("GPTL_PAPIsetoption: boolean narrowprint = %d\n", val);
     return 0;
-  }
-
-  if (counter == GPTLpersec) {
+  case GPTLpersec:
     persec = (bool) val;
     if (verbose)
-      printf ("GPTL_PAPIsetoption: set GPTLpersec to %d\n", val);
+      printf ("GPTL_PAPIsetoption: boolean persec = %d\n", val);
     return 0;
+  default:
+    break;
   }
 
   /* 
@@ -246,7 +245,8 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
   /* Ensure max nevents won't be exceeded */
 
   if (nevents+1 > MAX_AUX)
-    return GPTLerror ("GPTL_PAPIsetoption: %d is too many events\n", nevents+1);
+    return GPTLerror ("GPTL_PAPIsetoption: %d is too many events. Can be increased in private.h\n",
+		      nevents+1);
 
   /* Check derived events */
 
@@ -260,7 +260,7 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
     pr_event[nevents].numidx   = enable (PAPI_TOT_INS);
     pr_event[nevents].denomidx = enable (PAPI_TOT_CYC);
     if (verbose)
-      printf ("GPTL_PAPIsetoption: enabling derived event %s using PAPI_TOT_INS / PAPI_TOT_CYC\n", 
+      printf ("GPTL_PAPIsetoption: enabling derived event %s = PAPI_TOT_INS / PAPI_TOT_CYC\n", 
 	      pr_event[nevents].event.namestr);
     ++nevents;
     return 0;
@@ -271,14 +271,14 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
       pr_event[nevents].numidx   = enable (PAPI_FP_OPS);
       pr_event[nevents].denomidx = enable (PAPI_LST_INS);
       if (verbose)
-	printf ("GPTL_PAPIsetoption: enabling derived event %s using PAPI_FP_OPS / PAPI_LST_INS\n", 
+	printf ("GPTL_PAPIsetoption: enabling derived event %s = PAPI_FP_OPS / PAPI_LST_INS\n", 
 		pr_event[nevents].event.namestr);
     } else if (canenable2 (PAPI_FP_OPS, PAPI_L1_DCA)) {
       pr_event[nevents].event    = derivedtable[idx];
       pr_event[nevents].numidx   = enable (PAPI_FP_OPS);
       pr_event[nevents].denomidx = enable (PAPI_L1_DCA);
       if (verbose)
-	printf ("GPTL_PAPIsetoption: enabling derived event %s using PAPI_FP_OPS / PAPI_L1_DCA\n", 
+	printf ("GPTL_PAPIsetoption: enabling derived event %s = PAPI_FP_OPS / PAPI_L1_DCA\n", 
 		pr_event[nevents].event.namestr);
     } else {
       return GPTLerror ("GPTL_PAPIsetoption: GPTL_CI unavailable\n");
@@ -294,7 +294,7 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
     pr_event[nevents].numidx   = enable (PAPI_FP_OPS);
     pr_event[nevents].denomidx = enable (PAPI_TOT_CYC);
     if (verbose)
-      printf ("GPTL_PAPIsetoption: enabling derived event %s using PAPI_FP_OPS / PAPI_TOT_CYC\n", 
+      printf ("GPTL_PAPIsetoption: enabling derived event %s = PAPI_FP_OPS / PAPI_TOT_CYC\n", 
 	      pr_event[nevents].event.namestr);
     ++nevents;
     return 0;
@@ -307,7 +307,7 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
     pr_event[nevents].numidx   = enable (PAPI_FP_OPS);
     pr_event[nevents].denomidx = enable (PAPI_TOT_INS);
     if (verbose)
-      printf ("GPTL_PAPIsetoption: enabling derived event %s using PAPI_FP_OPS / PAPI_TOT_INS\n", 
+      printf ("GPTL_PAPIsetoption: enabling derived event %s = PAPI_FP_OPS / PAPI_TOT_INS\n", 
 	      pr_event[nevents].event.namestr);
     ++nevents;
     return 0;
@@ -318,14 +318,14 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
       pr_event[nevents].numidx   = enable (PAPI_LST_INS);
       pr_event[nevents].denomidx = enable (PAPI_TOT_INS);
       if (verbose)
-	printf ("GPTL_PAPIsetoption: enabling derived event %s using PAPI_LST_INS / PAPI_TOT_INS\n", 
+	printf ("GPTL_PAPIsetoption: enabling derived event %s = PAPI_LST_INS / PAPI_TOT_INS\n", 
 		pr_event[nevents].event.namestr);
     } else if (canenable2 (PAPI_L1_DCA, PAPI_TOT_INS)) {
       pr_event[nevents].event    = derivedtable[idx];
       pr_event[nevents].numidx   = enable (PAPI_L1_DCA);
       pr_event[nevents].denomidx = enable (PAPI_TOT_INS);
       if (verbose)
-	printf ("GPTL_PAPIsetoption: enabling derived event %s using PAPI_L1_DCA / PAPI_TOT_INS\n", 
+	printf ("GPTL_PAPIsetoption: enabling derived event %s = PAPI_L1_DCA / PAPI_TOT_INS\n", 
 		pr_event[nevents].event.namestr);
     } else {
       return GPTLerror ("GPTL_PAPIsetoption: GPTL_LSTPI unavailable\n");
@@ -341,7 +341,7 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
     pr_event[nevents].numidx   = enable (PAPI_L1_DCM);
     pr_event[nevents].denomidx = enable (PAPI_L1_DCA);
     if (verbose)
-      printf ("GPTL_PAPIsetoption: enabling derived event %s using PAPI_L1_DCM / PAPI_L1_DCA\n", 
+      printf ("GPTL_PAPIsetoption: enabling derived event %s = PAPI_L1_DCM / PAPI_L1_DCA\n", 
 	      pr_event[nevents].event.namestr);
     ++nevents;
     return 0;
@@ -352,14 +352,14 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
       pr_event[nevents].numidx   = enable (PAPI_LST_INS);
       pr_event[nevents].denomidx = enable (PAPI_L1_DCM);
       if (verbose)
-	printf ("GPTL_PAPIsetoption: enabling derived event %s using PAPI_LST_INS / PAPI_L1_DCM\n", 
+	printf ("GPTL_PAPIsetoption: enabling derived event %s = PAPI_LST_INS / PAPI_L1_DCM\n", 
 		pr_event[nevents].event.namestr);
     } else if (canenable2 (PAPI_L1_DCA, PAPI_L1_DCM)) {
       pr_event[nevents].event    = derivedtable[idx];
       pr_event[nevents].numidx   = enable (PAPI_L1_DCA);
       pr_event[nevents].denomidx = enable (PAPI_L1_DCM);
       if (verbose)
-	printf ("GPTL_PAPIsetoption: enabling derived event %s using PAPI_L1_DCA / PAPI_L1_DCM\n", 
+	printf ("GPTL_PAPIsetoption: enabling derived event %s = PAPI_L1_DCA / PAPI_L1_DCM\n", 
 		pr_event[nevents].event.namestr);
     } else {
       return GPTLerror ("GPTL_PAPIsetoption: GPTL_LSTPDCM unavailable\n");
@@ -378,7 +378,7 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
     pr_event[nevents].numidx   = enable (PAPI_L2_TCM);
     pr_event[nevents].denomidx = enable (PAPI_L2_TCA);
     if (verbose)
-      printf ("GPTL_PAPIsetoption: enabling derived event %s using PAPI_L2_TCM / PAPI_L2_TCA\n", 
+      printf ("GPTL_PAPIsetoption: enabling derived event %s = PAPI_L2_TCM / PAPI_L2_TCA\n", 
 	      pr_event[nevents].event.namestr);
     ++nevents;
     return 0;
@@ -389,14 +389,14 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
       pr_event[nevents].numidx   = enable (PAPI_LST_INS);
       pr_event[nevents].denomidx = enable (PAPI_L2_TCM);
       if (verbose)
-	printf ("GPTL_PAPIsetoption: enabling derived event %s using PAPI_LST_INS / PAPI_L2_TCM\n", 
+	printf ("GPTL_PAPIsetoption: enabling derived event %s = PAPI_LST_INS / PAPI_L2_TCM\n", 
 		pr_event[nevents].event.namestr);
     } else if (canenable2 (PAPI_L1_DCA, PAPI_L2_TCM)) {
       pr_event[nevents].event    = derivedtable[idx];
       pr_event[nevents].numidx   = enable (PAPI_L1_DCA);
       pr_event[nevents].denomidx = enable (PAPI_L2_TCM);
       if (verbose)
-	printf ("GPTL_PAPIsetoption: enabling derived event %s using PAPI_L1_DCA / PAPI_L2_TCM\n", 
+	printf ("GPTL_PAPIsetoption: enabling derived event %s = PAPI_L1_DCA / PAPI_L2_TCM\n", 
 		pr_event[nevents].event.namestr);
     } else {
       return GPTLerror ("GPTL_PAPIsetoption: GPTL_LSTPL2M unavailable\n");
@@ -412,7 +412,7 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
     pr_event[nevents].numidx   = enable (PAPI_L3_TCM);
     pr_event[nevents].denomidx = enable (PAPI_L3_TCR);
     if (verbose)
-      printf ("GPTL_PAPIsetoption: enabling derived event %s using PAPI_L3_TCM / PAPI_L3_TCR\n", 
+      printf ("GPTL_PAPIsetoption: enabling derived event %s = PAPI_L3_TCM / PAPI_L3_TCR\n", 
 	      pr_event[nevents].event.namestr);
     ++nevents;
     return 0;
@@ -449,7 +449,8 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
   */
   
   if ((ret = PAPI_event_code_to_name (counter, eventname)) != PAPI_OK)
-    return GPTLerror ("GPTL_PAPIsetoption: PAPI_strerror: %s\n", PAPI_strerror (ret));
+    return GPTLerror ("GPTL_PAPIsetoption: name not found for counter %d: PAPI_strerror: %s\n", 
+		      counter, PAPI_strerror (ret));
 
   /*
   ** A table with predefined names of various lengths does not exist for

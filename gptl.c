@@ -198,7 +198,7 @@ int GPTLsetoption (const int option,  /* option */
   if (option == GPTLabort_on_error) {
     GPTLset_abort_on_error ((bool) val);
     if (verbose)
-      printf ("GPTLsetoption: setting abort on error flag to %d\n", val);
+      printf ("GPTLsetoption: boolean abort_on_error = %d\n", val);
     return 0;
   }
 
@@ -207,7 +207,7 @@ int GPTLsetoption (const int option,  /* option */
 #ifdef HAVE_TIMES
     cpustats.enabled = (bool) val; 
     if (verbose)
-      printf ("GPTLsetoption: set cpustats to %d\n", val);
+      printf ("GPTLsetoption: cpustats = %d\n", val);
 #else
     if (val)
       return GPTLerror ("GPTLsetoption: times() not available\n");
@@ -216,17 +216,17 @@ int GPTLsetoption (const int option,  /* option */
   case GPTLwall:     
     wallstats.enabled = (bool) val; 
     if (verbose)
-      printf ("GPTLsetoption: set wallstats to %d\n", val);
+      printf ("GPTLsetoption: boolean wallstats = %d\n", val);
     return 0;
   case GPTLoverhead: 
     overheadstats.enabled = (bool) val; 
     if (verbose)
-      printf ("GPTLsetoption: set overheadstats to %d\n", val);
+      printf ("GPTLsetoption: boolean overheadstats = %d\n", val);
     return 0;
   case GPTLdepthlimit: 
     depthlimit = val; 
     if (verbose)
-      printf ("GPTLsetoption: set depthlimit to %d\n", val);
+      printf ("GPTLsetoption: depthlimit = %d\n", val);
     return 0;
   case GPTLverbose: 
     verbose = (bool) val; 
@@ -234,37 +234,37 @@ int GPTLsetoption (const int option,  /* option */
     (void) GPTL_PAPIsetoption (GPTLverbose, val);
 #endif
     if (verbose)
-      printf ("GPTLsetoption: set verbose to %d\n", val);
+      printf ("GPTLsetoption: boolean verbose = %d\n", val);
     return 0;
   case GPTLpercent: 
     percent = (bool) val; 
     if (verbose)
-      printf ("GPTLsetoption: set percent to %d\n", val);
+      printf ("GPTLsetoption: boolean percent = %d\n", val);
     return 0;
   case GPTLdopr_preamble: 
     dopr_preamble = (bool) val; 
     if (verbose)
-      printf ("GPTLsetoption: set dopr_preamble to %d\n", val);
+      printf ("GPTLsetoption: boolean dopr_preamble = %d\n", val);
     return 0;
   case GPTLdopr_threadsort: 
     dopr_threadsort = (bool) val; 
     if (verbose)
-      printf ("GPTLsetoption: set dopr_threadsort to %d\n", val);
+      printf ("GPTLsetoption: boolean dopr_threadsort = %d\n", val);
     return 0;
   case GPTLdopr_multparent: 
     dopr_multparent = (bool) val; 
     if (verbose)
-      printf ("GPTLsetoption: set dopr_multparent to %d\n", val);
+      printf ("GPTLsetoption: boolean dopr_multparent = %d\n", val);
     return 0;
   case GPTLdopr_collision: 
     dopr_collision = (bool) val; 
     if (verbose)
-      printf ("GPTLsetoption: set dopr_collision to %d\n", val);
+      printf ("GPTLsetoption: boolean dopr_collision = %d\n", val);
     return 0;
   case GPTLprint_method:
     method = val; 
     if (verbose)
-      printf ("GPTLsetoption: set method to %s\n", methodstr (method));
+      printf ("GPTLsetoption: print_method = %s\n", methodstr (method));
     return 0;
 
   /* 
@@ -312,7 +312,7 @@ int GPTLsetutr (const int option)
   for (i = 0; i < nfuncentries; i++) {
     if (option == (int) funclist[i].option) {
       if (verbose)
-	printf ("GPTLsetutr: Setting underlying wallclock timer to %s\n", 
+	printf ("GPTLsetutr: underlying wallclock timer = %s\n", 
 		funclist[i].name);
       funcidx = i;
       return 0;
@@ -1198,7 +1198,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.122 2008-12-30 20:16:47 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.123 2008-12-30 21:16:06 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1903,7 +1903,7 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.122 2008-12-30 20:16:47 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.123 2008-12-30 21:16:06 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");
