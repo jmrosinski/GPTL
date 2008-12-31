@@ -186,6 +186,10 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
     end if
   end if
 
+  if (print_method /= def_print_method) then
+    ret = gptlsetoption (gptlprint_method, print_method)
+  end if
+
   if (utr /= def_utr) then
     ret = gptlsetutr (utr)
   end if
