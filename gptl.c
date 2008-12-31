@@ -101,7 +101,7 @@ static Method method = GPTLmost_frequent;  /* default parent/child printing mech
 
 /* Local function prototypes */
 
-static void printstats (const Timer *, FILE *, const int, const int, double);
+static void printstats (const Timer *, FILE *, const int, const int, const bool, double);
 static void add (Timer *, const Timer *);
 static void get_threadstats (const char *, Summarystats *);
 static void get_summarystats (Summarystats *, const Summarystats *, int);
@@ -1198,7 +1198,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.123 2008-12-30 21:16:06 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.124 2008-12-31 01:59:57 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1363,13 +1363,13 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 	    if (first) {
 	      first = false;
 	      fprintf (fp, "%3.3d ", 0);
-	      printstats (ptr, fp, 0, 0, tot_overhead);
+	      printstats (ptr, fp, 0, 0, false, tot_overhead);
 	    }
 
 	    found = true;
 	    foundany = true;
 	    fprintf (fp, "%3.3d ", t);
-	    printstats (tptr, fp, 0, 0, tot_overhead);
+	    printstats (tptr, fp, 0, 0, false, tot_overhead);
 	    add (&sumstats, tptr);
 	  }
 	}
@@ -1377,7 +1377,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
       if (foundany) {
 	fprintf (fp, "SUM ");
-	printstats (&sumstats, fp, 0, 0, tot_overhead);
+	printstats (&sumstats, fp, 0, 0, false, tot_overhead);
 	fprintf (fp, "\n");
       }
     }
@@ -1698,6 +1698,7 @@ static int is_descendant (const Timer *node1, const Timer *node2)
 **   fp:           file descriptor to write to
 **   t:            thread number
 **   depth:        depth to indent timer
+**   doindent:     whether indenting will be done
 **   tot_overhead: underlying timing routine overhead
 */
 
@@ -1705,6 +1706,7 @@ static void printstats (const Timer *timer,
 			FILE *fp,
 			const int t,
 			const int depth,
+			const bool doindent,
 			const double tot_overhead)
 {
   int i;               /* index */
@@ -1725,17 +1727,19 @@ static void printstats (const Timer *timer,
   if (timer->onflg)
     fprintf (stderr, "printstats: timer %s had not been turned off\n", timer->name);
 
-    /* Flag ambiguous timer indentation levels with a "*" in column 1 */
+  /* Flag ambiguous timer indentation levels with a "*" in column 1 */
 
-  if (timer->nparent > 1)
-    fprintf (fp, "* ");
-  else
-    fprintf (fp, "  ");
+  if (doindent) {
+    if (timer->nparent > 1)
+      fprintf (fp, "* ");
+    else
+      fprintf (fp, "  ");
 
-  /* Indent to depth of this timer */
+    /* Indent to depth of this timer */
 
-  for (indent = 0; indent < depth; ++indent)
-    fprintf (fp, "  ");
+    for (indent = 0; indent < depth; ++indent)
+      fprintf (fp, "  ");
+  }
 
   fprintf (fp, "%s", timer->name);
 
@@ -1747,8 +1751,9 @@ static void printstats (const Timer *timer,
 
   /* Pad to max indent level */
 
-  for (indent = depth; indent < max_depth[t]; ++indent)
-    fprintf (fp, "  ");
+  if (doindent)
+    for (indent = depth; indent < max_depth[t]; ++indent)
+      fprintf (fp, "  ");
 
   if (timer->count < PRTHRESH) {
     if (timer->nrecurse > 0)
@@ -1903,7 +1908,7 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.123 2008-12-30 21:16:06 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.124 2008-12-31 01:59:57 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");
@@ -2776,7 +2781,7 @@ static void printself_andchildren (const Timer *ptr,
   int n;
 
   if (depth > -1)     /* -1 flag is to avoid printing stats for dummy outer timer */
-    printstats (ptr, fp, t, depth, tot_overhead);
+    printstats (ptr, fp, t, depth, true, tot_overhead);
 
   for (n = 0; n < ptr->nchildren; n++)
     printself_andchildren (ptr->children[n], fp, t, depth+1, tot_overhead);
