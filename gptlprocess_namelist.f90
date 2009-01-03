@@ -2,8 +2,8 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
 !
 ! To follow GPTL conventions this should be a function not a subroutine.
 ! But 'include ./gptl.inc' and then setting function gptlprocess_namelist
-! to a return value causes compiler to barf. So set return value in
-! output arg 'outret' instead.
+! to a return value causes compiler to barf because the function is declared 
+! 'external' in the header. So set return value in output arg 'outret' instead.
 !
   implicit none
 
@@ -24,7 +24,7 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
   logical, parameter :: def_wall            = .true.
   logical, parameter :: def_cpu             = .false.
   logical, parameter :: def_abort_on_error  = .false.
-  logical, parameter :: def_overhead        = .false.
+  logical, parameter :: def_overhead        = .true.
   integer, parameter :: def_depthlimit      = 99999    ! Effectively unlimited
   logical, parameter :: def_verbose         = .false.
   logical, parameter :: def_narrowprint     = .true.
@@ -35,8 +35,8 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
   logical, parameter :: def_dopr_threadsort = .true.
   logical, parameter :: def_dopr_multparent = .true.
   logical, parameter :: def_dopr_collision  = .true.
-  integer, parameter :: def_print_method    = gptlmost_frequent
-  integer, parameter :: def_utr             = gptlgettimeofday
+  character(len=16), parameter :: def_print_method = 'most_frequent   '
+  character(len=16), parameter :: def_utr          = 'gettimeofday    '
 
   logical :: wall            = def_wall
   logical :: cpu             = def_cpu
@@ -48,13 +48,13 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
   logical :: percent         = def_percent
   logical :: persec          = def_persec
   logical :: multiplex       = def_multiplex
-  logical :: dopr_preamble   = def_dopr_preamble   
-  logical :: dopr_threadsort = def_dopr_threadsort 
-  logical :: dopr_multparent = def_dopr_multparent 
-  logical :: dopr_collision  = def_dopr_collision  
-  integer :: print_method    = def_print_method    
+  logical :: dopr_preamble   = def_dopr_preamble
+  logical :: dopr_threadsort = def_dopr_threadsort
+  logical :: dopr_multparent = def_dopr_multparent
+  logical :: dopr_collision  = def_dopr_collision
+  character(len=16) :: print_method    = def_print_method
+  character(len=16) :: utr             = def_utr
   character(len=16) :: eventlist(maxevents) = (/('                ',j=1,maxevents)/)
-  integer :: utr             = def_utr
   
   namelist /gptlnl/ wall, cpu, abort_on_error, overhead, depthlimit, &
                     verbose, narrowprint, percent, persec, multiplex, &
@@ -185,15 +185,46 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
       ret = gptlsetoption (gptldopr_collision, 0)
     end if
   end if
-
-  if (print_method /= def_print_method) then
-    ret = gptlsetoption (gptlprint_method, print_method)
-  end if
-
+!
+! Character-based variables
+!
   if (utr /= def_utr) then
-    ret = gptlsetutr (utr)
+    if (trim(utr) == 'gettimeofday') then
+      ret = gptlsetutr (gptlgettimeofday)
+    else if (trim(utr) == 'nanotime') then
+      ret = gptlsetutr (gptlnanotime)
+    else if (trim(utr) == 'rtc') then
+      ret = gptlsetutr (gptlrtc)
+    else if (trim(utr) == 'mpiwtime') then
+      ret = gptlsetutr (gptlmpiwtime)
+    else if (trim(utr) == 'clockgettime') then
+      ret = gptlsetutr (gptlclockgettime)
+    else if (trim(utr) == 'papitime') then
+      ret = gptlsetutr (gptlpapitime)
+    else
+      write(6,*)'gptlprocess_namelist: Underlying timing routine not available: ', utr
+    end if
   end if
-
+!
+! Print method: use characters for namelist variables to avoid magic numbers
+! in namelist
+!
+  if (print_method /= def_print_method) then
+    if (trim(print_method) == 'first_parent') then
+      ret = gptlsetoption (gptlprint_method, gptlfirst_parent)
+    else if (trim(print_method) == 'last_parent') then
+      ret = gptlsetoption (gptlprint_method, gptllast_parent)
+    else if (trim(print_method) == 'most_frequent') then
+      ret = gptlsetoption (gptlprint_method, gptlmost_frequent)
+    else if (trim(print_method) == 'full_tree') then
+      ret = gptlsetoption (gptlprint_method, gptlfull_tree)
+    else
+      write(6,*)'gptlprocess_namelist: print_method not available: ', print_method
+    end if
+  end if
+!
+! PAPI-based events
+!
   do j=1,maxevents
     if (eventlist(j) /= '                ') then
       ret = gptlevent_name_to_code (trim (eventlist(j)), code)

@@ -1,4 +1,4 @@
-.\" $Id: GPTLquery.3,v 1.2 2007-04-17 20:09:03 rosinski Exp $
+.\" $Id: GPTLquery.3,v 1.3 2009-01-03 22:28:27 rosinski Exp $
 .TH GPTLquery 3 "February, 2007" "GPTL"
 
 .SH NAME
@@ -50,23 +50,23 @@ statistics set by earlier calls to
 -- thread number. If < 0, return results for the current thread.
 .TP
 .I *count
--- an array to hold the number of start/stop pairs that have been invoked.
+-- the number of start/stop pairs that have been invoked (output).
 .TP
 .I *onflg
 -- non-zero returned value (true) means the timer is currently on. zero means
-the timer is currently off.
+the timer is currently off (output).
 .TP
 .I *wallclock
--- accumulated wallclock time.
+-- accumulated wallclock time (output).
 .TP
 .I *usr
--- accumulated user CPU time.
+-- accumulated user CPU time (output).
 .TP
 .I *sys
--- accumulated system CPU time.
+-- accumulated system CPU time (output).
 .TP
 .I *counters
--- an array to hold the values of the PAPI counters.
+-- an array to hold the values of the PAPI counters (output).
 .TP
 .I maxcounters
 -- maximum number of PAPI counters to return. Note that this argument is not

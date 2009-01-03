@@ -176,7 +176,6 @@ static double ticks2sec = -1;                     /* init to bad value */
 #endif
 
 static const int tablesize = 128*MAX_CHARS;       /* 128 is size of ASCII char set */
-
 static char *outdir = 0;                          /* dir to write output files to */
 
 /*
@@ -873,10 +872,8 @@ int GPTLstop (const char *name)               /* timer name */
 {
   double tp1 = 0.0;          /* time stamp */
   Timer *ptr;                /* linked list pointer */
-
   int t;                     /* thread number for this process */
   int indx;                  /* index into hash table */
-
   long usr = 0;              /* user time (returned from get_cpustamp) */
   long sys = 0;              /* system time (returned from get_cpustamp) */
 
@@ -914,9 +911,7 @@ int GPTLstop (const char *name)               /* timer name */
     return 0;
   }
 
-  ptr = getentry (hashtable[t], name, &indx);
-
-  if ( ! ptr) 
+  if ( ! (ptr = getentry (hashtable[t], name, &indx)))
     return GPTLerror ("GPTLstop: timer for %s had not been started.\n", name);
 
   if ( ! ptr->onflg )
@@ -943,7 +938,7 @@ int GPTLstop (const char *name)               /* timer name */
 }
 
 /*
-** update_stats: update stats inside ptr
+** update_stats: update stats inside ptr. Called by GPTLstop, GPTLstop_instr
 **
 ** Input arguments:
 **   ptr: pointer to timer
@@ -1198,7 +1193,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.124 2008-12-31 01:59:57 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.125 2009-01-03 22:28:27 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1516,15 +1511,20 @@ int construct_tree (Timer *timerst, Method method)
   int maxcount;     /* max calls by a single parent */
   int n;            /* loop over nparent */
 
+  /*
+  ** Walk the linked list to build the parent-child tree, using whichever
+  ** mechanism is in place. newchild() will prevent loops.
+  */
+
   for (ptr = timerst; ptr; ptr = ptr->next) {
     switch (method) {
-    case GPTLfirstparent:
+    case GPTLfirst_parent:
       if (ptr->nparent > 0) {
 	pptr = ptr->parent[0];
 	if (newchild (pptr, ptr) != 0);
       }
       break;
-    case GPTLlastparent:
+    case GPTLlast_parent:
       if (ptr->nparent > 0) {
 	nparent = ptr->nparent;
 	pptr = ptr->parent[nparent-1];
@@ -1559,12 +1559,19 @@ int construct_tree (Timer *timerst, Method method)
   return 0;
 }
 
+/* 
+** methodstr: Return a pointer to a string which represents the method
+**
+** Input arguments:
+**   method: method type
+*/
+
 static char *methodstr (Method method)
 {
-  if (method == GPTLfirstparent)
-    return "firstparent";
-  else if (method == GPTLlastparent)
-    return "lastparent";
+  if (method == GPTLfirst_parent)
+    return "first_parent";
+  else if (method == GPTLlast_parent)
+    return "last_parent";
   else if (method == GPTLmost_frequent)
     return "most_frequent";
   else if (method == GPTLfull_tree)
@@ -1908,7 +1915,7 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.124 2008-12-31 01:59:57 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.125 2009-01-03 22:28:27 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");

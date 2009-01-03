@@ -32,8 +32,8 @@
       integer GPTLgettimeofday
       integer GPTLpapitime
 
-      integer GPTLfirstparent
-      integer GPTLlastparent
+      integer GPTLfirst_parent
+      integer GPTLlast_parent
       integer GPTLmost_frequent
       integer GPTLfull_tree
 
@@ -71,8 +71,8 @@
       parameter (GPTLclockgettime   = 5)
       parameter (GPTLpapitime       = 6)
 
-      parameter (GPTLfirstparent    = 1)
-      parameter (GPTLlastparent     = 2)
+      parameter (GPTLfirst_parent   = 1)
+      parameter (GPTLlast_parent    = 2)
       parameter (GPTLmost_frequent  = 3)
       parameter (GPTLfull_tree      = 4)
 

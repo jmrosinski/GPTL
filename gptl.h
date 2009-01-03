@@ -1,5 +1,5 @@
 /*
-$Id: gptl.h,v 1.47 2008-12-30 20:16:47 rosinski Exp $
+$Id: gptl.h,v 1.48 2009-01-03 22:28:27 rosinski Exp $
 */
 #ifndef GPTL_H
 #define GPTL_H
@@ -27,7 +27,8 @@ typedef enum {
   GPTLdopr_threadsort= 13, /* Print sorted thread stats (true) */
   GPTLdopr_multparent= 14, /* Print multiple parent info (true) */
   GPTLdopr_collision = 15, /* Print hastable collision info (true) */
-  GPTLprint_method   = 16, /* Tree print method: first, last, or most frequent (most frequent)*/
+  GPTLprint_method   = 16, /* Tree print method: first parent, last parent
+			      most frequent, or full tree (most frequent) */
   /*
   ** These are derived counters based on PAPI counters. All default to false
   */
@@ -63,8 +64,8 @@ typedef enum {
 */
 
 typedef enum {
-  GPTLfirstparent   = 1,  /* first parent found */
-  GPTLlastparent    = 2,  /* last parent found */
+  GPTLfirst_parent  = 1,  /* first parent found */
+  GPTLlast_parent   = 2,  /* last parent found */
   GPTLmost_frequent = 3,  /* most frequent parent (default) */
   GPTLfull_tree     = 4   /* complete call tree */
 } Method;
