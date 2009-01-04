@@ -1,16 +1,17 @@
-This file contains information about building and installing GPTL. For
-information on using the library, see the file README.
+This file describes how to build and install GPTL. For information on using
+the library, see the web pages in the doc/ directory, and the file README in
+the main directory. 
 
-After untarring the distribution and then doing "cd gptl", construct a
-macros.make file by editing one of the templates provided (currenty there's
-macros.make.linux, and macros.make.sicortex) that is closest to the machine
-you're building the library on. Step-by-step instructions for setting each
+After untarring the distribution, construct a macros.make file by editing one
+of the templates provided that is closest to the machine you're building the
+library on. Currenty available template files are macros.make.linux and
+macros.make.sicortex. Step-by-step instructions for setting each
 configuration option are embedded in that file. If unsure of some settings,
 you can run "./suggestions". This is an autoconf "configure" script which has
 been modified to just print suggestions, rather than creating any output
 files. After creating macros.make:
 
-% make all
+% make
 % make test
 % make install
 

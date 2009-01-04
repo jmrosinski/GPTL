@@ -1,0 +1,153 @@
+<html>
+<head>
+<title>GPTL usage example 3</title>
+<meta name="example" content="Load imbalance and parsegptlout.pl">
+<meta name="Keywords" content="gptl","papi","call tree","profile","timing","performance analysis">
+<meta name="Author" content="Jim Rosinski">
+</head>
+<body bgcolor="peachpuff">
+
+<hr />
+<a href="example2.html"><img border="0" src="btn_previous.gif"
+				  width="100" height="20" alt="Previous"
+				  /></a> 
+<a href="gptl_homepage.html"><img border="0" src="btn_next.gif"
+			     width="100" height="20" alt="GPTL home page" /></a>
+
+<br />
+
+<h3>Example 3: Load imbalance</h3>
+This hybrid OpenMP/MPI code simulates load imbalance at both the
+	thread and task level by sleeping a number of seconds equal to
+	the thread number plus the MPI rank, within a region being
+	timed. After running the code, we use utility script 
+	<em><b>parsegptlout.pl</b></em> 
+	to examine timing statistics for the region.
+<p>
+<b><em>mpi.c:</em></b>
+<pre>
+<div style="background-color:white;">
+#include &#60unistd.h&gt
+#include &#60omp.h&gt
+#include &#60mpi.h&gt
+#include &#60gptl.h&gt
+
+int main (int argc, char **argv)
+{
+  int i, ret, iam;
+  int nompiter = omp_get_max_threads ();       // Loop trip count matches number of threads
+
+  ret = MPI_Init (&argc, &argv);               // Initialize MPI
+  ret = MPI_Comm_rank (MPI_COMM_WORLD, &iam);  // Get my rank
+
+  ret = GPTLsetoption (GPTLoverhead, 0);       // Don't print overhead stats
+  ret = GPTLsetoption (GPTLpercent, 1);        // Print percentage stats
+  ret = GPTLsetoption (GPTLabort_on_error, 1); // Abort on any GPTL error
+
+  ret = GPTLinitialize ();                     // Initialize GPTL
+  ret = GPTLstart ("total");                   // Time the whole program
+
+  /* Threaded loop with load imbalance across both OMP threads and MPI tasks */
+
+#pragma omp parallel for private (i, ret)
+  for (i = 0; i < nompiter; i++) {
+    ret = GPTLstart ("sleep_iam_plus_mythread");// Start timer for simulated work
+    ret = sleep (iam+i);                        // Load-imbalanced work
+    ret = GPTLstop ("sleep_iam_plus_mythread"); // Stop timer for simulated work
+  }
+
+  ret = GPTLstart ("barriersync");             // Time MPI task synchronization
+  ret = MPI_Barrier (MPI_COMM_WORLD);          // Synchronize MPI tasks
+  ret = GPTLstop ("barriersync");
+
+  ret = GPTLstart ("sleep_1");                // This region has a balanced load
+  ret = sleep (1);
+  ret = GPTLstop ("sleep_1");
+  ret = GPTLstop ("total");
+
+  ret = GPTLpr (iam);                          // Print the results
+  ret = MPI_Finalize ();                       // Clean up MPI
+  return 0;
+}
+</div>
+</pre>
+
+Compile and link, then run with 2 threads and 3 MPI tasks:
+<pre>
+% gcc -fopenmp mpi.c -lmpich -lgptl
+% env OMP_NUM_THREADS=2 mpiexec -n 3 ./a.out
+</pre>
+
+Output files <em>timing.0</em>, <em>timing.1</em>, and <em>timing.2</em> are created by the call
+to <b>GPTLpr()</b>, one for each MPI task. First let's examine the <b>GPTL</b> output
+file for task 0. Preamble and postamble print has been deleted for
+brevity.
+<p>
+<b><em>timing.0:</em></b>
+<pre>
+<div style="background-color:white;">
+Stats for thread 0:
+                             Called  Recurse Wallclock max       min       %_of_total 
+  total                             1    -       4.001     4.001     4.001     100.00 
+    sleep_iam_plus_mythread         1    -       0.000     0.000     0.000       0.00 
+    barriersync                     1    -       1.999     1.999     1.999      49.96 
+    sleep_1                         1    -       1.001     1.001     1.001      25.02 
+Total calls           = 4
+Total recursive calls = 0
+
+Stats for thread 1:
+                           Called  Recurse Wallclock max       min       %_of_total 
+  sleep_iam_plus_mythread         1    -       1.000     1.000     1.000      25.00 
+Total calls           = 1
+Total recursive calls = 0
+
+Same stats sorted by timer for threaded regions:
+Thd                        Called  Recurse Wallclock max       min       %_of_total 
+000 sleep_iam_plus_mythread       1    -       0.000     0.000     0.000       0.00 
+001 sleep_iam_plus_mythread       1    -       1.000     1.000     1.000      25.00 
+SUM sleep_iam_plus_mythread       2    -       1.000     1.000     0.000      25.00 
+</div>
+</pre>
+
+The results are fairly straightforward and mostly as expected. Note
+though that for thread 0, region "total" took 4 seconds, while
+the sum of all the other regions it surrounded adds up to only
+3. What's going on? The reason is that
+there is an implied (and untimed) OpenMP barrier before the end of the threaded loop.
+Thread 0 slept 0 seconds, then had to wait for thread 1 to finish
+sleeping for 1 second before it exited the loop.
+<p>
+Next we'll use <em><b>parsegpltout.pl</b></em> to examine the
+timing files for all MPI tasks and gather load balance statistics for one of the regions
+being timed:
+<pre>
+% parsegptlout.pl sleep_iam_plus_mythread
+</pre>
+Here's the output:
+<pre>
+<div style="background-color:white;">
+Searched for region sleep_iam_plus_mythread
+Found 6 calls across 3 tasks and 2 threads per task
+6 of a possible 6 tasks and threads had entries for sleep_iam_plus_mythread
+Heading is Wallclock
+Max   =  3.000 on thread 1 task 2
+Min   =  0.000 on thread 0 task 0
+Mean  = 1.5
+Total = 9
+</div>
+</pre>
+We see that the max time for this region was spent in thread 1, task
+2 (though only task 0 output is shown above). The three seconds reported is due to the call
+to <b>sleep (iam+i)</b>. Likewise, thread 0 on task 0 spent
+the least amount of time in this region, 0 seconds.
+
+<hr />
+<a href="example2.html"><img border="0" src="btn_previous.gif"
+				  width="100" height="20" alt="Previous"
+				  /></a> 
+<a href="gptl_homepage.html"><img border="0" src="btn_next.gif"
+			     width="100" height="20" alt="GPTL home page" /></a>
+
+<br />
+
+</html>
