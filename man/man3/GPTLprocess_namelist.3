@@ -1,5 +1,5 @@
-.\" $Id: GPTLprocess_namelist.3,v 1.1 2008-12-30 20:16:47 rosinski Exp $
-.TH GPTLprocess_namelist 3 "August, 2008" "GPTL"
+.\" $Id: GPTLprocess_namelist.3,v 1.2 2009-01-04 00:18:40 rosinski Exp $
+.TH GPTLprocess_namelist 3 "December, 2008" "GPTL"
 
 .SH NAME
 GPTLprocess_namelist \- Parse an input Fortran namelist and call
@@ -56,3 +56,35 @@ printed. As long as the namelist file can be opened and read,
 .B ret 
 is set to 0. This is true even if some of the individual settings fail (e.g. if
 a requested PAPI event is not available).
+
+.SH EXAMPLES
+An example namelist (
+.B gptlnl
+) is provided in the ftests/ subdirectory of the GPTL distribution. When
+gptlprocess_namelist is called, it parses the namelist (namelist group name
+&gptlnl) and calls appropriate GPTL functions.
+.nf         
+.if t .ft CW
+
+(void) GPTLsetoption (GPTLcpu, 1);      /* enable cpu timings */
+(void) GPTLsetoption (GPTLwall, 0);     /* disable wallclock timings */
+(void) GPTLsetoption (PAPI_TOT_CYC, 1); /* enable counting of total cycles */
+...
+(void) GPTLinitialize();                /* initialize the GPTL library */
+(void) GPTLstart ("total");             /* start a timer */
+...
+(void) GPTLstart ("do_work");           /* start another timer */
+
+do_work();                              /* do some work */
+
+(void) GPTLstop ("do_work");            /* stop a timer */
+(void) GPTLstop ("total");              /* stop a timer */
+...
+(void) GPTLpr (mympitaskid);            /* print the results to timing.<mympitaskid> */
+
+.if t .ft P
+.fi
+
+.SH SEE ALSO
+.BR GPTLsetoption "(3)" 
+.BR GPTLsetutr "(3)" 
