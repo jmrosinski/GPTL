@@ -1,4 +1,8 @@
 /*
+** $Id: get_memusage.c,v 1.4 2009-01-04 21:14:41 rosinski Exp $
+**
+** Author: Jim Rosinski
+**
 ** get_memusage: 
 **
 **   Designed to be called from Fortran, returns information about memory

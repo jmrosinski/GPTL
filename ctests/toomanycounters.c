@@ -5,10 +5,10 @@ int main ()
 {
   int ret;
   int i, code;
-  const int nevents = 9;
-  char event[9][13] = {"PAPI_TOT_CYC","PAPI_TOT_INS","PAPI_L1_TCM","PAPI_FP_INS",
-		       "PAPI_FAD_INS","PAPI_FML_INS","PAPI_L1_DCA","PAPI_BR_INS",
-		       "PAPI_L1_DCM"};
+  const int nevents = 10;
+  char event[10][13] = {"PAPI_TOT_CYC","PAPI_TOT_INS","PAPI_L1_TCM","PAPI_FP_INS",
+			"PAPI_FAD_INS","PAPI_FML_INS","PAPI_L1_DCA","PAPI_BR_INS",
+			"PAPI_L1_DCM","PAPI_L2_DCM"};
 
   ret = PAPI_library_init (PAPI_VER_CURRENT);
   if (ret != PAPI_VER_CURRENT) {

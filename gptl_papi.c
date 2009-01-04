@@ -1,3 +1,11 @@
+/*
+** $Id: gptl_papi.c,v 1.66 2009-01-04 21:14:41 rosinski Exp $
+**
+** Author: Jim Rosinski
+**
+** Contains routines which interface to PAPI library
+*/
+ 
 #ifdef HAVE_PAPI
 
 #include <papi.h>

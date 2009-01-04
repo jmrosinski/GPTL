@@ -1,6 +1,11 @@
 /*
-$Id: gptl.h,v 1.48 2009-01-03 22:28:27 rosinski Exp $
+** $Id: gptl.h,v 1.49 2009-01-04 21:14:41 rosinski Exp $
+**
+** Author: Jim Rosinski
+**
+** #include this file in C and C++ codes which invoke GPTL functions.
 */
+
 #ifndef GPTL_H
 #define GPTL_H
 

@@ -5,7 +5,7 @@
 # Always run "summary". Add others depending on settings.
 TESTS = summary
 ifeq ($(HAVE_PAPI),yes)
-  TESTS += testpapi toomanycounters
+  TESTS += testpapi
 endif
 
 # Profiling is possible with GNU or Pathscale compilers
@@ -115,17 +115,19 @@ test: $(TESTS)
 	@echo
 ifeq ($(HAVE_PAPI),yes)
 	@./testpapi        || exit 1
-	@./toomanycounters || exit 1
+	@echo
 endif
 ifeq ($(HAVE_MPI),yes)
 	@echo Running env OMP_NUM_THREADS=2 $(MPICMD) -n 2 ./summary...
 	@env OMP_NUM_THREADS=2 $(MPICMD) -n 2 ./summary || (echo "Failure to run" && exit 1)
 	@echo "Shell is checking contents of timing.summary produced by ./summary for a specific region name..."
 	@grep -q sleep timing.summary && echo "Success" || (echo "Failure" && exit 1)
+	@echo
 endif
 ifeq ($(PROFILE),yes)
 	@echo "Testing auto-instrumentation..."
 	@./cygprofile || (echo "Failure to run" && exit 1)
 	@(../hex2name.pl ./cygprofile timing.0 | grep -q callutil100times) && echo "Success" || (echo "Failure" && exit 1)
+	@echo
 endif
 	@echo "All C tests passed"

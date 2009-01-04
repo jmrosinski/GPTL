@@ -50,15 +50,17 @@ nlreader: nlreader.o
 # Invoke as "make test" from one dir above
 
 test: $(TESTS)
-	@echo
 	@$(RM) timing.0
 	@./testbasics || exit 1
 	@echo testbasics complete. Checking contents of timing.0 for a specific region name...
 	@grep -q testbasics timing.0 || exit 2
 	@./nlreader || exit 1
 	@echo Success
+	@echo
 ifeq ($(HAVE_PAPI),yes)
 	@./testinit || exit 1
+	@echo
 	@./testpapi || exit 1
+	@echo
 endif
 	@echo "All Fortran tests passed"

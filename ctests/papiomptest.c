@@ -103,7 +103,7 @@ double add (int looplen, double zero)
   char string[128];
   double val = zero;
 
-  if (looplen < 1000000)
+  if (looplen < 1000)
     sprintf (string, "%dadditions", looplen);
   else
     sprintf (string, "%-.3gadditions", (double) looplen);
@@ -126,7 +126,7 @@ double multiply (int looplen, int iter, double zero)
   char string[128];
   double val = iter;
 
-  if (looplen < 1000000)
+  if (looplen < 1000)
     sprintf (string, "%dmultiplies", looplen);
   else
     sprintf (string, "%-.3gmultiplies", (double) looplen);
@@ -150,7 +150,7 @@ double multadd (int looplen, double zero)
   char string[128];
   double val = zero;
 
-  if (looplen < 1000000)
+  if (looplen < 1000)
     sprintf (string, "%dmultadds", looplen);
   else
     sprintf (string, "%-.3gmultadds", (double) looplen);
@@ -173,7 +173,7 @@ double divide (int looplen, double one)
   char string[128];
   double val = one;
 
-  if (looplen < 1000000)
+  if (looplen < 1000)
     sprintf (string, "%ddivides", looplen);
   else
     sprintf (string, "%-.3gdivides", (double) looplen);
@@ -196,8 +196,8 @@ double compare (int looplen, int iter)
   char string[128];
   double val = iter;
 
-  if (looplen < 1000000)
-    sprintf (string, "%ddivides", looplen);
+  if (looplen < 1000)
+    sprintf (string, "%dcompares", looplen);
   else
     sprintf (string, "%-.3gcompares", (double) looplen);
 

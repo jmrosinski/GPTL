@@ -1,3 +1,11 @@
+/*
+** $Id: threadutil.c,v 1.12 2009-01-04 21:14:41 rosinski Exp $
+**
+** Author: Jim Rosinski
+** 
+** Utility functions handle thread-based GPTL needs.
+*/
+
 #include <stdlib.h>
 #include "private.h"
 

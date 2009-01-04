@@ -1,5 +1,9 @@
 /*
-$Id: private.h,v 1.61 2008-12-29 03:25:42 rosinski Exp $
+** $Id: private.h,v 1.62 2009-01-04 21:14:41 rosinski Exp $
+**
+** Author: Jim Rosinski
+**
+** Contains definitions private to GPTL and inaccessible to invoking user environment
 */
 
 #include <stdio.h>

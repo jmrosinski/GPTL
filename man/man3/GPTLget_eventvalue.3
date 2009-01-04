@@ -1,4 +1,4 @@
-.\" $Id: GPTLget_eventvalue.3,v 1.1 2008-12-30 20:16:47 rosinski Exp $
+.\" $Id: GPTLget_eventvalue.3,v 1.2 2009-01-04 21:14:41 rosinski Exp $
 .TH GPTLget_eventvalue 3 "December, 2008" "GPTL"
 
 .SH NAME
@@ -22,7 +22,7 @@ integer gptlget_eventvalue (character(len=*) name, character(len=*) eventname, i
 Returns current value of PAPI-based event
 .IR eventname
 in region
-.IR name .
+.IR name
 in user-supplied argument
 .IR value .
 Whether the event is derived (e.g. GPTL_CI) or a simple PAPI counter
@@ -47,7 +47,7 @@ Whether the event is derived (e.g. GPTL_CI) or a simple PAPI counter
 must have been called,
 .I eventname
 enabled with a call to 
-.B GPTLsetoption
+.B GPTLsetoption()
 and at least one pair of calls to
 .B GPTLstart()
 and 

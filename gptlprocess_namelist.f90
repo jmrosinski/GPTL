@@ -1,5 +1,12 @@
 subroutine gptlprocess_namelist (filename, unitno, outret)
 !
+! $Id: gptlprocess_namelist.f90,v 1.6 2009-01-04 21:14:41 rosinski Exp $
+!
+! Author: Jim Rosinski
+!
+! Utility subroutine processes namelist group &gptlnl and makes appropriate 
+! calls to gptlsetoption() and/or gptlsetutr().
+!
 ! To follow GPTL conventions this should be a function not a subroutine.
 ! But 'include ./gptl.inc' and then setting function gptlprocess_namelist
 ! to a return value causes compiler to barf because the function is declared 
@@ -7,9 +14,9 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
 !
   implicit none
 
-  character(len=*), intent(in) :: filename
-  integer, intent(in) :: unitno
-  integer, intent(out) :: outret
+  character(len=*), intent(in) :: filename  ! Input file containing &gptlnl
+  integer, intent(in) :: unitno             ! Fortran unit number to open
+  integer, intent(out) :: outret            ! Output return code
 
   include './gptl.inc'
 
@@ -37,6 +44,8 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
   logical, parameter :: def_dopr_collision  = .true.
   character(len=16), parameter :: def_print_method = 'most_frequent   '
   character(len=16), parameter :: def_utr          = 'gettimeofday    '
+
+! Namelist values: initialize to defaults
 
   logical :: wall            = def_wall
   logical :: cpu             = def_cpu

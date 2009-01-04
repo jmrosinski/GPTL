@@ -1,3 +1,12 @@
+!
+! $Id: gptl.inc,v 1.36 2009-01-04 21:14:41 rosinski Exp $
+!
+! Author: Jim Rosinski
+!
+! #include or Fortran include this file in application codes which invoke GPTL functions
+! Values defined here match their counterparts in gptl.h See that file or man pages
+! or web-based documenation for descriptions of each value
+!
       integer GPTLwall
       integer GPTLcpu
       integer GPTLabort_on_error

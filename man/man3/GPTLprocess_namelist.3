@@ -1,9 +1,12 @@
-.\" $Id: GPTLprocess_namelist.3,v 1.2 2009-01-04 00:18:40 rosinski Exp $
-.TH GPTLprocess_namelist 3 "December, 2008" "GPTL"
+.\" $Id: GPTLprocess_namelist.3,v 1.3 2009-01-04 21:14:41 rosinski Exp $
+.TH gptlprocess_namelist 3 "January, 2009" "GPTL"
 
 .SH NAME
-GPTLprocess_namelist \- Parse an input Fortran namelist and call
-GPTLsetoption/GPTLsetutr appropriately.
+gptlprocess_namelist \- Parse an input Fortran namelist and call
+.B gptlsetoption() 
+and/or 
+.B gptlsetutr() 
+appropriately.
 
 .SH SYNOPSIS
 .B Fortran Interface:
@@ -12,43 +15,44 @@ subroutine gptlprocess_namelist (character(len=*) filename, integer unitno, inte
 .fi
 
 .SH DESCRIPTION
-.B GPTLprocess_namelist
+.B gptlprocess_namelist()
 is a utility subroutine provided for convenience to Fortran applications. It
 allows the specification of input to
-.B GPTLsetoption
-and
-.B GPTLsetutr
+.B gptlsetoption()
+and/or
+.B gptlsetutr()
 via namelist input. This avoids the necessity of recompiling and relinking
-when changing
+the user application when changing
 .B GPTL
-options. The routine is provided as a subroutine rather than a function to
-get around problems encountered when 'include ./gptl.inc' declares the
+options. The routine is a subroutine rather than a function to
+get around problems encountered when gptl.inc declares the
 function to be external.
 
 .SH ARGUMENTS
 .TP
 .I filename
--- file name containing the namelist (namelist group gptlpr).
+-- file name containing the namelist (namelist group &gptlnl).
 
 .TP
 .I unitno
--- Fortran unit number to use when opening the namelist.
+-- Fortran unit number to use when opening the namelist file.
 
 .TP
 .I ret
 -- output return code
 
 .SH RESTRICTIONS
-.B GPTLinitialize()
+.B gptlinitialize()
 must 
 .B NOT
 have been called. Generally the user invokes
-.B GPTLinitialize()
-right after calling this function.
+.B gptlinitialize()
+right after calling
+.B gptlprocess_namelist().
 
 .SH RETURN VALUES
-On success, this subroutine returns 0 in output argument
-.B ret .
+On success, 0 is returned in output argument
+.B ret.
 On error, 
 .B ret
 is negative and a descriptive message
@@ -58,31 +62,49 @@ is set to 0. This is true even if some of the individual settings fail (e.g. if
 a requested PAPI event is not available).
 
 .SH EXAMPLES
-An example namelist (
-.B gptlnl
-) is provided in the ftests/ subdirectory of the GPTL distribution. When
-gptlprocess_namelist is called, it parses the namelist (namelist group name
-&gptlnl) and calls appropriate GPTL functions.
+An example namelist (group name &gptlnl) is shown below. The same file is available in
+ftests/gptnl. When 
+.B gptlprocess_namelist()
+is called, it parses the namelist and calls the
+appropriate GPTL functions accordingly. Namelist variable names match
+their counterparts in calls to
+.B gptlsetoption() 
+and 
+.B gptlsetutr(), 
+with the leading "gptl" left off. For example, the namelist can be used to
+enable printing of overhead statistics by setting overhead = .true.; the same
+thing is accomplished with the GPTL API by invoking 
+.B gptlsetoption (gptloverhead, 1).
 .nf         
-.if t .ft CW
 
-(void) GPTLsetoption (GPTLcpu, 1);      /* enable cpu timings */
-(void) GPTLsetoption (GPTLwall, 0);     /* disable wallclock timings */
-(void) GPTLsetoption (PAPI_TOT_CYC, 1); /* enable counting of total cycles */
-...
-(void) GPTLinitialize();                /* initialize the GPTL library */
-(void) GPTLstart ("total");             /* start a timer */
-...
-(void) GPTLstart ("do_work");           /* start another timer */
+&gptlnl
+! These settings are all the opposite of the default--for testing
+ wall            = .false.
+ cpu             = .true.
+ abort_on_error  = .true.
+ overhead        = .true.
+ depthlimit      = 1
+ verbose         = .true.
+ narrowprint     = .false.
+ percent         = .true.
+ persec          = .false.
+ multiplex       = .true.
+ dopr_preamble   = .false.
+ dopr_threadsort = .false.
+ dopr_multparent = .false.
+ dopr_collision  = .false.
 
-do_work();                              /* do some work */
+! The next 3 use character variables instead of integer to avoid 
+! "magic number" settings in the namelist
 
-(void) GPTLstop ("do_work");            /* stop a timer */
-(void) GPTLstop ("total");              /* stop a timer */
-...
-(void) GPTLpr (mympitaskid);            /* print the results to timing.<mympitaskid> */
+ utr             = 'nanotime'
+ print_method    = 'full_tree'
+!print_method    = 'first_parent'
+!print_method    = 'last_parent'
+!print_method    = 'most_frequent'  ! default
+ eventlist       = 'PAPI_FP_OPS','GPTL_CI' ! enable 2 events
+/
 
-.if t .ft P
 .fi
 
 .SH SEE ALSO

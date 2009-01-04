@@ -1,3 +1,11 @@
+/*
+** $Id: gptl.c,v 1.126 2009-01-04 21:14:41 rosinski Exp $
+**
+** Author: Jim Rosinski
+**
+** Main file contains most user-accessible GPTL functions
+*/
+ 
 #include <stdlib.h>        /* malloc */
 #include <sys/time.h>      /* gettimeofday */
 #include <sys/times.h>     /* times */
@@ -1035,7 +1043,6 @@ int GPTLdisable (void)
 
 int GPTLstamp (double *wall, double *usr, double *sys)
 {
-  struct timeval tp;         /* argument to gettimeofday */
   struct tms buf;            /* argument to times */
 
   if ( ! initialized)
@@ -1050,13 +1057,9 @@ int GPTLstamp (double *wall, double *usr, double *sys)
 
   *usr = buf.tms_utime / (double) ticks_per_sec;
   *sys = buf.tms_stime / (double) ticks_per_sec;
-
-  gettimeofday (&tp, 0);
-  *wall = tp.tv_sec + 1.e-6*tp.tv_usec;
-  return 0;
-#else
-  return GPTLerror ("GPTLstamp: times() not available\n");
 #endif
+  *wall = (*ptr2wtimefunc) ();
+  return 0;
 }
 
 /*
@@ -1193,7 +1196,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.125 2009-01-03 22:28:27 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.126 2009-01-04 21:14:41 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1899,10 +1902,10 @@ int GPTLpr_summary (int comm)
   MPI_Status status;                        /* required by MPI_Recv */
 
   if (comm == 0)
-    comm = MPI_COMM_WORLD;
+    comm = (MPI_Comm) MPI_COMM_WORLD;
 
-  ret = MPI_Comm_rank (comm, &iam);
-  ret = MPI_Comm_size (comm, &nproc);
+  ret = MPI_Comm_rank ((MPI_Comm) comm, &iam);
+  ret = MPI_Comm_size ((MPI_Comm) comm, &nproc);
 #endif
 
   /*
@@ -1915,7 +1918,7 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.125 2009-01-03 22:28:27 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.126 2009-01-04 21:14:41 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");

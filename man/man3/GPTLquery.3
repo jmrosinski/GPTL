@@ -1,5 +1,5 @@
-.\" $Id: GPTLquery.3,v 1.3 2009-01-03 22:28:27 rosinski Exp $
-.TH GPTLquery 3 "February, 2007" "GPTL"
+.\" $Id: GPTLquery.3,v 1.4 2009-01-04 21:14:41 rosinski Exp $
+.TH GPTLquery 3 "January, 2009" "GPTL"
 
 .SH NAME
 GPTLquery \- Request current values of all data for an existing timer
@@ -24,10 +24,12 @@ integer gptlquerycounters (character(len=*) name, integer t, integer*8 counters)
 .fi
 
 .SH DESCRIPTION
+If PAPI and/or derived event information is desired, consider using
+.B GPTLget_eventvalue()
+instead of either of these functions.
 .B GPTLquery()
 Requests all information about the timer identified by 
 .IR name .
-
 .B GPTLquerycounters()
 Requests PAPI counter information about the timer identified by
 .IR name .

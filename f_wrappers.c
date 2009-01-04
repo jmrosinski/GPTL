@@ -1,5 +1,7 @@
 /*
-** $Id: f_wrappers.c,v 1.38 2008-12-29 02:25:39 rosinski Exp $
+** $Id: f_wrappers.c,v 1.39 2009-01-04 21:14:41 rosinski Exp $
+**
+** Author: Jim Rosinski
 ** 
 ** Fortran wrappers for timing library routines
 */

@@ -1,10 +1,8 @@
-.\" $Id: GPTLreset.3,v 1.2 2007-04-17 20:09:03 rosinski Exp $
-.TH GPTLreset 3 "February, 2007" "GPTL"
+.\" $Id: GPTLreset.3,v 1.3 2009-01-04 21:14:41 rosinski Exp $
+.TH GPTLreset 3 "January, 2009" "GPTL"
 
 .SH NAME
-GPTLreset \- Reset all timers. IMPORTANT NOTE: this function has no effect on
-PAPI counters.  Only metrics countable by GPTL itself (currently cpu time and
-wallclock time) can be reset.
+GPTLreset \- Reset all timer contents to zero. 
 
 .SH SYNOPSIS
 .B C Interface:
@@ -18,7 +16,7 @@ integer gptlreset ()
 .fi
 
 .SH DESCRIPTION
-Reset all timers (except PAPI counters) to zero.  
+Reset all timer contents to zero.  This includes any embedded PAPI counters.
 
 .SH RESTRICTIONS
 .B GPTLinitialize()
