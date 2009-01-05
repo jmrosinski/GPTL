@@ -145,5 +145,5 @@ gptl.o: gptl.c gptl.h private.h
 util.o: util.c gptl.h private.h
 threadutil.o: threadutil.c gptl.h private.h
 gptl_papi.o: gptl_papi.c gptl.h private.h
-gptlprocess_namelist.o: gptlprocess_namelist.f90 gptl.inc
+gptlprocess_namelist.o: gptlprocess_namelist.F90 gptl.inc
 	$(FC) -c $(FFLAGS) $<

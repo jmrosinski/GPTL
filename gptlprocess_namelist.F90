@@ -1,6 +1,6 @@
 subroutine gptlprocess_namelist (filename, unitno, outret)
 !
-! $Id: gptlprocess_namelist.f90,v 1.6 2009-01-04 21:14:41 rosinski Exp $
+! $Id: gptlprocess_namelist.F90,v 1.1 2009-01-05 22:12:37 rosinski Exp $
 !
 ! Author: Jim Rosinski
 !
@@ -231,6 +231,7 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
       write(6,*)'gptlprocess_namelist: print_method not available: ', print_method
     end if
   end if
+#ifdef HAVE_PAPI
 !
 ! PAPI-based events
 !
@@ -244,7 +245,9 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
       end if
     end if
   end do
-
+#else
+  write(6,*)'gptlprocess_namelist: skipping check for PAPI-based events because GPTL was built without PAPI support'
+#endif
   close (unit=unitno)
   outret = 0
   return
