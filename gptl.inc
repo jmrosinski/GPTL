@@ -1,5 +1,5 @@
 !
-! $Id: gptl.inc,v 1.36 2009-01-04 21:14:41 rosinski Exp $
+! $Id: gptl.inc,v 1.37 2009-01-06 22:28:07 rosinski Exp $
 !
 ! Author: Jim Rosinski
 !
@@ -104,6 +104,7 @@
       integer gptlsetutr
       integer gptlquery
       integer gptlquerycounters
+      integer gptlget_wallclock
       integer gptlget_eventvalue
       integer gptlget_nregions
       integer gptlget_regionname
@@ -128,6 +129,7 @@
       external gptlsetutr
       external gptlquery
       external gptlquerycounters
+      external gptlget_wallclock
       external gptlget_eventvalue
       external gptlget_nregions
       external gptlget_regionname

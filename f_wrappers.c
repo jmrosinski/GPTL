@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.39 2009-01-04 21:14:41 rosinski Exp $
+** $Id: f_wrappers.c,v 1.40 2009-01-06 22:28:07 rosinski Exp $
 **
 ** Author: Jim Rosinski
 ** 
@@ -28,6 +28,7 @@
 #define gptlsetutr GPTLSETUTR
 #define gptlquery GPTLQUERY
 #define gptlquerycounters GPTLQUERYCOUNTERS
+#define gptlget_wallclock GPTLGET_WALLCLOCK
 #define gptlget_eventvalue GPTLGET_EVENTVALUE
 #define gptlget_nregions GPTLGET_NREGIONS
 #define gptlget_regionname GPTLGET_REGIONNAME
@@ -54,6 +55,7 @@
 #define gptlsetutr gptlsetutr_
 #define gptlquery gptlquery_
 #define gptlquerycounters gptlquerycounters_
+#define gptlget_wallclock gptlget_wallclock_
 #define gptlget_eventvalue gptlget_eventvalue_
 #define gptlget_nregions gptlget_nregions_
 #define gptlget_regionname gptlget_regionname_
@@ -80,6 +82,7 @@
 #define gptlsetutr gptlsetutr_
 #define gptlquery gptlquery_
 #define gptlquerycounters gptlquerycounters_
+#define gptlget_wallclock gptlget_wallclock__
 #define gptlget_eventvalue gptlget_eventvalue__
 #define gptlget_nregions gptlget_nregions__
 #define gptlget_regionname gptlget_regionname__
@@ -200,6 +203,18 @@ int gptlquerycounters (const char *name, int *t, long long *papicounters_out, in
   strncpy (cname, name, numchars);
   cname[numchars] = '\0';
   return GPTLquerycounters (cname, *t, papicounters_out);
+}
+
+int gptlget_wallclock (const char *name, int *t, double *value, int nc)
+{
+  char cname[MAX_CHARS+1];
+  int numchars;
+
+  numchars = MIN (nc, MAX_CHARS);
+  strncpy (cname, name, numchars);
+  cname[numchars] = '\0';
+
+  return GPTLget_wallclock (cname, *t, value);
 }
 
 int gptlget_eventvalue (const char *timername, const char *eventname, int *t, double *value, 

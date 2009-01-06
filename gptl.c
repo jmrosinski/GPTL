@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.c,v 1.126 2009-01-04 21:14:41 rosinski Exp $
+** $Id: gptl.c,v 1.127 2009-01-06 22:28:07 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -1196,7 +1196,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.126 2009-01-04 21:14:41 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.127 2009-01-06 22:28:07 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1918,7 +1918,7 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.126 2009-01-04 21:14:41 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.127 2009-01-06 22:28:07 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");
@@ -2255,6 +2255,50 @@ int GPTLquerycounters (const char *name,
 }
 
 /*
+** GPTLget_wallclock: return wallclock accumulation for a timer.
+** 
+** Input args:
+**   timername: timer name
+**   t:         thread number (if < 0, the request is for the current thread)
+**
+** Output args:
+**   value: current wallclock accumulation for the timer
+*/
+
+int GPTLget_wallclock (const char *timername,
+		      int t,
+		      double *value)
+{
+  Timer *ptr; /* linked list pointer */
+  int indx;   /* hash index returned from getentry (unused) */
+  
+  if ( ! initialized)
+    return GPTLerror ("GPTLquery_event: GPTLinitialize has not been called\n");
+
+  if ( ! wallstats.enabled)
+    return GPTLerror ("GPTLquery_event: wallstats not enabled\n");
+  
+  /*
+  ** If t is < 0, assume the request is for the current thread
+  */
+  
+  if (t < 0) {
+    if ((t = get_thread_num (&GPTLnthreads, &maxthreads)) < 0)
+      return GPTLerror ("GPTLget_wallclock: get_thread_num failure\n");
+  } else {
+    if (t >= maxthreads)
+      return GPTLerror ("GPTLget_wallclock: requested thread %d is too big\n", t);
+  }
+  
+  ptr = getentry (hashtable[t], timername, &indx);
+  if ( !ptr)
+    return GPTLerror ("GPTLget_wallclock: requested timer %s does not exist\n", timername);
+
+  *value = ptr->wall.accum;
+  return 0;
+}
+
+/*
 ** GPTLget_eventvalue: return PAPI-based event value for a timer. All values will be
 **   returned as doubles, even if the event is not derived.
 ** 
@@ -2284,15 +2328,15 @@ int GPTLget_eventvalue (const char *timername,
   
   if (t < 0) {
     if ((t = get_thread_num (&GPTLnthreads, &maxthreads)) < 0)
-      return GPTLerror ("GPTLquery_event: get_thread_num failure\n");
+      return GPTLerror ("GPTLget_eventvalue: get_thread_num failure\n");
   } else {
     if (t >= maxthreads)
-      return GPTLerror ("GPTLquery_event: requested thread %d is too big\n", t);
+      return GPTLerror ("GPTLget_eventvalue: requested thread %d is too big\n", t);
   }
   
   ptr = getentry (hashtable[t], timername, &indx);
   if ( !ptr)
-    return GPTLerror ("GPTLquery_event: requested timer %s does not exist\n", timername);
+    return GPTLerror ("GPTLget_eventvalue: requested timer %s does not exist\n", timername);
 
 #ifdef HAVE_PAPI
   return GPTL_PAPIget_eventvalue (eventname, &ptr->aux, value);
