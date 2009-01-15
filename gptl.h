@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.h,v 1.49 2009-01-04 21:14:41 rosinski Exp $
+** $Id: gptl.h,v 1.50 2009-01-15 20:57:04 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -97,6 +97,7 @@ extern int GPTLsetutr (const int);
 extern int GPTLquery (const char *, int, int *, int *, double *, double *, double *,
 		      long long *, const int);
 extern int GPTLquerycounters (const char *, int, long long *);
+extern int GPTLget_wallclock (const char *, int, double *);
 extern int GPTLget_eventvalue (const char *, const char *, int, double *);
 extern int GPTLget_nregions (int, int *);
 extern int GPTLget_regionname (int, int, char *, int);
