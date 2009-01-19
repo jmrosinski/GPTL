@@ -8,20 +8,24 @@
  verbose         = .true.
  narrowprint     = .false.
  percent         = .true.
- persec          = .false.
- multiplex       = .true.
+! Comment out persec and multiplex so "nlreader" test won't fail even if 
+!   PAPI unavailable
+! persec          = .false.
+! multiplex       = .true.
  dopr_preamble   = .false.
  dopr_threadsort = .false.
  dopr_multparent = .false.
  dopr_collision  = .false.
 
-! The next 3 use character variables instead of integer to avoid "magic number"
-! settings in the namelist
+! utr, print_method, and eventlist use character variables instead of integer 
+! to avoid "magic number" settings in the namelist
 
  utr             = 'nanotime'
  print_method    = 'full_tree'
 !print_method    = 'first_parent'
 !print_method    = 'last_parent'
 !print_method    = 'most_frequent'  ! default
- eventlist       = 'PAPI_FP_OPS','GPTL_CI'
+
+! Comment out eventlist so "nlreader" test won't fail even if PAPI unavailable
+! eventlist       = 'PAPI_FP_OPS','GPTL_CI'
 /
