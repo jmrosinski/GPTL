@@ -126,3 +126,11 @@ HAVE_TIMES = yes
 
 # gettimeofday() should be available everywhere. But if not, set to "no"
 HAVE_GETTIMEOFDAY = yes
+
+# Whether to test auto-profiling (adds 1 test to "make test"). If compiler is gcc or 
+# pathscale, set INSTRFLAG to -finstrument-functions. PGI 8.0.2 and later provide 
+# -Minstrument:functions.
+TEST_AUTOPROFILE = yes
+ifeq ($(TEST_AUTOPROFILE),yes)
+  INSTRFLAG = -finstrument-functions
+endif

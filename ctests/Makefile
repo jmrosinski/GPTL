@@ -8,18 +8,11 @@ ifeq ($(HAVE_PAPI),yes)
   TESTS += testpapi
 endif
 
-# Profiling is possible with GNU or Pathscale compilers
-ifeq ($(CC),gcc)
-  PROFILE = yes
-endif
-ifeq ($(CC),pathcc)
-  PROFILE = yes
-endif
-ifeq ($(PROFILE),yes)
+# Auto-profiling 
+ifeq ($(TEST_AUTOPROFILE),yes)
   TESTS += cygprofile
 # Initialize OBJS
   OBJS = cygprofilesubs.o
-  INSTRFLAGS = -finstrument-functions
 endif
 
 # EXES is TESTS plus some other sample codes.
@@ -72,9 +65,9 @@ papiomptest: papiomptest.o
 	$(CC) $(THREADFLAGS) -o $@ $< $(LDFLAGS)
 
 cygprofile: cygprofile.o cygprofilesubs.o
-	$(CC) -o $@ cygprofile.o cygprofilesubs.o $(LDFLAGS)
+	$(CC) -o $@ cygprofile.o cygprofilesubs.o $(LDFLAGS) $(INSTRFLAG)
 cygprofilesubs.o: cygprofilesubs.c
-	$(CC) -c $(CFLAGS) $(INSTRFLAGS) -o $@ $<
+	$(CC) -c $(CFLAGS) $(INSTRFLAG) -o $@ $<
 
 stride: stride.o
 	$(CC) -o $@ $< $(LDFLAGS)
@@ -113,10 +106,12 @@ papiacc: papiacc.o
 
 test: $(TESTS)
 	@echo
+
 ifeq ($(HAVE_PAPI),yes)
 	@./testpapi        || exit 1
 	@echo
 endif
+
 ifeq ($(HAVE_MPI),yes)
 	@echo Running env OMP_NUM_THREADS=2 $(MPICMD) -n 2 ./summary...
 	@env OMP_NUM_THREADS=2 $(MPICMD) -n 2 ./summary || (echo "Failure to run" && exit 1)
@@ -124,8 +119,9 @@ ifeq ($(HAVE_MPI),yes)
 	@grep -q sleep timing.summary && echo "Success" || (echo "Failure" && exit 1)
 	@echo
 endif
-ifeq ($(PROFILE),yes)
-	@echo "Testing auto-instrumentation..."
+
+ifeq ($(TEST_AUTOPROFILE),yes)
+	@echo "Testing auto-profiling..."
 	@./cygprofile || (echo "Failure to run" && exit 1)
 	@(../hex2name.pl ./cygprofile timing.0 | grep -q callutil100times) && echo "Success" || (echo "Failure" && exit 1)
 	@echo
