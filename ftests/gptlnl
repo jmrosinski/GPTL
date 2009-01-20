@@ -5,7 +5,7 @@
  abort_on_error  = .true.
  overhead        = .true.
  depthlimit      = 1
- verbose         = .true.
+! verbose         = .true.
  narrowprint     = .false.
  percent         = .true.
 ! Comment out persec and multiplex so "nlreader" test won't fail even if 
