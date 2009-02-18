@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.h,v 1.50 2009-01-15 20:57:04 rosinski Exp $
+** $Id: gptl.h,v 1.51 2009-02-18 19:05:11 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -86,7 +86,11 @@ extern int GPTLstop (const char *);
 extern int GPTLstamp (double *, double *, double *);
 extern int GPTLpr (const int);
 extern int GPTLpr_file (const char *);
-extern int GPTLpr_summary (int);
+/*
+** Don't outline args to GPTLpr_summary: MPI datatypes aren't available if built w/o MPI support
+** With MPI support, the one arg is MPI_Comm. W/O MPI support, it's an int
+*/
+extern int GPTLpr_summary ();
 extern int GPTLreset (void);
 extern int GPTLfinalize (void);
 extern int GPTLget_memusage (int *, int *, int *, int *, int *);

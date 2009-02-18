@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.c,v 1.127 2009-01-06 22:28:07 rosinski Exp $
+** $Id: gptl.c,v 1.128 2009-02-18 19:05:11 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -1196,7 +1196,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.127 2009-01-06 22:28:07 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.128 2009-02-18 19:05:11 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1879,9 +1879,14 @@ static void add (Timer *tout,
 **
 ** Input arguments:
 **   comm: commuicator (e.g. MPI_COMM_WORLD). If zero, use MPI_COMM_WORLD
+**         Note: if built w/o MPI support, this arg is unused
 */
 
+#ifdef HAVE_MPI
+int GPTLpr_summary (MPI_Comm comm)
+#else
 int GPTLpr_summary (int comm)
+#endif
 {
   const char *outfile = "timing.summary";
   int iam = 0;                     /* MPI rank: default master */
@@ -1901,11 +1906,11 @@ int GPTLpr_summary (int comm)
   Summarystats summarystats_slave;          /* stats sent to master */
   MPI_Status status;                        /* required by MPI_Recv */
 
-  if (comm == 0)
-    comm = (MPI_Comm) MPI_COMM_WORLD;
+  if (((int) comm) == 0)
+    comm = MPI_COMM_WORLD;
 
-  ret = MPI_Comm_rank ((MPI_Comm) comm, &iam);
-  ret = MPI_Comm_size ((MPI_Comm) comm, &nproc);
+  ret = MPI_Comm_rank (comm, &iam);
+  ret = MPI_Comm_size (comm, &nproc);
 #endif
 
   /*
@@ -1918,7 +1923,7 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.127 2009-01-06 22:28:07 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.128 2009-02-18 19:05:11 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");

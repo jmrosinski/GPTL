@@ -1,10 +1,14 @@
 /*
-** $Id: f_wrappers.c,v 1.40 2009-01-06 22:28:07 rosinski Exp $
+** $Id: f_wrappers.c,v 1.41 2009-02-18 19:05:11 rosinski Exp $
 **
 ** Author: Jim Rosinski
 ** 
 ** Fortran wrappers for timing library routines
 */
+
+#ifdef HAVE_MPI
+#include <mpi.h>
+#endif
 
 #include <string.h>
 #include <stdlib.h>
@@ -124,9 +128,15 @@ int gptlpr_file (char *file, int nc1)
   return ret;
 }
 
-int gptlpr_summary (int *comm)
+int gptlpr_summary (int *fcomm)
 {
-  return GPTLpr_summary (*comm);
+  MPI_Comm ccomm;
+#ifdef HAVE_MPI
+  ccomm = MPI_Comm_f2c (*fcomm);
+  return GPTLpr_summary (ccomm);
+#else
+  return GPTLpr_summary (*fcomm);
+#endif
 }
 
 int gptlreset ()
