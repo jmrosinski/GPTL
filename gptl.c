@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.c,v 1.128 2009-02-18 19:05:11 rosinski Exp $
+** $Id: gptl.c,v 1.129 2009-02-19 20:59:08 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -379,7 +379,7 @@ int GPTLinitialize (void)
     }
 
     /*
-    ** Make a timer "MAIN" to ensure no orphans, and to simplify printing.
+    ** Make a timer "GPTL_ROOT" to ensure no orphans, and to simplify printing.
     */
 
     timers[t] = (Timer *) GPTLallocate (sizeof (Timer));
@@ -1196,7 +1196,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.128 2009-02-18 19:05:11 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.129 2009-02-19 20:59:08 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1923,7 +1923,7 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.128 2009-02-18 19:05:11 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.129 2009-02-19 20:59:08 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");
