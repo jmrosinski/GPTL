@@ -1,9 +1,9 @@
+#include "../gptl.h"
+
 #include <stdio.h>
 #include <stdlib.h>  /* atoi,exit */
 #include <unistd.h>  /* getopt */
 #include <string.h>  /* memset */
-
-#include "../gptl.h"
 
 #ifdef HAVE_PAPI
 #include <papi.h>

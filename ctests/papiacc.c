@@ -1,9 +1,10 @@
+#include "../gptl.h"
+
 #include <stdio.h>
 #include <stdlib.h>  /* malloc, exit */
 #include <unistd.h>  /* getopt */
 #include <string.h>  /* memset */
 #include <papi.h>
-#include "../gptl.h"
 
 int main (int argc, char **argv)
 {
@@ -36,25 +37,25 @@ int main (int argc, char **argv)
     }
   }
 
-  if (!(a = malloc (looplen * sizeof (a)))) {
+  if (!(a = (double *) malloc (looplen * sizeof (a)))) {
     printf ("malloc failure\n");
     exit (1);
   }
   memset (a, 0, looplen*sizeof (a));
 
-  if (!(b = malloc (looplen * sizeof (b)))) {
+  if (!(b = (double *) malloc (looplen * sizeof (b)))) {
     printf ("malloc failure\n");
     exit (1);
   }
   memset (b, 0, looplen*sizeof (b));
 
-  if (!(ia = malloc (looplen * sizeof (ia)))) {
+  if (!(ia = (int *) malloc (looplen * sizeof (ia)))) {
     printf ("malloc failure\n");
     exit (1);
   }
   memset (ia, 0, looplen*sizeof (ia));
 
-  if (!(ib = malloc (looplen * sizeof (ib)))) {
+  if (!(ib = (int *) malloc (looplen * sizeof (ib)))) {
     printf ("malloc failure\n");
     exit (1);
   }

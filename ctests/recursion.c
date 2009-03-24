@@ -1,5 +1,5 @@
-#include <stdio.h>
 #include "../gptl.h"
+#include <stdio.h>
 
 #ifdef NUMERIC_TIMERS
 #define TOTAL 0

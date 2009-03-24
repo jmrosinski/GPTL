@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.41 2009-02-18 19:05:11 rosinski Exp $
+** $Id: f_wrappers.c,v 1.42 2009-03-24 20:51:25 rosinski Exp $
 **
 ** Author: Jim Rosinski
 ** 
@@ -118,7 +118,7 @@ int gptlpr_file (char *file, int nc1)
   char *locfile;
   int ret;
 
-  if ( ! (locfile = malloc (nc1+1)))
+  if ( ! (locfile = (char *) malloc (nc1+1)))
     return GPTLerror ("gptlpr_file: malloc error\n");
 
   snprintf (locfile, nc1+1, "%s", file);
@@ -128,16 +128,20 @@ int gptlpr_file (char *file, int nc1)
   return ret;
 }
 
+#ifdef HAVE_MPI
 int gptlpr_summary (int *fcomm)
 {
   MPI_Comm ccomm;
-#ifdef HAVE_MPI
   ccomm = MPI_Comm_f2c (*fcomm);
   return GPTLpr_summary (ccomm);
-#else
-  return GPTLpr_summary (*fcomm);
-#endif
 }
+#else
+int gptlpr_summary (void)
+{
+  return GPTLpr_summary ();
+}
+#endif
+
 
 int gptlreset ()
 {

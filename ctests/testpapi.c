@@ -1,5 +1,7 @@
 #include "../gptl.h"
 #include <papi.h>
+#include <stdio.h>
+
 int main ()
 {
   int ret;

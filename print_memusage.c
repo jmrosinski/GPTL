@@ -1,5 +1,5 @@
 /*
-** $Id: print_memusage.c,v 1.4 2009-01-04 21:14:41 rosinski Exp $
+** $Id: print_memusage.c,v 1.5 2009-03-24 20:51:25 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -11,8 +11,8 @@
 **                 -1 = failure
 */
 
-#include <stdio.h>
 #include "gptl.h"
+#include <stdio.h>
 
 int GPTLprint_memusage (const char *str)
 {

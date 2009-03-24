@@ -1,6 +1,7 @@
+#include "../gptl.h"
+
 #include <unistd.h>
 #include <stdio.h>
-#include "../gptl.h"
 
 #ifdef THREADED_OMP
 #include <omp.h>

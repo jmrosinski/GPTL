@@ -1,16 +1,20 @@
+#ifdef HAVE_MPI
+#include <mpi.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>  /* atoi */
 #include <unistd.h>  /* getopt */
 #include <string.h>  /* memset */
 
-#ifdef HAVE_MPI
-#include <mpi.h>
-#endif
-
 #include "../gptl.h"
 
 #ifdef HAVE_PAPI
 #include <papi.h>
+#endif
+
+#ifdef THREADED_OMP
+#include <omp.h>
 #endif
 
 static int iam = 0;

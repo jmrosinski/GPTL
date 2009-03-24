@@ -1,6 +1,7 @@
+#include "../gptl.h"
+
 #include <stdio.h>
 #include <stdlib.h>
-#include "../gptl.h"
 
 #ifdef HAVE_PAPI
 #include <papi.h>

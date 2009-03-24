@@ -1,5 +1,5 @@
 /*
-** $Id: private.h,v 1.62 2009-01-04 21:14:41 rosinski Exp $
+** $Id: private.h,v 1.63 2009-03-24 20:51:25 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -8,7 +8,6 @@
 
 #include <stdio.h>
 #include <sys/time.h>
-#include "gptl.h"
 
 #ifndef MIN
 #define MIN(X,Y) ((X) < (Y) ? (X) : (Y))

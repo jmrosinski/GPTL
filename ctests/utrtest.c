@@ -1,10 +1,12 @@
-#include <stdio.h>
-#include <stdlib.h>  /* exit */
-#include <unistd.h>  /* getopt */
 #include "../gptl.h"
 #ifdef HAVE_MPI
 #include <mpi.h>
 #endif
+
+#include <stdio.h>
+#include <stdlib.h>  /* exit */
+#include <unistd.h>  /* getopt */
+#include <papi.h>
 
 int main (int argc, char **argv)
 {

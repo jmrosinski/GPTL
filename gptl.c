@@ -1,11 +1,15 @@
 /*
-** $Id: gptl.c,v 1.129 2009-02-19 20:59:08 rosinski Exp $
+** $Id: gptl.c,v 1.130 2009-03-24 20:51:25 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
 ** Main file contains most user-accessible GPTL functions
 */
  
+#ifdef HAVE_MPI
+#include <mpi.h>
+#endif
+
 #include <stdlib.h>        /* malloc */
 #include <sys/time.h>      /* gettimeofday */
 #include <sys/times.h>     /* times */
@@ -28,15 +32,12 @@
 #include <intrinsics.h>    /* rtc */
 #endif
 
-#ifdef HAVE_MPI
-#include <mpi.h>
-#endif
-
 #ifdef HAVE_LIBRT
 #include <time.h>
 #endif
 
 #include "private.h"
+#include "gptl.h"
 
 static Timer **timers = 0;          /* linked list of timers */
 static Timer **last = 0;            /* last element in list */
@@ -269,7 +270,7 @@ int GPTLsetoption (const int option,  /* option */
       printf ("GPTLsetoption: boolean dopr_collision = %d\n", val);
     return 0;
   case GPTLprint_method:
-    method = val; 
+    method = (Method) val; 
     if (verbose)
       printf ("GPTLsetoption: print_method = %s\n", methodstr (method));
     return 0;
@@ -1181,7 +1182,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   else
     totlen = strlen (outfile) + 2; 
 
-  outpath = GPTLallocate (totlen);
+  outpath = (char *) GPTLallocate (totlen);
 
   if (outdir) {
      strcpy (outpath, outdir);
@@ -1196,7 +1197,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.129 2009-02-19 20:59:08 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.130 2009-03-24 20:51:25 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1879,13 +1880,13 @@ static void add (Timer *tout,
 **
 ** Input arguments:
 **   comm: commuicator (e.g. MPI_COMM_WORLD). If zero, use MPI_COMM_WORLD
-**         Note: if built w/o MPI support, this arg is unused
+**         If built w/o MPI support, GPTLpr_summary takes no arg.
 */
 
 #ifdef HAVE_MPI
 int GPTLpr_summary (MPI_Comm comm)
 #else
-int GPTLpr_summary (int comm)
+int GPTLpr_summary (void)
 #endif
 {
   const char *outfile = "timing.summary";
@@ -1905,6 +1906,7 @@ int GPTLpr_summary (int comm)
   char name[MAX_CHARS+1];                   /* timer name requested by master */
   Summarystats summarystats_slave;          /* stats sent to master */
   MPI_Status status;                        /* required by MPI_Recv */
+  char *emptystring = "";
 
   if (((int) comm) == 0)
     comm = MPI_COMM_WORLD;
@@ -1923,7 +1925,7 @@ int GPTLpr_summary (int comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.129 2009-02-19 20:59:08 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.130 2009-03-24 20:51:25 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");
@@ -1997,7 +1999,7 @@ int GPTLpr_summary (int comm)
 #ifdef HAVE_MPI
     /* Signal that we're done */
 
-    ret = MPI_Bcast ("", 1, MPI_CHAR, 0, comm);
+    ret = MPI_Bcast (emptystring, 1, MPI_CHAR, 0, comm);
 #endif
 
   } else {   /* iam != 0 (slave) */
@@ -2561,8 +2563,9 @@ static inline int get_thread_num (int *GPTLnthreads, int *maxthreads)
 #endif
 
 /*
-** Add entry points for gcc (and some PathScale) codes instrumented with 
-** -finstrument-functions
+** Add entry points for auto-instrumented codes
+** (-finstrument-functions in gcc, pathcc,
+**  -Minstrument:functions in pgcc)
 */
 
 #ifdef __cplusplus

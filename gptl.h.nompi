@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.h,v 1.52 2009-03-24 20:51:25 rosinski Exp $
+** $Id: gptl.h.nompi,v 1.1 2009-03-24 20:51:25 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -9,7 +9,6 @@
 #ifndef GPTL_H
 #define GPTL_H
 
-#include <mpi.h>  /* Needed for GPTLpr_summary */
 /*
 ** Options settable by a call to GPTLsetoption() (default in parens)
 ** These numbers need to be small integers because GPTLsetoption can
@@ -80,6 +79,10 @@ typedef enum {
 ** Function prototypes
 */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern int GPTLsetoption (const int, const int);
 extern int GPTLinitialize (void);
 extern int GPTLstart (const char *);
@@ -87,7 +90,7 @@ extern int GPTLstop (const char *);
 extern int GPTLstamp (double *, double *, double *);
 extern int GPTLpr (const int);
 extern int GPTLpr_file (const char *);
-extern int GPTLpr_summary (MPI_Comm comm);
+extern int GPTLpr_summary (void);
 extern int GPTLreset (void);
 extern int GPTLfinalize (void);
 extern int GPTLget_memusage (int *, int *, int *, int *, int *);
@@ -105,4 +108,9 @@ extern int GPTLget_regionname (int, int, char *, int);
 extern int GPTL_PAPIlibraryinit ();
 extern int GPTLevent_name_to_code (const char *, int *);
 extern int GPTLevent_code_to_name (const int, char *);
+
+#ifdef __cplusplus
+};
+#endif
+
 #endif

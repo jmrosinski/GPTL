@@ -38,7 +38,7 @@ while ($arg = shift (@ARGV)) {
     if ($arg eq "-f") {
 	$fnroot = shift (@ARGV);    # change root of file name
     } elsif ($arg eq "-h") {
-	$heading = shift (@ARGV);    # change root of file name
+	$heading = shift (@ARGV);   # change heading to search for
     } elsif ($arg eq "-v") {
 	$verbose = 1;
     } else {

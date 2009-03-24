@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.h,v 1.52 2009-03-24 20:51:25 rosinski Exp $
+** $Id: gptl.h.havempi,v 1.1 2009-03-24 20:51:25 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -80,6 +80,10 @@ typedef enum {
 ** Function prototypes
 */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern int GPTLsetoption (const int, const int);
 extern int GPTLinitialize (void);
 extern int GPTLstart (const char *);
@@ -105,4 +109,9 @@ extern int GPTLget_regionname (int, int, char *, int);
 extern int GPTL_PAPIlibraryinit ();
 extern int GPTLevent_name_to_code (const char *, int *);
 extern int GPTLevent_code_to_name (const int, char *);
+
+#ifdef __cplusplus
+};
+#endif
+
 #endif

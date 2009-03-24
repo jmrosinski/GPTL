@@ -1,5 +1,5 @@
 /*
-** $Id: gptl_papi.c,v 1.66 2009-01-04 21:14:41 rosinski Exp $
+** $Id: gptl_papi.c,v 1.67 2009-03-24 20:51:25 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -7,6 +7,9 @@
 */
  
 #ifdef HAVE_PAPI
+
+#include "gptl.h"
+#include "private.h"
 
 #include <papi.h>
 #include <stdlib.h>
@@ -18,9 +21,6 @@
 #elif ( defined THREADED_PTHREADS )
 #include <pthread.h>
 #endif
-
-#include "private.h"
-#include "gptl.h"
 
 /* Mapping of PAPI counters to short and long printed strings */
 
@@ -468,15 +468,15 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
   if ((numidx = papievent_is_enabled (counter)) >= 0) {
     pr_event[nevents].event.counter = counter;
 
-    pr_event[nevents].event.namestr = GPTLallocate (12+1);
+    pr_event[nevents].event.namestr = (char *) GPTLallocate (12+1);
     strncpy (pr_event[nevents].event.namestr, eventname, 12);
     pr_event[nevents].event.namestr[12] = '\0';
 
-    pr_event[nevents].event.str16 = GPTLallocate (16+1);
+    pr_event[nevents].event.str16 = (char *) GPTLallocate (16+1);
     strncpy (pr_event[nevents].event.str16, eventname, 16);
     pr_event[nevents].event.str16[16] = '\0';
 
-    pr_event[nevents].event.longstr = GPTLallocate (PAPI_MAX_STR_LEN);
+    pr_event[nevents].event.longstr = (char *) GPTLallocate (PAPI_MAX_STR_LEN);
     strncpy (pr_event[nevents].event.longstr, eventname, PAPI_MAX_STR_LEN);
 
     pr_event[nevents].numidx = numidx;
@@ -484,15 +484,15 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
   } else if (canenable (counter)) {
     pr_event[nevents].event.counter = counter;
 
-    pr_event[nevents].event.namestr = GPTLallocate (12+1);
+    pr_event[nevents].event.namestr = (char *) GPTLallocate (12+1);
     strncpy (pr_event[nevents].event.namestr, eventname, 12);
     pr_event[nevents].event.namestr[12] = '\0';
 
-    pr_event[nevents].event.str16 = GPTLallocate (16+1);
+    pr_event[nevents].event.str16 = (char *) GPTLallocate (16+1);
     strncpy (pr_event[nevents].event.str16, eventname, 16);
     pr_event[nevents].event.str16[16] = '\0';
 
-    pr_event[nevents].event.longstr = GPTLallocate (PAPI_MAX_STR_LEN);
+    pr_event[nevents].event.longstr = (char *) GPTLallocate (PAPI_MAX_STR_LEN);
     strncpy (pr_event[nevents].event.longstr, eventname, PAPI_MAX_STR_LEN);
 
     pr_event[nevents].numidx = enable (counter);

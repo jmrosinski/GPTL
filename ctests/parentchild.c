@@ -1,8 +1,9 @@
+#include "../gptl.h"
+
 #include <math.h>
 #include <sys/time.h>     /* gettimeofday */
 #include <unistd.h>       /* gettimeofday */
 #include <stdio.h>
-#include "../gptl.h"
 
 int main(int argc, char **argv)
 {

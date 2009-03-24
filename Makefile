@@ -68,8 +68,10 @@ ifeq ($(HAVE_MPI),yes)
   CFLAGS       += $(MPI_INCFLAGS)
   CFLAGS_TESTS += $(MPI_INCFLAGS)
   LDFLAGS      += $(MPI_LIBFLAGS)
+  HEADER = gptl.h.havempi
 else
   HAVE_MPI = no
+  HEADER = gptl.h.nompi
 endif
 
 ifeq ($(HAVE_LIBRT),yes)
@@ -113,7 +115,7 @@ testnompi: $(TESTS)
 	(cd ftests && $(MAKE) test FC=$(FC) MPICMD="" HAVE_MPI=no HAVE_PAPI=$(HAVE_PAPI) \
         FFLAGS="$(FFLAGS)" LDFLAGS="$(LDFLAGS)")
 
-lib$(LIBNAME).a: $(OBJS) $(FOBJS)
+lib$(LIBNAME).a: $(OBJS) $(FOBJS) gptl.h
 	$(AR)  ruv $@ $(OBJS) $(FOBJS)
 	rm -f ctests/*.o ftests/*.o
 
@@ -136,10 +138,12 @@ ftests/all:
 	(cd ftests && $(MAKE) all FC=$(FC) FFLAGS="$(FFLAGS)" LDFLAGS="$(LDFLAGS)" HAVE_PAPI=$(HAVE_PAPI))
 
 clean:
-	rm -f $(OBJS) $(FOBJS) lib$(LIBNAME).a
+	rm -f $(OBJS) $(FOBJS) lib$(LIBNAME).a gptl.h
 	(cd ctests && $(MAKE) clean CC=$(CC) HAVE_MPI=$(HAVE_MPI) HAVE_PAPI=$(HAVE_PAPI))
 	(cd ftests && $(MAKE) clean FC=$(FC) HAVE_MPI=$(HAVE_MPI) HAVE_PAPI=$(HAVE_PAPI))
 
+gptl.h: $(HEADER)
+	cp -f $(HEADER) gptl.h
 f_wrappers.o: f_wrappers.c gptl.h private.h
 gptl.o: gptl.c gptl.h private.h
 util.o: util.c gptl.h private.h
