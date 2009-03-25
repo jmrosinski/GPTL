@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.c,v 1.130 2009-03-24 20:51:25 rosinski Exp $
+** $Id: gptl.c,v 1.131 2009-03-25 21:00:42 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -500,7 +500,7 @@ int GPTLstart_instr (void *self)
     return 0;
 
   if ( ! initialized)
-    return GPTLerror ("GPTLstart_instr: GPTLinitialize has not been called\n");
+    return GPTLerror ("GPTLstart_instr self=%p: GPTLinitialize has not been called\n", self);
 
   if ((t = get_thread_num (&GPTLnthreads, &maxthreads)) < 0)
     return GPTLerror ("GPTLstart_instr: bad return from get_thread_num\n");
@@ -586,7 +586,7 @@ int GPTLstart (const char *name)               /* timer name */
     return 0;
 
   if ( ! initialized)
-    return GPTLerror ("GPTLstart: GPTLinitialize has not been called\n");
+    return GPTLerror ("GPTLstart name=%s: GPTLinitialize has not been called\n", name);
 
   if ((t = get_thread_num (&GPTLnthreads, &maxthreads)) < 0)
     return GPTLerror ("GPTLstart: bad return from get_thread_num\n");
@@ -1197,7 +1197,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.130 2009-03-24 20:51:25 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.131 2009-03-25 21:00:42 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1487,6 +1487,12 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 	       hashmem*.001, regionmem*.001, papimem*.001, pchmem*.001);
     }
   }
+
+  // Print thread mapping for pthreads case (diagnostic)
+
+#ifdef THREADED_PTHREADS
+  print_threadmapping (GPTLnthreads, fp);
+#endif
 
   free (sum);
 
@@ -1925,7 +1931,7 @@ int GPTLpr_summary (void)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.130 2009-03-24 20:51:25 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.131 2009-03-25 21:00:42 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");

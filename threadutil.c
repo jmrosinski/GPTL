@@ -1,5 +1,5 @@
 /*
-** $Id: threadutil.c,v 1.12 2009-01-04 21:14:41 rosinski Exp $
+** $Id: threadutil.c,v 1.13 2009-03-25 21:00:42 rosinski Exp $
 **
 ** Author: Jim Rosinski
 ** 
@@ -7,6 +7,8 @@
 */
 
 #include <stdlib.h>
+#include <stdio.h>
+
 #include "private.h"
 
 #if ( defined THREADED_OMP )
@@ -169,6 +171,16 @@ static int unlock_mutex ()
   if (pthread_mutex_unlock (&t_mutex) != 0)
     return GPTLerror ("pthread_unlock_mutex failure\n");
   return 0;
+}
+
+void print_threadmapping (int nthreads, FILE *fp)
+{
+  int n;
+
+  fprintf (fp, "\n");
+  fprintf (fp, "Thread mapping:\n");
+  for (n = 0; n < nthreads; ++n)
+    fprintf (fp, "threadid[%d]=%d\n", n, (int) threadid[n]);
 }
 
 #else

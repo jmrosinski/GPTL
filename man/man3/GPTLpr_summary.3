@@ -1,5 +1,5 @@
-.\" $Id: GPTLpr_summary.3,v 1.6 2008-08-18 23:01:08 rosinski Exp $
-.TH GPTLpr_summary 3 "August, 2008" "GPTL"
+.\" $Id: GPTLpr_summary.3,v 1.7 2009-03-25 21:00:42 rosinski Exp $
+.TH GPTLpr_summary 3 "March, 2009" "GPTL"
 
 .SH NAME
 GPTLpr_summary \- Print a counter summary across all threads and tasks
@@ -7,7 +7,7 @@ GPTLpr_summary \- Print a counter summary across all threads and tasks
 .SH SYNOPSIS
 .B C Interface:
 .nf
-int GPTLpr_summary (int comm);
+int GPTLpr_summary (MPI_Comm comm);
 .fi
 
 .B Fortran Interface:
@@ -20,8 +20,7 @@ This routine is both experimental and deprecated. Suggest using
 post-processing script
 .B parsegptlout.pl
 instead. GPTLpr_summary() summarizes stats across all threads and tasks to a file named 
-.B timing.summary.
-If MPI is enabled, this routine must be called before MPI_Finalize. Only
+.B timing.summary. It is only available if GPTL was built with MPI enabled. Only
 regions which exist for thread 0, task 0 are considered.
 
 .SH ARGUMENTS
@@ -30,7 +29,11 @@ regions which exist for thread 0, task 0 are considered.
 
 .SH RESTRICTIONS
 .B GPTLinitialize()
-must have been called.
+must have been called. Must be between calls to
+.B MPI_Initialize()
+and
+.B MPI_Finalize()
+
 
 .SH RETURN VALUES
 On success, this function returns 0.

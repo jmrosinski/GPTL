@@ -1,5 +1,5 @@
 /*
-** $Id: private.h,v 1.63 2009-03-24 20:51:25 rosinski Exp $
+** $Id: private.h,v 1.64 2009-03-25 21:00:42 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -108,6 +108,7 @@ extern int threadinit (int *, int *);          /* initialize threading environme
 extern void threadfinalize (void);             /* finalize threading environment */
 #if ( defined THREADED_PTHREADS )
 extern int get_thread_num (int *, int *);      /* determine thread number */
+extern void print_threadmapping (int, FILE *); /* print mapping of pthread ids */
 #endif
 
 /* 
