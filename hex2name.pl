@@ -15,6 +15,7 @@ my ($timingout); # timer file (normally timing.[0-9]*)
 my ($demangle);  # whether to demangle the symbols
 my ($arg);       # cmd-line arg
 my ($PRTHRESH) = 1000000; # This needs to match what is in the GPTL lib
+our ($max_sym) = 0;
 
 $OUTPUT_AUTOFLUSH = 1;
 
@@ -57,13 +58,16 @@ sub main()
     my ($spaftsym);
     my ($ncalls);
     my ($restofline);
-    my ($numsp);  # number of spaces before rest of line
-    my ($spaces);     # text containing spaces before rest of line
-    my ($thread) = -1;   # thread number (init to -1
-    my ($doparse) = 0;   # logical flag: true indicates between "Statas for thread..."
-                         # and "Number of calls..."
+    my ($numsp);                 # number of spaces before rest of line
+    my ($spaces);                # text containing spaces before rest of line
+    my ($thread) = -1;           # thread number (init to -1
+    my ($doparse) = 0;           # logical flag: true indicates between "Statas for thread..."
+                                 # and "Number of calls..."
     my ($indent);
-    my (@max_chars);     # longest symbol name + indentation (per thread)
+    my (@max_chars);             # longest symbol name + indentation (per thread)
+    my ($statsforthread) = 0;    # Inside region "Stats for thread ..."
+    my ($sortedbytimer) = 0;     # Inside region "Same stats sorted by ..."
+    my ($countnexttochild) = 0;  # Inside region "Count next to child ..."
 	
     if ($demangle) {
 	open (NM, "nm $binfile | c++filt | ") or die ("Unable to run 'nm $binfile | c++filt': $!\n");
@@ -92,16 +96,34 @@ sub main()
 	
     while (<TEXT>) {
 
-	# Parse the line if it's a hex number followed by a number
+	# 3 types of input line will need parsing
 	
-	if (/Stats for thread /) { # beginning of main region
-	    $doparse = 1;
+	if (/^Stats for thread /) { # beginning of main region
+	    $statsforthread = 1;
+	    $sortedbytimer = 0;
+	    $countnexttochild = 0;
 	    ++$thread;
 	    print $_; 
-	} elsif (/^Total calls /) {  # end of main region
-	    $doparse = 0;
+	    next;
+	} elsif (/^(Thd)       (Called.*)$/) {  # Sorted by timer
+	    $statsforthread = 0;
+	    $sortedbytimer = 1;
+	    $countnexttochild = 0;
+	    $spaces = " " x $max_sym;
+	    printf ("%s%s%s\n", $1, $spaces, $2);
+	    next;
+	} elsif (/^Count next to child /) {  # Parent-child stats
+	    $statsforthread = 0;
+	    $sortedbytimer = 0;
+	    $countnexttochild = 1;
 	    print $_; 
-	} elsif ($doparse) {                # Inside main region
+	    next;
+	} elsif ( ! $statsforthread && ! $sortedbytimer && ! $countnexttochild) {  # header--just print
+	    print $_; 
+	    next;
+	}
+
+	if ($statsforthread) {
 	    if (/^ *(Called  Recurse.*)$/) { # heading
 		$numsp = $max_chars[$thread];
 		$spaces = " " x $numsp;
@@ -130,23 +152,40 @@ sub main()
 	    } else {           # unknown: just print it
 		print $_; 
 	    }
-	} elsif (/(^ *)([0-9.Ee+]+)( +)([[:xdigit:]]+)( *)$/) {
+	} elsif ($sortedbytimer) {
+	    if (/^([0-9][0-9][0-9] )([[:xdigit:]]+)( +)(.*)$/ ||
+		/^(SUM )([[:xdigit:]]+)( +)(.*)$/) {
+		$off1 = hex($2);
+		if (defined ($symtab{$off1})) {
+		    $sym = $symtab{$off1};
+		} else {
+		    $sym = "???";
+		}
+		$numsp = length($3) + $max_sym - length ($sym) - 1;
+		$spaces = " " x $numsp;
+		printf ("%s%s%s%s\n", $1, $sym, $spaces, $4);
+	    } else {
+		print $_;
+	    }
+	} elsif ($countnexttochild) {
+	    if (/(^ *)([0-9.Ee+]+)( +)([[:xdigit:]]+)( *)$/) {
 #
 # Hex entry in multiple parent region
 #
-	    $ncalls     = $2;
-	    $indent     = $3;
-	    $off1       = hex($4);
-	    if (defined ($symtab{$off1})) {
-		$sym = $symtab{$off1};
-	    } else {
-		$sym = "???";
+		$ncalls     = $2;
+		$indent     = $3;
+		$off1       = hex($4);
+		if (defined ($symtab{$off1})) {
+		    $sym = $symtab{$off1};
+		} else {
+		    $sym = "???";
+		}
+		$restofline = $5;
+		printf ("%8s%s%s%s\n", $ncalls, $indent, $sym, $restofline);
+	    } else { # unknown: just print it
+		print $_; 
+		next;
 	    }
-	    $restofline = $5;
-	    printf ("%8s%s%s%s\n", $ncalls, $indent, $sym, $restofline);
-	} else { # unknown: just print it
-	    print $_; 
-	    next;
 	}
     }
     close (TEXT);
@@ -161,14 +200,15 @@ sub get_max_chars ()
     my ($sym);
     my ($off1);
     my ($doparse) = 0;
+    my ($lensym);
     my (@max_chars);
+    our ($max_sym) = 0;
     
     open (TEXT, "<$file") or die ("Unable to open '$file': $!\n");
     
     while (<TEXT>) {
 
 	# Parse the line if it's a hex number followed by a number
-	# Otherwise just write it
 	
 	if (/Stats for thread /) {
 	    $doparse = 1;
@@ -183,9 +223,13 @@ sub get_max_chars ()
 	    } else {
 		$sym = "???";
 	    }
-	    $tmp = length ($1) + length ($sym);
+	    $lensym = length ($sym);
+	    $tmp = length ($1) + $lensym;
 	    if ($tmp > $max_chars[$thread]) {
 		$max_chars[$thread] = $tmp;
+	    }
+	    if ($lensym > $max_sym) {
+		$max_sym = $lensym;
 	    }
 	}
     }
