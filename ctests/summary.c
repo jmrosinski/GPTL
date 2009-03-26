@@ -1,6 +1,5 @@
 #ifdef HAVE_MPI
 #include <mpi.h>
-#endif
 
 #include <stdio.h>
 #include <stdlib.h>  /* atoi */
@@ -28,19 +27,15 @@ int main (int argc, char **argv)
   int iter;
   int papiopt;
   int c;
-  int comm = 0;
 
   double ret;
 
   extern char *optarg;
 
-#ifdef HAVE_MPI
   if (MPI_Init (&argc, &argv) != MPI_SUCCESS) {
     printf ("Failure from MPI_Init\n");
     return 1;
   }
-  comm = MPI_COMM_WORLD;
-#endif
 
 #ifdef HAVE_PAPI
   if (GPTL_PAPIlibraryinit () != 0) {
@@ -79,10 +74,8 @@ int main (int argc, char **argv)
   (void) GPTLinitialize ();
   (void) GPTLstart ("total");
 	 
-#ifdef HAVE_MPI
   ret = MPI_Comm_rank (MPI_COMM_WORLD, &iam);
   ret = MPI_Comm_size (MPI_COMM_WORLD, &nproc);
-#endif
 
 #ifdef THREADED_OMP
   nthreads = omp_get_max_threads ();
@@ -103,7 +96,7 @@ int main (int argc, char **argv)
     printf ("Number of tasks was %d\n", nproc);
   }
 
-  if (GPTLpr_summary (comm) == 0) {
+  if (GPTLpr_summary (MPI_COMM_WORLD) == 0) {
     if (iam == 0)
       printf ("Success\n");
   } else {
@@ -114,9 +107,7 @@ int main (int argc, char **argv)
   if (GPTLfinalize () != 0)
     return 1;
 
-#ifdef HAVE_MPI
   MPI_Finalize ();
-#endif
   return 0;
 }
 
@@ -158,3 +149,15 @@ double sub (int iter)
   (void) GPTLstop ("sub");
   return sum;
 }
+
+#else
+
+#include <stdio.h>
+
+int main ()
+{
+  printf ("summary: HAVE_MPI not set so this code does nothing\n");
+  return 0;
+}
+
+#endif

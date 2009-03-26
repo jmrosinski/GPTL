@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.c,v 1.131 2009-03-25 21:00:42 rosinski Exp $
+** $Id: gptl.c,v 1.132 2009-03-26 01:45:15 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -1197,7 +1197,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.131 2009-03-25 21:00:42 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.132 2009-03-26 01:45:15 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1931,7 +1931,7 @@ int GPTLpr_summary (void)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.131 2009-03-25 21:00:42 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.132 2009-03-26 01:45:15 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 #ifndef HAVE_MPI
     fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");
@@ -2039,7 +2039,9 @@ int GPTLpr_summary (void)
 void get_threadstats (const char *name, 
 		      Summarystats *summarystats)
 {
+#ifdef HAVE_PAPI
   int n;       /* event index */
+#endif
   int t;       /* thread index */
   int indx;    /* returned from getentry() */
   Timer *ptr;  /* timer */

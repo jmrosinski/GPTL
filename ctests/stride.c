@@ -2,7 +2,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+
+#ifdef HAVE_PAPI
 #include <papi.h>
+#endif
 
 int main ()
 {

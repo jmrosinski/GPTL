@@ -6,7 +6,10 @@
 #include <stdio.h>
 #include <stdlib.h>  /* exit */
 #include <unistd.h>  /* getopt */
+
+#ifdef HAVE_PAPI
 #include <papi.h>
+#endif
 
 int main (int argc, char **argv)
 {
