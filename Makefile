@@ -110,8 +110,8 @@ test: $(TESTS)
 
 # The following target disables all MPI tests
 testnompi: $(TESTS)
-	(cd ctests && $(MAKE) test CC=$(CC) MPICMD="" HAVE_MPI=no HAVE_PAPI=$(HAVE_PAPI) \
-        CFLAGS="$(CFLAGS_TESTS)" LDFLAGS="$(LDFLAGS)")
+	(cd ctests && $(MAKE) test CC=$(CC) CXX=$(CXX) MPICMD="" HAVE_MPI=no HAVE_PAPI=$(HAVE_PAPI) \
+        CFLAGS="$(CFLAGS_TESTS)" LDFLAGS="$(LDFLAGS)" TEST_AUTOPROFILE=$(TEST_AUTOPROFILE) INSTRFLAG=$(INSTRFLAG))
 	(cd ftests && $(MAKE) test FC=$(FC) MPICMD="" HAVE_MPI=no HAVE_PAPI=$(HAVE_PAPI) \
         FFLAGS="$(FFLAGS)" LDFLAGS="$(LDFLAGS)")
 
@@ -131,8 +131,8 @@ uninstall:
 	rm -f $(MANDIR)/man/man3/GPTL*.3
 
 ctests/all:
-	(cd ctests && $(MAKE) all CC=$(CC) HAVE_MPI=$(HAVE_MPI) HAVE_PAPI=$(HAVE_PAPI) \
-          CFLAGS="$(CFLAGS_TESTS)" LDFLAGS="$(LDFLAGS)")
+	(cd ctests && $(MAKE) all CC=$(CC) CXX=$(CXX) HAVE_MPI=$(HAVE_MPI) HAVE_PAPI=$(HAVE_PAPI) \
+          CFLAGS="$(CFLAGS_TESTS)" LDFLAGS="$(LDFLAGS)" TEST_AUTOPROFILE=$(TEST_AUTOPROFILE) INSTRFLAG=$(INSTRFLAG))
 
 ftests/all:
 	(cd ftests && $(MAKE) all FC=$(FC) FFLAGS="$(FFLAGS)" LDFLAGS="$(LDFLAGS)" HAVE_PAPI=$(HAVE_PAPI))

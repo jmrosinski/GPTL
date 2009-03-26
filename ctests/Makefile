@@ -72,6 +72,8 @@ cygprofilesubs.o: cygprofilesubs.c
 
 profcxx: profcxx.o
 	$(CXX) -o $@ $< $(LDFLAGS) $(INSTRFLAG)
+profcxx.o: profcxx.C
+	$(CXX) -c $(CFLAGS) $(INSTRFLAG) -o $@ $<
 
 stride: stride.o
 	$(CC) -o $@ $< $(LDFLAGS)
