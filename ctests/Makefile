@@ -11,7 +11,8 @@ endif
 # Auto-profiling 
 ifeq ($(TEST_AUTOPROFILE),yes)
   TESTS += cygprofile profcxx
-# Initialize OBJS
+# Initialize OBJS: cygprofilesubs.o is the one .o file needed that patsubst can't
+# set automatically
   OBJS = cygprofilesubs.o
 endif
 
@@ -70,7 +71,7 @@ cygprofilesubs.o: cygprofilesubs.c
 	$(CC) -c $(CFLAGS) $(INSTRFLAG) -o $@ $<
 
 profcxx: profcxx.o
-	$(CXX) -o $@ profcxx.C $(CFLAGS) $(LDFLAGS) $(INSTRFLAG)
+	$(CXX) -o $@ $< $(LDFLAGS) $(INSTRFLAG)
 
 stride: stride.o
 	$(CC) -o $@ $< $(LDFLAGS)
