@@ -10,7 +10,7 @@ endif
 
 # Auto-profiling 
 ifeq ($(TEST_AUTOPROFILE),yes)
-  TESTS += cygprofile
+  TESTS += cygprofile profcxx
 # Initialize OBJS
   OBJS = cygprofilesubs.o
 endif
@@ -68,6 +68,9 @@ cygprofile: cygprofile.o cygprofilesubs.o
 	$(CC) -o $@ cygprofile.o cygprofilesubs.o $(LDFLAGS) $(INSTRFLAG)
 cygprofilesubs.o: cygprofilesubs.c
 	$(CC) -c $(CFLAGS) $(INSTRFLAG) -o $@ $<
+
+profcxx: profcxx.o
+	$(CXX) -o $@ profcxx.C $(CFLAGS) $(LDFLAGS) $(INSTRFLAG)
 
 stride: stride.o
 	$(CC) -o $@ $< $(LDFLAGS)
