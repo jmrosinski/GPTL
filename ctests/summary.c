@@ -8,10 +8,6 @@
 
 #include "../gptl.h"
 
-#ifdef HAVE_PAPI
-#include <papi.h>
-#endif
-
 #ifdef THREADED_OMP
 #include <omp.h>
 #endif
@@ -25,7 +21,7 @@ double sub (int);
 int main (int argc, char **argv)
 {
   int iter;
-  int papiopt;
+  int counter;
   int c;
 
   double ret;
@@ -37,32 +33,21 @@ int main (int argc, char **argv)
     return 1;
   }
 
-#ifdef HAVE_PAPI
-  if (GPTL_PAPIlibraryinit () != 0) {
-    printf ("Failure from GPTL_PAPIlibraryinit\n");
-    return 1;
-  }
-#endif
-
   while ((c = getopt (argc, argv, "p:")) != -1) {
     switch (c) {
     case 'p':
-#ifdef HAVE_PAPI
-      if ((ret = PAPI_event_name_to_code (optarg, &papiopt)) != 0) {
-	printf ("Failure from GPTL_PAPIname2id\n");
+      if ((ret = GPTLevent_name_to_code (optarg, &counter)) != 0) {
+	printf ("Failure from GPTLevent_name_to_code\n");
 	return 1;
       }
-      if (GPTLsetoption (papiopt, 1) < 0) {
+      if (GPTLsetoption (counter, 1) < 0) {
 	printf ("Failure from GPTLsetoption (%s,1)\n", optarg);
 	return 1;
       }
-#else
-      printf ("HAVE_PAPI is false so -p ignored\n");
-#endif
       break;
     default:
       printf ("unknown option %c\n", c);
-      printf ("Usage: %s [-p papi_option_name]\n", argv[0]);
+      printf ("Usage: %s [-p option_name]\n", argv[0]);
       return 2;
     }
   }

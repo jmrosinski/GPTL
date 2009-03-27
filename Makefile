@@ -139,7 +139,7 @@ ftests/all:
 
 clean:
 	rm -f $(OBJS) $(FOBJS) lib$(LIBNAME).a gptl.h
-	(cd ctests && $(MAKE) clean CC=$(CC) HAVE_MPI=$(HAVE_MPI) HAVE_PAPI=$(HAVE_PAPI))
+	(cd ctests && $(MAKE) clean CC=$(CC) HAVE_MPI=$(HAVE_MPI) HAVE_PAPI=$(HAVE_PAPI) TEST_AUTOPROFILE=$(TEST_AUTOPROFILE))
 	(cd ftests && $(MAKE) clean FC=$(FC) HAVE_MPI=$(HAVE_MPI) HAVE_PAPI=$(HAVE_PAPI))
 
 gptl.h: $(HEADER)

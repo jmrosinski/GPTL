@@ -1,13 +1,17 @@
 class Base
 {
  public:
-  Base ()
-  {
-  }
-  ~Base ()
-  {
-  }
+  Base ();
+  ~Base ();
 };
+
+Base::Base ()
+{
+}
+
+Base::~Base ()
+{
+}
 
 class X: Base
 {

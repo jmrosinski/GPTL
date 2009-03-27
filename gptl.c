@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.c,v 1.132 2009-03-26 01:45:15 rosinski Exp $
+** $Id: gptl.c,v 1.133 2009-03-27 16:16:12 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -112,8 +112,12 @@ static Method method = GPTLmost_frequent;  /* default parent/child printing mech
 
 static void printstats (const Timer *, FILE *, const int, const int, const bool, double);
 static void add (Timer *, const Timer *);
+
+#ifdef HAVE_MPI
 static void get_threadstats (const char *, Summarystats *);
 static void get_summarystats (Summarystats *, const Summarystats *, int);
+#endif
+
 static void print_multparentinfo (FILE *, Timer *);
 static inline int get_cpustamp (long *, long *);
 static int newchild (Timer *, Timer *);
@@ -1197,7 +1201,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.132 2009-03-26 01:45:15 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.133 2009-03-27 16:16:12 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1880,20 +1884,16 @@ static void add (Timer *tout,
 #endif
 }
 
+#ifdef HAVE_MPI
 /* 
-** GPTLpr_summary: gather and print summary stats across threads and 
-**                 (if applicable) MPI tasks
+** GPTLpr_summary: When MPI enabled, gather and print summary stats across 
+**                 threads and MPI tasks
 **
 ** Input arguments:
 **   comm: commuicator (e.g. MPI_COMM_WORLD). If zero, use MPI_COMM_WORLD
-**         If built w/o MPI support, GPTLpr_summary takes no arg.
 */
 
-#ifdef HAVE_MPI
 int GPTLpr_summary (MPI_Comm comm)
-#else
-int GPTLpr_summary (void)
-#endif
 {
   const char *outfile = "timing.summary";
   int iam = 0;                     /* MPI rank: default master */
@@ -1903,7 +1903,6 @@ int GPTLpr_summary (void)
   Timer *ptr;                      /* timer */
   FILE *fp = 0;                    /* output file */
 
-#ifdef HAVE_MPI
   int nproc;                                /* number of procs in MPI communicator */
   int p;                                    /* process index */
   int ret;                                  /* return code */
@@ -1919,7 +1918,6 @@ int GPTLpr_summary (void)
 
   ret = MPI_Comm_rank (comm, &iam);
   ret = MPI_Comm_size (comm, &nproc);
-#endif
 
   /*
   ** Master loops over thread 0 timers. Each process gathers stats for its threads,
@@ -1931,12 +1929,8 @@ int GPTLpr_summary (void)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.132 2009-03-26 01:45:15 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.133 2009-03-27 16:16:12 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
-#ifndef HAVE_MPI
-    fprintf (fp, "NOTE: GPTL was built WITHOUT MPI: Only task 0 stats will be printed.\n");
-    fprintf (fp, "This is even for MPI codes.\n");
-#endif
 
     /* Print heading */
 
@@ -1963,8 +1957,6 @@ int GPTLpr_summary (void)
 
       get_threadstats (ptr->name, &summarystats);
 
-#ifdef HAVE_MPI
-
       /* Broadcast a message to slaves asking for their results for this timer */
 
       ret = MPI_Bcast (ptr->name, MAX_CHARS+1, MPI_CHAR, 0, comm);
@@ -1976,7 +1968,6 @@ int GPTLpr_summary (void)
 	if (summarystats_slave.count > 0)   /* timer found in slave */
 	  get_summarystats (&summarystats, &summarystats_slave, p);
       }
-#endif
 
       /* Print the results for this timer */
 
@@ -2002,15 +1993,12 @@ int GPTLpr_summary (void)
       fprintf (fp, "\n");
     }
 
-#ifdef HAVE_MPI
     /* Signal that we're done */
 
     ret = MPI_Bcast (emptystring, 1, MPI_CHAR, 0, comm);
-#endif
 
   } else {   /* iam != 0 (slave) */
 
-#ifdef HAVE_MPI
     /* Loop until null message received from master */
 
     while (1) {
@@ -2020,7 +2008,6 @@ int GPTLpr_summary (void)
       get_threadstats (name, &summarystats_slave);
       ret = MPI_Send (&summarystats_slave, nbytes, MPI_BYTE, 0, tag, comm);
     }
-#endif
   }
   if (iam == 0 && fclose (fp) != 0)
     fprintf (stderr, "Attempt to close %s failed\n", outfile);
@@ -2137,6 +2124,7 @@ void get_summarystats (Summarystats *summarystats,
   }
 #endif
 }
+#endif  // defined HAVE_MPI
 
 /*
 ** get_cpustamp: Invoke the proper system timer and return stats.

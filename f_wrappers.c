@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.42 2009-03-24 20:51:25 rosinski Exp $
+** $Id: f_wrappers.c,v 1.43 2009-03-27 16:16:12 rosinski Exp $
 **
 ** Author: Jim Rosinski
 ** 
@@ -138,7 +138,7 @@ int gptlpr_summary (int *fcomm)
 #else
 int gptlpr_summary (void)
 {
-  return GPTLpr_summary ();
+  return GPTLerror ("gptlpr_summary: Need to build GPTL with #define HAVE_MPI to call this routine\n");
 }
 #endif
 

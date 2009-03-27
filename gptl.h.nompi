@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.h.nompi,v 1.1 2009-03-24 20:51:25 rosinski Exp $
+** $Id: gptl.h.nompi,v 1.2 2009-03-27 16:16:12 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -90,7 +90,6 @@ extern int GPTLstop (const char *);
 extern int GPTLstamp (double *, double *, double *);
 extern int GPTLpr (const int);
 extern int GPTLpr_file (const char *);
-extern int GPTLpr_summary (void);
 extern int GPTLreset (void);
 extern int GPTLfinalize (void);
 extern int GPTLget_memusage (int *, int *, int *, int *, int *);

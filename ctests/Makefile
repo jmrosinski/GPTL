@@ -20,7 +20,7 @@ endif
 # Items in EXES but not TESTS are built by "make all" but
 # not run by "make test"
 
-EXES = $(TESTS) depth recursion stride memusage utrtest \
+EXES = $(TESTS) recursion stride utrtest \
        papiomptest parentchild gran_overhead rawpapitest
 
 ifeq ($(HAVE_PAPI),yes)
@@ -36,15 +36,9 @@ OBJS += $(patsubst %,%.o,$(EXES))
 all: $(EXES)
 
 clean:
-	$(RM) $(OBJS) $(EXES) timing.*
+	$(RM) *.o $(EXES) timing.*
 
 avail: avail.o
-	$(CC) -o $@ $< $(LDFLAGS)
-
-depth: depth.o
-	$(CC) -o $@ $< $(LDFLAGS)
-
-overhead: overhead.o
 	$(CC) -o $@ $< $(LDFLAGS)
 
 rawpapitest: rawpapitest.o
@@ -54,10 +48,7 @@ recursion: recursion.o
 	$(CC) -o $@ $< $(LDFLAGS)
 
 exception: exception.o
-	$(CC) -o $@ $< $(LDFLAGS)
-
-memusage: memusage.o
-	$(CC) -o $@ $< $(LDFLAGS)
+	$(CXX) -o $@ $< $(LDFLAGS)
 
 utrtest: utrtest.o
 	$(CC) -o $@ $< $(LDFLAGS)
@@ -72,7 +63,7 @@ cygprofilesubs.o: cygprofilesubs.c
 
 profcxx: profcxx.o
 	$(CXX) -o $@ $< $(LDFLAGS) $(INSTRFLAG)
-profcxx.o: profcxx.C
+profcxx.o: profcxx.C myclasses.h
 	$(CXX) -c $(CFLAGS) $(INSTRFLAG) -o $@ $<
 
 stride: stride.o

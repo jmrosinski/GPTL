@@ -13,7 +13,6 @@ int main ()
 
   int i;
   int ret;
-  PAPI_event_info_t info;
 
   if ((ret = PAPI_library_init (PAPI_VER_CURRENT)) != PAPI_VER_CURRENT) {
     printf ("%s\n", PAPI_strerror (ret));

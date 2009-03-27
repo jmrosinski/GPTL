@@ -1,7 +1,6 @@
-      program main 
 #ifdef HAVE_MPI
+      program main 
 #include <mpif.h>
-#endif
 #include "../gptl.inc"
       double precision, external :: sub
       double precision result
@@ -15,10 +14,8 @@
       integer ierr
       integer ret
 
-#ifdef HAVE_MPI
       call mpi_init (ierr)
       comm = MPI_COMM_WORLD
-#endif
 
 ! Would prefer to set abort_on_error to true, but selected PAPI options might
 ! not be available
@@ -40,10 +37,9 @@
       ret = gptlinitialize ()
       ret = gptlstart ("total")
 	 
-#ifdef HAVE_MPI
       call mpi_comm_rank (MPI_COMM_WORLD, iam, ierr)
       call mpi_comm_size (MPI_COMM_WORLD, nproc, ierr)
-#endif
+
       if (iam == 0) then
         write (6,*) "Purpose: test behavior of summary stats"
         write (6,*) "Include OpenMP if enabled"
@@ -63,12 +59,9 @@
       ret = gptlpr_summary (comm)
       if (gptlfinalize () < 0) stop 6
 
-#ifdef HAVE_MPI
       call mpi_finalize ()
-#endif
       stop 0
       end program main
-
 
 
       double precision function sub (iter, iam)
@@ -110,3 +103,9 @@
       sub = sum
       return 
       end function sub
+#else
+      program main 
+      write(6,*)'summary: need to build GPTL with #define HAVE_MPI'
+      stop 0
+      end program main
+#endif
