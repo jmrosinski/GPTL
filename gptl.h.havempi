@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.h.havempi,v 1.1 2009-03-24 20:51:25 rosinski Exp $
+** $Id: gptl.h.havempi,v 1.2 2009-03-27 20:55:34 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -9,7 +9,9 @@
 #ifndef GPTL_H
 #define GPTL_H
 
-#include <mpi.h>  /* Needed for GPTLpr_summary */
+/* Needed for GPTLpr_summary */
+#include <mpi.h>
+
 /*
 ** Options settable by a call to GPTLsetoption() (default in parens)
 ** These numbers need to be small integers because GPTLsetoption can

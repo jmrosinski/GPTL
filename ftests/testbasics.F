@@ -38,6 +38,13 @@
       end if
       write(6,*)'Success'
 
+      write(6,*)'Testing gptlget_wallclock...'
+      if (gptlget_wallclock ('testbasics', 0, wc) /= 0) then
+        write(6,*)'Failure in gptlget_wallclock'
+        call exit(1)
+      end if
+      write(6,*)'Success: wc=', wc
+
       write(6,*)'Testing gptlprint_memusage...'
       if (gptlprint_memusage ('testbasics') /= 0) then
         write(6,*)'Failure in gptlprint_memusage'

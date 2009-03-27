@@ -6,7 +6,7 @@
       integer :: ret
       integer :: i, code
       integer(8) :: pc ! papi counters
-      real(8) :: sum
+      real(8) :: sum, val
       character(len=256) :: name
       character(len=2) :: tooshort
 
@@ -130,6 +130,14 @@
         write(6,*)'Failure'
         call exit(1)
       end if
+      write(6,*)'Success: pc=', pc
+
+      write(6,*)'Testing gptlget_eventvalue...'
+      if (gptlget_eventvalue ('sum', 'PAPI_TOT_CYC', 0, val) /= 0) then
+        write(6,*)'Failure'
+        call exit(1)
+      end if
+      write(6,*)'Success: val=', val
 
       write(6,*)'sum,pc=',sum, pc
       if (pc < 1 .or. pc > 1.e9) then
