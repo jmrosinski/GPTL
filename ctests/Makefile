@@ -20,7 +20,7 @@ endif
 # Items in EXES but not TESTS are built by "make all" but
 # not run by "make test"
 
-EXES = $(TESTS) recursion stride utrtest \
+EXES = $(TESTS) recursion stride utrtest toomanycounters \
        papiomptest parentchild gran_overhead rawpapitest
 
 ifeq ($(HAVE_PAPI),yes)

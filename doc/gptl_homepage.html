@@ -107,6 +107,7 @@ Stats for thread 0:
 <HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
 <h2>What's new in the latest release (<a href="gptl3_5.tar.gz">gptl3_5.tar.gz</a>)</h2>
 <ul>
+<li> Easier linking with C++ applications.
 <li> Options for call-tree generation based on number of invocations per
 parent: most_frequent (default), first_parent, last_parent, full_tree. 
 Previous GPTL versions always used first_parent. New option <em>full_tree</em> can
@@ -118,6 +119,8 @@ can also be very useful because it shows all parent-child relationships.
   <li> Load-stores per L2 miss (GPTL_LSTPL2M)
   <li> L3 miss rate (GPTL_L3MRT)
   </ul>
+<li> Function GPTLpr_summary() now takes an MPI communicator as its
+argument. Passing in an "int" was problematic with some MPI implementations.
 <li> New subroutine <b>gptlprocess_namelist()</b> enables Fortran codes to
 use a namelist to set <b>GPTL</b> options. This allows changing settings
 without having to recompile or relink application codes. See
@@ -125,8 +128,11 @@ ftests/nlreader.F for example usage. An example namelist file is
 ftests/gptlnl. 
 <li> New function <b>GPTLget_eventvalue()</b> allows an application to query
 the current value of any PAPI-based event, including derived events.
+<li> New function <b>GPTLget_wallclock()</b> allows an application to query
+the current wallclock accumulation for any region.
 <li> <em><b>parsegptlout.pl</b></em> now takes header name as an argument rather
 than an integer index.
+<li> hex2name.pl converts auto-instrumented entries for thread summary regions.
 </ul>
 <h2>What was new in the previous release (<a href="gptl3_4_7.tar.gz">gptl3_4_7.tar.gz</a>)</h2>
 <ul>
