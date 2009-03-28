@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.c,v 1.133 2009-03-27 16:16:12 rosinski Exp $
+** $Id: gptl.c,v 1.134 2009-03-28 22:06:06 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -50,7 +50,9 @@ static int depthlimit  = 99999;     /* max depth for timers (99999 is effectivel
 static int nevents = 0;             /* number of PAPI events (init to 0) */
 static volatile bool disabled = false;    /* Timers disabled? */
 static volatile bool initialized = false; /* GPTLinitialize has been called */
+#ifdef HAVE_PAPI
 static bool dousepapi = false;      /* saves a function call if stays false */
+#endif
 static bool verbose = false;        /* output verbosity */
 static bool percent = false;        /* print wallclock also as percent of 1st timers[0] */
 static bool dopr_preamble = true;   /* whether to print preamble info */
@@ -1201,7 +1203,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.133 2009-03-27 16:16:12 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.134 2009-03-28 22:06:06 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1929,7 +1931,7 @@ int GPTLpr_summary (MPI_Comm comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.133 2009-03-27 16:16:12 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.134 2009-03-28 22:06:06 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 
     /* Print heading */
