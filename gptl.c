@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.c,v 1.136 2009-03-29 19:38:05 rosinski Exp $
+** $Id: gptl.c,v 1.137 2009-03-29 21:40:06 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -1201,7 +1201,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.136 2009-03-29 19:38:05 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.137 2009-03-29 21:40:06 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1929,7 +1929,7 @@ int GPTLpr_summary (MPI_Comm comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.136 2009-03-29 19:38:05 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.137 2009-03-29 21:40:06 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 
     /* Print heading */
@@ -1938,11 +1938,11 @@ int GPTLpr_summary (MPI_Comm comm)
     extraspace = max_name_len[0] - strlen ("name");
     for (n = 0; n < extraspace; ++n)
       fprintf (fp, " ");
-    fprintf (fp, " count      wallmax (proc thrd)   wallmin (proc thrd)");
+    fprintf (fp, " count      wallmax (proc   thrd  )   wallmin (proc   thrd  )");
 
     for (n = 0; n < nevents; ++n) {
-      fprintf (fp, " %8.8smax (proc thrd)", eventlist[n].str8);
-      fprintf (fp, " %8.8smin (proc thrd)", eventlist[n].str8);
+      fprintf (fp, " %8.8smax (proc   thrd  )", eventlist[n].str8);
+      fprintf (fp, " %8.8smin (proc   thrd  )", eventlist[n].str8);
     }
 
     fprintf (fp, "\n");
@@ -1975,17 +1975,17 @@ int GPTLpr_summary (MPI_Comm comm)
       extraspace = max_name_len[0] - strlen (ptr->name);
       for (n = 0; n < extraspace; ++n)
 	fprintf (fp, " ");
-      fprintf (fp, " %8ld %9.3f (%4d %4d) %9.3f (%4d %4d)", 
+      fprintf (fp, " %8ld %9.3f (%6d %6d) %9.3f (%6d %6d)", 
 	       summarystats.count, 
 	       summarystats.wallmax, summarystats.wallmax_p, summarystats.wallmax_t, 
 	       summarystats.wallmin, summarystats.wallmin_p, summarystats.wallmin_t);
 #ifdef HAVE_PAPI
       for (n = 0; n < nevents; ++n) {
-	fprintf (fp, " %8.2e    (%4d %4d)", 
+	fprintf (fp, " %8.2e    (%6d %6d)", 
 		 summarystats.papimax[n], summarystats.papimax_p[n], 
 		 summarystats.papimax_t[n]);
 
-	fprintf (fp, " %8.2e    (%4d %4d)", 
+	fprintf (fp, " %8.2e    (%6d %6d)", 
 		 summarystats.papimin[n], summarystats.papimin_p[n], 
 		 summarystats.papimin_t[n]);
       }
