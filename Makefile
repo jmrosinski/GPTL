@@ -46,10 +46,10 @@ endif
 
 FOBJS =
 ifeq ($(FORTRAN),yes)
-  FOBJS = gptlprocess_namelist.o
-  OBJS  += f_wrappers.o
+  FOBJS      = gptlprocess_namelist.o
+  OBJS      += f_wrappers.o
   MAKETESTS += ftests/all
-  RUNTESTS += ftests/test
+  RUNTESTS  += ftests/test
 endif
 
 CFLAGS += $(INLINEFLAG) $(UNDERSCORING)
@@ -70,10 +70,10 @@ ifeq ($(HAVE_MPI),yes)
   CFLAGS       += $(MPI_INCFLAGS)
   CFLAGS_TESTS += $(MPI_INCFLAGS)
   LDFLAGS      += $(MPI_LIBFLAGS)
-  HEADER = gptl.h.havempi
+  HEADER        = gptl.h.havempi
 else
   HAVE_MPI = no
-  HEADER = gptl.h.nompi
+  HEADER   = gptl.h.nompi
 endif
 
 ifeq ($(HAVE_LIBRT),yes)
