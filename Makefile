@@ -15,7 +15,8 @@ else
 endif
 
 LDFLAGS = -L.. -l$(LIBNAME)
-TESTS = ctests/all 
+MAKETESTS = ctests/all
+RUNTESTS = ctests/test
 
 LDFLAGS += $(ABIFLAGS)
 
@@ -45,9 +46,10 @@ endif
 
 FOBJS =
 ifeq ($(FORTRAN),yes)
- FOBJS = gptlprocess_namelist.o
- OBJS  += f_wrappers.o
- TESTS += ftests/all
+  FOBJS = gptlprocess_namelist.o
+  OBJS  += f_wrappers.o
+  MAKETESTS += ftests/all
+  RUNTESTS += ftests/test
 endif
 
 CFLAGS += $(INLINEFLAG) $(UNDERSCORING)
@@ -100,24 +102,32 @@ endif
 
 ##############################################################################
 
-all: lib$(LIBNAME).a $(TESTS)
+all: lib$(LIBNAME).a $(MAKETESTS)
 libonly: lib$(LIBNAME).a 
-test: $(TESTS)
-	(cd ctests && $(MAKE) test CC=$(CC) CXX=$(CXX) MPICMD=$(MPICMD) HAVE_MPI=$(HAVE_MPI) HAVE_PAPI=$(HAVE_PAPI) \
-        CFLAGS="$(CFLAGS_TESTS)" LDFLAGS="$(LDFLAGS)" TEST_AUTOPROFILE=$(TEST_AUTOPROFILE) INSTRFLAG=$(INSTRFLAG))
-	(cd ftests && $(MAKE) test FC=$(FC) MPICMD=$(MPICMD) HAVE_MPI=$(HAVE_MPI) HAVE_PAPI=$(HAVE_PAPI) \
-        FFLAGS="$(FFLAGS)" LDFLAGS="$(LDFLAGS)")
+test: $(RUNTESTS)
 
-# The following target disables all MPI tests
-testnompi: $(TESTS)
-	(cd ctests && $(MAKE) test CC=$(CC) CXX=$(CXX) MPICMD="" HAVE_MPI=no HAVE_PAPI=$(HAVE_PAPI) \
-        CFLAGS="$(CFLAGS_TESTS)" LDFLAGS="$(LDFLAGS)" TEST_AUTOPROFILE=$(TEST_AUTOPROFILE) INSTRFLAG=$(INSTRFLAG))
-	(cd ftests && $(MAKE) test FC=$(FC) MPICMD="" HAVE_MPI=no HAVE_PAPI=$(HAVE_PAPI) \
-        FFLAGS="$(FFLAGS)" LDFLAGS="$(LDFLAGS)")
+# MAKETESTS is ctests/all and maybe ftests/all
+ctests/all:
+	(cd ctests && $(MAKE) all CC=$(CC) CXX=$(CXX) HAVE_MPI=$(HAVE_MPI) \
+         HAVE_PAPI=$(HAVE_PAPI) CFLAGS="$(CFLAGS_TESTS)" LDFLAGS="$(LDFLAGS)" \
+         TEST_AUTOPROFILE=$(TEST_AUTOPROFILE) INSTRFLAG=$(INSTRFLAG))
+
+ftests/all:
+	(cd ftests && $(MAKE) all FC=$(FC) FFLAGS="$(FFLAGS)" LDFLAGS="$(LDFLAGS)" \
+         HAVE_MPI=$(HAVE_MPI) HAVE_PAPI=$(HAVE_PAPI))
+
+# RUNTESTS is ctests and maybe ftests
+ctests/test:
+	(cd ctests && $(MAKE) test MPICMD=$(MPICMD) HAVE_MPI=$(HAVE_MPI) \
+         HAVE_PAPI=$(HAVE_PAPI) TEST_AUTOPROFILE=$(TEST_AUTOPROFILE))
+
+ftests/test:
+	(cd ftests && $(MAKE) test MPICMD=$(MPICMD) HAVE_MPI=$(HAVE_MPI) \
+         HAVE_PAPI=$(HAVE_PAPI))
 
 lib$(LIBNAME).a: $(OBJS) $(FOBJS) gptl.h
-	$(AR)  ruv $@ $(OBJS) $(FOBJS)
-	rm -f ctests/*.o ftests/*.o
+	$(AR) ruv $@ $(OBJS) $(FOBJS)
+	$(RM) -f ctests/*.o ftests/*.o
 
 install: lib$(LIBNAME).a
 	install -m 0644 lib$(LIBNAME).a $(INSTALLDIR)/lib
@@ -126,21 +136,15 @@ install: lib$(LIBNAME).a
 	install -m 0755 *pl $(INSTALLDIR)/bin
 
 uninstall:
-	rm -f $(INSTALLDIR)/lib/lib$(LIBNAME).a
-	rm -f $(INSTALLDIR)/include/gptl.h $(INSTALLDIR)/include/gptl.inc
-	rm -f $(MANDIR)/man/man3/GPTL*.3
-
-ctests/all:
-	(cd ctests && $(MAKE) all CC=$(CC) CXX=$(CXX) HAVE_MPI=$(HAVE_MPI) HAVE_PAPI=$(HAVE_PAPI) \
-          CFLAGS="$(CFLAGS_TESTS)" LDFLAGS="$(LDFLAGS)" TEST_AUTOPROFILE=$(TEST_AUTOPROFILE) INSTRFLAG=$(INSTRFLAG))
-
-ftests/all:
-	(cd ftests && $(MAKE) all FC=$(FC) FFLAGS="$(FFLAGS)" LDFLAGS="$(LDFLAGS)" HAVE_PAPI=$(HAVE_PAPI))
+	$(RM) -f $(INSTALLDIR)/lib/lib$(LIBNAME).a
+	$(RM) -f $(INSTALLDIR)/include/gptl.h $(INSTALLDIR)/include/gptl.inc
+	$(RM) -f $(MANDIR)/man/man3/GPTL*.3
 
 clean:
-	rm -f $(OBJS) $(FOBJS) lib$(LIBNAME).a gptl.h
-	(cd ctests && $(MAKE) clean CC=$(CC) HAVE_MPI=$(HAVE_MPI) HAVE_PAPI=$(HAVE_PAPI) TEST_AUTOPROFILE=$(TEST_AUTOPROFILE))
-	(cd ftests && $(MAKE) clean FC=$(FC) HAVE_MPI=$(HAVE_MPI) HAVE_PAPI=$(HAVE_PAPI))
+	$(RM) -f $(OBJS) $(FOBJS) lib$(LIBNAME).a gptl.h
+	(cd ctests && $(MAKE) clean HAVE_MPI=$(HAVE_MPI) HAVE_PAPI=$(HAVE_PAPI) \
+	 TEST_AUTOPROFILE=$(TEST_AUTOPROFILE))
+	(cd ftests && $(MAKE) clean HAVE_MPI=$(HAVE_MPI) HAVE_PAPI=$(HAVE_PAPI))
 
 gptl.h: $(HEADER)
 	cp -f $(HEADER) gptl.h

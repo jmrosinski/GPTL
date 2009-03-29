@@ -1,5 +1,5 @@
 /*
-** $Id: gptl_papi.c,v 1.67 2009-03-24 20:51:25 rosinski Exp $
+** $Id: gptl_papi.c,v 1.68 2009-03-29 19:38:05 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -1289,7 +1289,7 @@ int GPTLevent_code_to_name (const int code, char *name)
 }
 
 #else
-
+#include "private.h"
 /*
 ** "Should not be called" entry points for public routines
 */

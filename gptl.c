@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.c,v 1.135 2009-03-29 18:16:33 rosinski Exp $
+** $Id: gptl.c,v 1.136 2009-03-29 19:38:05 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -48,11 +48,9 @@ static int maxthreads  = -1;        /* max threads (=GPTLnthreads for OMP). Init
 static int depthlimit  = 99999;     /* max depth for timers (99999 is effectively infinite) */
 static volatile bool disabled = false;    /* Timers disabled? */
 static volatile bool initialized = false; /* GPTLinitialize has been called */
-#ifdef HAVE_PAPI
 static Entry eventlist[MAX_AUX];    /* list of PAPI-based events to be counted */
 static int nevents = 0;             /* number of PAPI events (init to 0) */
 static bool dousepapi = false;      /* saves a function call if stays false */
-#endif
 static bool verbose = false;        /* output verbosity */
 static bool percent = false;        /* print wallclock also as percent of 1st timers[0] */
 static bool dopr_preamble = true;   /* whether to print preamble info */
@@ -1203,7 +1201,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.135 2009-03-29 18:16:33 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.136 2009-03-29 19:38:05 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1931,7 +1929,7 @@ int GPTLpr_summary (MPI_Comm comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.135 2009-03-29 18:16:33 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.136 2009-03-29 19:38:05 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 
     /* Print heading */

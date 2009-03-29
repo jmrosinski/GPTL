@@ -9,7 +9,13 @@ macros.make.sicortex. Step-by-step instructions for setting each
 configuration option are embedded in that file. If unsure of some settings,
 you can run "./suggestions". This is an autoconf "configure" script which has
 been modified to just print suggestions, rather than creating any output
-files. After creating macros.make:
+files. 
+
+It is a good idea to build with FORTRAN=yes even if you're not going to use
+the Fortran wrappers. The reason is that "make test" will do much more
+thorough testing of the library via the Fortran tests.
+
+After creating macros.make:
 
 % make
 % make test
