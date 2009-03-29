@@ -17,9 +17,6 @@
       call mpi_init (ierr)
       comm = MPI_COMM_WORLD
 
-! Would prefer to set abort_on_error to true, but selected PAPI options might
-! not be available
-
       ret = gptlsetoption (gptlabort_on_error, 1)
       ret = gptlsetoption (gptloverhead, 1)
       ret = gptlsetoption (gptlnarrowprint, 1)

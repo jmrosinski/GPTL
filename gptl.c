@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.c,v 1.134 2009-03-28 22:06:06 rosinski Exp $
+** $Id: gptl.c,v 1.135 2009-03-29 18:16:33 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -43,14 +43,14 @@ static Timer **timers = 0;          /* linked list of timers */
 static Timer **last = 0;            /* last element in list */
 static int *max_depth;              /* maximum indentation level encountered */
 static int *max_name_len;           /* max length of timer name */
-static Entry eventlist[MAX_AUX];    /* list of PAPI-based events to be counted */
 static int GPTLnthreads= -1;        /* num threads. Init to bad value */
 static int maxthreads  = -1;        /* max threads (=GPTLnthreads for OMP). Init to bad value */
 static int depthlimit  = 99999;     /* max depth for timers (99999 is effectively infinite) */
-static int nevents = 0;             /* number of PAPI events (init to 0) */
 static volatile bool disabled = false;    /* Timers disabled? */
 static volatile bool initialized = false; /* GPTLinitialize has been called */
 #ifdef HAVE_PAPI
+static Entry eventlist[MAX_AUX];    /* list of PAPI-based events to be counted */
+static int nevents = 0;             /* number of PAPI events (init to 0) */
 static bool dousepapi = false;      /* saves a function call if stays false */
 #endif
 static bool verbose = false;        /* output verbosity */
@@ -1203,7 +1203,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.134 2009-03-28 22:06:06 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.135 2009-03-29 18:16:33 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1931,7 +1931,7 @@ int GPTLpr_summary (MPI_Comm comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.134 2009-03-28 22:06:06 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.135 2009-03-29 18:16:33 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 
     /* Print heading */

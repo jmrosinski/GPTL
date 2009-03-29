@@ -115,11 +115,10 @@ void Y::func (double x)
 </div>
 </pre>
 Compile <em>profcxx.C</em> with auto-instrumentation, then link and
-run. In this case, <em>mpicxx</em> is needed because GPTL wss built
-with MPI support. The <em>-fopenmp</em> argument is needed because GPTL wass built
+run. In this case, The <em>-fopenmp</em> argument is needed because GPTL was built
 with threading support.
 <pre>
-% mpicxx -fopenmp -finstrument-functions profcxx.C -o profcxx -lgptl
+% g++ -fopenmp -finstrument-functions profcxx.C -o profcxx -lgptl
 % ./profcxx
 </pre>
 
