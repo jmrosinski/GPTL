@@ -97,7 +97,7 @@ endif
 # Hopefully MPI_Comm_f2c() exists, but if not, set HAVE_COMM_F2C = no
 HAVE_MPI = no
 ifeq ($(HAVE_MPI),yes)
-  HAVE_COMM_F2c = yes
+  HAVE_COMM_F2C = yes
   MPI_INCFLAGS = -I/usr/local/include
   MPI_LIBFLAGS = -L/usr/local/lib -lmpich
   MPICMD = mpiexec
