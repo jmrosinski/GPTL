@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.43 2009-03-27 16:16:12 rosinski Exp $
+** $Id: f_wrappers.c,v 1.44 2009-03-30 00:22:31 rosinski Exp $
 **
 ** Author: Jim Rosinski
 ** 
@@ -132,7 +132,12 @@ int gptlpr_file (char *file, int nc1)
 int gptlpr_summary (int *fcomm)
 {
   MPI_Comm ccomm;
+#ifdef HAVE_COMM_F2C
   ccomm = MPI_Comm_f2c (*fcomm);
+#else
+  /* Punt and try just casting the Fortran communicator */
+  ccomm = (MPI_Comm) *fcomm;
+#endif
   return GPTLpr_summary (ccomm);
 }
 #else

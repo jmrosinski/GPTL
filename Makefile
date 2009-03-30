@@ -66,6 +66,9 @@ endif
 
 ifeq ($(HAVE_MPI),yes)
   CFLAGS       += -DHAVE_MPI
+  ifeq ($(HAVE_COMM_F2C),yes)
+    CFLAGS     += -DHAVE_COMM_F2C
+  endif
   CFLAGS_TESTS += -DHAVE_MPI
   CFLAGS       += $(MPI_INCFLAGS)
   CFLAGS_TESTS += $(MPI_INCFLAGS)

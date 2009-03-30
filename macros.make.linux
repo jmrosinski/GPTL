@@ -94,8 +94,10 @@ endif
 # wallclock timer, and/or intend to call GPTLpr_summary from an MPI code.
 # Then set inc and lib info if needed (e.g. if CC=mpicc, MPI_INCFLAGS and 
 # MPI_LIBFLAGS can be blank).
+# Hopefully MPI_Comm_f2c() exists, but if not, set HAVE_COMM_F2C = no
 HAVE_MPI = no
 ifeq ($(HAVE_MPI),yes)
+  HAVE_COMM_F2c = yes
   MPI_INCFLAGS = -I/usr/local/include
   MPI_LIBFLAGS = -L/usr/local/lib -lmpich
   MPICMD = mpiexec
