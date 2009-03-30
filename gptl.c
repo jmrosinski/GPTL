@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.c,v 1.137 2009-03-29 21:40:06 rosinski Exp $
+** $Id: gptl.c,v 1.138 2009-03-30 20:58:12 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -652,7 +652,8 @@ int GPTLstart (const char *name)               /* timer name */
 }
 
 /*
-** update_ll_hash: Update linked list and hash table
+** update_ll_hash: Update linked list and hash table.
+**                 Called by GPTLstart and GPTLstart_instr
 **
 ** Input arguments:
 **   ptr:  pointer to timer
@@ -688,7 +689,7 @@ static inline int update_ll_hash (Timer *ptr, const int t, const int indx)
 }
 
 /*
-** update_ptr: Update timer contents
+** update_ptr: Update timer contents. Called by GPTLstart and GPTLstart_instr
 **
 ** Input arguments:
 **   ptr:  pointer to timer
@@ -1201,7 +1202,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.137 2009-03-29 21:40:06 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.138 2009-03-30 20:58:12 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1929,7 +1930,7 @@ int GPTLpr_summary (MPI_Comm comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.137 2009-03-29 21:40:06 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.138 2009-03-30 20:58:12 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 
     /* Print heading */
