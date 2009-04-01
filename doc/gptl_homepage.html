@@ -123,7 +123,7 @@ argument. Passing an "int" doesn't work with some MPI implementations (e.g. Open
 <li> New subroutine <b>gptlprocess_namelist()</b> enables Fortran codes to
 use a namelist to set <b>GPTL</b> options. This allows changing settings
 without having to recompile or relink application
-codes. See <A HREF="example2.html">Example 2</A> for example usage.
+codes. See <A HREF="example5.html">Example 5</A> for example usage.
 <li> New function <b>GPTLget_eventvalue()</b> allows an application to query
 the current value of any PAPI-based event, including derived events.
 <li> New function <b>GPTLget_wallclock()</b> allows an application to query
@@ -199,7 +199,9 @@ Comments in the sample <b><em>macros.make</em></b> files describe
   operations. 
   <p>
   <A HREF="example2.html">Example 2</A> is a C code compiled
-  with gcc's auto-instrumentation hooks to print a dynamic call tree. 
+  with gcc's auto-instrumentation hooks to print a dynamic call tree. Perl
+  script <b><em>hex2name.pl</em></b> is used to convert addresses to 
+  human-readable names.
   <p>
   <A HREF="example3.html">Example 3</A> is a simple MPI code, the
   output of which is post-processed using Perl script

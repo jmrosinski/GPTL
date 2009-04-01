@@ -19,12 +19,14 @@
 <h2>Example 4: Auto-instrumentation of a C++ code</h2>
 This example is a C++ code compiled with auto-instrumentation enabled. Note
 that the constructor and destructor for X are inside the class definition,
-and outside the class definition for Y.
+and outside the class definition for Y. After running the code,
+function addresses in the timing output file are translated to human-readable
+form with perl script <b><em>hex2name.pl</em></b>.
 <p>
 <b><em>profcxx.C:</em></b>
 <pre>
 <div style="background-color:white;">
-#include &#60../gptl.h&gt
+#include &#60gptl.h&gt
 #include &#60myclasses.h&gt
 
 int main ()

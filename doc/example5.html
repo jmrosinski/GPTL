@@ -19,7 +19,9 @@
 <h2>Example 5: Fortran use of gptlparse_namelist() to set GPTL options</h2>
 This example is a Fortran code which uses convenience
 function <b>gptlparse_namelist()</b> to set <b>GPTL</b> options instead of inserting
-calls to <b>gptlsetoption()</b> into the application code.
+calls to <b>gptlsetoption()</b> into the application code. The main advantage
+to this approach is that it avoids having to recompile and relink the
+application code when changing GPTL options.
 <p>
 <b><em>nlreader.F:</em></b>
 <pre>
@@ -30,6 +32,9 @@ calls to <b>gptlsetoption()</b> into the application code.
       include 'gptl.inc'
 
       integer :: ret
+
+! Parse GPTL namelist. Args are namelist file name, unit number, and
+! output return code
 
       call gptlprocess_namelist ('gptlnl', 1, ret)
       if (ret /= 0) then
@@ -44,39 +49,42 @@ calls to <b>gptlsetoption()</b> into the application code.
 </pre>
 Next are the contents of the namelist file. Note that <em>verbose = 1</em>,
 which results in printout when each namelist variable is set. The namelist
-group name must always be <em>gptlnl</em>.
+group name must always be <em>gptlnl</em>. The equivalent library call is
+commented next to each namelist setting.
 <p>
 <b><em>gptlnl:</em></b>
 <pre>
 <div style="background-color:white;">
 &gptlnl
-! These settings are all the opposite of the default--for testing
- wall            = .false.
- cpu             = .true.
- abort_on_error  = .true.
- overhead        = .true.
- depthlimit      = 1
- verbose         = .true.
- narrowprint     = .false.
- percent         = .true.
+! These settings are all the opposite of the default
+ wall            = .false.   ! gptlsetoption (gptlwall,0)
+ cpu             = .true.    ! gptlsetoption (gptlcpu,1)
+ abort_on_error  = .true.    ! gptlsetoption (gptlabort_on_error,1)
+ overhead        = .true.    ! gptlsetoption (gptloverhead,1)
+ depthlimit      = 5         ! gptlsetoption (gptldepthlimit,5)
+ verbose         = .true.    ! gptlsetoption (gptlverbose,1)
+ narrowprint     = .false.   ! gptlsetoption (gptlnarrowprint,0)
+ percent         = .true.    ! gptlsetoption (gptlpercent,1)
 ! Comment out persec and multiplex so "nlreader" test won't fail even if 
 !   PAPI unavailable
-! persec          = .false.
-! multiplex       = .true.
- dopr_preamble   = .false.
- dopr_threadsort = .false.
- dopr_multparent = .false.
- dopr_collision  = .false.
+! persec          = .false.  ! gptlsetoption (gptlpersec,0)
+! multiplex       = .true.   ! gptlsetoption (gptlmultiplex,1)
+ dopr_preamble   = .false.   ! gptlsetoption (gptldopr_preamble,0)
+ dopr_threadsort = .false.   ! gptlsetoption (gptldopr_threadsort,0)
+ dopr_multparent = .false.   ! gptlsetoption (gptldopr_multparent,0)
+ dopr_collision  = .false.   ! gptlsetoption (gptldopr_collision,0)
 
 ! utr, print_method, and eventlist use character variables instead of integer 
 ! to avoid "magic number" settings in the namelist
 
- utr             = 'nanotime'
- print_method    = 'full_tree'
-!print_method    = 'first_parent'
-!print_method    = 'last_parent'
-!print_method    = 'most_frequent'  ! default
+ utr             = 'nanotime'     ! gptlsetutr (gptlnanotime)
+ print_method    = 'full_tree'    ! gptlsetoption (gptlprintmethod, gptlfull_tree)
+!print_method    = 'first_parent' ! gptlsetoption (gptlprintmethod, gptlfirst_parent)
+!print_method    = 'last_parent'  ! gptlsetoption (gptlprintmethod, gptllast_parent)
+!print_method    = 'most_frequent'! gptlsetoption (gptlprintmethod, gptlmost_frequent)
 
+! List of events to count. PAPI_FP_OPS is a PAPI event, and GPTL_CI is a
+! PAPI-based derived event.
 ! Comment out eventlist so "nlreader" test won't fail even if PAPI unavailable
 ! eventlist       = 'PAPI_FP_OPS','GPTL_CI'
 /
@@ -110,8 +118,8 @@ GPTLsetoption: print_method = full_tree
 </pre>
 <h3>Explanation of the above output</h3>
 Each namelist setting results in a call to <b>GPTLsetoption()</b>
-or <b>GPTLsetutr</b> with the listed value. The advantage to this approach is
-that it bypasses the need for recompilation when changing <b>GPTL</b> settings.
+or <b>GPTLsetutr()</b> with the listed value. The output appears
+because <em>verbose</em> was set to true.
 <hr />
 <a href="example3.html"><img border="0" src="btn_previous.gif"
 				  width="100" height="20" alt="Example 3"
