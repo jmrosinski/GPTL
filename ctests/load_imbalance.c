@@ -39,9 +39,7 @@ int main (int argc, char **argv)
   ret = sleep (iam);
   ret = GPTLstop ("sleep_iam_B");
 
-  ret = GPTLstart ("sync_B");
-  ret = MPI_Barrier (MPI_COMM_WORLD);
-  ret = GPTLstop ("sync_B");
+  ret = GPTLbarrier (MPI_COMM_WORLD, "sync_B");
 
   ret = GPTLstart ("sleep_2_B");
   ret = sleep (2);

@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.44 2009-03-30 00:22:31 rosinski Exp $
+** $Id: f_wrappers.c,v 1.45 2009-04-02 20:21:52 rosinski Exp $
 **
 ** Author: Jim Rosinski
 ** 
@@ -129,6 +129,7 @@ int gptlpr_file (char *file, int nc1)
 }
 
 #ifdef HAVE_MPI
+
 int gptlpr_summary (int *fcomm)
 {
   MPI_Comm ccomm;
@@ -140,11 +141,37 @@ int gptlpr_summary (int *fcomm)
 #endif
   return GPTLpr_summary (ccomm);
 }
+
+int gptlbarrier (int *fcomm, char *name, int nc1)
+{
+  MPI_Comm ccomm;
+  char cname[MAX_CHARS+1];
+  int numchars;
+
+  numchars = MIN (nc1, MAX_CHARS);
+  strncpy (cname, name, numchars);
+  cname[numchars] = '\0';
+#ifdef HAVE_COMM_F2C
+  ccomm = MPI_Comm_f2c (*fcomm);
 #else
+  /* Punt and try just casting the Fortran communicator */
+  ccomm = (MPI_Comm) *fcomm;
+#endif
+  return GPTLbarrier (ccomm, cname);
+}
+
+#else
+
 int gptlpr_summary (void)
 {
   return GPTLerror ("gptlpr_summary: Need to build GPTL with #define HAVE_MPI to call this routine\n");
 }
+
+int gptlbarrier (void)
+{
+  return GPTLerror ("gptlbarrier: Need to build GPTL with #define HAVE_MPI to call this routine\n");
+}
+
 #endif
 
 

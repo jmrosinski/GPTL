@@ -76,9 +76,7 @@ int main (int argc, char **argv)
   }
 
   if (barriersync) {
-    ret = GPTLstart ("barriersync");
-    ret = MPI_Barrier (MPI_COMM_WORLD);
-    ret = GPTLstop ("barriersync");
+    ret = GPTLbarrier (MPI_COMM_WORLD, "barriersync");
   }
 
   ret = GPTLstart ("sleep(1)");

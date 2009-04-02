@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.c,v 1.139 2009-04-02 18:15:13 rosinski Exp $
+** $Id: gptl.c,v 1.140 2009-04-02 20:21:52 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -1202,7 +1202,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.139 2009-04-02 18:15:13 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.140 2009-04-02 20:21:52 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1930,7 +1930,7 @@ int GPTLpr_summary (MPI_Comm comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.139 2009-04-02 18:15:13 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.140 2009-04-02 20:21:52 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 
     /* Print heading */
@@ -2124,6 +2124,26 @@ void get_summarystats (Summarystats *summarystats,
     }
   }
 #endif
+}
+
+/* 
+** GPTLbarrier: When MPI enabled, set and time an MPI barrier
+**
+** Input arguments:
+**   comm: commuicator (e.g. MPI_COMM_WORLD). If zero, use MPI_COMM_WORLD
+**   name: region name
+**
+** Return value: 0 (success)
+*/
+
+int GPTLbarrier (MPI_Comm comm, const char *name)
+{
+  int ret;
+
+  ret = GPTLstart (name);
+  ret = MPI_Barrier (comm);
+  ret = GPTLstop (name);
+  return 0;
 }
 #endif  // defined HAVE_MPI
 

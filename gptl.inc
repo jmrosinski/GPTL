@@ -1,5 +1,5 @@
 !
-! $Id: gptl.inc,v 1.37 2009-01-06 22:28:07 rosinski Exp $
+! $Id: gptl.inc,v 1.38 2009-04-02 20:21:52 rosinski Exp $
 !
 ! Author: Jim Rosinski
 !
@@ -95,6 +95,7 @@
       integer gptlpr
       integer gptlpr_file
       integer gptlpr_summary
+      integer gptlbarrier
       integer gptlreset 
       integer gptlfinalize
       integer gptlget_memusage
@@ -120,6 +121,7 @@
       external gptlpr
       external gptlpr_file
       external gptlpr_summary
+      external gptlbarrier
       external gptlreset 
       external gptlfinalize
       external gptlget_memusage
