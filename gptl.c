@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.c,v 1.138 2009-03-30 20:58:12 rosinski Exp $
+** $Id: gptl.c,v 1.139 2009-04-02 18:15:13 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -1202,7 +1202,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.138 2009-03-30 20:58:12 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.139 2009-04-02 18:15:13 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1746,7 +1746,7 @@ static void printstats (const Timer *timer,
   if ((ticks_per_sec = sysconf (_SC_CLK_TCK)) == -1)
     (void) GPTLerror ("printstats: token _SC_CLK_TCK is not defined\n");
 
-  if (timer->onflg)
+  if (timer->onflg && verbose)
     fprintf (stderr, "printstats: timer %s had not been turned off\n", timer->name);
 
   /* Flag ambiguous timer indentation levels with a "*" in column 1 */
@@ -1930,7 +1930,7 @@ int GPTLpr_summary (MPI_Comm comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.138 2009-03-30 20:58:12 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.139 2009-04-02 18:15:13 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 
     /* Print heading */
