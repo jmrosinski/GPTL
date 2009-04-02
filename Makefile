@@ -103,8 +103,8 @@ ifeq ($(HAVE_GETTIMEOFDAY),yes)
   CFLAGS += -DHAVE_GETTIMEOFDAY
 endif
 
-ifeq ($(TEST_AUTOPROFILE),$(null))
-  TEST_AUTOPROFILE = -zzz
+ifeq ($(INSTRFLAG),$(null))
+  INSTRFLAG = -zzz
 endif
 
 ##############################################################################
