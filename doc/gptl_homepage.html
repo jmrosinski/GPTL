@@ -217,6 +217,13 @@ Comments in the sample <b><em>macros.make</em></b> files describe
 
 <HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
 
+<h2>Bugs</h2>
+Initialization not handled properly when PAPI is enabled, OpenMP disabled,
+and pthreads enabled. Working on a fix. Currently the best solution for
+this situation is to always build GPTL with <b>OPENMP = yes</b>.
+
+<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
+
 <h2>Bug Reports</h2>
 Please <a HREF="mailto:rosinskijm@ornl.gov">email</a> me bug reports
 	and/or feature requests.
