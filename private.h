@@ -1,5 +1,5 @@
 /*
-** $Id: private.h,v 1.64 2009-03-25 21:00:42 rosinski Exp $
+** $Id: private.h,v 1.65 2009-04-29 22:17:01 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -129,4 +129,6 @@ extern int GPTL_PAPIget_eventvalue (const char *, const Papistats *, double *);
 extern bool GPTL_PAPIis_multiplexed (void);
 extern void GPTL_PAPIprintenabled (FILE *);
 extern void read_counters100 (void);
+extern int GPTLget_npapievents (void);
+extern int GPTLcreate_and_start_events (const int);
 #endif

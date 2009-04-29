@@ -1,5 +1,5 @@
 /*
-** $Id: gptl_papi.c,v 1.68 2009-03-29 19:38:05 rosinski Exp $
+** $Id: gptl_papi.c,v 1.69 2009-04-29 22:17:01 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -163,7 +163,6 @@ static bool verbose = false;             /* output verbosity */
 
 /* Function prototypes */
 
-static int create_and_start_events (const int);
 static int canenable (int);
 static int canenable2 (int, int);
 static int papievent_is_enabled (int);
@@ -695,7 +694,7 @@ int GPTL_PAPIinitialize (const int maxthreads,     /* number of threads */
   int ret;       /* return code */
   int n;         /* loop index */
   int t;         /* thread index */
-  int *rc;       /* array of return codes from create_and_start_events */
+  int *rc;       /* array of return codes from GPTLcreate_and_start_events */
   bool badret;   /* true if any bad return codes were found */
 
   verbose = verbose_flag;
@@ -727,26 +726,30 @@ int GPTL_PAPIinitialize (const int maxthreads,     /* number of threads */
     papicounters[t] = (long_long *) GPTLallocate (MAX_AUX * sizeof (long_long));
   }
 
-  /* Event starting apparently must be within a threaded loop. */
+  /* 
+  ** Event starting must be within a threaded loop. 
+  ** For THREADED_PTHREADS case, GPTLcreate_and_start_events is called from
+  ** get_thread_num() when a new thread is encountered.
+  */
 
+#if ( defined THREADED_OMP )
   if (npapievents > 0) {
     rc = (int *) GPTLallocate (maxthreads * sizeof (int));
-
 #pragma omp parallel for private (t)
-
     for (t = 0; t < maxthreads; t++)
-      rc[t] = create_and_start_events (t);
-  
+      rc[t] = GPTLcreate_and_start_events (t);
+
     badret = false;
+
     for (t = 0; t < maxthreads; t++)
       if (rc[t] < 0)
-	badret = true;
-    
-    free (rc);
+	badret = true;    
 
+    free (rc);
     if (badret)
       return -1;
   }
+#endif
 
   *nevents_out = nevents;
   for (n = 0; n < nevents; ++n) {
@@ -760,7 +763,7 @@ int GPTL_PAPIinitialize (const int maxthreads,     /* number of threads */
 }
 
 /*
-** create_and_start_events: Create and start the PAPI eventset.  File-local.
+** GPTLcreate_and_start_events: Create and start the PAPI eventset.
 **   Threaded routine to create the "event set" (PAPI terminology) and start
 **   the counters. This is only done once, and is called from GPTL_PAPIinitialize 
 ** 
@@ -770,7 +773,7 @@ int GPTL_PAPIinitialize (const int maxthreads,     /* number of threads */
 ** Return value: 0 (success) or GPTLerror (failure)
 */
 
-static int create_and_start_events (const int t)  /* thread number */
+int GPTLcreate_and_start_events (const int t)  /* thread number */
 {
   int ret; /* return code */
   int n;   /* loop index over events */
@@ -779,7 +782,7 @@ static int create_and_start_events (const int t)  /* thread number */
   /* Create the event set */
 
   if ((ret = PAPI_create_eventset (&EventSet[t])) != PAPI_OK)
-    return GPTLerror ("create_and_start_events: failure creating eventset: %s\n", 
+    return GPTLerror ("GPTLcreate_and_start_events: failure creating eventset: %s\n", 
 		      PAPI_strerror (ret));
 
   /* Add requested events to the event set */
@@ -789,7 +792,7 @@ static int create_and_start_events (const int t)  /* thread number */
       if (verbose) {
 	fprintf (stderr, "%s\n", PAPI_strerror (ret));
 	ret = PAPI_event_code_to_name (papieventlist[n], eventname);
-	fprintf (stderr, "create_and_start_events: failure adding event:%s\n",
+	fprintf (stderr, "GPTLcreate_and_start_events: failure adding event:%s\n",
 		 eventname);
       }
 
@@ -808,27 +811,27 @@ static int create_and_start_events (const int t)  /* thread number */
     /* Cleanup the eventset for multiplexing */
 
     if ((ret = PAPI_cleanup_eventset (EventSet[t])) != PAPI_OK)
-      return GPTLerror ("create_and_start_events: %s\n", PAPI_strerror (ret));
+      return GPTLerror ("GPTLcreate_and_start_events: %s\n", PAPI_strerror (ret));
     
     if ((ret = PAPI_destroy_eventset (&EventSet[t])) != PAPI_OK)
-      return GPTLerror ("create_and_start_events: %s\n", PAPI_strerror (ret));
+      return GPTLerror ("GPTLcreate_and_start_events: %s\n", PAPI_strerror (ret));
 
     if ((ret = PAPI_create_eventset (&EventSet[t])) != PAPI_OK)
-      return GPTLerror ("create_and_start_events: failure creating eventset: %s\n", 
+      return GPTLerror ("GPTLcreate_and_start_events: failure creating eventset: %s\n", 
 			PAPI_strerror (ret));
 
     if ((ret = PAPI_multiplex_init ()) != PAPI_OK)
-      return GPTLerror ("create_and_start_events: failure from PAPI_multiplex_init%s\n", 
+      return GPTLerror ("GPTLcreate_and_start_events: failure from PAPI_multiplex_init%s\n", 
 			PAPI_strerror (ret));
 
     if ((ret = PAPI_set_multiplex (EventSet[t])) != PAPI_OK)
-      return GPTLerror ("create_and_start_events: failure from PAPI_set_multiplex: %s\n", 
+      return GPTLerror ("GPTLcreate_and_start_events: failure from PAPI_set_multiplex: %s\n", 
 			PAPI_strerror (ret));
 
     for (n = 0; n < npapievents; n++) {
       if ((ret = PAPI_add_event (EventSet[t], papieventlist[n])) != PAPI_OK) {
 	ret = PAPI_event_code_to_name (papieventlist[n], eventname);
-	return GPTLerror ("create_and_start_events: failure adding event:%s\n"
+	return GPTLerror ("GPTLcreate_and_start_events: failure adding event:%s\n"
 			  "  Error was: %s\n", eventname, PAPI_strerror (ret));
       }
     }
@@ -837,7 +840,7 @@ static int create_and_start_events (const int t)  /* thread number */
   /* Start the event set.  It will only be read from now on--never stopped */
 
   if ((ret = PAPI_start (EventSet[t])) != PAPI_OK)
-    return GPTLerror ("create_and_start_events: failed to start event set: %s\n", 
+    return GPTLerror ("GPTLcreate_and_start_events: failed to start event set: %s\n", 
 		      PAPI_strerror (ret));
 
   return 0;
@@ -1286,6 +1289,11 @@ int GPTLevent_code_to_name (const int code, char *name)
     return GPTLerror ("GPTL_event_code_to_name: PAPI_event_code_to_name failure\n");
 
   return 0;
+}
+
+int GPTLget_npapievents (void)
+{
+  return npapievents;
 }
 
 #else

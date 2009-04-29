@@ -1,5 +1,5 @@
 /*
-** $Id: threadutil.c,v 1.13 2009-03-25 21:00:42 rosinski Exp $
+** $Id: threadutil.c,v 1.14 2009-04-29 22:17:01 rosinski Exp $
 **
 ** Author: Jim Rosinski
 ** 
@@ -67,6 +67,7 @@ static pthread_t *threadid;
 int threadinit (int *nthreads, int *maxthreads)
 {
   int nbytes;
+  int rc;
 
   /* Manage the threadid array which maps physical thread id's to logical id's */
 
@@ -82,6 +83,12 @@ int threadinit (int *nthreads, int *maxthreads)
   threadid[0] = pthread_self ();
   *nthreads = 1;
   *maxthreads = MAX_THREADS;
+#ifdef HAVE_PAPI
+  if (GPTLget_npapievents () > 0)
+    if ((rc = GPTLcreate_and_start_events (*nthreads)) < 0)
+      return GPTLerror ("get_thread_num: error from GPTLcreate_and_start_events for thread %d\n",
+			*nthreads);
+#endif
 
   return 0;
 }
@@ -111,6 +118,7 @@ int get_thread_num (int *nthreads, int *maxthreads)
 {
   int n;                 /* return value: loop index over number of threads */
   pthread_t mythreadid;  /* thread id from pthreads library */
+  int rc;
 
   mythreadid = pthread_self ();
 
@@ -143,6 +151,16 @@ int get_thread_num (int *nthreads, int *maxthreads)
     }    
     threadid[n] = mythreadid;
     ++*nthreads;
+    /*
+    ** When HAVE_PAPI is true, need to create and start an event set
+    ** for the new thread
+    */
+#ifdef HAVE_PAPI
+    if (GPTLget_npapievents () > 0)
+      if ((rc = GPTLcreate_and_start_events (*nthreads)) < 0)
+	return GPTLerror ("get_thread_num: error from GPTLcreate_and_start_events for thread %d\n",
+			  *nthreads);
+#endif
   }
     
   if (unlock_mutex () < 0)
