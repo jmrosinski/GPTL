@@ -1,5 +1,5 @@
 /*
-** $Id: gptl_papi.c,v 1.70 2009-06-30 19:18:21 rosinski Exp $
+** $Id: gptl_papi.c,v 1.71 2009-06-30 19:37:25 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -728,8 +728,9 @@ int GPTL_PAPIinitialize (const int maxthreads,     /* number of threads */
 
   /* 
   ** Event starting must be within a threaded loop. 
-  ** For THREADED_PTHREADS case, GPTLcreate_and_start_events is called from
-  ** get_thread_num() when a new thread is encountered.
+  ** THREADED_PTHREADS and unthreaded cases, call GPTLcreate_and_start_events
+  ** for the master thread. For THREADED_PTHREADS, get_thread_num() will be
+  ** called from get_thread_num() whenever a new thread is encountered.
   */
 
   if (npapievents > 0) {
@@ -748,7 +749,7 @@ int GPTL_PAPIinitialize (const int maxthreads,     /* number of threads */
     free (rc);
     if (badret)
       return -1;
-#elif ( ! defined THREADED_PTHREADS )
+#else
     if (GPTLcreate_and_start_events (0) < 0)
       return -1;
 #endif

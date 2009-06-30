@@ -1,5 +1,5 @@
 /*
-** $Id: threadutil.c,v 1.15 2009-06-30 19:18:21 rosinski Exp $
+** $Id: threadutil.c,v 1.16 2009-06-30 19:37:25 rosinski Exp $
 **
 ** Author: Jim Rosinski
 ** 
@@ -84,17 +84,6 @@ int threadinit (int *nthreads, int *maxthreads)
   *nthreads = 1;
   *maxthreads = MAX_THREADS;
 
-  /*
-  ** Start the event set for the master thread
-  */
-
-#ifdef HAVE_PAPI
-  if (GPTLget_npapievents () > 0)
-    if ((rc = GPTLcreate_and_start_events (0)) < 0)
-      return GPTLerror ("threadinit: error from GPTLcreate_and_start_events for thread %d\n",
-			0);
-#endif
-
   return 0;
 }
 
@@ -167,6 +156,7 @@ int get_thread_num (int *nthreads, int *maxthreads)
 	return GPTLerror ("get_thread_num: error from GPTLcreate_and_start_events for thread %d\n",
 			  n);
 #endif
+
     ++*nthreads;
   }
     
