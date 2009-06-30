@@ -34,15 +34,17 @@ endif
 
 ifeq ($(OPENMP),yes)
   CFLAGS  += -DTHREADED_OMP $(COMPFLAG)
-  CFLAGS_TESTS += -DTHREADED_OMP $(COMPFLAG)
-  LDFLAGS += $(COMPFLAG)
-  FFLAGS  += $(FOMPFLAG)
+  CFLAGS_TESTS += -DTHREADED_OMP
 else
   ifeq ($(PTHREADS),yes)
     CFLAGS  += -DTHREADED_PTHREADS
     LDFLAGS += -lpthread
   endif
 endif
+FFLAGS += $(FOMPFLAG)
+CFLAGS_TESTS += $(COMPFLAG)
+# Assume C and Fortran OMP flags are the same
+LDFLAGS += $(COMPFLAG)
 
 FOBJS =
 ifeq ($(FORTRAN),yes)

@@ -1,5 +1,5 @@
 /*
-** $Id: gptl_papi.c,v 1.69 2009-04-29 22:17:01 rosinski Exp $
+** $Id: gptl_papi.c,v 1.70 2009-06-30 19:18:21 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -732,8 +732,8 @@ int GPTL_PAPIinitialize (const int maxthreads,     /* number of threads */
   ** get_thread_num() when a new thread is encountered.
   */
 
-#if ( defined THREADED_OMP )
   if (npapievents > 0) {
+#if ( defined THREADED_OMP )
     rc = (int *) GPTLallocate (maxthreads * sizeof (int));
 #pragma omp parallel for private (t)
     for (t = 0; t < maxthreads; t++)
@@ -748,8 +748,11 @@ int GPTL_PAPIinitialize (const int maxthreads,     /* number of threads */
     free (rc);
     if (badret)
       return -1;
-  }
+#elif ( ! defined THREADED_PTHREADS )
+    if (GPTLcreate_and_start_events (0) < 0)
+      return -1;
 #endif
+  }
 
   *nevents_out = nevents;
   for (n = 0; n < nevents; ++n) {
@@ -782,8 +785,11 @@ int GPTLcreate_and_start_events (const int t)  /* thread number */
   /* Create the event set */
 
   if ((ret = PAPI_create_eventset (&EventSet[t])) != PAPI_OK)
-    return GPTLerror ("GPTLcreate_and_start_events: failure creating eventset: %s\n", 
-		      PAPI_strerror (ret));
+    return GPTLerror ("GPTLcreate_and_start_events: thread %d failure creating eventset: %s\n", 
+		      t, PAPI_strerror (ret));
+
+  if (verbose)
+    printf ("GPTLcreate_and_start_events: successfully created eventset for thread %d\n", t);
 
   /* Add requested events to the event set */
 

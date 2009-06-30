@@ -30,14 +30,16 @@ ABIFLAGS =
 # Linux system or not? If "yes", get_memusage() will use the /proc interface.
 LINUX = yes
 
-# To enable OpenMP threading, set OPENMP=yes and define the compiler flag. Otherwise,
-# set OPENMP=no. OpenMP applications linked with GPTL as built with OPENMP=no will NOT
-# be thread-safe. On the other hand, if OPENMP=yes, unthreaded applications
-# using GPTL will need to be linked with the OpenMP flag. 
+# To enable OpenMP threading, set OPENMP=yes. Otherwise, set OPENMP=no. 
+# Set COMPFLAG to the proper compiler flag to enable OpenMP. This can be
+# blank, but then threaded tests in ctests/ and ftests/ won't enable threading
+# when PTHREADS = yes.
+# OpenMP applications linked with GPTL as built with OPENMP=no and PTHREADS=no
+# will NOT be thread-safe. On the other hand, if OPENMP=yes, unthreaded 
+# applications using GPTL will need to be linked with the OpenMP flag. 
 OPENMP = yes
-ifeq ($(OPENMP),yes)
-  COMPFLAG = -fopenmp
-else
+COMPFLAG = -fopenmp
+ifeq ($(OPENMP),no)
 # Set PTHREADS if available and OPENMP=no
   PTHREADS = yes
 endif
@@ -65,13 +67,12 @@ ifeq ($(FORTRAN),yes)
 #  UNDERSCORING = -DFORTRANDOUBLEUNDERSCORE
   UNDERSCORING = -DFORTRANUNDERSCORE
 
-# Set Fortran compiler, flags, and (if OpenMP enabled) OpenMP compiler flag.
+# Set Fortran compiler, flags, and OpenMP compiler flag. Note that Fortran
+# OpenMP tests are possible with OPENMP=no as long as PTHREADS=yes
 # These settings are only used by the Fortran test applications in ftests/.
   FC     = gfortran
   FFLAGS = -g -O2
-  ifeq ($(OPENMP),yes)
-    FOMPFLAG = -fopenmp
-  endif
+  FOMPFLAG = -fopenmp
 endif
 
 # Archiver: normally it's just ar

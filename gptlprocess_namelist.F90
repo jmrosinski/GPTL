@@ -1,6 +1,6 @@
 subroutine gptlprocess_namelist (filename, unitno, outret)
 !
-! $Id: gptlprocess_namelist.F90,v 1.1 2009-01-05 22:12:37 rosinski Exp $
+! $Id: gptlprocess_namelist.F90,v 1.2 2009-06-30 19:18:21 rosinski Exp $
 !
 ! Author: Jim Rosinski
 !
@@ -63,7 +63,8 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
   logical :: dopr_collision  = def_dopr_collision
   character(len=16) :: print_method    = def_print_method
   character(len=16) :: utr             = def_utr
-  character(len=16) :: eventlist(maxevents) = (/('                ',j=1,maxevents)/)
+  character(len=64) :: eventlist(maxevents) = &
+ (/('                                                                ',j=1,maxevents)/)
   
   namelist /gptlnl/ wall, cpu, abort_on_error, overhead, depthlimit, &
                     verbose, narrowprint, percent, persec, multiplex, &
@@ -236,7 +237,7 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
 ! PAPI-based events
 !
   do j=1,maxevents
-    if (eventlist(j) /= '                ') then
+    if (eventlist(j)(1:16) /= '                ') then
       ret = gptlevent_name_to_code (trim (eventlist(j)), code)
       if (ret == 0) then
         ret = gptlsetoption (code, 1)

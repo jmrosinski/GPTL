@@ -1,5 +1,5 @@
 /*
-** $Id: threadutil.c,v 1.14 2009-04-29 22:17:01 rosinski Exp $
+** $Id: threadutil.c,v 1.15 2009-06-30 19:18:21 rosinski Exp $
 **
 ** Author: Jim Rosinski
 ** 
@@ -30,7 +30,7 @@ int threadinit (int *nthreads, int *maxthreads)
   *maxthreads = omp_get_max_threads ();
   *nthreads = *maxthreads;
   if (omp_get_thread_num () > 0)
-    return GPTLerror ("GPTLthreadinit: MUST be called only by master thread");
+    return GPTLerror ("GPTL: threadinit: MUST be called only by master thread");
   return 0;
 }
 
@@ -83,11 +83,16 @@ int threadinit (int *nthreads, int *maxthreads)
   threadid[0] = pthread_self ();
   *nthreads = 1;
   *maxthreads = MAX_THREADS;
+
+  /*
+  ** Start the event set for the master thread
+  */
+
 #ifdef HAVE_PAPI
   if (GPTLget_npapievents () > 0)
-    if ((rc = GPTLcreate_and_start_events (*nthreads)) < 0)
-      return GPTLerror ("get_thread_num: error from GPTLcreate_and_start_events for thread %d\n",
-			*nthreads);
+    if ((rc = GPTLcreate_and_start_events (0)) < 0)
+      return GPTLerror ("threadinit: error from GPTLcreate_and_start_events for thread %d\n",
+			0);
 #endif
 
   return 0;
@@ -103,12 +108,11 @@ void threadfinalize ()
 }
 
 /*
-** get_thread_num: determine zero-based thread number of the calling thread
-**
-** Input args:
-**   nthreads:   number of threads
+** get_thread_num: determine zero-based thread number of the calling thread.
+**                 Also: update nthreads and maxthreads if necessary.
 **
 ** Input/output args:
+**   nthreads:   number of threads
 **   maxthreads: max number of threads
 **
 ** Return value: thread number (success) or GPTLerror (failure)
@@ -118,7 +122,7 @@ int get_thread_num (int *nthreads, int *maxthreads)
 {
   int n;                 /* return value: loop index over number of threads */
   pthread_t mythreadid;  /* thread id from pthreads library */
-  int rc;
+  int rc;                /* return code from function call */
 
   mythreadid = pthread_self ();
 
@@ -133,7 +137,7 @@ int get_thread_num (int *nthreads, int *maxthreads)
   ** the array threadid must be by only one thread at a time.
   */
 
-  for (n = 0; n < *nthreads; n++)
+  for (n = 0; n < *nthreads; ++n)
     if (pthread_equal (mythreadid, threadid[n]))
       break;
 
@@ -149,18 +153,21 @@ int get_thread_num (int *nthreads, int *maxthreads)
       return GPTLerror ("get_thread_num: nthreads=%d is too big Recompile "
 			"with larger value of MAX_THREADS\n", *nthreads);
     }    
+
     threadid[n] = mythreadid;
-    ++*nthreads;
+
     /*
     ** When HAVE_PAPI is true, need to create and start an event set
     ** for the new thread
     */
+
 #ifdef HAVE_PAPI
     if (GPTLget_npapievents () > 0)
-      if ((rc = GPTLcreate_and_start_events (*nthreads)) < 0)
+      if ((rc = GPTLcreate_and_start_events (n)) < 0)
 	return GPTLerror ("get_thread_num: error from GPTLcreate_and_start_events for thread %d\n",
-			  *nthreads);
+			  n);
 #endif
+    ++*nthreads;
   }
     
   if (unlock_mutex () < 0)

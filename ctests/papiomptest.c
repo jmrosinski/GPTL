@@ -68,6 +68,7 @@ int main (int argc, char **argv)
   printf ("Outer loop length (OMP)=%d\n", nompiter);
   printf ("Inner loop length=%d\n", looplen);
 
+  (void) GPTLsetoption (GPTLverbose, 1);
   (void) GPTLsetoption (GPTLabort_on_error, 1);
   (void) GPTLsetoption (GPTLoverhead, 1);
   (void) GPTLsetoption (GPTLnarrowprint, 1);
