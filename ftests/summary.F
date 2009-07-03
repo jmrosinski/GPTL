@@ -1,4 +1,3 @@
-#ifdef HAVE_MPI
       program main 
 #include <mpif.h>
 #include "../gptl.inc"
@@ -100,9 +99,3 @@
       sub = sum
       return 
       end function sub
-#else
-      program main 
-      write(6,*)'summary: need to build GPTL with #define HAVE_MPI'
-      stop 0
-      end program main
-#endif

@@ -143,6 +143,7 @@ install: lib$(LIBNAME).a
 	install -m 0644 gptl.h gptl.inc $(INSTALLDIR)/include
 	install -m 0644 man/man3/*.3 $(MANDIR)/man/man3
 	install -m 0755 *pl $(INSTALLDIR)/bin
+	(cd ctests/ && make install INSTALLDIR=$(INSTALLDIR))
 
 uninstall:
 	$(RM) -f $(INSTALLDIR)/lib/lib$(LIBNAME).a

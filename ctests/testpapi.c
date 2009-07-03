@@ -1,5 +1,4 @@
 #include "../gptl.h"
-#include <papi.h>
 #include <stdio.h>
 
 int main ()
@@ -10,29 +9,23 @@ int main ()
   double sum;
 
   printf ("testpapi: Testing PAPI interface...\n");
-  printf ("Initializing PAPI with PAPI_library_init...\n");
-  ret = PAPI_library_init (PAPI_VER_CURRENT);
-  if (ret != PAPI_VER_CURRENT) {
-    printf ("ret, PAPI_VER_CURRENT=%d %d\n", ret, PAPI_VER_CURRENT);
-    printf ("Failure to initialize PAPI library\n");
-    return 1;
-  }
-  printf ("Success\n");
-  printf ("Calling PAPI_event_name_to_code...\n");
-  ret = PAPI_event_name_to_code ("PAPI_TOT_CYC", &code);
-  if (ret != 0) {
-    printf ("Failure from PAPI_event_name_to_code()\n");
+
+  printf ("Testing getting event code for PAPI_TOT_CYC...\n");
+  if ((ret = GPTLevent_name_to_code ("PAPI_TOT_CYC", &code)) != 0) {
+    printf ("Failure\n");
     return 2;
   }
   printf ("Success\n");
+
   printf ("Testing GPTLsetoption(PAPI_TOT_CYC,1)...\n");
   if (GPTLsetoption (code, 1) != 0) {
     printf ("Failure\n");
     return 3;
   }
   printf ("Success\n");
+
   printf ("Testing GPTLinitialize\n");
-  if (GPTLinitialize () != 0) {
+  if ((ret = GPTLinitialize ()) != 0) {
     printf ("Failure\n");
     return 3;
   }

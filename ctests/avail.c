@@ -2,15 +2,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-
-#ifdef HAVE_PAPI
 #include <papi.h>
-#endif
 
 int main ()
 {
-#ifdef HAVE_PAPI
-
   int i;
   int ret;
 
@@ -54,8 +49,8 @@ int main ()
   if (GPTLsetoption (GPTL_LSTPL2M, 1) == 0)
     printf("%-20s %-10d %s\n", "GPTL_LSTPL2M", GPTL_LSTPL2M, "Load-store instructions per L2 miss");
 
-#else
-  printf ("PAPI not enabled so this code does nothing\n");
-#endif
+  if (GPTLsetoption (GPTL_L3MRT, 1) == 0)
+    printf("%-20s %-10d %s\n", "GPTL_L3MRT", GPTL_L3MRT, "L3 Miss rate (fraction)");
+
   return 0;
 }

@@ -3,7 +3,11 @@
 
 # TESTS defines which EXES to run when "make test" is done.
 # Always run "summary". Add others depending on settings.
-TESTS = summary
+TESTS =
+ifeq ($(HAVE_MPI),yes)
+  TESTS += summary
+endif
+
 ifeq ($(HAVE_PAPI),yes)
   TESTS += testpapi
 endif
@@ -20,15 +24,11 @@ endif
 # Items in EXES but not TESTS are built by "make all" but
 # not run by "make test"
 
-EXES = $(TESTS) recursion stride utrtest \
-       papiomptest parentchild gran_overhead rawpapitest
+EXES = $(TESTS) papiomptest gptl_gran_overhead
 
 ifeq ($(HAVE_PAPI),yes)
-  EXES += avail papiacc toomanycounters
-endif
-
-ifeq ($(HAVE_MPI),yes)
-  EXES += scale mpi load_imbalance 
+  UTILEXES = gptl_avail gptl_knownflopcount gptl_gran_overhead
+  EXES += $(UTILEXES)
 endif
 
 OBJS += $(patsubst %,%.o,$(EXES))
@@ -38,19 +38,13 @@ all: $(EXES)
 clean:
 	$(RM) *.o $(EXES) timing.*
 
-avail: avail.o
+gptl_avail: avail.o
 	$(CC) -o $@ $< $(LDFLAGS)
 
-rawpapitest: rawpapitest.o
+gptl_knownflopcount: knownflopcount.o
 	$(CC) -o $@ $< $(LDFLAGS)
 
-recursion: recursion.o
-	$(CC) -o $@ $< $(LDFLAGS)
-
-exception: exception.o
-	$(CXX) -o $@ $< $(LDFLAGS)
-
-utrtest: utrtest.o
+gptl_gran_overhead: gran_overhead.o
 	$(CC) -o $@ $< $(LDFLAGS)
 
 papiomptest: papiomptest.o
@@ -66,37 +60,11 @@ profcxx: profcxx.o
 profcxx.o: profcxx.C myclasses.h
 	$(CXX) -c $(CFLAGS) $(INSTRFLAG) -o $@ $<
 
-stride: stride.o
-	$(CC) -o $@ $< $(LDFLAGS)
-
-scale: scale.o
-	$(CC) -o $@ $< $(LDFLAGS)
-
-parentchild: parentchild.o
-	$(CC) -o $@ $< $(LDFLAGS)
-
 summary: summary.o
-	$(CC) -o $@ $< $(LDFLAGS)
-
-mpi: mpi.o
-	$(CC) -o $@ $< $(LDFLAGS)
-
-gran_overhead: gran_overhead.o
-	$(CC) -o $@ $< $(LDFLAGS)
-
-load_imbalance: load_imbalance.o
 	$(CC) -o $@ $< $(LDFLAGS)
 
 testpapi: testpapi.o
 	$(CC) -o $@ $< $(LDFLAGS)
-
-toomanycounters: toomanycounters.o
-	$(CC) -o $@ $< $(LDFLAGS)
-
-#Optimize papiacc to get good estimate of GPTL_CI
-papiacc: papiacc.o
-	$(CC) -O -c -o papiacc.o papiacc.c $(CFLAGS)
-	$(CC) -o $@ papiacc.o $(LDFLAGS)
 
 # Built-in tests to ensure that GPTL is behaving as expected
 # Invoke as "make test" from one dir above
@@ -124,3 +92,11 @@ ifeq ($(TEST_AUTOPROFILE),yes)
 	@echo
 endif
 	@echo "All C tests passed"
+
+ifneq ($(UTILEXES),)
+install: $(UTILEXES)
+	install -m 0755 $(UTILEXES) $(INSTALLDIR)/bin && exit 0
+else
+install:
+	@exit 0
+endif

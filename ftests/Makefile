@@ -7,7 +7,11 @@ TESTS = testbasics nlreader
 ifeq ($(HAVE_PAPI),yes)
   TESTS += testinit testpapi
 endif
-EXES = $(TESTS) errtest papiomptest ugex utrtest summary stride
+EXES = $(TESTS) errtest utrtest 
+
+ifeq ($(HAVE_MPI),yes)
+  EXES += summary
+endif
 
 OBJS = $(patsubst %,%.o,$(EXES))
 
@@ -17,15 +21,6 @@ clean:
 	$(RM) $(OBJS) $(EXES) timing.*
 
 errtest: errtest.o
-	$(FC) $(FFLAGS) -o $@ $< $(LDFLAGS)
-
-papiomptest: papiomptest.o
-	$(FC) $(FFLAGS) -o $@ $< $(LDFLAGS)
-
-stride: stride.o
-	$(FC) $(FFLAGS) -o $@ $< $(LDFLAGS)
-
-ugex: ugex.o
 	$(FC) $(FFLAGS) -o $@ $< $(LDFLAGS)
 
 utrtest: utrtest.o

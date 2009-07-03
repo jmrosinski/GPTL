@@ -1,13 +1,9 @@
-#include "../gptl.h"
-
 #include <stdio.h>
 #include <stdlib.h>  /* atoi,exit */
 #include <unistd.h>  /* getopt */
 #include <string.h>  /* memset */
 
-#ifdef HAVE_PAPI
-#include <papi.h>
-#endif
+#include "../gptl.h"
 
 double add (int, double);
 double multiply (int, int, double);
@@ -31,10 +27,6 @@ int main (int argc, char **argv)
   printf ("Include PAPI and OpenMP, respectively, if enabled\n");
   printf ("Usage: %s [-l looplen] [-n nompiter] [-p papi_option_name]\n", argv[0]);
 
-#ifdef HAVE_PAPI
-  (void) GPTL_PAPIlibraryinit ();
-#endif
-
   while ((c = getopt (argc, argv, "l:n:p:")) != -1) {
     switch (c) {
 	case 'l':
@@ -46,18 +38,15 @@ int main (int argc, char **argv)
 	  printf ("Set nompiter=%d\n", nompiter);
 	  break;
 	case 'p':
-#ifdef HAVE_PAPI
-	  if ((ret = PAPI_event_name_to_code (optarg, &papiopt)) != 0) {
-	    printf ("Failure from PAPI_event_name_to_code\n");
+	  if ((ret = GPTLevent_name_to_code (optarg, &papiopt)) != 0) {
+	    printf ("Failure from GPTLevent_name_to_code(%s)\n", optarg);
 	    exit (1);
 	  }
+	  
 	  if (GPTLsetoption (papiopt, 1) < 0) {
 	    printf ("Failure from GPTLsetoption (%s,1)\n", optarg);
 	    exit (1);
 	  }
-#else
-	  printf ("HAVE_PAPI is false so -p ignored\n");
-#endif
 	  break;
 	default:
 	  printf ("unknown option %c\n", c);

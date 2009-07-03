@@ -15,7 +15,7 @@ make test  || echo "Failure in make test" && exit 1
 
 # Will need to delete from user settable list all items which truly aren't available
 #foreach usersettable ( DEBUG OPENMP FORTRAN HAVE_PAPI HAVE_MPI TEST_AUTOPROFILE )
-foreach usersettable ( DEBUG FORTRAN HAVE_MPI TEST_AUTOPROFILE )
+foreach usersettable ( DEBUG OPENMP FORTRAN HAVE_MPI TEST_AUTOPROFILE )
 grep "^ *$usersettable *= *yes *" $basescript
 set ret = $status
 if ($ret == 0) then

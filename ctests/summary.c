@@ -1,4 +1,3 @@
-#ifdef HAVE_MPI
 #include <mpi.h>
 
 #include <stdio.h>
@@ -134,15 +133,3 @@ double sub (int iter)
   (void) GPTLstop ("sub");
   return sum;
 }
-
-#else
-
-#include <stdio.h>
-
-int main ()
-{
-  printf ("summary: HAVE_MPI not set so this code does nothing\n");
-  return 0;
-}
-
-#endif

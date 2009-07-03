@@ -1,0 +1,91 @@
+.\" $Id: GPTL.3,v 1.1 2009-07-03 22:22:09 rosinski Exp $
+.TH GPTL 3 "July, 2009" "GPTL"
+
+.SH NAME
+GPTL \- General Purpose Timing Library
+
+.SH SYNOPSIS
+The GPTL Timing Library provides a machine and operating system independent
+mechanism to time and profile application codes written in C, C++, and
+Fortran. The Fortran calling interface matches the C/C++ interface, except
+that Fortran is case-insensitive. And there is an optional namelist parsing
+routine, gptlprocess_namelist.F90, that can optionally be used to set GPTL
+options from Fortran via a namelist. 
+
+If the PAPI library is installed, GPTL provides and easy to use
+interface to all the functionality provided by that library. GPTL also
+defines a set of derived events based on PAPI, such as computational
+intensity and L1 miss rate. If the target application is built with the GNU
+compilers (gcc or gfortran), Pathscale (pathcc or pathf95), or PGI,
+GPTL can be used to automatically instrument regions which are defined
+by function entry and exit points. This is an easy way to generate a dynamic
+call tree. See www.burningserver.net/rosinski/gptl for a set of usage
+examples and further details on using the library. The file README which
+comes with the GPTL distribution also outlines simple usage examples.
+
+The rest of this page lists all the available GPTL functions. Each has its
+own man page with usage details. The order of the functions listed here
+matches the sequence one would normally use to invoke GPTL functions in an
+application.
+
+.SH Primary GPTL functions
+.LP
+.nf
+.BR GPTLevent_name_to_code(3) " convert a GPTL (or PAPI) event name to its
+integer code"
+.BR GPTLevent_code_to_name(3) " convert a GPTL (or PAPI) integer event code
+to its name" 
+.BR GPTLsetoption(3) " - set a GPTL option (e.g. enable a PAPI counter)"
+.BR GPTLsetutr(3) " - set the default underlying timing routine"
+.BR gptlprocess_namelist(3) " - (Fortran only) set GPTL options by reading a Fortran namelist"
+.BR GPTLinitialize(3) " - initialize the GPTL library. Must be called after
+all calls to GPTLsetoption/GPTLsetutr/gptlprocess_namelist, and before all calls to GPTLstart, GPTLstop, and GPTLpr"
+.BR GPTLstart(3) " - start a region timer"
+.BR GPTLstop(3) " - stop a region timer"
+.BR GPTLbarrier(3) " - if MPI is enabled, set and time an MPI_Barrier"
+.BR GPTLreset(3) " - reset all existing GPTL regions to zero"
+.BR GPTLdisable(3) " - disable subsequent calls to GPTLstart/GPTLstop"
+.BR GPTLenable(3) " - enable subsequent calls to GPTLstart/GPTLstop"
+.BR GPTLget_wallclock(3) " - get the current wallclock time accumulation for
+a region"
+.BR GPTLget_eventvalue(3) " - get the current value of an event (e.g. PAPI
+counter value) for a region"
+.BR GPTLget_nregions(3) " - get the current number of regions being timed"
+.BR GPTLget_regionname(3) " - get the name of a region"
+.BR GPTLquery(3) " - get current values for a region being timed"
+.BR GPTLquerycounters(3) " - get current PAPI values for a region being
+timed"
+.BR GPTLpr(3) " - print info for all regions"
+.BR GPTLpr_file(3) " - print info for all regions to a user-specified file"
+.BR GPTLpr_summary(3) " - for an MPI code, print a summary for all regions
+across all ranks"
+.BR GPTLfinalize(3) " - finalize the GPTL library"
+.fi
+
+.SH Utility GPTL functions (can be called independently of any other GPTL function)
+.LP
+.nf
+.BR GPTLstamp(3) " - get a timestamp for wallclock, user time, and system
+time"
+.BR GPTLget_memusage(3) " - get stats on current memory usage"
+.BR GPTLprint_memusage(3) " - print stats on current memory usage"
+.fi
+
+.SH Utility GPTL executables
+.LP
+.nf
+.BR gptl_avail " - print a list of available PAPI-based derived events"
+.BR gptl_knownflopcount " tests PAPI directly (not wrapped by GPTL) for a
+known flop count"
+
+.SH Post-processing GPTL scripts
+.LP
+.nf
+.BR parsegptlout.pl(3) " - for multiprocessed-codes, print summary of an
+event stats across all threads and tasks"
+.BR hex2name.pl(3) " - for auto-instrumented codes, convert region addresses
+to human-readable names"
+.fi
+
+.SH SEE ALSO
+README, INSTALL, and the GPTL Web site: http://www.burningserver.net/rosinski/gptl

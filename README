@@ -5,10 +5,11 @@ GPTL is the "General Purpose Timing Library". It can be used to manually
 instrument application codes with an arbitrary set of "regions" (or "timers")
 over which statistics such as wallclock time and CPU time are gathered and
 subsequently printed. If the target application is built with the GNU
-compilers (gcc or gfortran) or Pathscale (pathcc or pathf95), GPTL can also be
-used to automatically instrument regions which are defined by function entry
-and exit points. This is an easy way to generate a dynamic call tree. See
-Auto-Instrumentation below for a description of how to use this feature.
+compilers (gcc or gfortran), Pathscale (pathcc or pathf95), or PGI compilers,
+GPTL can also be used to automatically instrument regions which are defined
+by function entry and exit points. This is an easy way to generate a dynamic
+call tree. See Auto-Instrumentation below for a description of how to use
+this feature.
 
 If the PAPI library is installed (http://icl.cs.utk.edu/papi), GPTL
 also provides a convenient mechanism to access all available PAPI events. In

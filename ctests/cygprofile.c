@@ -2,10 +2,6 @@
 #include <stdlib.h>
 #include "../gptl.h"
 
-#ifdef HAVE_PAPI
-#include <papiStdEventDefs.h>
-#endif
-
 extern void callsubs (int);
 
 int main (int argc, char **argv)
@@ -20,11 +16,6 @@ int main (int argc, char **argv)
   }
 
   GPTLsetoption (GPTLabort_on_error, 0);
-
-#ifdef HAVE_PAPI
-  GPTLsetoption (PAPI_TOT_CYC, 1);
-  GPTLsetoption (PAPI_FP_INS, 1);
-#endif
 
   if ((ret = GPTLinitialize ()) != 0) {
     printf ("cygprofile: GPTLinitialize failure\n");
