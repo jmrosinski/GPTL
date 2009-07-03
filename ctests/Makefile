@@ -26,10 +26,11 @@ endif
 
 EXES = $(TESTS) papiomptest gptl_gran_overhead
 
+UTILEXES = gptl_gran_overhead
 ifeq ($(HAVE_PAPI),yes)
-  UTILEXES = gptl_avail gptl_knownflopcount gptl_gran_overhead
-  EXES += $(UTILEXES)
+  UTILEXES += gptl_avail gptl_knownflopcount
 endif
+EXES += $(UTILEXES)
 
 OBJS += $(patsubst %,%.o,$(EXES))
 
@@ -41,7 +42,7 @@ clean:
 gptl_avail: avail.o
 	$(CC) -o $@ $< $(LDFLAGS)
 
-gptl_knownflopcount: knownflopcount.o
+gptl_knownflopcount: knownflopcount.c
 	$(CC) -o $@ $< $(LDFLAGS)
 
 gptl_gran_overhead: gran_overhead.o
@@ -93,10 +94,9 @@ ifeq ($(TEST_AUTOPROFILE),yes)
 endif
 	@echo "All C tests passed"
 
-ifneq ($(UTILEXES),)
 install: $(UTILEXES)
+ifneq ($(UTILEXES),)
 	install -m 0755 $(UTILEXES) $(INSTALLDIR)/bin && exit 0
 else
-install:
 	@exit 0
 endif
