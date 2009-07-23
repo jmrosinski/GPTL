@@ -1,5 +1,5 @@
 /*
-** $Id: gptl_papi.c,v 1.71 2009-06-30 19:37:25 rosinski Exp $
+** $Id: gptl_papi.c,v 1.72 2009-07-23 19:07:52 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -733,8 +733,8 @@ int GPTL_PAPIinitialize (const int maxthreads,     /* number of threads */
   ** called from get_thread_num() whenever a new thread is encountered.
   */
 
-  if (npapievents > 0) {
 #if ( defined THREADED_OMP )
+  if (npapievents > 0) {
     rc = (int *) GPTLallocate (maxthreads * sizeof (int));
 #pragma omp parallel for private (t)
     for (t = 0; t < maxthreads; t++)
@@ -749,11 +749,13 @@ int GPTL_PAPIinitialize (const int maxthreads,     /* number of threads */
     free (rc);
     if (badret)
       return -1;
+  }
 #else
+  if (npapievents > 0) {
     if (GPTLcreate_and_start_events (0) < 0)
       return -1;
-#endif
   }
+#endif
 
   *nevents_out = nevents;
   for (n = 0; n < nevents; ++n) {
