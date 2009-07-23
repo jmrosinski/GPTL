@@ -1,5 +1,5 @@
 /*
-** $Id: threadutil.c,v 1.16 2009-06-30 19:37:25 rosinski Exp $
+** $Id: threadutil.c,v 1.17 2009-07-23 19:45:31 rosinski Exp $
 **
 ** Author: Jim Rosinski
 ** 
@@ -15,6 +15,9 @@
 
 #include <omp.h>
 
+/* array of thread ids used to determine if thread has been started */
+static int threadid_omp[MAX_THREADS];  
+
 /*
 ** threadinit: Initialize locking capability and set number of threads
 **
@@ -25,12 +28,18 @@
 
 int threadinit (int *nthreads, int *maxthreads)
 {
+  int t;  /* loop index */
+
   /* In OMP case, maxthreads and nthreads are the same number */
 
   *maxthreads = omp_get_max_threads ();
   *nthreads = *maxthreads;
   if (omp_get_thread_num () > 0)
     return GPTLerror ("GPTL: threadinit: MUST be called only by master thread");
+
+  for (t = 0; t < MAX_THREADS; ++t)
+    threadid_omp[t] = -1;
+
   return 0;
 }
 
@@ -40,6 +49,48 @@ int threadinit (int *nthreads, int *maxthreads)
 
 void threadfinalize ()
 {
+}
+
+#include <omp.h>
+
+/*
+** get_thread_num: determine thread number of the calling thread
+**
+** Input args:
+**   GPTLnthreads:   number of threads
+**   maxthreads: number of threads (unused in OpenMP case)
+**
+** Return value: thread number (success) or GPTLerror (failure)
+*/
+
+int get_thread_num (int *GPTLnthreads, int *maxthreads)
+{
+  int t;       /* thread number */
+  int rc;      /* return code */
+
+  if ((t = omp_get_thread_num ()) >= *GPTLnthreads)
+    return GPTLerror ("get_thread_num: returned id=%d exceeds numthreads=%d\n",
+		      t, *GPTLnthreads);
+
+  if (t >= MAX_THREADS)
+    return GPTLerror ("get_thread_num: returned id=%d exceeds MAX_THREADS=%d\n",
+		      t, MAX_THREADS);
+
+  /*
+  ** When HAVE_PAPI is true, need to create and start an event set
+  ** for the new thread
+  */
+
+#ifdef HAVE_PAPI
+  if (GPTLget_npapievents () > 0 && threadid_omp[t] == -1) {
+    if ((rc = GPTLcreate_and_start_events (t)) < 0)
+      return GPTLerror ("get_thread_num: error from GPTLcreate_and_start_events for thread %d\n",
+			t);
+    threadid_omp[t] = t;
+  }
+#endif
+
+  return t;
 }
 
 #elif ( defined THREADED_PTHREADS )
@@ -214,4 +265,10 @@ int threadinit (int *nthreads, int *maxthreads)
 void threadfinalize ()
 {
 }
+
+int get_thread_num (int *GPTLnthreads, int *maxthreads)
+{
+  return 0;
+}
+
 #endif

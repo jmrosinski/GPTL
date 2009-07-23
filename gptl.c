@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.c,v 1.140 2009-04-02 20:21:52 rosinski Exp $
+** $Id: gptl.c,v 1.141 2009-07-23 19:45:31 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -125,10 +125,6 @@ static int get_max_depth (const Timer *, const int);
 static int num_descendants (Timer *);
 static int is_descendant (const Timer *, const Timer *);
 static char *methodstr (Method);
-
-#if ( ! defined THREADED_PTHREADS )
-static inline int get_thread_num (int *, int *);      /* determine thread number */
-#endif
 
 /* These are the (possibly) supported underlying wallclock timers */
 
@@ -1202,7 +1198,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.140 2009-04-02 20:21:52 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.141 2009-07-23 19:45:31 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1930,7 +1926,7 @@ int GPTLpr_summary (MPI_Comm comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.140 2009-04-02 20:21:52 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.141 2009-07-23 19:45:31 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 
     /* Print heading */
@@ -2545,39 +2541,6 @@ static inline Timer *getentry (const Hashentry *hashtable, /* hash table */
   }
   return ptr;
 }
-
-#if ( defined THREADED_OMP )
-#include <omp.h>
-
-/*
-** get_thread_num: determine thread number of the calling thread
-**
-** Input args:
-**   GPTLnthreads:   number of threads
-**   maxthreads: number of threads (unused in OpenMP case)
-**
-** Return value: thread number (success) or GPTLerror (failure)
-*/
-
-static inline int get_thread_num (int *GPTLnthreads, int *maxthreads)
-{
-  int t;       /* thread number */
-
-  if ((t = omp_get_thread_num ()) >= *GPTLnthreads)
-    return GPTLerror ("get_thread_num: returned id %d exceed numthreads %d\n",
-		      t, *GPTLnthreads);
-
-  return t;
-}
-
-#elif ( ! defined THREADED_PTHREADS )
-
-static inline int get_thread_num (int *GPTLnthreads, int *maxthreads)
-{
-  return 0;
-}
-
-#endif
 
 /*
 ** Add entry points for auto-instrumented codes
