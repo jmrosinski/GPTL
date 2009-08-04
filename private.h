@@ -1,5 +1,5 @@
 /*
-** $Id: private.h,v 1.65 2009-04-29 22:17:01 rosinski Exp $
+** $Id: private.h,v 1.66 2009-08-04 14:10:46 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -106,10 +106,7 @@ extern void GPTLset_abort_on_error (bool val); /* set flag to abort on error */
 extern void *GPTLallocate (const int);         /* malloc wrapper */
 extern int threadinit (int *, int *);          /* initialize threading environment */
 extern void threadfinalize (void);             /* finalize threading environment */
-#if ( defined THREADED_PTHREADS )
-extern int get_thread_num (int *, int *);      /* determine thread number */
-extern void print_threadmapping (int, FILE *); /* print mapping of pthread ids */
-#endif
+extern void print_threadmapping (int, FILE *); /* print mapping of thread ids */
 
 /* 
 ** These are needed for communication between gptl.c and gptl_papi.c

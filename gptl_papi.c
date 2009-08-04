@@ -1,5 +1,5 @@
 /*
-** $Id: gptl_papi.c,v 1.72 2009-07-23 19:07:52 rosinski Exp $
+** $Id: gptl_papi.c,v 1.73 2009-08-04 14:10:46 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -694,14 +694,13 @@ int GPTL_PAPIinitialize (const int maxthreads,     /* number of threads */
   int ret;       /* return code */
   int n;         /* loop index */
   int t;         /* thread index */
-  int *rc;       /* array of return codes from GPTLcreate_and_start_events */
-  bool badret;   /* true if any bad return codes were found */
 
   verbose = verbose_flag;
 
-  /* 
-  ** Ensure that PAPI_library_init has already been called.
-  */
+  if (maxthreads < 1)
+    return GPTLerror ("GPTL_PAPIinitialize: maxthreads = %d\n", maxthreads);
+
+  /* Ensure that PAPI_library_init has already been called */
 
   if ((ret = GPTL_PAPIlibraryinit ()) < 0)
     return GPTLerror ("GPTL_PAPIinitialize: GPTL_PAPIlibraryinit failure\n");
@@ -726,37 +725,6 @@ int GPTL_PAPIinitialize (const int maxthreads,     /* number of threads */
     papicounters[t] = (long_long *) GPTLallocate (MAX_AUX * sizeof (long_long));
   }
 
-  /* 
-  ** Event starting must be within a threaded loop. 
-  ** THREADED_PTHREADS and unthreaded cases, call GPTLcreate_and_start_events
-  ** for the master thread. For THREADED_PTHREADS, get_thread_num() will be
-  ** called from get_thread_num() whenever a new thread is encountered.
-  */
-
-#if ( defined THREADED_OMP )
-  if (npapievents > 0) {
-    rc = (int *) GPTLallocate (maxthreads * sizeof (int));
-#pragma omp parallel for private (t)
-    for (t = 0; t < maxthreads; t++)
-      rc[t] = GPTLcreate_and_start_events (t);
-
-    badret = false;
-
-    for (t = 0; t < maxthreads; t++)
-      if (rc[t] < 0)
-	badret = true;    
-
-    free (rc);
-    if (badret)
-      return -1;
-  }
-#else
-  if (npapievents > 0) {
-    if (GPTLcreate_and_start_events (0) < 0)
-      return -1;
-  }
-#endif
-
   *nevents_out = nevents;
   for (n = 0; n < nevents; ++n) {
     pr_event_out[n].counter = pr_event[n].event.counter;
@@ -771,7 +739,8 @@ int GPTL_PAPIinitialize (const int maxthreads,     /* number of threads */
 /*
 ** GPTLcreate_and_start_events: Create and start the PAPI eventset.
 **   Threaded routine to create the "event set" (PAPI terminology) and start
-**   the counters. This is only done once, and is called from GPTL_PAPIinitialize 
+**   the counters. This is only done once, and is called from get_thread_num
+**   for the first time for the thread.
 ** 
 ** Input args: 
 **   t: thread number

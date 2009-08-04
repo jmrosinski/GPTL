@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.c,v 1.141 2009-07-23 19:45:31 rosinski Exp $
+** $Id: gptl.c,v 1.142 2009-08-04 14:10:46 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -350,9 +350,6 @@ int GPTLinitialize (void)
 
   if (threadinit (&GPTLnthreads, &maxthreads) < 0)
     return GPTLerror ("GPTLinitialize: bad return from threadinit\n");
-
-  if (get_thread_num (&GPTLnthreads, &maxthreads) > 0) 
-    return GPTLerror ("GPTLinitialize: must only be called by master thread\n");
 
   if ((ticks_per_sec = sysconf (_SC_CLK_TCK)) == -1)
     return GPTLerror ("GPTLinitialize: sysconf (_SC_CLK_TCK) failed\n");
@@ -1198,7 +1195,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.141 2009-07-23 19:45:31 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.142 2009-08-04 14:10:46 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1926,7 +1923,7 @@ int GPTLpr_summary (MPI_Comm comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.141 2009-07-23 19:45:31 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.142 2009-08-04 14:10:46 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 
     /* Print heading */

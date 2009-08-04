@@ -7,15 +7,16 @@
 # try to run a PAPI test where HAVE_PAPI is permuted from "no" to "yes", and
 # the test will fail.
 
-set basescript = macros.make.linux  # This is the base script to start from
+set basescript = macros.make.xt5.pgi  # This is the base script to start from
 echo "$0 Testing $basescript..."
 cp $basescript macros.make || echo "Failure to cp $basescript to macros.make" && exit 1
 make clean; make || echo "Failure in make" && exit 1
 make test  || echo "Failure in make test" && exit 1
+echo "$0 $basescript worked" >! results
 
 # Will need to delete from user settable list all items which truly aren't available
 #foreach usersettable ( DEBUG OPENMP FORTRAN HAVE_MPI TEST_AUTOPROFILE )
-foreach usersettable ( DEBUG OPENMP FORTRAN HAVE_PAPI HAVE_MPI TEST_AUTOPROFILE )
+foreach usersettable ( DEBUG OPENMP PTHREADS FORTRAN HAVE_PAPI HAVE_MPI TEST_AUTOPROFILE )
 grep "^ *$usersettable *= *yes *" $basescript
 set ret = $status
 if ($ret == 0) then
@@ -26,9 +27,11 @@ else
   set newtest = yes
 endif
 echo "$0 Testing $usersettable = $newtest ..."
+echo "$0 Testing $usersettable = $newtest ..." >> results
 sed -e "s/^ *$usersettable *= *$oldtest */$usersettable = $newtest/g" $basescript >! macros.make
 make clean; make || echo "Failure in make" && exit 1
 make test  || echo "Failure in make test" && exit 1
+echo "$usersettable = $newtest worked" >> results
 end
 
 echo "Permuting all user settable tests passed" && exit 0
