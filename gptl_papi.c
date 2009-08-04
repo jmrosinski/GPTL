@@ -1,5 +1,5 @@
 /*
-** $Id: gptl_papi.c,v 1.73 2009-08-04 14:10:46 rosinski Exp $
+** $Id: gptl_papi.c,v 1.74 2009-08-04 14:19:54 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -1068,10 +1068,13 @@ void GPTL_PAPIadd (Papistats *auxout,      /* output struct */
 
 void GPTL_PAPIfinalize (int maxthreads)
 {
-  int t;
+  int t;   /* thread index */
+  int ret; /* return code */
 
   for (t = 0; t < maxthreads; t++) {
     free (papicounters[t]);
+    ret = PAPI_cleanup_eventset (EventSet[t]);
+    ret = PAPI_destroy_eventset (&EventSet[t]);
   }
 
   free (EventSet);
