@@ -15,10 +15,12 @@ make test  || echo "Failure in make test" && exit 1
 echo "$0 $basescript worked" >! results
 
 # Will need to delete from user settable list all items which truly aren't available
-#foreach usersettable ( DEBUG OPENMP FORTRAN HAVE_MPI TEST_AUTOPROFILE )
-foreach usersettable ( DEBUG OPENMP PTHREADS FORTRAN HAVE_PAPI HAVE_MPI TEST_AUTOPROFILE )
+foreach usersettable ( PTHREADS )
+#foreach usersettable ( DEBUG OPENMP PTHREADS FORTRAN HAVE_PAPI HAVE_MPI TEST_AUTOPROFILE )
 grep "^ *$usersettable *= *yes *" $basescript
 set ret = $status
+
+# Determine whether to toggle from no to yes, or yes to no
 if ($ret == 0) then
   set oldtest = yes
   set newtest = no
@@ -28,7 +30,15 @@ else
 endif
 echo "$0 Testing $usersettable = $newtest ..."
 echo "$0 Testing $usersettable = $newtest ..." >> results
-sed -e "s/^ *$usersettable *= *$oldtest */$usersettable = $newtest/g" $basescript >! macros.make
+
+# For PTHREADS case, ensure OPENMP is off
+if ( $usersettable == PTHREADS ) then
+  sed -e "s/^ *OPENMP *= *yes */OPENMP = no/g" \
+      -e "s/^ *$usersettable *= *$oldtest */$usersettable = $newtest/g" $basescript >! macros.make
+else
+  sed -e "s/^ *$usersettable *= *$oldtest */$usersettable = $newtest/g" $basescript >! macros.make
+endif
+
 make clean; make || echo "Failure in make" && exit 1
 make test  || echo "Failure in make test" && exit 1
 echo "$usersettable = $newtest worked" >> results

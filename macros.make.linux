@@ -13,7 +13,7 @@ INSTALLDIR = /usr/local
 MANDIR = 
 
 # C compiler
-CC = gcc
+CC = mpicc
 
 # Whether to build debug lib or optimized lib, and associated flags
 DEBUG = no
@@ -70,7 +70,7 @@ ifeq ($(FORTRAN),yes)
 # Set Fortran compiler, flags, and OpenMP compiler flag. Note that Fortran
 # OpenMP tests are possible with OPENMP=no as long as PTHREADS=yes
 # These settings are only used by the Fortran test applications in ftests/.
-  FC     = gfortran
+  FC     = mpif90
   FFLAGS = -g -O2
   FOMPFLAG = -fopenmp
 endif
@@ -99,8 +99,8 @@ endif
 HAVE_MPI = yes
 ifeq ($(HAVE_MPI),yes)
   HAVE_COMM_F2C = yes
-  MPI_INCFLAGS = -I/usr/local/include
-  MPI_LIBFLAGS = -L/usr/local/lib -lmpich
+  MPI_INCFLAGS = 
+  MPI_LIBFLAGS = 
   MPICMD = mpiexec
   ifeq ($(FORTRAN),yes)
 # Modify FFLAGS for ftests/: Normally it's -D, but AIX requires -WF,-D
@@ -136,5 +136,5 @@ HAVE_GETTIMEOFDAY = yes
 TEST_AUTOPROFILE = yes
 ifeq ($(TEST_AUTOPROFILE),yes)
   INSTRFLAG = -finstrument-functions
-  CXX = g++
+  CXX = mpicxx
 endif

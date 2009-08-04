@@ -1,5 +1,5 @@
 /*
-** $Id: threadutil.c,v 1.20 2009-08-04 20:35:49 rosinski Exp $
+** $Id: threadutil.c,v 1.21 2009-08-04 22:16:54 rosinski Exp $
 **
 ** Author: Jim Rosinski
 ** 
@@ -15,7 +15,7 @@
 #define MAX_THREADS 128
 
 /* VERBOSE is a debugging ifdef local to this file */
-#define VERBOSE
+#undef VERBOSE
 
 #if ( defined THREADED_OMP )
 
