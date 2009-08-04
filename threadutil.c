@@ -1,5 +1,5 @@
 /*
-** $Id: threadutil.c,v 1.21 2009-08-04 22:16:54 rosinski Exp $
+** $Id: threadutil.c,v 1.22 2009-08-04 23:25:52 rosinski Exp $
 **
 ** Author: Jim Rosinski
 ** 
@@ -328,6 +328,7 @@ int get_thread_num (int *nthreads, int *maxthreads)
   }
 #endif
 
+  *nthreads = 1;
   return 0;
 }
 
