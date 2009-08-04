@@ -1,5 +1,5 @@
 /*
-** $Id: threadutil.c,v 1.18 2009-08-04 14:10:46 rosinski Exp $
+** $Id: threadutil.c,v 1.19 2009-08-04 15:44:26 rosinski Exp $
 **
 ** Author: Jim Rosinski
 ** 
@@ -33,10 +33,9 @@ int threadinit (int *nthreads, int *maxthreads)
 {
   int t;  /* loop index */
 
-  /* In OMP case, maxthreads and nthreads are the same number */
-
   *maxthreads = omp_get_max_threads ();
-  *nthreads = *maxthreads;
+  *nthreads = 0;
+
   if (omp_get_thread_num () > 0)
     return GPTLerror ("GPTL: threadinit: MUST be called only by master thread");
 
@@ -59,38 +58,42 @@ void threadfinalize ()
 ** get_thread_num: determine thread number of the calling thread
 **
 ** Input args:
-**   GPTLnthreads:   number of threads
+**   nthreads:   number of threads
 **   maxthreads: number of threads (unused in OpenMP case)
 **
 ** Return value: thread number (success) or GPTLerror (failure)
 */
 
-int get_thread_num (int *GPTLnthreads, int *maxthreads)
+int get_thread_num (int *nthreads, int *maxthreads)
 {
   int t;       /* thread number */
 
-  if ((t = omp_get_thread_num ()) >= *GPTLnthreads)
-    return GPTLerror ("get_thread_num: returned id=%d exceeds numthreads=%d\n",
-		      t, *GPTLnthreads);
-
-  if (t >= *maxthreads)
+  if ((t = omp_get_thread_num ()) >= *maxthreads)
     return GPTLerror ("get_thread_num: returned id=%d exceeds maxthreads=%d\n",
 		      t, *maxthreads);
 
   /*
-  ** When HAVE_PAPI is true, need to create and start an event set
-  ** for the new thread
+  ** The following test is true only once for each thread, so no need to worry
+  ** about false cache sharing
   */
 
-#ifdef HAVE_PAPI
-  if (threadid_omp[t] == -1 && GPTLget_npapievents () > 0) {
-    if (GPTLcreate_and_start_events (t) < 0)
-      return GPTLerror ("get_thread_num: error from GPTLcreate_and_start_events for thread %d\n",
-			t);
+  if (threadid_omp[t] == -1) {
     threadid_omp[t] = t;
-  }
+
+#ifdef HAVE_PAPI
+  /*
+  ** When HAVE_PAPI is true, need to create and start an event set for the new thread.
+  */
+
+    if (GPTLget_npapievents () > 0) {
+      if (GPTLcreate_and_start_events (t) < 0)
+	return GPTLerror ("get_thread_num: error from GPTLcreate_and_start_events for thread %d\n",
+			  t);
+    }
 #endif
 
+    *nthreads = *maxthreads;
+  }
   return t;
 }
 
@@ -137,11 +140,11 @@ int threadinit (int *nthreads, int *maxthreads)
     return GPTLerror ("threadinit: malloc failure for %d items\n", MAX_THREADS);
 
   /*
-  ** Initialize nthreads to 1 and define the threadid array now that initialization 
+  ** Initialize nthreads to 0 and define the threadid array now that initialization 
   ** is done. The actual value will be determined as get_thread_num is called.
   */
 
-  *nthreads = 1;
+  *nthreads = 0;
   *maxthreads = MAX_THREADS;
 
   for (t = 0; t < *maxthreads; ++t)
@@ -181,7 +184,7 @@ int get_thread_num (int *nthreads, int *maxthreads)
     return GPTLerror ("get_thread_num: mutex lock failure\n");
 
   /*
-  ** Loop over known physical thread id's.  When my id is found, map it 
+  ** Loop over known physical thread IDs.  When my id is found, map it 
   ** to logical thread id for indexing.  If not found return a negative 
   ** number.
   ** A critical region is necessary because acess to
@@ -211,8 +214,7 @@ int get_thread_num (int *nthreads, int *maxthreads)
 #ifdef HAVE_PAPI
 
     /*
-    ** When HAVE_PAPI is true, need to create and start an event set
-    ** for the new thread
+    ** When HAVE_PAPI is true, need to create and start an event set for the new thread
     */
 
     if (GPTLget_npapievents () > 0)
@@ -272,7 +274,7 @@ static int threadid = -1;
 
 int threadinit (int *nthreads, int *maxthreads)
 {
-  *nthreads = 1;
+  *nthreads = 0;
   *maxthreads = 1;
   return 0;
 }
@@ -281,7 +283,7 @@ void threadfinalize ()
 {
 }
 
-int get_thread_num (int *GPTLnthreads, int *maxthreads)
+int get_thread_num (int *nthreads, int *maxthreads)
 {
   /*
   ** When HAVE_PAPI is true, need to create and start an event set
