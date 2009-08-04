@@ -42,7 +42,7 @@ clean:
 gptl_avail: avail.o
 	$(CC) -o $@ $< $(LDFLAGS)
 
-gptl_knownflopcount: knownflopcount.c
+gptl_knownflopcount: knownflopcount.o
 	$(CC) -o $@ $< $(LDFLAGS)
 
 gptl_gran_overhead: gran_overhead.o

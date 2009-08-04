@@ -1,5 +1,5 @@
 /*
-** $Id: threadutil.c,v 1.19 2009-08-04 15:44:26 rosinski Exp $
+** $Id: threadutil.c,v 1.20 2009-08-04 20:35:49 rosinski Exp $
 **
 ** Author: Jim Rosinski
 ** 
@@ -13,6 +13,9 @@
 
 /* Max allowable number of threads */
 #define MAX_THREADS 128
+
+/* VERBOSE is a debugging ifdef local to this file */
+#define VERBOSE
 
 #if ( defined THREADED_OMP )
 
@@ -43,6 +46,10 @@ int threadinit (int *nthreads, int *maxthreads)
   for (t = 0; t < *maxthreads; ++t)
     threadid_omp[t] = -1;
 
+#ifdef VERBOSE
+  printf ("OMP threadinit: Set *maxthreads=%d *nthreads=%d\n", *maxthreads, *nthreads);
+#endif
+  
   return 0;
 }
 
@@ -80,12 +87,19 @@ int get_thread_num (int *nthreads, int *maxthreads)
   if (threadid_omp[t] == -1) {
     threadid_omp[t] = t;
 
+#ifdef VERBOSE
+    printf ("OMP get_thread_num: 1st call t=%d\n", t);
+#endif
+
 #ifdef HAVE_PAPI
   /*
   ** When HAVE_PAPI is true, need to create and start an event set for the new thread.
   */
 
     if (GPTLget_npapievents () > 0) {
+#ifdef VERBOSE
+      printf ("OMP get_thread_num: Starting EventSet t=%d\n", t);
+#endif
       if (GPTLcreate_and_start_events (t) < 0)
 	return GPTLerror ("get_thread_num: error from GPTLcreate_and_start_events for thread %d\n",
 			  t);
@@ -133,7 +147,7 @@ int threadinit (int *nthreads, int *maxthreads)
   int rc;
   int t;
 
-  /* Manage the threadid array which maps physical thread id's to logical id's */
+  /* Manage the threadid array which maps physical thread IDs to logical IDs */
 
   nbytes = MAX_THREADS * sizeof (pthread_t);
   if ( ! (threadid = (pthread_t *) malloc (nbytes)))
@@ -149,6 +163,10 @@ int threadinit (int *nthreads, int *maxthreads)
 
   for (t = 0; t < *maxthreads; ++t)
     threadid[t] = (pthread_t) -1;
+
+#ifdef VERBOSE
+  printf ("PTHREADS threadinit: Set *maxthreads=%d *nthreads=%d\n", *maxthreads, *nthreads);
+#endif
 
   return 0;
 }
@@ -211,19 +229,30 @@ int get_thread_num (int *nthreads, int *maxthreads)
 
     threadid[n] = mythreadid;
 
+#ifdef VERBOSE
+    printf ("PTHREADS get_thread_num: 1st call threadid=%lu maps to location %d\n", (unsigned long) mythreadid, n);
+#endif
+
 #ifdef HAVE_PAPI
 
     /*
     ** When HAVE_PAPI is true, need to create and start an event set for the new thread
     */
 
-    if (GPTLget_npapievents () > 0)
+    if (GPTLget_npapievents () > 0) {
+#ifdef VERBOSE
+      printf ("PTHREADS get_thread_num: Starting EventSet threadid=%lu location=%d\n", (unsigned long) mythreadid, n);
+#endif
       if (GPTLcreate_and_start_events (n) < 0)
 	return GPTLerror ("get_thread_num: error from GPTLcreate_and_start_events for thread %d\n",
 			  n);
+    }
 #endif
 
     ++*nthreads;
+#ifdef VERBOSE
+    printf ("PTHREADS get_thread_num: *nthreads=%d\n", *nthreads);
+#endif
   }
     
   if (unlock_mutex () < 0)
