@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.c,v 1.142 2009-08-04 14:10:46 rosinski Exp $
+** $Id: gptl.c,v 1.143 2009-08-05 18:55:23 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -1195,7 +1195,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.142 2009-08-04 14:10:46 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.143 2009-08-05 18:55:23 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1486,7 +1486,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
     }
   }
 
-  // Print thread mapping for pthreads case (diagnostic)
+  /* Print thread mapping for pthreads case (diagnostic) */
 
 #ifdef THREADED_PTHREADS
   print_threadmapping (GPTLnthreads, fp);
@@ -1923,7 +1923,7 @@ int GPTLpr_summary (MPI_Comm comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.142 2009-08-04 14:10:46 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.143 2009-08-05 18:55:23 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 
     /* Print heading */
@@ -2138,7 +2138,7 @@ int GPTLbarrier (MPI_Comm comm, const char *name)
   ret = GPTLstop (name);
   return 0;
 }
-#endif  // defined HAVE_MPI
+#endif
 
 /*
 ** get_cpustamp: Invoke the proper system timer and return stats.

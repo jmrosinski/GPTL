@@ -1,0 +1,140 @@
+# This file contains macro settings which are used by the Makefile. Some require
+# "yes" or "no", where various subflags are required if the value is
+# "yes". The intent is for the user to edit whichever parts of this file are
+# necessary, save to a file named "macros.make", then run "make" to build the
+# GPTL library.
+
+##########################################################################
+
+# Where to install GPTL library and include files
+INSTALLDIR = $(HOME)/aix
+
+# Where to install man pages (if blank, defaults to $INSTALLDIR)
+MANDIR = 
+
+# C compiler
+CC = cc_r
+
+# Whether to build debug lib or optimized lib, and associated flags
+DEBUG = yes
+ifeq ($(DEBUG),yes)
+  CFLAGS = -g -O0 -qfullpath
+else
+  CFLAGS = -O3 -qfullpath
+endif
+
+# Set compiler flags for non-default ABIs (e.g. 64-bit addressing). 
+# Normally this can be blank.
+ABIFLAGS =
+
+# Linux system or not? If "yes", get_memusage() will use the /proc interface.
+LINUX = no
+
+# To enable OpenMP threading, set OPENMP=yes. Otherwise, set OPENMP=no. 
+# Set COMPFLAG to the proper compiler flag to enable OpenMP. This can be
+# blank, but then threaded tests in ctests/ and ftests/ won't enable threading
+# when PTHREADS = yes.
+# OpenMP applications linked with GPTL as built with OPENMP=no and PTHREADS=no
+# will NOT be thread-safe. On the other hand, if OPENMP=yes, unthreaded 
+# applications using GPTL will need to be linked with the OpenMP flag. 
+OPENMP = yes
+COMPFLAG = -qsmp=omp
+ifeq ($(OPENMP),no)
+# Set PTHREADS if available and OPENMP=no
+  PTHREADS = yes
+endif
+
+# For gcc, -Dinline=inline is a no-op. For other C compilers, things like 
+# -Dinline=__inline__ may be required. To find your compiler's definition, try 
+# running "./suggestions CC=<your_C_compiler>".
+INLINEFLAG = -Dinline=""
+
+# To get some C compilers such as gcc to behave properly with -O0 and no inlining, 
+# need to effectively delete the "inline" keyword
+ifeq ($(DEBUG),yes)
+  INLINEFLAG = -Dinline=
+endif
+
+# To build the Fortran interface, set FORTRAN=yes and define the entries under
+# ifeq ($(FORTRAN),yes). Otherwise, set FORTRAN=no and skip this section.
+FORTRAN = yes
+ifeq ($(FORTRAN),yes)
+# Fortran name mangling: possibilities are: leave UNDERSCORING blank meaning none
+# (e.g. xlf90), -DFORTRANDOUBLEUNDERSCORE (e.g. g77), and -DFORTRANUNDERSCORE 
+# (e.g. gfortran, pathf95)
+#
+UNDERSCORING =
+#  UNDERSCORING = -DFORTRANDOUBLEUNDERSCORE
+#  UNDERSCORING = -DFORTRANUNDERSCORE
+
+# Set Fortran compiler, flags, and OpenMP compiler flag. Note that Fortran
+# OpenMP tests are possible with OPENMP=no as long as PTHREADS=yes
+# These settings are only used by the Fortran test applications in ftests/.
+  FC     = xlf90_r
+  FFLAGS = -g -O2 -qfullpath
+  FOMPFLAG = -qsmp=omp
+endif
+
+# Archiver: normally it's just ar
+AR = ar
+
+# PAPI: If the PAPI library is already installed, set HAVE_PAPI=yes and set inc and lib 
+# info as appropriate. 
+HAVE_PAPI = yes
+ifeq ($(HAVE_PAPI),yes)
+  PAPI_INCFLAGS = -I/contrib/papi-3.6.2/include
+  PAPI_LIBFLAGS = -L/contrib/papi-3.6.2/lib -lpapi -lpmapi
+  ifeq ($(FORTRAN),yes)
+# Modify FFLAGS for PAPI use by some codes in ftests/: Normally 
+# Fortran ifdefs are done with -D, though AIX requires -WF,-D.
+    FFLAGS += -WF,-DHAVE_PAPI
+  endif
+endif
+
+# MPI: Set HAVE_MPI=yes if you intend to use MPI_Wtime as the underlying 
+# wallclock timer, and/or intend to call GPTLpr_summary from an MPI code.
+# Then set inc and lib info if needed (e.g. if CC=mpicc, MPI_INCFLAGS and 
+# MPI_LIBFLAGS can be blank).
+# Hopefully MPI_Comm_f2c() exists, but if not, set HAVE_COMM_F2C = no
+HAVE_MPI = no
+ifeq ($(HAVE_MPI),yes)
+  HAVE_COMM_F2C = yes
+  MPI_INCFLAGS = 
+  MPI_LIBFLAGS = 
+  MPICMD = mpirun.lsf
+  ifeq ($(FORTRAN),yes)
+# Modify FFLAGS for ftests/: Normally it's -D, but AIX requires -WF,-D
+    FFLAGS += -WF,-DHAVE_MPI
+  endif
+endif
+
+# clock_gettime() in librt.a is an option for gathering wallclock time stats
+# on some machines. Setting HAVE_LIBRT=yes enables this, but will probably
+# require linking applications with -lrt 
+HAVE_LIBRT = no
+
+# Only define HAVE_NANOTIME if this is a x86. It provides by far the finest grained,
+# lowest overhead wallclock timer on that architecture.
+# If HAVE_NANOTIME=yes, set BIT64=yes if this is an x86_64
+HAVE_NANOTIME = no
+ifeq ($(HAVE_NANOTIME),yes)
+  BIT64 = no
+endif
+
+# Some old compilers don't support vprintf. Set to "no" in this case
+HAVE_VPRINTF = yes
+
+# Some old compilers don't support the C times() function. Set to "no" in this case
+HAVE_TIMES = yes
+
+# gettimeofday() should be available everywhere. But if not, set to "no"
+HAVE_GETTIMEOFDAY = yes
+
+# Whether to test auto-profiling (adds 2 tests to "make test"). If compiler is gcc or 
+# pathscale, set INSTRFLAG to -finstrument-functions. PGI 8.0.2 and later provide 
+# -Minstrument:functions.
+TEST_AUTOPROFILE = no
+ifeq ($(TEST_AUTOPROFILE),yes)
+  INSTRFLAG = -auto_instrumentation_not_available_on_AIX
+  CXX = mpCC
+endif

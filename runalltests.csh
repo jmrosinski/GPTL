@@ -7,7 +7,7 @@
 # try to run a PAPI test where HAVE_PAPI is permuted from "no" to "yes", and
 # the test will fail.
 
-set basescript = macros.make.linux  # This is the base script to start from
+set basescript = macros.make.xt5.pgi  # This is the base script to start from
 echo "$0 Testing $basescript..."
 cp $basescript macros.make || echo "Failure to cp $basescript to macros.make" && exit 1
 make clean; make || echo "Failure in make" && exit 1

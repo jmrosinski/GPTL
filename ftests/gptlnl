@@ -18,9 +18,10 @@
  dopr_collision  = .false.
 
 ! utr, print_method, and eventlist use character variables instead of integer 
-! to avoid "magic number" settings in the namelist
+! to avoid "magic number" settings in the namelist. Leave utr commented
+! so that abort_on_error doesn't make tests fail if chosen timer unavailable
 
- utr             = 'nanotime'
+! utr             = 'nanotime'
  print_method    = 'full_tree'
 !print_method    = 'first_parent'
 !print_method    = 'last_parent'
