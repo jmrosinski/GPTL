@@ -97,6 +97,7 @@ endif
 # MPI_LIBFLAGS can be blank).
 # Hopefully MPI_Comm_f2c() exists, but if not, set HAVE_COMM_F2C = no
 HAVE_MPI = yes
+MPICMD = 
 ifeq ($(HAVE_MPI),yes)
   HAVE_COMM_F2C = yes
   MPI_INCFLAGS = 
