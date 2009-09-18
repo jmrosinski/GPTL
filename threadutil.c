@@ -1,5 +1,5 @@
 /*
-** $Id: threadutil.c,v 1.22 2009-08-04 23:25:52 rosinski Exp $
+** $Id: threadutil.c,v 1.23 2009-09-18 12:45:16 rosinski Exp $
 **
 ** Author: Jim Rosinski
 ** 
@@ -243,9 +243,13 @@ int get_thread_num (int *nthreads, int *maxthreads)
 #ifdef VERBOSE
       printf ("PTHREADS get_thread_num: Starting EventSet threadid=%lu location=%d\n", (unsigned long) mythreadid, n);
 #endif
-      if (GPTLcreate_and_start_events (n) < 0)
+      if (GPTLcreate_and_start_events (n) < 0) {
+	if (unlock_mutex () < 0)
+	  fprintf (stderr, "get_thread_num: mutex unlock failure\n");
+
 	return GPTLerror ("get_thread_num: error from GPTLcreate_and_start_events for thread %d\n",
 			  n);
+      }
     }
 #endif
 
