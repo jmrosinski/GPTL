@@ -8,6 +8,7 @@ dynamic call tree">
 <meta name="Author" content="Jim Rosinski">
 <h1>GPTL - General Purpose Timing Library</h1>
 <h2>(with optional PAPI interface)</h2>
+<h2>Download the latest release by clicking <a href="gptl3_5_1.tar.gz">here</a>
 </head>
 <body bgcolor="peachpuff">
 
@@ -104,7 +105,16 @@ Stats for thread 0:
 	entry and exit points.
 
 <HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
-<h2>What's new in the latest release (<a href="gptl3_5.tar.gz">gptl3_5.tar.gz</a>)</h2>
+<h2>What's new in the latest release (<a href="gptl3_5_1.tar.gz">gptl3_5_1.tar.gz</a>)</h2>
+<ul>
+<li> Bugfix enables OpenMP applications to work when GPTL is built with PTHREADS
+<li> Fortran bugfix enables longer event names. This allows one to enable the
+  PAPI native event names which can be long.
+<li> Remove some of the entries from ctests/ and ftests/ which were not very useful.
+</ul>
+
+<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
+<h2>What was new in the previous release (<a href="gptl3_5.tar.gz">gptl3_5.tar.gz</a>)</h2>
 <ul>
 <li> Easier linking with C++ applications.
 <li> Options for call-tree generation based on number of invocations per
@@ -133,7 +143,8 @@ the current wallclock accumulation for any region.
 than an integer index.
 <li> <em><b>hex2name.pl</b></em> converts auto-instrumented entries for thread summary regions.
 </ul>
-<h2>What was new in the previous release (<a href="older/gptl3_4_7.tar.gz">gptl3_4_7.tar.gz</a>)</h2>
+
+<h2>What was new in (<a href="older/gptl3_4_7.tar.gz">gptl3_4_7.tar.gz</a>)</h2>
 <ul>
 <li> Derived events based on PAPI:
   <ul>
@@ -171,7 +182,7 @@ than an integer index.
 <HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
 <h2>Download and Installation</h2>
 <ul> 
-<li> Download the most recent release by clicking this link: <a href="gptl3_5.tar.gz">gptl3_5.tar.gz</a>.
+<li> Download the most recent release by clicking this link: <a href="gptl3_5_1.tar.gz">gptl3_5_1.tar.gz</a>.
 <li> Earlier versions can be found <a href="older/">here</a>.
 <li> To build and install <b>GPTL</b>, see the <A HREF="./INSTALL">INSTALL</a> file.
   You'll need to create a <b><em>macros.make</em></b> file appropriate for your target
