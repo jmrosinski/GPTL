@@ -1,5 +1,5 @@
 /*
-** $Id: private.h,v 1.66 2009-08-04 14:10:46 rosinski Exp $
+** $Id: private.h,v 1.67 2009-09-24 20:00:24 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -107,6 +107,7 @@ extern void *GPTLallocate (const int);         /* malloc wrapper */
 extern int threadinit (int *, int *);          /* initialize threading environment */
 extern void threadfinalize (void);             /* finalize threading environment */
 extern void print_threadmapping (int, FILE *); /* print mapping of thread ids */
+extern int get_thread_num (int *, int *);      /* get 0-based thread number */
 
 /* 
 ** These are needed for communication between gptl.c and gptl_papi.c
