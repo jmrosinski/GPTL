@@ -30,13 +30,12 @@ ABIFLAGS =
 # Linux system or not? If "yes", get_memusage() will use the /proc interface.
 LINUX = yes
 
-# To enable OpenMP threading, set OPENMP=yes. Otherwise, set OPENMP=no. 
-# Set COMPFLAG to the proper compiler flag to enable OpenMP. This can be
-# blank, but then threaded tests in ctests/ and ftests/ won't enable threading
-# when PTHREADS = yes.
-# OpenMP applications linked with GPTL as built with OPENMP=no and PTHREADS=no
-# will NOT be thread-safe. On the other hand, if OPENMP=yes, unthreaded 
-# applications using GPTL will need to be linked with the OpenMP flag. 
+# GPTL can enable threading either via OPENMP=yes, or PTHREADS=yes. Since
+# most OpenMP implementations are built on top of pthreads, OpenMP
+# applications linked with GPTL as built with PTHREADS=yes should work fine.
+# Thus COMPFLAG should be set to the compiler flag that enables OpenMP directives
+# if either OPENMP=yes, or PTHREADS=yes. If OPENMP=no and PTHREADS=no, GPTL 
+# will not be thread-safe.
 OPENMP = yes
 COMPFLAG = -fopenmp
 ifeq ($(OPENMP),no)
@@ -95,10 +94,9 @@ endif
 # wallclock timer, and/or intend to call GPTLpr_summary from an MPI code.
 # Then set inc and lib info if needed (e.g. if CC=mpicc, MPI_INCFLAGS and 
 # MPI_LIBFLAGS can be blank).
-# Hopefully MPI_Comm_f2c() exists, but if not, set HAVE_COMM_F2C = no
 HAVE_MPI = yes
-MPICMD = 
 ifeq ($(HAVE_MPI),yes)
+# Hopefully MPI_Comm_f2c() exists, but if not, set HAVE_COMM_F2C = no
   HAVE_COMM_F2C = yes
   MPI_INCFLAGS = 
   MPI_LIBFLAGS = 
@@ -107,6 +105,9 @@ ifeq ($(HAVE_MPI),yes)
 # Modify FFLAGS for ftests/: Normally it's -D, but AIX requires -WF,-D
     FFLAGS += -DHAVE_MPI
   endif
+else
+# Without MPI, MPICMD needs to be blank
+  MPICMD = 
 endif
 
 # clock_gettime() in librt.a is an option for gathering wallclock time stats

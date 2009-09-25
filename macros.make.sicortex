@@ -30,14 +30,15 @@ ABIFLAGS =
 # Linux system or not? If "yes", get_memusage() will use the /proc interface.
 LINUX = yes
 
-# To enable OpenMP threading, set OPENMP=yes and define the compiler flag. Otherwise,
-# set OPENMP=no. OpenMP applications linked with GPTL as built with OPENMP=no will NOT
-# be thread-safe. On the other hand, if OPENMP=yes, unthreaded applications
-# using GPTL will need to be linked with the OpenMP flag. 
+# GPTL can enable threading either via OPENMP=yes, or PTHREADS=yes. Since
+# most OpenMP implementations are built on top of pthreads, OpenMP
+# applications linked with GPTL as built with PTHREADS=yes should work fine.
+# Thus COMPFLAG should be set to the compiler flag that enables OpenMP directives
+# if either OPENMP=yes, or PTHREADS=yes. If OPENMP=no and PTHREADS=no, GPTL 
+# will not be thread-safe.
 OPENMP = yes
-ifeq ($(OPENMP),yes)
-  COMPFLAG = -mp
-else
+COMPFLAG = -mp
+ifeq ($(OPENMP),no)
 # Set PTHREADS if available and OPENMP=no
   PTHREADS = yes
 endif
@@ -65,13 +66,12 @@ ifeq ($(FORTRAN),yes)
 #  UNDERSCORING = -DFORTRANUNDERSCORE
   UNDERSCORING = -DFORTRANDOUBLEUNDERSCORE
 
-# Set Fortran compiler, flags, and (if OpenMP enabled) OpenMP compiler flag.
+# Set Fortran compiler, flags, and OpenMP compiler flag. Note that Fortran
+# OpenMP tests are possible with OPENMP=no as long as PTHREADS=yes
 # These settings are only used by the Fortran test applications in ftests/.
   FC     = pathf95
   FFLAGS = -g -O2
-  ifeq ($(OPENMP),yes)
-    FOMPFLAG = -mp
-  endif
+  FOMPFLAG = -mp
 endif
 
 # Archiver: normally it's just ar
@@ -94,10 +94,9 @@ endif
 # wallclock timer, and/or intend to call GPTLpr_summary from an MPI code.
 # Then set inc and lib info if needed (e.g. if CC=mpicc, MPI_INCFLAGS and 
 # MPI_LIBFLAGS can be blank).
-# Hopefully MPI_Comm_f2c() exists, but if not, set HAVE_COMM_F2C = no
 HAVE_MPI = yes
-MPICMD = 
 ifeq ($(HAVE_MPI),yes)
+# Hopefully MPI_Comm_f2c() exists, but if not, set HAVE_COMM_F2C = no
   HAVE_COMM_F2C = yes
   MPI_INCFLAGS = 
   MPI_LIBFLAGS = -lscmpi
@@ -106,6 +105,9 @@ ifeq ($(HAVE_MPI),yes)
 # Modify FFLAGS for ftests/: Normally it's -D, but AIX requires -WF,-D
     FFLAGS += -DHAVE_MPI
   endif
+else
+# Without MPI, MPICMD needs to be blank
+  MPICMD = 
 endif
 
 # clock_gettime() in librt.a is an option for gathering wallclock time stats

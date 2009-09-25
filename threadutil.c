@@ -1,5 +1,5 @@
 /*
-** $Id: threadutil.c,v 1.23 2009-09-18 12:45:16 rosinski Exp $
+** $Id: threadutil.c,v 1.24 2009-09-25 15:05:47 rosinski Exp $
 **
 ** Author: Jim Rosinski
 ** 
@@ -92,9 +92,10 @@ int get_thread_num (int *nthreads, int *maxthreads)
 #endif
 
 #ifdef HAVE_PAPI
-  /*
-  ** When HAVE_PAPI is true, need to create and start an event set for the new thread.
-  */
+    /*
+    ** When HAVE_PAPI is true, if 1 or more PAPI events are enabled,
+    ** create and start an event set for the new thread.
+    */
 
     if (GPTLget_npapievents () > 0) {
 #ifdef VERBOSE
@@ -236,12 +237,14 @@ int get_thread_num (int *nthreads, int *maxthreads)
 #ifdef HAVE_PAPI
 
     /*
-    ** When HAVE_PAPI is true, need to create and start an event set for the new thread
+    ** When HAVE_PAPI is true, if 1 or more PAPI events are enabled,
+    ** create and start an event set for the new thread.
     */
 
     if (GPTLget_npapievents () > 0) {
 #ifdef VERBOSE
-      printf ("PTHREADS get_thread_num: Starting EventSet threadid=%lu location=%d\n", (unsigned long) mythreadid, n);
+      printf ("PTHREADS get_thread_num: Starting EventSet threadid=%lu location=%d\n", 
+	      (unsigned long) mythreadid, n);
 #endif
       if (GPTLcreate_and_start_events (n) < 0) {
 	if (unlock_mutex () < 0)
@@ -318,12 +321,12 @@ void threadfinalize ()
 
 int get_thread_num (int *nthreads, int *maxthreads)
 {
+#ifdef HAVE_PAPI
   /*
-  ** When HAVE_PAPI is true, need to create and start an event set
-  ** for the new thread
+  ** When HAVE_PAPI is true, if 1 or more PAPI events are enabled,
+  ** create and start an event set for the new thread.
   */
 
-#ifdef HAVE_PAPI
   if (threadid == -1 && GPTLget_npapievents () > 0) {
     if (GPTLcreate_and_start_events (0) < 0)
       return GPTLerror ("get_thread_num: error from GPTLcreate_and_start_events for thread %0\n");
