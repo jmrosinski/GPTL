@@ -12,8 +12,8 @@ INSTALLDIR = $(HOME)/aix
 # Where to install man pages (if blank, defaults to $INSTALLDIR)
 MANDIR = 
 
-# C compiler
-CC = cc_r
+# C compiler: For AIX set in HAVE_MPI section because it's MPI-dependent
+#CC = mpcc_r
 
 # Whether to build debug lib or optimized lib, and associated flags
 DEBUG = no
@@ -69,7 +69,9 @@ UNDERSCORING =
 # Set Fortran compiler, flags, and OpenMP compiler flag. Note that Fortran
 # OpenMP tests are possible with OPENMP=no as long as PTHREADS=yes
 # These settings are only used by the Fortran test applications in ftests/.
-  FC     = xlf90_r
+
+# Fortran compiler: For AIX set in HAVE_MPI section because it's MPI-dependent
+#  FC     = xlf90_r
   FFLAGS = -g -O2 -qfullpath
   FOMPFLAG = -qsmp=omp
 endif
@@ -96,16 +98,25 @@ endif
 # MPI_LIBFLAGS can be blank).
 HAVE_MPI = no
 ifeq ($(HAVE_MPI),yes)
+# C compiler
+  CC = mpcc_r
 # Hopefully MPI_Comm_f2c() exists, but if not, set HAVE_COMM_F2C = no
   HAVE_COMM_F2C = yes
   MPI_INCFLAGS = 
   MPI_LIBFLAGS = 
   MPICMD = mpirun.lsf
   ifeq ($(FORTRAN),yes)
+# Fortran compiler
+    FC = mpxlf90_r
 # Modify FFLAGS for ftests/: Normally it's -D, but AIX requires -WF,-D
     FFLAGS += -WF,-DHAVE_MPI
   endif
 else
+# C and Fortran compilers
+  CC = cc_r
+  ifeq ($(FORTRAN),yes)
+    FC = xlf90_r
+  endif
 # Without MPI, MPICMD needs to be blank
   MPICMD = 
 endif
