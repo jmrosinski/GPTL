@@ -1,5 +1,5 @@
 /*
-** $Id: threadutil.c,v 1.25 2009-12-20 17:14:46 rosinski Exp $
+** $Id: threadutil.c,v 1.26 2009-12-20 21:39:21 rosinski Exp $
 **
 ** Author: Jim Rosinski
 ** 
@@ -11,25 +11,33 @@
 
 #include "private.h"
 
-/* Max allowable number of threads */
+/* Max allowable number of threads (used only when THREADED_PTHREADS is true) */
 #define MAX_THREADS 128
 
 /* VERBOSE is a debugging ifdef local to this file */
 #undef VERBOSE
 
+/* Ensure that threadinit() is called only once */
+static bool first = true;
+
+/**********************************************************************************/
+/* 
+** 3 sets of routines: OMP threading, PTHREADS, unthreaded
+*/
+
 #if ( defined THREADED_OMP )
 
 #include <omp.h>
 
-/* array of thread ids used to determine if thread has been started */
-static int *threadid_omp;  
+/* array of thread ids used to determine if thread has been started (omp only) */
+static int *threadid_omp;
 
 /*
-** threadinit: Initialize locking capability and set number of threads
+** threadinit: Initialize threadid_omp and set number of threads
 **
 ** Output arguments:
-**   nthreads:   number of threads
-**   maxthreads: number of threads (these don't differ under OpenMP)
+**   nthreads:   number of threads (set to zero, reset to maxthreads by get_thread_num)
+**   maxthreads: max number of threads
 */
 
 int threadinit (int *nthreads, int *maxthreads)
@@ -41,6 +49,11 @@ int threadinit (int *nthreads, int *maxthreads)
 
   if (omp_get_thread_num () > 0)
     return GPTLerror ("GPTL: threadinit: MUST be called only by master thread");
+
+  if ( ! first)
+    return GPTLerror ("GPTL: threadinit: MUST only be called once");
+
+  first = false;
 
   threadid_omp = GPTLallocate (*maxthreads * sizeof (int));
   for (t = 0; t < *maxthreads; ++t)
@@ -54,11 +67,13 @@ int threadinit (int *nthreads, int *maxthreads)
 }
 
 /*
-** threadfinalize: no-op under OpenMP
+** threadfinalize: clean up
 */
 
 void threadfinalize ()
 {
+  free (threadid_omp);
+  first = true;
 }
 
 /*
@@ -122,6 +137,11 @@ void print_threadmapping (int nthreads, FILE *fp)
     fprintf (fp, "threadid_omp[%d]=%d\n", n, threadid_omp[n]);
 }
 
+/**********************************************************************************/
+/* 
+** PTHREADS
+*/
+
 #elif ( defined THREADED_PTHREADS )
 
 #include <pthread.h>
@@ -136,8 +156,8 @@ static pthread_t *threadid;
 ** threadinit: Set number of threads and max number of threads
 **
 ** Output arguments:
-**   nthreads:   number of threads
-**   maxthreads: number of threads (these don't differ under OpenMP)
+**   nthreads:   number of threads (init to zero here, increment in get_thread_num)
+**   maxthreads: max number of threads (MAX_THREADS)
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
@@ -151,8 +171,13 @@ int threadinit (int *nthreads, int *maxthreads)
   /* Manage the threadid array which maps physical thread IDs to logical IDs */
 
   nbytes = MAX_THREADS * sizeof (pthread_t);
-  if ( ! (threadid = (pthread_t *) malloc (nbytes)))
+  if ( ! (threadid = (pthread_t *) GPTLallocate (nbytes)))
     return GPTLerror ("threadinit: malloc failure for %d items\n", MAX_THREADS);
+
+  if ( ! first)
+    return GPTLerror ("GPTL: threadinit: MUST only be called once");
+
+  first = false;
 
   /*
   ** Initialize nthreads to 0 and define the threadid array now that initialization 
@@ -173,12 +198,13 @@ int threadinit (int *nthreads, int *maxthreads)
 }
 
 /*
-** threadfinalize: free allocated space
+** threadfinalize: clean up
 */
 
 void threadfinalize ()
 {
   free (threadid);
+  first = true;
 }
 
 /*
@@ -300,16 +326,21 @@ void print_threadmapping (int nthreads, FILE *fp)
     fprintf (fp, "threadid[%d]=%d\n", n, (int) threadid[n]);
 }
 
-#else
-
+/**********************************************************************************/
 /*
 ** Unthreaded case
 */
+
+#else
 
 static int threadid = -1;
 
 int threadinit (int *nthreads, int *maxthreads)
 {
+  if ( ! first)
+    return GPTLerror ("GPTL: threadinit: MUST only be called once");
+
+  first = false;
   *nthreads = 0;
   *maxthreads = 1;
   return 0;
@@ -317,6 +348,8 @@ int threadinit (int *nthreads, int *maxthreads)
 
 void threadfinalize ()
 {
+  threadid = -1;
+  first = true;
 }
 
 int get_thread_num (int *nthreads, int *maxthreads)
