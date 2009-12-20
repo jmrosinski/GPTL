@@ -1,5 +1,5 @@
 /*
-** $Id: util.c,v 1.11 2004-12-25 00:06:39 rosinski Exp $
+** $Id: util.c,v 1.12 2009-12-20 17:14:46 rosinski Exp $
 */
 
 #include <stdarg.h>
@@ -67,7 +67,7 @@ void *GPTLallocate (const int nbytes)
 {
   void *ptr;
 
-  if ( ! (ptr = malloc (nbytes)))
+  if ( nbytes <= 0 || ! (ptr = malloc (nbytes)))
     (void) GPTLerror ("GPTLallocate: malloc failed for %d bytes\n", nbytes);
 
   return ptr;

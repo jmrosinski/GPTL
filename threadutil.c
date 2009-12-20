@@ -1,5 +1,5 @@
 /*
-** $Id: threadutil.c,v 1.24 2009-09-25 15:05:47 rosinski Exp $
+** $Id: threadutil.c,v 1.25 2009-12-20 17:14:46 rosinski Exp $
 **
 ** Author: Jim Rosinski
 ** 
@@ -36,7 +36,7 @@ int threadinit (int *nthreads, int *maxthreads)
 {
   int t;  /* loop index */
 
-  *maxthreads = omp_get_max_threads ();
+  *maxthreads = MAX ((1), (omp_get_max_threads ()));
   *nthreads = 0;
 
   if (omp_get_thread_num () > 0)
