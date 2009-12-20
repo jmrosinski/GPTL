@@ -1,7 +1,7 @@
 <html>
 <head>
-<title>GPTL usage example 5: Fortran use of gptlparse_namelist() to set GPTL options</title>
-<meta name="example" content="gptlparse_namelist Fortran">
+<title>GPTL usage example 5: Fortran use of gptlprocess_namelist() to set GPTL options</title>
+<meta name="example" content="gptlprocess_namelist Fortran">
 <meta name="Keywords" content="gptl","papi","call tree","profile","timing","performance analysis">
 <meta name="Author" content="Jim Rosinski">
 </head>
@@ -16,9 +16,9 @@
 
 <br />
 
-<h2>Example 5: Fortran use of gptlparse_namelist() to set GPTL options</h2>
+<h2>Example 5: Fortran use of gptlprocess_namelist() to set GPTL options</h2>
 This example is a Fortran code which uses convenience
-function <b>gptlparse_namelist()</b> to set <b>GPTL</b> options instead of inserting
+function <b>gptlprocess_namelist()</b> to set <b>GPTL</b> options instead of inserting
 calls to <b>gptlsetoption()</b> into the application code. The main advantage
 to this approach is that it avoids having to recompile and relink the
 application code when changing GPTL options.
@@ -33,7 +33,7 @@ application code when changing GPTL options.
 
       integer :: ret
 
-! Parse GPTL namelist. Args are namelist file name, unit number, and
+! Process GPTL namelist. Args are namelist file name, unit number, and
 ! output return code
 
       call gptlprocess_namelist ('gptlnl', 1, ret)

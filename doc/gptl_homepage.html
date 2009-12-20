@@ -8,7 +8,7 @@ dynamic call tree">
 <meta name="Author" content="Jim Rosinski">
 <h1>GPTL - General Purpose Timing Library</h1>
 <h2>(with optional PAPI interface)</h2>
-<h2>Download the latest release by clicking <a href="gptl3_5_1.tar.gz">here</a>
+<h2>Download the latest release by clicking <a href="gptl3_5_2.tar.gz">here</a>
 </head>
 <body bgcolor="peachpuff">
 
@@ -105,7 +105,15 @@ Stats for thread 0:
 	entry and exit points.
 
 <HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
-<h2>What's new in the latest release (<a href="gptl3_5_1.tar.gz">gptl3_5_1.tar.gz</a>)</h2>
+<h2>What's new in the latest release (<a href="gptl3_5_2.tar.gz">gptl3_5_2.tar.gz</a>)</h2>
+<ul>
+<li> Bugfix for when omp_get_max_threads() returns zero.
+<li> <b>GPTLallocate()</b> returns error when asked for zero bytes.
+</ul>
+
+<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
+<h2>What was new in previous releases
+<h3>GPTL3.5.1 <a href="older/gptl3_5_1.tar.gz">gptl3_5_1.tar.gz</a>)</h3>
 <ul>
 <li> OpenMP applications now work when GPTL is built with PTHREADS
 <li> Fortran bugfix enables longer event names. This allows one to enable the
@@ -114,8 +122,7 @@ Stats for thread 0:
 <li> Tested on AIX.
 </ul>
 
-<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
-<h2>What was new in the previous release (<a href="older/gptl3_5.tar.gz">gptl3_5.tar.gz</a>)</h2>
+<h3>GPTL3.5 <a href="older/gptl3_5.tar.gz">gptl3_5.tar.gz</a>)</h3>
 <ul>
 <li> Easier linking with C++ applications.
 <li> Options for call-tree generation based on number of invocations per
@@ -145,7 +152,7 @@ than an integer index.
 <li> <em><b>hex2name.pl</b></em> converts auto-instrumented entries for thread summary regions.
 </ul>
 
-<h2>What was new in (<a href="older/gptl3_4_7.tar.gz">gptl3_4_7.tar.gz</a>)</h2>
+<h3>GPTL3.4.7 <a href="older/gptl3_4_7.tar.gz">gptl3_4_7.tar.gz</a>)</h3>
 <ul>
 <li> Derived events based on PAPI:
   <ul>
@@ -183,7 +190,7 @@ than an integer index.
 <HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
 <h2>Download and Installation</h2>
 <ul> 
-<li> Download the most recent release by clicking this link: <a href="gptl3_5_1.tar.gz">gptl3_5_1.tar.gz</a>.
+<li> Download the most recent release by clicking this link: <a href="gptl3_5_2.tar.gz">gptl3_5_2.tar.gz</a>.
 <li> Earlier versions can be found <a href="older/">here</a>.
 <li> To build and install <b>GPTL</b>, see the <A HREF="./INSTALL">INSTALL</a> file.
   You'll need to create a <b><em>macros.make</em></b> file appropriate for your target
@@ -230,13 +237,19 @@ Comments in the sample <b><em>macros.make</em></b> files describe
 <HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
 
 <h2>Bugs</h2>
-None known. Please let me know if you find any.
+<ul>
+<li> Calling <b>GPTLinitialize()</b> after <b>GPTLfinalize()</b> is untested.
+<li> Increasing the thread count after <b>GPTLinitialize()</b> has been
+  called does not work when threading is via OMP.
+<li> The PAPI library warns about using <b>omp_get_thread_num()</b> as the
+  underlying threading routine. Therefore it's better to build <b>GPTL</b>
+  with PTHREADS than OPENMP (see macros.make.linux).
+</ul>
 
 <HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
 
 <h2>Bug Reports</h2>
-Please <a HREF="mailto:rosinskijm@ornl.gov">email</a> me bug reports
-	and/or feature requests.
+Please email me bug reports and/or feature requests (jmrosinski2 AT gmail DOT com).
 
 <h2>Author</h2>
 <b>GPTL</b> was written
