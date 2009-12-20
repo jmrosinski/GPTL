@@ -18,9 +18,9 @@ dynamic call tree">
     performance analysis and profiling. The instrumentation can be inserted
     manually by the user wherever they wish, or it can be done automatically
     by the compiler at function entry and exit points if the application being
-    profiled is built with GNU, Pathscale, or PGI (8.0.2 or later)
+    profiled is built with GNU, Pathscale, Intel, or PGI (8.0.2 or later)
     compilers. To auto-instrument an application,
-    add <b><em>-finstrument-functions</em></b> (Pathscale, GNU)
+    add <b><em>-finstrument-functions</em></b> (Pathscale, GNU, Intel)
     or <b><em>-Minstrument:functions</em></b> (PGI) to 
     the compile and link flags of the source files to be profiled. Here is a portion of
     <b>GPTL</b> printout after running the HPCC benchmark with automatic
@@ -240,10 +240,11 @@ Comments in the sample <b><em>macros.make</em></b> files describe
 <ul>
 <li> Calling <b>GPTLinitialize()</b> after <b>GPTLfinalize()</b> is untested.
 <li> Increasing the thread count after <b>GPTLinitialize()</b> has been
-  called does not work when threading is via OMP.
+  called does not work when <b>GPTL</b> threading is via OMP. This should
+  work OK with PTHREADS, but is untested.
 <li> The PAPI library warns about using <b>omp_get_thread_num()</b> as the
-  underlying threading routine. Therefore it's better to build <b>GPTL</b>
-  with PTHREADS than OPENMP (see macros.make.linux).
+  underlying routine to get the thread number. Therefore it's better to
+  build <b>GPTL</b> with PTHREADS than OPENMP (see macros.make.linux).
 </ul>
 
 <HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
