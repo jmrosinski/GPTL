@@ -7,6 +7,10 @@ include macros.make
 
 null =
 OBJS = gptl.o util.o threadutil.o get_memusage.o print_memusage.o gptl_papi.o
+ifeq ($(ENABLE_PMPI),yes)
+  OBJS += gptl_pmpi.o
+  CFLAGS += -DENABLE_PMPI
+endif
 
 ifeq ($(DEBUG),yes)
   LIBNAME = gptl_debug

@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.c,v 1.143 2009-08-05 18:55:23 rosinski Exp $
+** $Id: gptl.c,v 1.144 2009-12-24 21:25:50 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -1195,7 +1195,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.143 2009-08-05 18:55:23 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.144 2009-12-24 21:25:50 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1275,6 +1275,10 @@ int GPTLpr_file (const char *outfile) /* output file to write */
       if (overheadstats.enabled)
 	fprintf (fp, "%s", overheadstats.str);
     }
+
+#ifdef ENABLE_PMPI
+    fprintf (fp, "MPI_COUNT ");
+#endif
 
 #ifdef HAVE_PAPI
     GPTL_PAPIprstr (fp);
@@ -1727,7 +1731,6 @@ static void printstats (const Timer *timer,
   int i;               /* index */
   int indent;          /* index for indenting */
   int extraspace;      /* for padding to length of longest name */
-  long ticks_per_sec;  /* returned from sysconf */
   float usr;           /* user time */
   float sys;           /* system time */
   float usrsys;        /* usr + sys */
@@ -1736,13 +1739,10 @@ static void printstats (const Timer *timer,
   float wallmin;       /* min wall time */
   float ratio;         /* percentage calc */
 
-  if ((ticks_per_sec = sysconf (_SC_CLK_TCK)) == -1)
-    (void) GPTLerror ("printstats: token _SC_CLK_TCK is not defined\n");
-
   if (timer->onflg && verbose)
     fprintf (stderr, "printstats: timer %s had not been turned off\n", timer->name);
 
-  /* Flag ambiguous timer indentation levels with a "*" in column 1 */
+  /* Flag regions having multiple parents with a "*" in column 1 */
 
   if (doindent) {
     if (timer->nparent > 1)
@@ -1810,6 +1810,10 @@ static void printstats (const Timer *timer,
       fprintf (fp, "%13.3f ", timer->count * 2 * tot_overhead);
     }
   }
+
+#ifdef ENABLE_PMPI
+  fprintf (fp, "%9.3f ", timer->things);
+#endif
 
 #ifdef HAVE_PAPI
   GPTL_PAPIpr (fp, &timer->aux, t, timer->count, timer->wall.accum);
@@ -1923,7 +1927,7 @@ int GPTLpr_summary (MPI_Comm comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.143 2009-08-05 18:55:23 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.144 2009-12-24 21:25:50 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 
     /* Print heading */
@@ -2825,3 +2829,23 @@ static void printself_andchildren (const Timer *ptr,
   for (n = 0; n < ptr->nchildren; n++)
     printself_andchildren (ptr->children[n], fp, t, depth+1, tot_overhead);
 }
+
+#ifdef ENABLE_PMPI
+Timer *GPTLgetentry (char *name)
+{
+  int t;
+  int indx;
+  
+  if ( ! initialized) {
+    (void) GPTLerror ("GPTLgetentry: initialization was not completed\n");
+    return 0;
+  }
+
+  if ((t = get_thread_num (&GPTLnthreads, &maxthreads)) < 0) {
+    (void) GPTLerror ("GPTLgetentry: bad return from get_thread_num\n");
+    return 0;
+  }
+
+  return (getentry (hashtable[t], name, &indx));
+}
+#endif

@@ -5,7 +5,7 @@
 # Always run "summary". Add others depending on settings.
 TESTS =
 ifeq ($(HAVE_MPI),yes)
-  TESTS += summary
+  TESTS += summary pmpi
 endif
 
 ifeq ($(HAVE_PAPI),yes)
@@ -67,6 +67,9 @@ summary: summary.o
 testpapi: testpapi.o
 	$(CC) -o $@ $< $(LDFLAGS)
 
+pmpi: pmpi.o
+	$(CC) -o $@ $< $(LDFLAGS)
+
 # Built-in tests to ensure that GPTL is behaving as expected
 # Invoke as "make test" from one dir above
 
@@ -83,6 +86,9 @@ ifeq ($(HAVE_MPI),yes)
 	@env OMP_NUM_THREADS=2 $(MPICMD) -n 2 ./summary || (echo "Failure to run" && exit 1)
 	@echo "Shell is checking contents of timing.summary produced by ./summary for a specific region name..."
 	@grep -q sleep timing.summary && echo "Success" || (echo "Failure" && exit 1)
+	@echo
+	@echo Running $(MPICMD) -n 2 ./pmpi
+	@env $(MPICMD) -n 2 ./pmpi
 	@echo
 endif
 

@@ -1,5 +1,5 @@
 /*
-** $Id: private.h,v 1.67 2009-09-24 20:00:24 rosinski Exp $
+** $Id: private.h,v 1.68 2009-12-24 21:25:50 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -74,6 +74,9 @@ typedef struct {
 
 typedef struct TIMER {
   char name[MAX_CHARS+1];   /* timer name (user input) */
+#ifdef ENABLE_PMPI
+  double things;      /* number of "things" for MPI call */
+#endif
 #ifdef HAVE_PAPI
   Papistats aux;            /* PAPI stats  */
 #endif 
@@ -129,4 +132,8 @@ extern void GPTL_PAPIprintenabled (FILE *);
 extern void read_counters100 (void);
 extern int GPTLget_npapievents (void);
 extern int GPTLcreate_and_start_events (const int);
+#endif
+
+#ifdef ENABLE_PMPI
+extern Timer *GPTLgetentry (char *);
 #endif
