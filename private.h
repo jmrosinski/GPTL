@@ -1,5 +1,5 @@
 /*
-** $Id: private.h,v 1.68 2009-12-24 21:25:50 rosinski Exp $
+** $Id: private.h,v 1.69 2009-12-24 22:40:52 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -75,7 +75,7 @@ typedef struct {
 typedef struct TIMER {
   char name[MAX_CHARS+1];   /* timer name (user input) */
 #ifdef ENABLE_PMPI
-  double things;      /* number of "things" for MPI call */
+  double nbytes;            /* number of bytes for MPI call */
 #endif
 #ifdef HAVE_PAPI
   Papistats aux;            /* PAPI stats  */

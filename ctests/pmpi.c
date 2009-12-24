@@ -1,13 +1,13 @@
-#include <unistd.h>
+#include <stdio.h>
 #include <mpi.h>
-#include <gptl.h>
+#include "../gptl.h"
 
 int main (int argc, char **argv)
 {
   int i, ret, iam;
   int size;
   const int count = 1024;
-  const int comm = MPI_COMM_WORLD;
+  const MPI_Comm comm = MPI_COMM_WORLD;
   const int tag = 98;
   double sendbuf[count];
   double recvbuf[count];
@@ -25,7 +25,7 @@ int main (int argc, char **argv)
   ret = MPI_Comm_size (comm, &size); // Get communicator size
 
   ret = GPTLsetoption (GPTLoverhead, 0);       // Don't print overhead stats
-  ret = GPTLsetoption (GPTLpercent, 1);        // Print percentage stats
+  ret = GPTLsetoption (GPTLpercent, 0);        // Don't print percentage stats
   ret = GPTLsetoption (GPTLabort_on_error, 1); // Abort on any GPTL error
 
   ret = GPTLinitialize ();                     // Initialize GPTL
