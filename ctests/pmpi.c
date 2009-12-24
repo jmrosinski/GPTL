@@ -35,10 +35,11 @@ int main (int argc, char **argv)
     sendbuf[i] = iam;
 
   dest = (iam + 1)%size;
-  source = iam;
+  source = iam - 1;
   if (source < 0)
     source = size - 1;
 
+  printf ("iam %d sending to %d receiving from %d\n", iam, dest, source);
   ret = MPI_Sendrecv (sendbuf, count, MPI_DOUBLE, dest, tag, 
 		      recvbuf, count, MPI_DOUBLE, source, tag, 
 		      comm, &status);

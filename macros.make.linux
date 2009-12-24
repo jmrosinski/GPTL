@@ -16,7 +16,7 @@ MANDIR =
 CC = mpicc
 
 # Whether to build debug lib or optimized lib, and associated flags
-DEBUG = no
+DEBUG = yes
 ifeq ($(DEBUG),yes)
   CFLAGS = -g -O0 -Wall -fno-inline
 else
@@ -79,7 +79,7 @@ AR = ar
 
 # PAPI: If the PAPI library is already installed, set HAVE_PAPI=yes and set inc and lib 
 # info as appropriate. 
-HAVE_PAPI = yes
+HAVE_PAPI = no
 ifeq ($(HAVE_PAPI),yes)
   PAPI_INCFLAGS = -I/usr/local/include
   PAPI_LIBFLAGS = -L/usr/local/lib -lpapi
@@ -135,8 +135,12 @@ HAVE_GETTIMEOFDAY = yes
 # Whether to test auto-profiling (adds 2 tests to "make test"). If compiler is gcc or 
 # pathscale, set INSTRFLAG to -finstrument-functions. PGI 8.0.2 and later provide 
 # -Minstrument:functions.
-TEST_AUTOPROFILE = yes
+TEST_AUTOPROFILE = no
 ifeq ($(TEST_AUTOPROFILE),yes)
   INSTRFLAG = -finstrument-functions
   CXX = mpicxx
 endif
+
+# Whether to enable PMPI wrappers. Turning this on will result in automatic entries
+# for a number of MPI calls
+ENABLE_PMPI = yes
