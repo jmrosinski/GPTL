@@ -36,10 +36,10 @@ LINUX = no
 # Thus COMPFLAG should be set to the compiler flag that enables OpenMP directives
 # if either OPENMP=yes, or PTHREADS=yes. If OPENMP=no and PTHREADS=no, GPTL 
 # will not be thread-safe.
-OPENMP = yes
+OPENMP = no
 COMPFLAG = -qsmp=omp
-ifeq ($(OPENMP),no)
 # Set PTHREADS if available and OPENMP=no
+ifeq ($(OPENMP),no)
   PTHREADS = yes
 endif
 
@@ -92,11 +92,9 @@ ifeq ($(HAVE_PAPI),yes)
   endif
 endif
 
-# MPI: Set HAVE_MPI=yes if you intend to use MPI_Wtime as the underlying 
-# wallclock timer, and/or intend to call GPTLpr_summary from an MPI code.
-# Then set inc and lib info if needed (e.g. if CC=mpicc, MPI_INCFLAGS and 
-# MPI_LIBFLAGS can be blank).
-HAVE_MPI = no
+# Whether to build GPTL with MPI support. Set inc and lib info if needed. 
+# If CC=mpicc, MPI_INCFLAGS and MPI_LIBFLAGS can be blank.
+HAVE_MPI = yes
 ifeq ($(HAVE_MPI),yes)
 # C compiler
   CC = mpcc_r
@@ -117,8 +115,6 @@ else
   ifeq ($(FORTRAN),yes)
     FC = xlf90_r
   endif
-# Without MPI, MPICMD needs to be blank
-  MPICMD = 
 endif
 
 # clock_gettime() in librt.a is an option for gathering wallclock time stats
@@ -150,4 +146,10 @@ TEST_AUTOPROFILE = no
 ifeq ($(TEST_AUTOPROFILE),yes)
   INSTRFLAG = -auto_instrumentation_not_available_on_AIX
   CXX = mpCC
+endif
+
+# Whether to enable PMPI wrappers. Turning this on will result in automatic 
+# entries for a number of MPI calls
+ifeq ($(HAVE_MPI),yes)
+  ENABLE_PMPI = yes
 endif
