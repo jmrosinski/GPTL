@@ -1,5 +1,5 @@
 /*
-** $Id: gptl_pmpi.c,v 1.3 2009-12-25 02:43:30 rosinski Exp $
+** $Id: gptl_pmpi.c,v 1.4 2009-12-25 19:55:49 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -161,7 +161,8 @@ int MPI_Allreduce (void *sendbuf, void *recvbuf, int count, MPI_Datatype datatyp
   (void) GPTLstop ("MPI_Allreduce");
   if (timer = GPTLgetentry ("MPI_Allreduce")) {
     (void) PMPI_Type_size (datatype, &size);
-    timer->nbytes += ((double) count) * size;
+    /* Estimate size as 2*count*size */
+    timer->nbytes += 2*((double) count) * size;
   }
   return ret;
 }

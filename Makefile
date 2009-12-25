@@ -1,8 +1,3 @@
-# CFLAGS_TESTS differs from CFLAGS for optimization (esp. inlining), and 
-# leaving off unused library-specific settings.
-
-CFLAGS_TESTS = -g
-
 include macros.make
 
 null =
@@ -26,15 +21,8 @@ else
   endif
 endif
 
-LDFLAGS = -L.. -l$(LIBNAME)
 MAKETESTS = ctests/all
 RUNTESTS = ctests/test
-
-LDFLAGS += $(ABIFLAGS)
-
-ifeq ($(MPICMD),$(null))
-  MPICMD = mpiexec
-endif
 
 ifeq ($(MANDIR),$(null))
   MANDIR = $(INSTALLDIR)
@@ -46,15 +34,9 @@ endif
 
 ifeq ($(OPENMP),yes)
   CFLAGS  += -DTHREADED_OMP $(COMPFLAG)
-  CFLAGS_TESTS += -DTHREADED_OMP $(COMPFLAG)
-  FFLAGS += $(FOMPFLAG)
-  LDFLAGS += $(COMPFLAG)
 else
   ifeq ($(PTHREADS),yes)
     CFLAGS  += -DTHREADED_PTHREADS
-# Threaded tests use OpenMP
-    CFLAGS_TESTS += -DTHREADED_OMP $(COMPFLAG)
-    LDFLAGS += -lpthread $(COMPFLAG)
   endif
 endif
 
@@ -70,12 +52,7 @@ CFLAGS += $(INLINEFLAG) $(UNDERSCORING)
 
 ifeq ($(HAVE_PAPI),yes)
   CFLAGS       += -DHAVE_PAPI
-  CFLAGS_TESTS += -DHAVE_PAPI
   CFLAGS       += $(PAPI_INCFLAGS)
-  CFLAGS_TESTS += $(PAPI_INCFLAGS)
-  LDFLAGS      += $(PAPI_LIBFLAGS)
-else
-  HAVE_PAPI = no
 endif
 
 ifeq ($(HAVE_MPI),yes)
@@ -89,7 +66,6 @@ ifeq ($(HAVE_MPI),yes)
   LDFLAGS      += $(MPI_LIBFLAGS)
   HEADER        = gptl.h.havempi
 else
-  HAVE_MPI = no
   HEADER   = gptl.h.nompi
 endif
 
@@ -117,10 +93,6 @@ ifeq ($(HAVE_GETTIMEOFDAY),yes)
   CFLAGS += -DHAVE_GETTIMEOFDAY
 endif
 
-ifeq ($(INSTRFLAG),$(null))
-  INSTRFLAG = -zzz
-endif
-
 ##############################################################################
 
 all: lib$(LIBNAME).a $(MAKETESTS)
@@ -129,22 +101,17 @@ test: $(RUNTESTS)
 
 # MAKETESTS is ctests/all and maybe ftests/all
 ctests/all:
-	(cd ctests && $(MAKE) all CC=$(CC) CXX=$(CXX) HAVE_MPI=$(HAVE_MPI) \
-         HAVE_PAPI=$(HAVE_PAPI) CFLAGS="$(CFLAGS_TESTS)" LDFLAGS="$(LDFLAGS)" \
-         TEST_AUTOPROFILE=$(TEST_AUTOPROFILE) INSTRFLAG=$(INSTRFLAG))
+	(cd ctests && $(MAKE) all)
 
 ftests/all:
-	(cd ftests && $(MAKE) all FC=$(FC) FFLAGS="$(FFLAGS)" LDFLAGS="$(LDFLAGS)" \
-         HAVE_MPI=$(HAVE_MPI) HAVE_PAPI=$(HAVE_PAPI))
+	(cd ftests && $(MAKE) all)
 
 # RUNTESTS is ctests and maybe ftests
 ctests/test:
-	(cd ctests && $(MAKE) test MPICMD=$(MPICMD) HAVE_MPI=$(HAVE_MPI) \
-         HAVE_PAPI=$(HAVE_PAPI) TEST_AUTOPROFILE=$(TEST_AUTOPROFILE))
+	(cd ctests && $(MAKE) test)
 
 ftests/test:
-	(cd ftests && $(MAKE) test MPICMD=$(MPICMD) HAVE_MPI=$(HAVE_MPI) \
-         HAVE_PAPI=$(HAVE_PAPI))
+	(cd ftests && $(MAKE) test)
 
 lib$(LIBNAME).a: $(OBJS) $(FOBJS) gptl.h
 	$(AR) ruv $@ $(OBJS) $(FOBJS)
@@ -164,12 +131,12 @@ uninstall:
 
 clean:
 	$(RM) -f $(OBJS) $(FOBJS) lib$(LIBNAME).a gptl.h
-	(cd ctests && $(MAKE) clean HAVE_MPI=$(HAVE_MPI) HAVE_PAPI=$(HAVE_PAPI) \
-	 TEST_AUTOPROFILE=$(TEST_AUTOPROFILE))
-	(cd ftests && $(MAKE) clean HAVE_MPI=$(HAVE_MPI) HAVE_PAPI=$(HAVE_PAPI))
+	(cd ctests && $(MAKE) clean)
+	(cd ftests && $(MAKE) clean)
 
 gptl.h: $(HEADER)
 	cp -f $(HEADER) gptl.h
+
 f_wrappers.o: f_wrappers.c gptl.h private.h
 gptl.o: gptl.c gptl.h private.h
 util.o: util.c gptl.h private.h
@@ -177,3 +144,4 @@ threadutil.o: threadutil.c gptl.h private.h
 gptl_papi.o: gptl_papi.c gptl.h private.h
 gptlprocess_namelist.o: gptlprocess_namelist.F90 gptl.inc
 	$(FC) -c $(FFLAGS) $<
+gptl_pmpi.o: gptl_pmpi.c gptl.h private.h

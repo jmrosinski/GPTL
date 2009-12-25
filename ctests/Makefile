@@ -1,8 +1,9 @@
-# This Makefile inherits a number of macros such as HAVE_MPI from its parent,
-# so it's best to invoke it from one dir higher via "make all" or "make test".
-
 # TESTS defines which EXES to run when "make test" is done.
 # Always run "summary". Add others depending on settings.
+
+include ../macros.make
+
+CFLAGS = -g
 TESTS =
 ifeq ($(HAVE_MPI),yes)
   TESTS += summary pmpi
@@ -10,6 +11,47 @@ endif
 
 ifeq ($(HAVE_PAPI),yes)
   TESTS += testpapi
+endif
+
+ifeq ($(DEBUG),yes)
+  ifeq ($(ENABLE_PMPI),yes)
+    LIBNAME = gptl_debug_pmpi
+  else
+    LIBNAME = gptl_debug
+  endif
+else
+  ifeq ($(ENABLE_PMPI),yes)
+    LIBNAME = gptl
+  else
+    LIBNAME = gptl_pmpi
+  endif
+endif
+
+LDFLAGS = -L.. -l$(LIBNAME) $(ABIFLAGS)
+
+ifeq ($(MPICMD),$(null))
+  MPICMD = mpiexec
+endif
+
+ifeq ($(OPENMP),yes)
+  CFLAGS  += -DTHREADED_OMP $(COMPFLAG)
+  LDFLAGS += $(COMPFLAG)
+else
+  ifeq ($(PTHREADS),yes)
+# Threaded tests use OpenMP
+    CFLAGS  += -DTHREADED_OMP $(COMPFLAG)
+    LDFLAGS += -lpthread $(COMPFLAG)
+  endif
+endif
+
+ifeq ($(HAVE_PAPI),yes)
+  CFLAGS  += -DHAVE_PAPI $(PAPI_INCFLAGS)
+  LDFLAGS += $(PAPI_LIBFLAGS)
+endif
+
+ifeq ($(HAVE_MPI),yes)
+  CFLAGS  += -DHAVE_MPI $(MPI_INCFLAGS)
+  LDFLAGS += $(MPI_LIBFLAGS)
 endif
 
 # Auto-profiling 
@@ -84,20 +126,27 @@ endif
 ifeq ($(HAVE_MPI),yes)
 	@echo Running env OMP_NUM_THREADS=2 $(MPICMD) -n 2 ./summary...
 	@env OMP_NUM_THREADS=2 $(MPICMD) -n 2 ./summary || (echo "Failure to run" && exit 1)
+	@echo Success
 	@echo "Shell is checking contents of timing.summary produced by ./summary for a specific region name..."
 	@grep -q sleep timing.summary && echo "Success" || (echo "Failure" && exit 1)
+ifeq ($(ENABLE_PMPI),yes)
+	@echo Success
 	@echo
 	@echo Running $(MPICMD) -n 2 ./pmpi
-	@env $(MPICMD) -n 2 ./pmpi
-	@echo
+	@env $(MPICMD) -n 2 ./pmpi || (echo "Failure" && exit 1)
+	@echo Success
+endif
 endif
 
 ifeq ($(TEST_AUTOPROFILE),yes)
+	@echo
 	@echo "Testing auto-profiling..."
 	@./cygprofile || (echo "Failure to run" && exit 1)
+	@echo Success at running
+	@echo "Running hex2name.pl | grep callutil100times..."
 	@(../hex2name.pl ./cygprofile timing.0 | grep -q callutil100times) && echo "Success" || (echo "Failure" && exit 1)
-	@echo
 endif
+	@echo
 	@echo "All C tests passed"
 
 install: $(UTILEXES)
