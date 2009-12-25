@@ -30,10 +30,6 @@ endif
 
 LDFLAGS = -L.. -l$(LIBNAME) $(ABIFLAGS)
 
-ifeq ($(MPICMD),$(null))
-  MPICMD = mpiexec
-endif
-
 ifeq ($(OPENMP),yes)
   CFLAGS  += -DTHREADED_OMP $(COMPFLAG)
   LDFLAGS += $(COMPFLAG)

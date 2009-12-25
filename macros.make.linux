@@ -36,10 +36,10 @@ LINUX = yes
 # Thus COMPFLAG should be set to the compiler flag that enables OpenMP directives
 # if either OPENMP=yes, or PTHREADS=yes. If OPENMP=no and PTHREADS=no, GPTL 
 # will not be thread-safe.
-OPENMP = yes
+OPENMP = no
 COMPFLAG = -fopenmp
-ifeq ($(OPENMP),no)
 # Set PTHREADS if available and OPENMP=no
+ifeq ($(OPENMP),no)
   PTHREADS = yes
 endif
 
@@ -79,7 +79,7 @@ AR = ar
 
 # PAPI: If the PAPI library is already installed, set HAVE_PAPI=yes and set inc and lib 
 # info as appropriate. 
-HAVE_PAPI = no
+HAVE_PAPI = yes
 ifeq ($(HAVE_PAPI),yes)
   PAPI_INCFLAGS = -I/usr/local/include
   PAPI_LIBFLAGS = -L/usr/local/lib -lpapi
@@ -90,10 +90,8 @@ ifeq ($(HAVE_PAPI),yes)
   endif
 endif
 
-# MPI: Set HAVE_MPI=yes if you intend to use MPI_Wtime as the underlying 
-# wallclock timer, and/or intend to call GPTLpr_summary from an MPI code.
-# Then set inc and lib info if needed (e.g. if CC=mpicc, MPI_INCFLAGS and 
-# MPI_LIBFLAGS can be blank).
+# Whether to build GPTL with MPI support. Set inc and lib info if needed. 
+# If CC=mpicc, MPI_INCFLAGS and MPI_LIBFLAGS can be blank.
 HAVE_MPI = yes
 ifeq ($(HAVE_MPI),yes)
 # Hopefully MPI_Comm_f2c() exists, but if not, set HAVE_COMM_F2C = no
@@ -105,9 +103,6 @@ ifeq ($(HAVE_MPI),yes)
 # Modify FFLAGS for ftests/: Normally it's -D, but AIX requires -WF,-D
     FFLAGS += -DHAVE_MPI
   endif
-else
-# Without MPI, MPICMD needs to be blank
-  MPICMD = 
 endif
 
 # clock_gettime() in librt.a is an option for gathering wallclock time stats
@@ -141,6 +136,9 @@ ifeq ($(TEST_AUTOPROFILE),yes)
   CXX = mpicxx
 endif
 
-# Whether to enable PMPI wrappers. Turning this on will result in automatic entries
-# for a number of MPI calls
-ENABLE_PMPI = yes
+# Whether to enable PMPI wrappers. Turning this on will result in automatic 
+# entries for a number of MPI calls
+ifeq ($(HAVE_MPI),yes)
+  ENABLE_PMPI = yes
+endif
+

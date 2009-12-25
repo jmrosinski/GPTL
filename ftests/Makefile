@@ -32,9 +32,6 @@ else
 endif
 
 LDFLAGS = -L.. -l$(LIBNAME) $(ABIFLAGS)
-ifeq ($(MPICMD),$(null))
-  MPICMD = mpiexec
-endif
 
 ifeq ($(OPENMP),yes)
   FFLAGS  += -DTHREADED_OMP $(FOMPFLAG)
