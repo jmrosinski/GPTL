@@ -1,5 +1,6 @@
 &gptlnl
 ! These settings are all the opposite of the default--for testing
+ sync_mpi        = .true.
  wall            = .false.
  cpu             = .true.
  abort_on_error  = .true.

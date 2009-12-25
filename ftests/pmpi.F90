@@ -35,6 +35,7 @@ program pmpi
   ret = gptlsetoption (gptloverhead, 0)
   ret = gptlsetoption (gptlpercent, 0)
   ret = gptlsetoption (gptlabort_on_error, 1)
+  ret = gptlsetoption (gptlsync_mpi, 1)
        
   ret = gptlinitialize ()
   ret = gptlstart ("total")

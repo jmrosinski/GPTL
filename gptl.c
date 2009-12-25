@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.c,v 1.146 2009-12-25 02:43:30 rosinski Exp $
+** $Id: gptl.c,v 1.147 2009-12-25 22:07:36 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -273,6 +273,14 @@ int GPTLsetoption (const int option,  /* option */
     method = (Method) val; 
     if (verbose)
       printf ("GPTLsetoption: print_method = %s\n", methodstr (method));
+    return 0;
+  case GPTLsync_mpi:
+#ifdef ENABLE_PMPI
+    if (GPTLpmpi_setoption (option, val) != 0)
+      fprintf (stderr, "GPTLsetoption: GPTLpmpi_setoption failure\n");
+#endif
+    if (verbose)
+      printf ("GPTLsetoption: boolean sync_mpi = %d\n", val);
     return 0;
 
   /* 
@@ -1195,7 +1203,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.146 2009-12-25 02:43:30 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.147 2009-12-25 22:07:36 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1930,7 +1938,7 @@ int GPTLpr_summary (MPI_Comm comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.146 2009-12-25 02:43:30 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.147 2009-12-25 22:07:36 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 
     /* Print heading */

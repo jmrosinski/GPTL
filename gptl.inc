@@ -1,12 +1,13 @@
 !
-! $Id: gptl.inc,v 1.38 2009-04-02 20:21:52 rosinski Exp $
+! $Id: gptl.inc,v 1.39 2009-12-25 22:07:36 rosinski Exp $
 !
 ! Author: Jim Rosinski
 !
-! #include or Fortran include this file in application codes which invoke GPTL functions
+! #include or Fortran include this file in application codes which invoke GPTL functions.
 ! Values defined here match their counterparts in gptl.h See that file or man pages
 ! or web-based documenation for descriptions of each value
 !
+      integer GPTLsync_mpi
       integer GPTLwall
       integer GPTLcpu
       integer GPTLabort_on_error
@@ -46,6 +47,7 @@
       integer GPTLmost_frequent
       integer GPTLfull_tree
 
+      parameter (GPTLsync_mpi       = 0)
       parameter (GPTLwall           = 1)
       parameter (GPTLcpu            = 2)
       parameter (GPTLabort_on_error = 3)

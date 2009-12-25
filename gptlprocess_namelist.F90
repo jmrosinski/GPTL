@@ -1,6 +1,6 @@
 subroutine gptlprocess_namelist (filename, unitno, outret)
 !
-! $Id: gptlprocess_namelist.F90,v 1.2 2009-06-30 19:18:21 rosinski Exp $
+! $Id: gptlprocess_namelist.F90,v 1.3 2009-12-25 22:07:36 rosinski Exp $
 !
 ! Author: Jim Rosinski
 !
@@ -18,7 +18,7 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
   integer, intent(in) :: unitno             ! Fortran unit number to open
   integer, intent(out) :: outret            ! Output return code
 
-  include './gptl.inc'
+#include "./gptl.inc"
 
   integer :: j    ! loop index
   integer :: ios  ! status return from file open
@@ -28,6 +28,7 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
 
 ! Default values for namelist variables
 
+  logical, parameter :: def_sync_mpi        = .false.
   logical, parameter :: def_wall            = .true.
   logical, parameter :: def_cpu             = .false.
   logical, parameter :: def_abort_on_error  = .false.
@@ -47,6 +48,7 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
 
 ! Namelist values: initialize to defaults
 
+  logical :: sync_mpi        = def_sync_mpi
   logical :: wall            = def_wall
   logical :: cpu             = def_cpu
   logical :: abort_on_error  = def_abort_on_error
@@ -66,7 +68,7 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
   character(len=64) :: eventlist(maxevents) = &
  (/('                                                                ',j=1,maxevents)/)
   
-  namelist /gptlnl/ wall, cpu, abort_on_error, overhead, depthlimit, &
+  namelist /gptlnl/ sync_mpi, wall, cpu, abort_on_error, overhead, depthlimit, &
                     verbose, narrowprint, percent, persec, multiplex, &
                     dopr_preamble, dopr_threadsort, dopr_multparent, dopr_collision, &
                     print_method, eventlist, utr
@@ -101,6 +103,14 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
       ret = gptlsetoption (gptlabort_on_error, 1)
     else
       ret = gptlsetoption (gptlabort_on_error, 0)
+    end if
+  end if
+
+  if (sync_mpi .neqv. def_sync_mpi) then
+    if (sync_mpi) then
+      ret = gptlsetoption (gptlsync_mpi, 1)
+    else
+      ret = gptlsetoption (gptlsync_mpi, 0)
     end if
   end if
 
