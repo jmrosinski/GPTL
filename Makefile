@@ -13,9 +13,17 @@ ifeq ($(ENABLE_PMPI),yes)
 endif
 
 ifeq ($(DEBUG),yes)
-  LIBNAME = gptl_debug
+  ifeq ($(ENABLE_PMPI),yes)
+    LIBNAME = gptl_debug_pmpi
+  else
+    LIBNAME = gptl_debug
+  endif
 else
-  LIBNAME = gptl
+  ifeq ($(ENABLE_PMPI),yes)
+    LIBNAME = gptl
+  else
+    LIBNAME = gptl_pmpi
+  endif
 endif
 
 LDFLAGS = -L.. -l$(LIBNAME)
