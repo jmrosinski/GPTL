@@ -1,5 +1,5 @@
 /*
-** $Id: gptl_pmpi.c,v 1.2 2009-12-24 22:40:52 rosinski Exp $
+** $Id: gptl_pmpi.c,v 1.3 2009-12-25 02:43:30 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -41,6 +41,27 @@ int MPI_Recv (void *buf, int count, MPI_Datatype datatype, int source, int tag,
   if (timer = GPTLgetentry ("MPI_Recv")) {
     (void) PMPI_Type_size (datatype, &size);
     timer->nbytes += ((double) count) * size;
+  }
+  return ret;
+}
+
+int MPI_Sendrecv (void *sendbuf, int sendcount, MPI_Datatype sendtype, int dest, int sendtag, 
+                  void *recvbuf, int recvcount, MPI_Datatype recvtype, int source, int recvtag, 
+		  MPI_Comm comm, MPI_Status *status )
+{
+  int ret;
+  int sendsize, recvsize;
+  Timer *timer;
+
+  (void) GPTLstart ("MPI_Sendrecv");
+  ret = PMPI_Sendrecv (sendbuf, sendcount, sendtype, dest, sendtag, 
+		       recvbuf, recvcount, recvtype, source, recvtag, comm, status);
+  (void) GPTLstop ("MPI_Sendrecv");
+  if (timer = GPTLgetentry ("MPI_Sendrecv")) {
+    (void) PMPI_Type_size (sendtype, &sendsize);
+    (void) PMPI_Type_size (recvtype, &recvsize);
+
+    timer->nbytes += ((double) recvcount * recvsize) + ((double) sendcount * sendsize);
   }
   return ret;
 }
@@ -115,7 +136,6 @@ int MPI_Bcast (void *buffer, int count, MPI_Datatype datatype, int root,
                MPI_Comm comm )
 {
   int ret;
-  int iam;
   int size;
   Timer *timer;
 
@@ -146,7 +166,7 @@ int MPI_Allreduce (void *sendbuf, void *recvbuf, int count, MPI_Datatype datatyp
   return ret;
 }
 
-int MPI_Gather (void *sendbuf, int sendcnt, MPI_Datatype sendtype, 
+int MPI_Gather (void *sendbuf, int sendcount, MPI_Datatype sendtype, 
                 void *recvbuf, int recvcount, MPI_Datatype recvtype, 
                 int root, MPI_Comm comm)
 {
@@ -157,7 +177,7 @@ int MPI_Gather (void *sendbuf, int sendcnt, MPI_Datatype sendtype,
   Timer *timer;
 
   (void) GPTLstart ("MPI_Gather");
-  ret = PMPI_Gather (sendbuf, sendcnt, sendtype, 
+  ret = PMPI_Gather (sendbuf, sendcount, sendtype, 
 		     recvbuf, recvcount, recvtype, root, comm);
   (void) GPTLstop ("MPI_Gather");
   if (timer = GPTLgetentry ("MPI_Gather")) {
@@ -172,8 +192,79 @@ int MPI_Gather (void *sendbuf, int sendcnt, MPI_Datatype sendtype,
 
       timer->nbytes += (double) recvcount * recvsize * (commsize - 1);
     } else {
-      timer->nbytes += (double) sendcnt * sendsize;
+      timer->nbytes += (double) sendcount * sendsize;
     }
+  }
+  return ret;
+}
+
+int MPI_Scatter (void *sendbuf, int sendcount, MPI_Datatype sendtype, 
+		 void *recvbuf, int recvcount, MPI_Datatype recvtype, 
+		 int root, MPI_Comm comm)
+{
+  int ret;
+  int iam;
+  int sendsize, recvsize;
+  Timer *timer;
+
+  (void) GPTLstart ("MPI_Scatter");
+  ret = PMPI_Scatter (sendbuf, sendcount, sendtype, 
+		      recvbuf, recvcount, recvtype, root, comm);
+  (void) GPTLstop ("MPI_Scatter");
+  if (timer = GPTLgetentry ("MPI_Scatter")) {
+    (void) PMPI_Comm_rank (comm, &iam);
+    if (iam == root) {
+
+      /* Use size-1 to exclude root sending to himself */
+
+      (void) PMPI_Type_size (sendtype, &sendsize);
+      timer->nbytes += (double) sendcount * sendsize;
+    } else {
+      (void) PMPI_Type_size (recvtype, &recvsize);
+      timer->nbytes += (double) recvcount * recvsize;
+    }
+  }
+  return ret;
+}
+
+int MPI_Alltoall (void *sendbuf, int sendcount, MPI_Datatype sendtype, 
+                  void *recvbuf, int recvcount, MPI_Datatype recvtype, 
+		  MPI_Comm comm)
+{
+  int ret;
+  int iam;
+  int sendsize, recvsize;
+  int commsize;
+  Timer *timer;
+
+  (void) GPTLstart ("MPI_Alltoall");
+  ret = PMPI_Alltoall (sendbuf, sendcount, sendtype, 
+		       recvbuf, recvcount, recvtype, comm);
+  (void) GPTLstop ("MPI_Alltoall");
+  if (timer = GPTLgetentry ("MPI_Alltoall")) {
+    (void) PMPI_Comm_size (comm, &commsize);
+    (void) PMPI_Type_size (sendtype, &sendsize);
+    (void) PMPI_Type_size (recvtype, &recvsize);
+
+    timer->nbytes += ((double) sendcount * sendsize) + 
+                     ((double) recvcount * recvsize * commsize);
+  }
+  return ret;
+}
+
+int MPI_Reduce (void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, 
+                MPI_Op op, int root, MPI_Comm comm )
+{
+  int ret;
+  int size;
+  Timer *timer;
+
+  (void) GPTLstart ("MPI_Reduce");
+  ret = PMPI_Reduce (sendbuf, recvbuf, count, datatype, op, root, comm);
+  (void) GPTLstop ("MPI_Reduce");
+  if (timer = GPTLgetentry ("MPI_Reduce")) {
+    (void) PMPI_Type_size (datatype, &size);
+    timer->nbytes += ((double) count) * size;
   }
   return ret;
 }
