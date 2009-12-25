@@ -24,9 +24,9 @@ ifeq ($(DEBUG),yes)
   endif
 else
   ifeq ($(ENABLE_PMPI),yes)
-    LIBNAME = gptl
-  else
     LIBNAME = gptl_pmpi
+  else
+    LIBNAME = gptl
   endif
 endif
 

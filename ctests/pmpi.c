@@ -49,6 +49,17 @@ int main (int argc, char **argv)
   if (source < 0)
     source = commsize - 1;
 
+  if (commsize % 2 == 0) {
+    if (iam % 2 == 0) {
+      ret = MPI_Send (sendbuf, count, MPI_INT, dest, tag, comm);
+      ret = MPI_Recv (recvbuf, count, MPI_INT, source, tag, comm, &status);
+    } else {
+      ret = MPI_Recv (recvbuf, count, MPI_INT, source, tag, comm, &status);
+      ret = MPI_Send (sendbuf, count, MPI_INT, dest, tag, comm);
+    }
+  }
+  chkbuf ("mpi_send + mpi_recv", recvbuf, count, source);
+
   ret = MPI_Sendrecv (sendbuf, count, MPI_INT, dest, tag, 
 		      recvbuf, count, MPI_INT, source, tag, 
 		      comm, &status);
