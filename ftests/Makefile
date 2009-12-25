@@ -46,6 +46,11 @@ else
   endif
 endif
 
+ifeq ($(HAVE_PAPI),yes)
+  FFLAGS  += -DHAVE_PAPI
+  LDFLAGS += $(PAPI_LIBFLAGS)
+endif
+
 OBJS = $(patsubst %,%.o,$(EXES))
 
 all: $(EXES)
