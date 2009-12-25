@@ -3,6 +3,7 @@
 
 include ../macros.make
 
+null =
 CFLAGS = -g
 TESTS =
 ifeq ($(HAVE_MPI),yes)

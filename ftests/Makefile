@@ -1,5 +1,6 @@
 include ../macros.make
 
+null =
 # TESTS defines which of EXES have a built-in testing procedure.
 TESTS = testbasics nlreader
 
