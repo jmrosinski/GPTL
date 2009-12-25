@@ -16,7 +16,7 @@ MANDIR =
 CC = mpicc
 
 # Whether to build debug lib or optimized lib, and associated flags
-DEBUG = yes
+DEBUG = no
 ifeq ($(DEBUG),yes)
   CFLAGS = -g -O0 -Wall -fno-inline
 else
