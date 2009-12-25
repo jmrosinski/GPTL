@@ -128,7 +128,7 @@ ifeq ($(HAVE_MPI),yes)
 	@env OMP_NUM_THREADS=2 $(MPICMD) -n 2 ./summary || (echo "Failure to run" && exit 1)
 	@echo Success
 	@echo "Shell is checking contents of timing.summary produced by ./summary for a specific region name..."
-	@grep -q sleep timing.summary && echo "Success" || (echo "Failure" && exit 1)
+	@grep -q sleep timing.summary || (echo "Failure" && exit 1)
 ifeq ($(ENABLE_PMPI),yes)
 	@echo Success
 	@echo

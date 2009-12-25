@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.c,v 1.147 2009-12-25 22:07:36 rosinski Exp $
+** $Id: gptl.c,v 1.148 2009-12-25 22:27:42 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -1203,7 +1203,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.147 2009-12-25 22:07:36 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.148 2009-12-25 22:27:42 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1242,6 +1242,12 @@ int GPTLpr_file (const char *outfile) /* output file to write */
     fprintf (fp, "If overhead stats are printed, roughly half the estimated number is\n");
     fprintf (fp, "embedded in the wallclock stats for each timer.\n");
     fprintf (fp, "Print method was %s.\n", methodstr (method));
+#ifdef ENABLE_PMPI
+    fprintf (fp, "If a AVG_MPI_BYTES field is present, it is an estimate of the per-call "
+	     "average number of bytes handled by that process.\n");
+    fprintf (fp, "If timers beginning with sync_ are present, it means MPI synchronization "
+	     "was turned on.\n");
+#endif
     fprintf (fp, "If a \'%%_of\' field is present, it is w.r.t. the first timer for thread 0.\n");
     fprintf (fp, "If a \'e6_per_sec\' field is present, it is in millions of PAPI counts per sec.\n\n");
     fprintf (fp, "A '*' in column 1 below means the timer had multiple parents, though the\n");
@@ -1938,7 +1944,7 @@ int GPTLpr_summary (MPI_Comm comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.147 2009-12-25 22:07:36 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.148 2009-12-25 22:27:42 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 
     /* Print heading */

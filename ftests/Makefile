@@ -112,5 +112,8 @@ ifeq ($(ENABLE_PMPI),yes)
 	@echo
 	@echo Running $(MPICMD) -n 2 ./pmpi
 	@env $(MPICMD) -n 2 ./pmpi || (echo "Failed" && exit 1)
+	@echo Checking contents of timing.0 for a specific region name...
+	@grep -q MPI_Send timing.0 || (echo "Failed" && exit 1)
+	@echo Success
 endif
 	@echo "All Fortran tests passed"

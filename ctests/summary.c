@@ -80,14 +80,10 @@ int main (int argc, char **argv)
     printf ("Number of tasks was %d\n", nproc);
   }
 
-  if (GPTLpr_summary (MPI_COMM_WORLD) == 0) {
-    if (iam == 0)
-      printf ("Success\n");
-  } else {
-    if (iam == 0)
-      printf ("Failure\n");
+  if (GPTLpr_summary (MPI_COMM_WORLD) != 0) {
     return 1;
   }
+
   if (GPTLfinalize () != 0)
     return 1;
 
