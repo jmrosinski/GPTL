@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.h.havempi,v 1.4 2009-12-25 22:07:36 rosinski Exp $
+** $Id: gptl.h.havempi,v 1.5 2009-12-26 19:27:22 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -113,6 +113,8 @@ extern int GPTLget_regionname (int, int, char *, int);
 extern int GPTL_PAPIlibraryinit ();
 extern int GPTLevent_name_to_code (const char *, int *);
 extern int GPTLevent_code_to_name (const int, char *);
+extern int GPTLis_initialized (void);
+extern int GPTLpr_has_been_called (void);
 
 #ifdef __cplusplus
 };

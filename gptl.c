@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.c,v 1.148 2009-12-25 22:27:42 rosinski Exp $
+** $Id: gptl.c,v 1.149 2009-12-26 19:27:22 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -46,8 +46,9 @@ static int *max_name_len;           /* max length of timer name */
 static int GPTLnthreads= -1;        /* num threads. Init to bad value */
 static int maxthreads  = -1;        /* max threads (=GPTLnthreads for OMP). Init to bad value */
 static int depthlimit  = 99999;     /* max depth for timers (99999 is effectively infinite) */
-static volatile bool disabled = false;    /* Timers disabled? */
-static volatile bool initialized = false; /* GPTLinitialize has been called */
+static volatile bool disabled = false;           /* Timers disabled? */
+static volatile bool initialized = false;        /* GPTLinitialize has been called */
+static volatile bool pr_has_been_called = false; /* GPTLpr_file has been called */
 static Entry eventlist[MAX_AUX];    /* list of PAPI-based events to be counted */
 static int nevents = 0;             /* number of PAPI events (init to 0) */
 static bool dousepapi = false;      /* saves a function call if stays false */
@@ -1203,7 +1204,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.148 2009-12-25 22:27:42 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.149 2009-12-26 19:27:22 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1504,17 +1505,14 @@ int GPTLpr_file (const char *outfile) /* output file to write */
     }
   }
 
-  /* Print thread mapping for pthreads case (diagnostic) */
-
-#ifdef THREADED_PTHREADS
   print_threadmapping (GPTLnthreads, fp);
-#endif
 
   free (sum);
 
   if (fclose (fp) != 0)
     fprintf (stderr, "Attempt to close %s failed\n", outfile);
 
+  pr_has_been_called = true;
   return 0;
 }
 
@@ -1944,7 +1942,7 @@ int GPTLpr_summary (MPI_Comm comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.148 2009-12-25 22:27:42 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.149 2009-12-26 19:27:22 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 
     /* Print heading */
@@ -2479,6 +2477,24 @@ int GPTLget_regionname (int t,      /* thread number */
 		      t, region);
   }
   return 0;
+}
+
+/*
+** GPTLis_initialized: Return whether GPTL has been initialized
+*/
+
+int GPTLis_initialized (void)
+{
+  return (int) initialized;
+}
+
+/*
+** GPTLpr_file_has_been_called: Return whether GPTLpr_file has been called
+*/
+
+int GPTLpr_has_been_called (void)
+{
+  return (int) pr_has_been_called;
 }
 
 /*

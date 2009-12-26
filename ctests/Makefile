@@ -14,18 +14,11 @@ ifeq ($(HAVE_PAPI),yes)
   TESTS += testpapi
 endif
 
-ifeq ($(DEBUG),yes)
-  ifeq ($(ENABLE_PMPI),yes)
-    LIBNAME = gptl_debug_pmpi
-  else
-    LIBNAME = gptl_debug
-  endif
+ifeq ($(ENABLE_PMPI),yes)
+  CFLAGS += -DENABLE_PMPI
+  LIBNAME = gptl_pmpi
 else
-  ifeq ($(ENABLE_PMPI),yes)
-    LIBNAME = gptl_pmpi
-  else
-    LIBNAME = gptl
-  endif
+  LIBNAME = gptl
 endif
 
 LDFLAGS = -L.. -l$(LIBNAME) $(ABIFLAGS)

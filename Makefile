@@ -2,23 +2,16 @@ include macros.make
 
 null =
 OBJS = gptl.o util.o threadutil.o get_memusage.o print_memusage.o gptl_papi.o
-ifeq ($(ENABLE_PMPI),yes)
-  OBJS += gptl_pmpi.o
-  CFLAGS += -DENABLE_PMPI
-endif
 
-ifeq ($(DEBUG),yes)
-  ifeq ($(ENABLE_PMPI),yes)
-    LIBNAME = gptl_debug_pmpi
-  else
-    LIBNAME = gptl_debug
+ifeq ($(ENABLE_PMPI),yes)
+  CFLAGS += -DENABLE_PMPI
+  ifeq ($(HAVE_IARGCGETARG),yes)
+    CFLAGS += -DHAVE_IARGCGETARG
   endif
+  OBJS += gptl_pmpi.o
+  LIBNAME = gptl_pmpi
 else
-  ifeq ($(ENABLE_PMPI),yes)
-    LIBNAME = gptl_pmpi
-  else
-    LIBNAME = gptl
-  endif
+  LIBNAME = gptl
 endif
 
 MAKETESTS = ctests/all

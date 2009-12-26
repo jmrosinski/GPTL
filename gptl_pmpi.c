@@ -1,5 +1,5 @@
 /*
-** $Id: gptl_pmpi.c,v 1.5 2009-12-25 22:07:36 rosinski Exp $
+** $Id: gptl_pmpi.c,v 1.6 2009-12-26 19:27:22 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -24,6 +24,25 @@ int GPTLpmpi_setoption (const int option,
     return 1;
   }
   return 0;
+}
+
+/*
+** Additions to MPI_Init: Initialize GPTL if this hasn't already been done.
+** Start a timer which will be stopped in MPI_Finalize.
+*/
+
+int MPI_Init (int *argc, char ***argv)
+{
+  int ret;
+  int ignoreret;
+
+  ret = PMPI_Init (argc, argv);
+  if ( ! GPTLis_initialized ())
+    ignoreret = GPTLinitialize ();
+
+  ignoreret = GPTLstart ("MPI_Init_thru_Finalize");
+
+  return ret;
 }
 
 int MPI_Send (void *buf, int count, MPI_Datatype datatype, int dest, int tag, 
@@ -339,5 +358,26 @@ int MPI_Reduce (void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype,
     ignoreret = PMPI_Type_size (datatype, &size);
     timer->nbytes += ((double) count) * size;
   }
+  return ret;
+}
+
+/*
+** Additions to MPI_Finalize: Stop the timer started in MPI_Init, and
+** call GPTLpr() if it hasn't already been called.
+*/
+
+int MPI_Finalize (void)
+{
+  int ret, ignoreret;
+  int iam;
+
+  ignoreret = GPTLstop ("MPI_Init_thru_Finalize");
+
+  if ( ! GPTLpr_has_been_called ()) {
+    PMPI_Comm_rank (MPI_COMM_WORLD, &iam);
+    ignoreret = GPTLpr (iam);
+  }
+
+  ret = PMPI_Finalize();
   return ret;
 }

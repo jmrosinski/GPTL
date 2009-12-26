@@ -25,21 +25,28 @@ int main (int argc, char **argv)
 
   void chkbuf (const char *, int *, const int, const int);
 
-  //  int DebugWait = 1;
+  /*
+  int DebugWait = 1;
+  while (DebugWait) {
+  }
+  */
 
-  //  while (DebugWait) {
-  //  }
+  ret = GPTLsetoption (GPTLoverhead, 0);       /* Don't print overhead stats */
+  ret = GPTLsetoption (GPTLpercent, 0);        /* Don't print percentage stats */
+  ret = GPTLsetoption (GPTLabort_on_error, 1); /* Abort on any GPTL error */
 
-  ret = MPI_Init (&argc, &argv);               // Initialize MPI
-  ret = MPI_Comm_rank (comm, &iam);            // Get my rank
-  ret = MPI_Comm_size (comm, &commsize);       // Get communicator size
+  /* 
+  ** Only initialize GPTL if ENABLE_PMPI is false.
+  ** If it is true, the library will be initialized in MPI_Init()
+  */
+#ifndef ENABLE_PMPI
+  ret = GPTLinitialize ();                     /* Initialize GPTL */
+  ret = GPTLstart ("total");                   /* Time the whole program */
+#endif
 
-  ret = GPTLsetoption (GPTLoverhead, 0);       // Don't print overhead stats
-  ret = GPTLsetoption (GPTLpercent, 0);        // Don't print percentage stats
-  ret = GPTLsetoption (GPTLabort_on_error, 1); // Abort on any GPTL error
-
-  ret = GPTLinitialize ();                     // Initialize GPTL
-  ret = GPTLstart ("total");                   // Time the whole program
+  ret = MPI_Init (&argc, &argv);               /* Initialize MPI */
+  ret = MPI_Comm_rank (comm, &iam);            /* Get my rank */
+  ret = MPI_Comm_size (comm, &commsize);       /* Get communicator size */
 
   for (i = 0; i < count; ++i)
     sendbuf[i] = iam;
@@ -139,8 +146,10 @@ int main (int argc, char **argv)
 
   ret = MPI_Finalize ();                       // Clean up MPI
 
+#ifndef ENABLE_PMPI
   ret = GPTLstop ("total");
   ret = GPTLpr (iam);                          // Print the results
+#endif
   return 0;
 }
 

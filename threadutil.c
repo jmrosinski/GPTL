@@ -1,5 +1,5 @@
 /*
-** $Id: threadutil.c,v 1.26 2009-12-20 21:39:21 rosinski Exp $
+** $Id: threadutil.c,v 1.27 2009-12-26 19:27:22 rosinski Exp $
 **
 ** Author: Jim Rosinski
 ** 
@@ -374,10 +374,8 @@ int get_thread_num (int *nthreads, int *maxthreads)
 
 void print_threadmapping (int nthreads, FILE *fp)
 {
-  int n;
-
   fprintf (fp, "\n");
-  fprintf (fp, "Thread mapping: no thread map for unthreaded case\n");
+  fprintf (fp, "threadid[0]=0\n");
 }
 
 #endif

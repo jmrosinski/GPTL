@@ -15,20 +15,9 @@ endif
 
 ifeq ($(ENABLE_PMPI),yes)
   EXES += pmpi
-endif
-
-ifeq ($(DEBUG),yes)
-  ifeq ($(ENABLE_PMPI),yes)
-    LIBNAME = gptl_debug_pmpi
-  else
-    LIBNAME = gptl_debug
-  endif
+  LIBNAME = gptl_pmpi
 else
-  ifeq ($(ENABLE_PMPI),yes)
-    LIBNAME = gptl_pmpi
-  else
-    LIBNAME = gptl
-  endif
+  LIBNAME = gptl
 endif
 
 LDFLAGS = -L.. -l$(LIBNAME) $(ABIFLAGS)

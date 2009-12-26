@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.46 2009-12-25 19:55:49 rosinski Exp $
+** $Id: f_wrappers.c,v 1.47 2009-12-26 19:27:22 rosinski Exp $
 **
 ** Author: Jim Rosinski
 ** 
@@ -41,8 +41,12 @@
 #define gptl_papilibraryinit GPTL_PAPILIBRARYINIT
 #define gptlevent_name_to_code GPTLEVENT_NAME_TO_CODE
 #define gptlevent_code_to_name GPTLEVENT_CODE_TO_NAME
+#define gptlis_initialized GPTLIS_INITIALIZED
+#define gptlpr_has_been_called GPTLPR_HAS_BEEN_CALLED
 
 #if ( defined ENABLE_PMPI )
+#define mpi_init MPI_INIT
+#define mpi_finalize MPI_FINALIZE
 #define mpi_send MPI_SEND
 #define mpi_recv MPI_RECV
 #define mpi_sendrecv MPI_SENDRECV
@@ -85,8 +89,12 @@
 #define gptl_papilibraryinit gptl_papilibraryinit_
 #define gptlevent_name_to_code gptlevent_name_to_code_
 #define gptlevent_code_to_name gptlevent_code_to_name_
+#define gptlis_initialized gptlis_initialized_
+#define gptlpr_has_been_called gptlpr_has_been_called_
 
 #if ( defined ENABLE_PMPI )
+#define mpi_init mpi_init_
+#define mpi_finalize mpi_finalize_
 #define mpi_send mpi_send_
 #define mpi_recv mpi_recv_
 #define mpi_sendrecv mpi_sendrecv_
@@ -129,8 +137,12 @@
 #define gptl_papilibraryinit gptl_papilibraryinit__
 #define gptlevent_name_to_code gptlevent_name_to_code__
 #define gptlevent_code_to_name gptlevent_code_to_name__
+#define gptlis_initialized gptlis_initialized__
+#define gptlpr_has_been_called gptlpr_has_been_called__
 
 #if ( defined ENABLE_PMPI )
+#define mpi_init mpi_init__
+#define mpi_finalize mpi_finalize__
 #define mpi_send mpi_send__
 #define mpi_recv mpi_recv__
 #define mpi_sendrecv mpi_sendrecv__
@@ -397,12 +409,102 @@ int gptlevent_code_to_name (int *code, char *str, int nc)
 }
 #endif
 
+int gptlis_initialized ()
+{
+  return GPTLis_initialized ();
+}
+
+int gptlpr_has_been_called ()
+{
+  return GPTLpr_has_been_called ();
+}
+
 #ifdef ENABLE_PMPI
 /*
 ** These routines were adapted from the FPMPI distribution.
 ** They ensure profiling of Fortran codes, using the routines defined in
 ** gptl_pmpi.c
 */
+
+#if ( defined FORTRANCAPS )
+
+#define iargc IARGC
+#define getarg GETARG
+
+#elif ( defined FORTRANUNDERSCORE )
+
+#define iargc iargc_
+#define getarg getarg_
+
+#elif ( defined FORTRANDOUBLEUNDERSCORE )
+
+#define iargc iargc__
+#define getarg getarg__
+
+#endif
+
+/*
+** mpi_init requires iargc and getarg
+*/
+
+#ifdef HAVE_IARGCGETARG
+extern int iargc (void);
+extern void getarg (int *, char *, int);
+
+void mpi_init (MPI_Fint *ierr)
+{
+  int Argc;
+  int i, argsize = 1024;
+  char **Argv, *p;
+  int  ArgcSave;           /* Save the argument count */
+  char **ArgvSave;         /* Save the pointer to the argument vector */
+  char **ArgvValSave;      /* Save entries in the argument vector */
+
+/* Recover the args with the Fortran routines iargc and getarg */
+  ArgcSave    = Argc = iargc() + 1; 
+  ArgvSave    = Argv = (char **) malloc (Argc * sizeof(char *));
+  ArgvValSave = (char**) malloc (Argc * sizeof(char *));
+  if ( ! Argv) {
+    fprintf (stderr, "Out of space in MPI_INIT");
+    *ierr = -1;
+    return;
+  }
+
+  for (i = 0; i < Argc; i++) {
+    ArgvValSave[i] = Argv[i] = (char *) malloc (argsize + 1);
+    if ( ! Argv[i]) {
+      fprintf (stderr, "Out of space in MPI_INIT");
+      *ierr = -1;
+      return;
+    }
+    getarg (&i, Argv[i], argsize);
+
+    /* Trim trailing blanks */
+    p = Argv[i] + argsize - 1;
+    while (p > Argv[i]) {
+      if (*p != ' ') {
+	p[1] = '\0';
+	break;
+      }
+      p--;
+    }
+  }
+  
+  *ierr = MPI_Init (&Argc, &Argv);
+    
+  /* Recover space */
+  for (i = 0; i < ArgcSave; i++) {
+    free (ArgvValSave[i]);
+  }
+  free (ArgvValSave);
+  free (ArgvSave);
+}
+
+void mpi_finalize (MPI_Fint *ierr)
+{
+  *ierr = MPI_Finalize();
+}
+#endif
 
 #ifndef MPI_STATUS_SIZE
 #define MPI_STATUS_SIZE 5
@@ -579,4 +681,5 @@ void mpi_reduce (void *sendbuf, void *recvbuf, MPI_Fint *count,
   *__ierr = MPI_Reduce (sendbuf, recvbuf, *count, MPI_Type_f2c(*datatype),
 			MPI_Op_f2c(*op), *root, MPI_Comm_f2c(*comm));
 }
+
 #endif
