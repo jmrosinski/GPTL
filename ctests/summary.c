@@ -27,11 +27,6 @@ int main (int argc, char **argv)
 
   extern char *optarg;
 
-  if (MPI_Init (&argc, &argv) != MPI_SUCCESS) {
-    printf ("Failure from MPI_Init\n");
-    return 1;
-  }
-
   while ((c = getopt (argc, argv, "p:")) != -1) {
     switch (c) {
     case 'p':
@@ -55,8 +50,19 @@ int main (int argc, char **argv)
   (void) GPTLsetoption (GPTLoverhead, 1);
   (void) GPTLsetoption (GPTLnarrowprint, 1);
 
+  if (MPI_Init (&argc, &argv) != MPI_SUCCESS) {
+    printf ("Failure from MPI_Init\n");
+    return 1;
+  }
+
+  /*
+  ** If ENABLE_PMPI is set, GPTL was initialized in MPI_Init
+  */
+
+#ifndef ENABLE_PMPI
   (void) GPTLinitialize ();
   (void) GPTLstart ("total");
+#endif
 	 
   ret = MPI_Comm_rank (MPI_COMM_WORLD, &iam);
   ret = MPI_Comm_size (MPI_COMM_WORLD, &nproc);
@@ -71,8 +77,10 @@ int main (int argc, char **argv)
     ret = sub (iter);
   }
 
+#ifndef ENABLE_PMPI
   (void) GPTLstop ("total");
   (void) GPTLpr (iam);
+#endif
 
   if (iam == 0) {
     printf ("summary: testing GPTLpr_summary...\n");
