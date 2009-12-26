@@ -28,18 +28,20 @@ program pmpi
   integer, allocatable :: atoabufrecv(:)
   integer, allocatable :: gsbuf(:,:)
 
-  call mpi_init (ret)
-  call mpi_comm_rank (comm, iam, ret)
-  call mpi_comm_size (comm, commsize, ret)
-  
   ret = gptlsetoption (gptloverhead, 0)
   ret = gptlsetoption (gptlpercent, 0)
   ret = gptlsetoption (gptlabort_on_error, 1)
   ret = gptlsetoption (gptlsync_mpi, 1)
-       
+
+#if ( ! defined HAVE_IARGCGETARG )
   ret = gptlinitialize ()
   ret = gptlstart ("total")
+#endif
 
+  call mpi_init (ret)
+  call mpi_comm_rank (comm, iam, ret)
+  call mpi_comm_size (comm, commsize, ret)
+  
   do i=0,count-1
     sendbuf(i) = iam
   end do
@@ -139,8 +141,11 @@ program pmpi
 
   call mpi_finalize (ret)
 
+#if ( ! defined HAVE_IARGCGETARG )
   ret = gptlstop ("total")
   ret = gptlpr (iam)
+#endif
+
   stop 0
 end program pmpi
 

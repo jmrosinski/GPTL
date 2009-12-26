@@ -16,6 +16,9 @@ endif
 ifeq ($(ENABLE_PMPI),yes)
   EXES += pmpi
   LIBNAME = gptl_pmpi
+  ifeq ($(HAVE_IARGCGETARG),yes)
+    FFLAGS += -DHAVE_IARGCGETARG
+  endif
 else
   LIBNAME = gptl
 endif
