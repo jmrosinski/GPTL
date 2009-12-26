@@ -18,9 +18,21 @@
 
 <h2>Example 6: Set ENABLE_PMPI to automatically generate MPI statistics</h2>
 This example is a Fortran code which uses the new and experimental
-ENABLE_PMPI option to automatically include MPI routines in the call tree
+<b>ENABLE_PMPI</b> option to automatically include MPI routines in the call tree
 along with number of invocations and average number of bytes transferred per
-call.  
+call. 
+<p>
+In this example we also set HAVE_IARGCGETARG in macros.make. This declares
+that libraries provided by the Fortran compiler or runtime contains entries
+for functions <b>iargc()</b> and <b>getarg()</b>. If these functions are
+available, <b>MPI_Init()</b> and <b>MPI_Finalize()</b> are automatically
+instrumented with calls to <b>GPTLinitialize()</b>, and a wrapping timer for
+the entire program. Likewise, <b>MPI_Finalize()</b> is automatically
+instrumented to print timers when it is called. <b>GPTL</b> can therefore be
+used to gather and print timing statistics with zero modifications to user
+code. Potentially used in conjunction with the auto-instrumentation feature
+of many compilers (e.g. -finstrument-functions in gcc), a large amount of
+hopefully useful data can be gathered.
 <p>
 <b><em>pmpi.F90:</em></b>
 <pre>
@@ -55,18 +67,20 @@ program pmpi
   integer, allocatable :: atoabufrecv(:)
   integer, allocatable :: gsbuf(:,:)
 
+  ret = gptlsetoption (gptloverhead, 0)
+  ret = gptlsetoption (gptlpercent, 0)
+  ret = gptlsetoption (gptlabort_on_error, 1)
+  ret = gptlsetoption (gptlsync_mpi, 1)
+
+#if ( ! defined HAVE_IARGCGETARG )
+  ret = gptlinitialize ()
+  ret = gptlstart ("total")
+#endif
+
   call mpi_init (ret)
   call mpi_comm_rank (comm, iam, ret)
   call mpi_comm_size (comm, commsize, ret)
   
-  ret = gptlsetoption (gptloverhead, 0)
-  ret = gptlsetoption (gptlpercent, 0)
-  ret = gptlsetoption (gptlabort_on_error, 1)
-  ret = gptlsetoption (gptlsync_mpi, 1)        ! Synchronize before certain collectives
-       
-  ret = gptlinitialize ()
-  ret = gptlstart ("total")
-
   do i=0,count-1
     sendbuf(i) = iam
   end do
@@ -166,8 +180,11 @@ program pmpi
 
   call mpi_finalize (ret)
 
+#if ( ! defined HAVE_IARGCGETARG )
   ret = gptlstop ("total")
   ret = gptlpr (iam)
+#endif
+
   stop 0
 end program pmpi
 
@@ -206,36 +223,40 @@ Here's the output contained in file timing.0:
 <pre>
 <div style="background-color:white;">
 Stats for thread 0:
-                    Called  Recurse Wallclock max       min       AVG_MPI_BYTES 
-  total                    1    -       0.002     0.002     0.002       -       
-    MPI_Send               1    -       0.000     0.000     0.000     4.096e+03 
-    sync_Recv              1    -       0.000     0.000     0.000       -       
-    MPI_Recv               1    -       0.000     0.000     0.000     4.096e+03 
-    MPI_Sendrecv           1    -       0.000     0.000     0.000     8.192e+03 
-    MPI_Irecv              2    -       0.000     0.000     0.000     4.096e+03 
-    MPI_Isend              2    -       0.000     0.000     0.000     4.096e+03 
-    MPI_Wait               1    -       0.000     0.000     0.000       -       
-    MPI_Waitall            1    -       0.000     0.000     0.000       -       
-    MPI_Barrier            1    -       0.000     0.000     0.000       -       
-    sync_Bcast             1    -       0.000     0.000     0.000       -       
-    MPI_Bcast              1    -       0.000     0.000     0.000     4.096e+03 
-    sync_Allreduce         1    -       0.000     0.000     0.000       -       
-    MPI_Allreduce          1    -       0.000     0.000     0.000     8.192e+03 
-    sync_Gather            1    -       0.000     0.000     0.000       -       
-    MPI_Gather             1    -       0.000     0.000     0.000     4.096e+03 
-    sync_Scatter           1    -       0.000     0.000     0.000       -       
-    MPI_Scatter            1    -       0.000     0.000     0.000     4.096e+03 
-    sync_Alltoall          1    -       0.000     0.000     0.000       -       
-    MPI_Alltoall           1    -       0.000     0.000     0.000     1.200e+01 
-    sync_Reduce            1    -       0.000     0.000     0.000       -       
-    MPI_Reduce             1    -       0.000     0.000     0.000     4.096e+03 
+                            Called  Recurse Wallclock max       min       AVG_MPI_BYTES 
+  MPI_Init_thru_Finalize           1    -       0.000     0.000     0.000       -       
+    MPI_Send                       1    -       0.000     0.000     0.000     4.096e+03 
+    sync_Recv                      1    -       0.000     0.000     0.000       -       
+    MPI_Recv                       1    -       0.000     0.000     0.000     4.096e+03 
+    MPI_Sendrecv                   1    -       0.000     0.000     0.000     8.192e+03 
+    MPI_Irecv                      2    -       0.000     0.000     0.000     4.096e+03 
+    MPI_Isend                      2    -       0.000     0.000     0.000     4.096e+03 
+    MPI_Wait                       1    -       0.000     0.000     0.000       -       
+    MPI_Waitall                    1    -       0.000     0.000     0.000       -       
+    MPI_Barrier                    1    -       0.000     0.000     0.000       -       
+    sync_Bcast                     1    -       0.000     0.000     0.000       -       
+    MPI_Bcast                      1    -       0.000     0.000     0.000     4.096e+03 
+    sync_Allreduce                 1    -       0.000     0.000     0.000       -       
+    MPI_Allreduce                  1    -       0.000     0.000     0.000     8.192e+03 
+    sync_Gather                    1    -       0.000     0.000     0.000       -       
+    MPI_Gather                     1    -       0.000     0.000     0.000     4.096e+03 
+    sync_Scatter                   1    -       0.000     0.000     0.000       -       
+    MPI_Scatter                    1    -       0.000     0.000     0.000     4.096e+03 
+    sync_Alltoall                  1    -       0.000     0.000     0.000       -       
+    MPI_Alltoall                   1    -       0.000     0.000     0.000     1.200e+01 
+    sync_Reduce                    1    -       0.000     0.000     0.000       -       
+    MPI_Reduce                     1    -       0.000     0.000     0.000     4.096e+03 
 Total calls           = 24
 Total recursive calls = 0
 </div>
 </pre>
 <h3>Explanation of the above output</h3>
+All of this output was generated automatically. Other than some optional
+calls to <b>gptlsetoption()</b>, no user definition of regions was needed.
 Timings for various MPI calls were automatically generated because <b>GPTL</b> was
-built with <b>ENABLE_PMPI</b> (see macros.make.linux). Average number of bytes
+built with <b>ENABLE_PMPI</b> (see macros.make.linux). A wrapping region
+named MPI_Init_thru_Finalize was automatically generated for the region
+between <b>MPI_Init()</b> and <b>MPI_Finalize()</b>. Average number of bytes
 transferred was also reported automatically (see AVG_MPI_BYTES in the above
 output). Also, since <b>gptlsync_mpi</b> was set (see code above), synchronization
 routine <b>MPI_Barrier()</b> was called prior to certain collectives, and
