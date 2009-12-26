@@ -33,7 +33,7 @@ program pmpi
   use myvars
   implicit none
 
-#include <mpif.h>
+#include &#60mpif.h&gt
 #include "../gptl.inc"
 
   integer, parameter :: tag = 98
@@ -175,7 +175,7 @@ subroutine chkbuf (msg, recvbuf, count, source)
   use myvars
   implicit none
 
-#include <mpif.h>
+#include &#60mpif.h&gt
 
   character(len=*), intent(in) :: msg
 
@@ -197,7 +197,7 @@ end subroutine chkbuf
 Now compile and run:
 <pre>
 <div>
-% mpif90 -fopenmp -o pmpi pmpi.F -lgptl
+% mpif90 -fopenmp -o pmpi pmpi.F90 -lgptl
 % mpiexec -n 2 ./pmpi
 </div>
 </pre>
@@ -234,7 +234,7 @@ Total recursive calls = 0
 </div>
 </pre>
 <h3>Explanation of the above output</h3>
-Timings for various MPI calls were automatically generated because GPTL was
+Timings for various MPI calls were automatically generated because <b>GPTL</b> was
 built with <b>ENABLE_PMPI</b> (see macros.make.linux). Average number of bytes
 transferred was also reported automatically (see AVG_MPI_BYTES in the above
 output). Also, since <b>gptlsync_mpi</b> was set (see code above), synchronization
