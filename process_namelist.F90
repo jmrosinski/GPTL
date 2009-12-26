@@ -1,6 +1,6 @@
 subroutine gptlprocess_namelist (filename, unitno, outret)
 !
-! $Id: gptlprocess_namelist.F90,v 1.3 2009-12-25 22:07:36 rosinski Exp $
+! $Id: process_namelist.F90,v 1.1 2009-12-26 20:21:46 rosinski Exp $
 !
 ! Author: Jim Rosinski
 !

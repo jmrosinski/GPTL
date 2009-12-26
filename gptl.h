@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.h.nompi,v 1.4 2009-12-26 19:27:22 rosinski Exp $
+** $Id: gptl.h,v 1.54 2009-12-26 20:21:14 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -91,6 +91,13 @@ extern int GPTLstop (const char *);
 extern int GPTLstamp (double *, double *, double *);
 extern int GPTLpr (const int);
 extern int GPTLpr_file (const char *);
+
+/*
+** Use K&R prototype for these 2 because they require MPI
+*/
+extern int GPTLpr_summary ();
+extern int GPTLbarrier ();
+
 extern int GPTLreset (void);
 extern int GPTLfinalize (void);
 extern int GPTLget_memusage (int *, int *, int *, int *, int *);

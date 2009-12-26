@@ -1,14 +1,14 @@
 include macros.make
 
 null =
-OBJS = gptl.o util.o threadutil.o get_memusage.o print_memusage.o gptl_papi.o
+OBJS = gptl.o util.o threadutil.o get_memusage.o print_memusage.o \
+       gptl_papi.o pmpi.o
 
 ifeq ($(ENABLE_PMPI),yes)
   CFLAGS += -DENABLE_PMPI
   ifeq ($(HAVE_IARGCGETARG),yes)
     CFLAGS += -DHAVE_IARGCGETARG
   endif
-  OBJS += gptl_pmpi.o
   LIBNAME = gptl_pmpi
 else
   LIBNAME = gptl
@@ -35,7 +35,7 @@ endif
 
 FOBJS =
 ifeq ($(FORTRAN),yes)
-  FOBJS      = gptlprocess_namelist.o
+  FOBJS      = process_namelist.o
   OBJS      += f_wrappers.o
   MAKETESTS += ftests/all
   RUNTESTS  += ftests/test
@@ -57,9 +57,6 @@ ifeq ($(HAVE_MPI),yes)
   CFLAGS       += $(MPI_INCFLAGS)
   CFLAGS_TESTS += $(MPI_INCFLAGS)
   LDFLAGS      += $(MPI_LIBFLAGS)
-  HEADER        = gptl.h.havempi
-else
-  HEADER   = gptl.h.nompi
 endif
 
 ifeq ($(HAVE_LIBRT),yes)
@@ -127,14 +124,11 @@ clean:
 	(cd ctests && $(MAKE) clean)
 	(cd ftests && $(MAKE) clean)
 
-gptl.h: $(HEADER)
-	cp -f $(HEADER) gptl.h
-
 f_wrappers.o: f_wrappers.c gptl.h private.h
 gptl.o: gptl.c gptl.h private.h
 util.o: util.c gptl.h private.h
 threadutil.o: threadutil.c gptl.h private.h
 gptl_papi.o: gptl_papi.c gptl.h private.h
-gptlprocess_namelist.o: gptlprocess_namelist.F90 gptl.inc
+process_namelist.o: process_namelist.F90 gptl.inc
 	$(FC) -c $(FFLAGS) $<
-gptl_pmpi.o: gptl_pmpi.c gptl.h private.h
+pmpi.o: pmpi.c gptl.h private.h

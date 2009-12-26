@@ -1,5 +1,5 @@
 /*
-** $Id: gptl_pmpi.c,v 1.6 2009-12-26 19:27:22 rosinski Exp $
+** $Id: pmpi.c,v 1.1 2009-12-26 20:21:46 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -10,6 +10,8 @@
 #include "gptl.h"
 
 #include <mpi.h>
+
+#ifdef ENABLE_PMPI
 
 static bool sync_mpi = false;
 
@@ -381,3 +383,16 @@ int MPI_Finalize (void)
   ret = PMPI_Finalize();
   return ret;
 }
+
+#else
+
+/* ENABLE_PMPI not set */
+
+int GPTLpmpi_setoption (const int option,
+			const int val)
+{
+  return GPTLerror ("GPTLpmpi_setoption: GPTL needs to be built with ENABLE_PMPI=yes "
+		    "to set option %d\n", option);
+}
+
+#endif
