@@ -1,3 +1,6 @@
+gptl3_5_3: Makefile simplification. Can now run "make" from ctests/ and
+	   ftests/. Initial set of PMPI wrappers, and synchronize option.
+gptl3_5_2: Bugfix for when omp_get_max_threads() returns zero.
 gptl3_5_1: No more OMP pragmas: PAPI events started from get_thread_num().
 	   Thus GPTL built with PTHREADS=yes now works when called from
 	   OpenMP applications.
