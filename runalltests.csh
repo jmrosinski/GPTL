@@ -16,7 +16,8 @@ echo "$0 $basescript worked" >! results
 
 # Will need to delete from user settable list all items which truly aren't available
 #foreach usersettable ( PTHREADS )
-foreach usersettable ( DEBUG OPENMP PTHREADS FORTRAN HAVE_PAPI HAVE_MPI TEST_AUTOPROFILE ENABLE_PMPI )
+foreach usersettable ( DEBUG OPENMP PTHREADS FORTRAN HAVE_PAPI HAVE_MPI TEST_AUTOPROFILE \
+                       ENABLE_PMPI HAVE_IARGCGETARG )
 grep "^ *$usersettable *= *yes *" $basescript
 set ret = $status
 
