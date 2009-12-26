@@ -14,8 +14,9 @@ ifeq ($(HAVE_MPI),yes)
 endif
 
 ifeq ($(ENABLE_PMPI),yes)
-  EXES += pmpi
+  FFLAGS += -DENABLE_PMPI
   LIBNAME = gptl_pmpi
+  EXES += pmpi
   ifeq ($(HAVE_IARGCGETARG),yes)
     FFLAGS += -DHAVE_IARGCGETARG
   endif

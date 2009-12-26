@@ -132,7 +132,8 @@ int main (int argc, char **argv)
 
   for (i = 0; i < commsize; ++i)
     if (atoabufrecv[i] != iam) {
-      printf ("iam=%d MPI_Alltoall: bad atoabufrecv[%d]=%d != %d\n", iam, i, atoabufrecv[i], i);
+      printf ("iam=%d MPI_Alltoall: bad atoabufrecv[%d]=%d != %d\n", 
+	      iam, i, atoabufrecv[i], i);
       MPI_Abort (comm, -1);
     }
 
@@ -144,11 +145,11 @@ int main (int argc, char **argv)
     chkbuf ("MPI_Reduce", recvbuf, count, sum);
   }
 
-  ret = MPI_Finalize ();                       // Clean up MPI
+  ret = MPI_Finalize ();          /* Clean up MPI */
 
 #ifndef ENABLE_PMPI
   ret = GPTLstop ("total");
-  ret = GPTLpr (iam);                          // Print the results
+  ret = GPTLpr (iam);             /* Print the results */
 #endif
   return 0;
 }

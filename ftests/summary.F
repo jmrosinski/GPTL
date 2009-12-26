@@ -13,12 +13,6 @@
       integer ierr
       integer ret
 
-      call mpi_init (ierr)
-      comm = MPI_COMM_WORLD
-
-      ret = gptlsetoption (gptlabort_on_error, 1)
-      ret = gptlsetoption (gptloverhead, 1)
-      ret = gptlsetoption (gptlnarrowprint, 1)
 #ifdef HAVE_PAPI
 ! Turn abort_on_error off just long enough to check PAPI-based options
 
@@ -30,8 +24,17 @@
       ret = gptlsetoption (gptlabort_on_error, 1)
 #endif
 
+      ret = gptlsetoption (gptlabort_on_error, 1)
+      ret = gptlsetoption (gptloverhead, 1)
+      ret = gptlsetoption (gptlnarrowprint, 1)
+
+      call mpi_init (ierr)
+      comm = MPI_COMM_WORLD
+
+#ifndef ENABLE_PMPI
       ret = gptlinitialize ()
       ret = gptlstart ("total")
+#endif
 	 
       call mpi_comm_rank (MPI_COMM_WORLD, iam, ierr)
       call mpi_comm_size (MPI_COMM_WORLD, nproc, ierr)
@@ -50,12 +53,15 @@
         result = sub (iter, iam)
       end do
 
+#ifndef ENABLE_PMPI
       ret = gptlstop ("total")
       ret = gptlpr (iam)
+#endif
       ret = gptlpr_summary (comm)
-      if (gptlfinalize () < 0) stop 6
 
       call mpi_finalize ()
+
+      if (gptlfinalize () < 0) stop 6
       stop 0
       end program main
 

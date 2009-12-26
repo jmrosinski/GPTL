@@ -92,10 +92,11 @@ int main (int argc, char **argv)
     return 1;
   }
 
+  MPI_Finalize ();
+
   if (GPTLfinalize () != 0)
     return 1;
 
-  MPI_Finalize ();
   return 0;
 }
 
