@@ -1,4 +1,4 @@
-.\" $Id: GPTLprocess_namelist.3,v 1.5 2009-04-01 15:46:53 rosinski Exp $
+.\" $Id: GPTLprocess_namelist.3,v 1.6 2009-12-26 01:24:28 rosinski Exp $
 .TH gptlprocess_namelist 3 "January, 2009" "GPTL"
 
 .SH NAME
@@ -79,6 +79,7 @@ thing is accomplished with the GPTL API by invoking
 
 &gptlnl
 ! These settings are all the opposite of the default--for testing
+ sync_mpi        = .true.
  wall            = .false.
  cpu             = .true.
  abort_on_error  = .true.

@@ -1,4 +1,4 @@
-.\" $Id: GPTLsetoption.3,v 1.4 2009-01-04 21:14:41 rosinski Exp $
+.\" $Id: GPTLsetoption.3,v 1.5 2009-12-26 01:24:28 rosinski Exp $
 .TH GPTLsetoption 3 "January, 2009" "GPTL"
 
 .SH NAME
@@ -48,6 +48,7 @@ C-syntax. Case-insensitive Fortran names are identical):
 .nf         
 .if t .ft CW
 
+GPTLsync_mpi        // Synchronize before certain MPI calls (PMPI-mode only)
 GPTLwall            // Collect wallclock time stats (true)
 GPTLcpu             // Collect CPU stats (false)
 GPTLabort_on_error  // Abort on failure (false)
@@ -63,7 +64,7 @@ GPTLdopr_threadsort // Print sorted thread stats (true)
 GPTLdopr_multparent // Print multiple parent info (true)
 GPTLdopr_collision  // Print hastable collision info (true)
 GPTLprint_method    // Tree print method: first parent, last parent
-	            // most frequent, or full tree (most frequent)
+                    // most frequent, or full tree (most frequent)
 
 // In addition to the above options, GPTLsetoption accepts any available 
 // PAPI counter, and the following derived events. The event codes can be 
