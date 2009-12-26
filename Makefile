@@ -36,7 +36,7 @@ endif
 FOBJS =
 ifeq ($(FORTRAN),yes)
   FOBJS      = process_namelist.o
-  OBJS      += f_wrappers.o
+  OBJS      += f_wrappers.o f_wrappers_pmpi.o
   MAKETESTS += ftests/all
   RUNTESTS  += ftests/test
 endif
@@ -103,7 +103,7 @@ ctests/test:
 ftests/test:
 	(cd ftests && $(MAKE) test)
 
-lib$(LIBNAME).a: $(OBJS) $(FOBJS) gptl.h
+lib$(LIBNAME).a: $(OBJS) $(FOBJS)
 	$(AR) ruv $@ $(OBJS) $(FOBJS)
 	$(RM) -f ctests/*.o ftests/*.o
 
@@ -120,15 +120,16 @@ uninstall:
 	$(RM) -f $(MANDIR)/man/man3/GPTL*.3
 
 clean:
-	$(RM) -f $(OBJS) $(FOBJS) lib$(LIBNAME).a gptl.h
+	$(RM) -f $(OBJS) $(FOBJS) lib$(LIBNAME).a
 	(cd ctests && $(MAKE) clean)
 	(cd ftests && $(MAKE) clean)
 
-f_wrappers.o: f_wrappers.c gptl.h private.h
-gptl.o: gptl.c gptl.h private.h
-util.o: util.c gptl.h private.h
-threadutil.o: threadutil.c gptl.h private.h
-gptl_papi.o: gptl_papi.c gptl.h private.h
+f_wrappers.o: gptl.h private.h
+f_wrappers_pmpi.o: gptl.h private.h
+gptl.o: gptl.h private.h
+util.o: gptl.h private.h
+threadutil.o: gptl.h private.h
+gptl_papi.o: gptl.h private.h
 process_namelist.o: process_namelist.F90 gptl.inc
 	$(FC) -c $(FFLAGS) $<
-pmpi.o: pmpi.c gptl.h private.h
+pmpi.o: gptl.h private.h
