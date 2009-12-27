@@ -137,7 +137,12 @@ ifeq ($(TEST_AUTOPROFILE),yes)
 endif
 
 # Whether to enable PMPI wrappers. Turning this on will result in automatic 
-# entries for a number of MPI calls
+# start/stop entries for a number of MPI calls.
 ifeq ($(HAVE_MPI),yes)
-  ENABLE_PMPI = yes
+  ENABLE_PMPI = no
+# If Fortran is enabled, the ability to automatically initialize GPTL from
+# mpi_init can be enabled if iargc() and getarg() are available.
+  ifeq ($(FORTRAN),yes)
+    HAVE_IARGCGETARG = no
+  endif
 endif

@@ -9,8 +9,12 @@ ifeq ($(HAVE_PAPI),yes)
 endif
 EXES = $(TESTS) errtest utrtest 
 
+LDFLAGS = -L.. -l$(LIBNAME) $(ABIFLAGS)
+
 ifeq ($(HAVE_MPI),yes)
   EXES += summary
+  FFLAGS  += -DHAVE_MPI $(MPI_INCFLAGS)
+  LDFLAGS += $(MPI_LIBFLAGS)
 endif
 
 ifeq ($(ENABLE_PMPI),yes)
@@ -23,8 +27,6 @@ ifeq ($(ENABLE_PMPI),yes)
 else
   LIBNAME = gptl
 endif
-
-LDFLAGS = -L.. -l$(LIBNAME) $(ABIFLAGS)
 
 ifeq ($(OPENMP),yes)
   FFLAGS  += -DTHREADED_OMP $(FOMPFLAG)
