@@ -49,8 +49,8 @@
 
 #elif ( defined FORTRANDOUBLEUNDERSCORE )
 
-#define iargc iargc__
-#define getarg getarg__
+#define iargc iargc_
+#define getarg getarg_
 #define mpi_init mpi_init__
 #define mpi_finalize mpi_finalize__
 #define mpi_send mpi_send__
