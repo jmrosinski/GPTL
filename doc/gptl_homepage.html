@@ -24,12 +24,13 @@ add <b><em>-finstrument-functions</em></b> (Pathscale, GNU, Intel)
 or <b><em>-Minstrument:functions</em></b> (PGI) to the compile and link flags
 of the source files to be profiled.
 <p>
-Automatic instrumentation of certain MPI routines is also possible. In this
-case no special compiler flags are necessary. See 
+Automatic instrumentation of a number of MPI routines is also possible. In this
+case no special compiler flags are necessary, and users can obtain profiles
+with zero changes to their source files. See 
 <A HREF="example6.html">Example 6</A> for further details.  
 <p>
 Here is a portion of <b>GPTL</b> printout after running the HPCC benchmark
-with automatic instrumentation enabled: 
+with compiler-based automatic instrumentation enabled: 
 <pre>
 <div style="background-color:white;">
 Stats for thread 0:
