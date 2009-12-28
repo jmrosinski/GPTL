@@ -32,10 +32,18 @@ endif
 echo "$0 Testing $usersettable = $newtest ..."
 echo "$0 Testing $usersettable = $newtest ..." >> results
 
-# For PTHREADS case, ensure OPENMP is off
+# For PTHREADS case, ensure OPENMP is no
 if ( $usersettable == PTHREADS ) then
   sed -e "s/^ *OPENMP *= *yes */OPENMP = no/g" \
       -e "s/^ *$usersettable *= *$oldtest */$usersettable = $newtest/g" $basescript >! macros.make
+# For HAVE_IARGCGETARG case, ensure ENABLE_PMPI is true
+else if ( $usersettable == HAVE_IARGCGETARG ) then
+  sed -e "s/^ *ENABLE_PMPI *= *no */ENABLE_PMPI = yes/g" \
+      -e "s/^ *$usersettable *= *$oldtest */$usersettable = $newtest/g" $basescript >! macros.make
+else
+  sed -e "s/^ *$usersettable *= *$oldtest */$usersettable = $newtest/g" $basescript >! macros.make
+endif
+
 else
   sed -e "s/^ *$usersettable *= *$oldtest */$usersettable = $newtest/g" $basescript >! macros.make
 endif
