@@ -1,5 +1,5 @@
 /*
-** $Id: private.h,v 1.70 2009-12-25 22:07:36 rosinski Exp $
+** $Id: private.h,v 1.71 2009-12-28 21:46:17 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -111,6 +111,20 @@ extern int threadinit (int *, int *);          /* initialize threading environme
 extern void threadfinalize (void);             /* finalize threading environment */
 extern void print_threadmapping (int, FILE *); /* print mapping of thread ids */
 extern int get_thread_num (int *, int *);      /* get 0-based thread number */
+
+extern int GPTLstart_instr (void *);
+extern int GPTLstop_instr (void *);
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+extern void __cyg_profile_func_enter (void *, void *);
+extern void __cyg_profile_func_exit (void *, void *);
+
+#ifdef __cplusplus
+};
+#endif
 
 /* 
 ** These are needed for communication between gptl.c and gptl_papi.c

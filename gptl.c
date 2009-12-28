@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.c,v 1.149 2009-12-26 19:27:22 rosinski Exp $
+** $Id: gptl.c,v 1.150 2009-12-28 21:46:17 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -148,7 +148,7 @@ static inline Timer *getentry_instr (const Hashentry *, void *, int *);
 static inline Timer *getentry (const Hashentry *, const char *, int *);
 static void printself_andchildren (const Timer *, FILE *, const int, const int, const double);
 static inline int update_parent_info (Timer *, Timer **, int);
-static inline int update_stats (Timer *, const double, const double, const double, const int);
+static inline int update_stats (Timer *, const double, const long, const long, const int);
 static inline int update_ll_hash (Timer *, const int, const int);
 static inline int update_ptr (Timer *, const int);
 static int construct_tree (Timer *, Method);
@@ -968,8 +968,8 @@ int GPTLstop (const char *name)               /* timer name */
 
 static inline int update_stats (Timer *ptr, 
 				const double tp1, 
-				const double usr, 
-				const double sys,
+				const long usr, 
+				const long sys,
 				const int t)
 {
   double delta;       /* difference */
@@ -1204,7 +1204,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.149 2009-12-26 19:27:22 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.150 2009-12-28 21:46:17 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1743,8 +1743,8 @@ static void printstats (const Timer *timer,
   int i;               /* index */
   int indent;          /* index for indenting */
   int extraspace;      /* for padding to length of longest name */
-  float usr;           /* user time */
-  float sys;           /* system time */
+  float fusr;          /* user time as float */
+  float fsys;          /* system time as float */
   float usrsys;        /* usr + sys */
   float elapse;        /* elapsed time */
   float wallmax;       /* max wall time */
@@ -1784,9 +1784,9 @@ static void printstats (const Timer *timer,
 
   if (timer->count < PRTHRESH) {
     if (timer->nrecurse > 0)
-      fprintf (fp, "%8ld %6ld ", timer->count, timer->nrecurse);
+      fprintf (fp, "%8lu %6lu ", timer->count, timer->nrecurse);
     else
-      fprintf (fp, "%8ld    -   ", timer->count);
+      fprintf (fp, "%8lu    -   ", timer->count);
   } else {
     if (timer->nrecurse > 0)
       fprintf (fp, "%8.1e %6.0e ", (float) timer->count, (float) timer->nrecurse);
@@ -1795,10 +1795,10 @@ static void printstats (const Timer *timer,
   }
 
   if (cpustats.enabled) {
-    usr = timer->cpu.accum_utime / (float) ticks_per_sec;
-    sys = timer->cpu.accum_stime / (float) ticks_per_sec;
-    usrsys = usr + sys;
-    fprintf (fp, "%9.3f %9.3f %9.3f ", usr, sys, usrsys);
+    fusr = timer->cpu.accum_utime / (float) ticks_per_sec;
+    fsys = timer->cpu.accum_stime / (float) ticks_per_sec;
+    usrsys = fusr + fsys;
+    fprintf (fp, "%9.3f %9.3f %9.3f ", fusr, fsys, usrsys);
   }
 
   if (wallstats.enabled) {
@@ -1850,7 +1850,7 @@ void print_multparentinfo (FILE *fp,
 
   if (ptr->norphan > 0) {
     if (ptr->norphan < PRTHRESH)
-      fprintf (fp, "%8d %-32s\n", ptr->norphan, "ORPHAN");
+      fprintf (fp, "%8u %-32s\n", ptr->norphan, "ORPHAN");
     else
       fprintf (fp, "%8.1e %-32s\n", (float) ptr->norphan, "ORPHAN");
   }
@@ -1863,7 +1863,7 @@ void print_multparentinfo (FILE *fp,
   }
 
   if (ptr->count < PRTHRESH)
-    fprintf (fp, "%8ld   %-32s\n\n", ptr->count, ptr->name);
+    fprintf (fp, "%8lu   %-32s\n\n", ptr->count, ptr->name);
   else
     fprintf (fp, "%8.1e   %-32s\n\n", (float) ptr->count, ptr->name);
 }
@@ -1942,7 +1942,7 @@ int GPTLpr_summary (MPI_Comm comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.149 2009-12-26 19:27:22 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.150 2009-12-28 21:46:17 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 
     /* Print heading */
@@ -1988,7 +1988,7 @@ int GPTLpr_summary (MPI_Comm comm)
       extraspace = max_name_len[0] - strlen (ptr->name);
       for (n = 0; n < extraspace; ++n)
 	fprintf (fp, " ");
-      fprintf (fp, " %8ld %9.3f (%6d %6d) %9.3f (%6d %6d)", 
+      fprintf (fp, " %8lu %9.3f (%6d %6d) %9.3f (%6d %6d)", 
 	       summarystats.count, 
 	       summarystats.wallmax, summarystats.wallmax_p, summarystats.wallmax_t, 
 	       summarystats.wallmin, summarystats.wallmin_p, summarystats.wallmin_t);
@@ -2207,8 +2207,8 @@ int GPTLquery (const char *name,
 	       int *count,
 	       int *onflg,
 	       double *wallclock,
-	       double *usr,
-	       double *sys,
+	       double *dusr,
+	       double *dsys,
 	       long long *papicounters_out,
 	       const int maxcounters)
 {
@@ -2237,8 +2237,8 @@ int GPTLquery (const char *name,
   *onflg     = ptr->onflg;
   *count     = ptr->count;
   *wallclock = ptr->wall.accum;
-  *usr       = ptr->cpu.accum_utime;
-  *sys       = ptr->cpu.accum_stime;
+  *dusr      = ptr->cpu.accum_utime / (double) ticks_per_sec;
+  *dsys      = ptr->cpu.accum_stime / (double) ticks_per_sec;
 #ifdef HAVE_PAPI
   GPTL_PAPIquery (&ptr->aux, papicounters_out, maxcounters);
 #endif
