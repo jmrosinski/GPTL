@@ -1,5 +1,5 @@
 /*
-** $Id: pmpi.c,v 1.2 2009-12-28 02:06:00 rosinski Exp $
+** $Id: pmpi.c,v 1.3 2009-12-29 03:06:33 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -381,6 +381,37 @@ int MPI_Finalize (void)
   }
 
   ret = PMPI_Finalize();
+  return ret;
+}
+
+int MPI_Allgather (void *sendbuf, int sendcount, MPI_Datatype sendtype, 
+		   void *recvbuf, int recvcount, MPI_Datatype recvtype, 
+		   MPI_Comm comm)
+{
+  int ret;
+  int sendsize, recvsize;
+  int commsize;
+  int ignoreret;
+  Timer *timer;
+
+  if (sync_mpi) {
+    ignoreret = GPTLstart ("sync_Allgather");
+    ignoreret = PMPI_Barrier (comm);
+    ignoreret = GPTLstop ("sync_Allgather");
+  }
+    
+  ignoreret = GPTLstart ("MPI_Allgather");
+  ret = PMPI_Allgather (sendbuf, sendcount, sendtype, 
+			recvbuf, recvcount, recvtype, comm);
+  ignoreret = GPTLstop ("MPI_Allgather");
+
+  if ((timer = GPTLgetentry ("MPI_Allgather"))) {
+    ignoreret = PMPI_Comm_size (comm, &commsize);
+    ignoreret = PMPI_Type_size (sendtype, &sendsize);
+    ignoreret = PMPI_Type_size (recvtype, &recvsize);
+    timer->nbytes += (double) sendcount * sendsize + 
+                     (double) recvcount * recvsize * commsize;
+  }
   return ret;
 }
 

@@ -25,6 +25,7 @@
 #define mpi_scatter MPI_SCATTER
 #define mpi_alltoall MPI_ALLTOALL
 #define mpi_reduce MPI_REDUCE
+#define mpi_allgather MPI_ALLGATHER
 
 #elif ( defined FORTRANUNDERSCORE )
 
@@ -46,6 +47,7 @@
 #define mpi_scatter mpi_scatter_
 #define mpi_alltoall mpi_alltoall_
 #define mpi_reduce mpi_reduce_
+#define mpi_allgather mpi_allgather_
 
 #elif ( defined FORTRANDOUBLEUNDERSCORE )
 
@@ -67,6 +69,7 @@
 #define mpi_scatter mpi_scatter__
 #define mpi_alltoall mpi_alltoall__
 #define mpi_reduce mpi_reduce__
+#define mpi_allgather mpi_allgather__
 
 #endif
 
@@ -281,30 +284,30 @@ void mpi_allreduce (void *sendbuf, void *recvbuf, MPI_Fint *count,
 			   MPI_Op_f2c (*op), MPI_Comm_f2c (*comm));
 }
 
-void mpi_gather (void *sendbuf, MPI_Fint *sendcnt, MPI_Fint *sendtype,
+void mpi_gather (void *sendbuf, MPI_Fint *sendcount, MPI_Fint *sendtype,
 		 void *recvbuf, MPI_Fint *recvcount, MPI_Fint *recvtype, 
 		 MPI_Fint *root, MPI_Fint *comm, MPI_Fint *__ierr)
 {
-  *__ierr = MPI_Gather (sendbuf, *sendcnt, MPI_Type_f2c (*sendtype),
+  *__ierr = MPI_Gather (sendbuf, *sendcount, MPI_Type_f2c (*sendtype),
 			recvbuf, *recvcount, MPI_Type_f2c (*recvtype), *root,
 			MPI_Comm_f2c (*comm));
 }
 
-void mpi_scatter (void *sendbuf, MPI_Fint *sendcnt, MPI_Fint *sendtype, 
-		  void *recvbuf, MPI_Fint *recvcnt, MPI_Fint *recvtype, 
+void mpi_scatter (void *sendbuf, MPI_Fint *sendcount, MPI_Fint *sendtype, 
+		  void *recvbuf, MPI_Fint *recvcount, MPI_Fint *recvtype, 
 		  MPI_Fint *root, MPI_Fint *comm, MPI_Fint *__ierr)
 {
-  *__ierr = MPI_Scatter (sendbuf, *sendcnt, MPI_Type_f2c (*sendtype), 
-			 recvbuf, *recvcnt, MPI_Type_f2c (*recvtype),
+  *__ierr = MPI_Scatter (sendbuf, *sendcount, MPI_Type_f2c (*sendtype), 
+			 recvbuf, *recvcount, MPI_Type_f2c (*recvtype),
 			 *root, MPI_Comm_f2c (*comm));
 }
 
 void mpi_alltoall (void *sendbuf, MPI_Fint *sendcount, MPI_Fint *sendtype,
-		   void *recvbuf, MPI_Fint *recvcnt, MPI_Fint *recvtype, 
+		   void *recvbuf, MPI_Fint *recvcount, MPI_Fint *recvtype, 
 		   MPI_Fint *comm, MPI_Fint *__ierr)
 {
   *__ierr = MPI_Alltoall (sendbuf, *sendcount, MPI_Type_f2c(*sendtype),
-			  recvbuf, *recvcnt, MPI_Type_f2c(*recvtype), 
+			  recvbuf, *recvcount, MPI_Type_f2c(*recvtype), 
 			  MPI_Comm_f2c (*comm));
 }
 
@@ -314,6 +317,15 @@ void mpi_reduce (void *sendbuf, void *recvbuf, MPI_Fint *count,
 {
   *__ierr = MPI_Reduce (sendbuf, recvbuf, *count, MPI_Type_f2c(*datatype),
 			MPI_Op_f2c(*op), *root, MPI_Comm_f2c(*comm));
+}
+
+void mpi_allgather (void *sendbuf, MPI_Fint *sendcount, MPI_Fint *sendtype,
+		    void *recvbuf, MPI_Fint *recvcount, MPI_Fint *recvtype, 
+		    MPI_Fint *comm, MPI_Fint *__ierr)
+{
+  *__ierr = MPI_Allgather (sendbuf, *sendcount, MPI_Type_f2c (*sendtype),
+			   recvbuf, *recvcount, MPI_Type_f2c (*recvtype), 
+			   MPI_Comm_f2c (*comm));
 }
 
 #endif

@@ -139,6 +139,19 @@ program pmpi
     call chkbuf ("mpi_reduce", recvbuf(:), count, sum)
   end if
 
+  gsbuf(:,:) = 0
+  call mpi_allgather (sendbuf, count, MPI_INTEGER, &
+                      gsbuf, count, MPI_INTEGER, comm)
+  do j=0,commsize-1
+    do i=0,count-1
+      if (gsbuf(i,j) /= j) then
+        write(6,*) "iam=", iam, "MPI_Allgather: bad gsbuf(",i,",",j,")=", &
+                    gsbuf(i,j)
+        call mpi_abort (MPI_COMM_WORLD, -1, ret)
+      end if
+    end do
+  end do
+
   call mpi_finalize (ret)
 
 #if ( ! defined HAVE_IARGCGETARG )
