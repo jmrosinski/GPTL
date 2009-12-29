@@ -1,4 +1,4 @@
-.\" $Id: GPTLstart.3,v 1.3 2008-08-18 22:47:25 rosinski Exp $
+.\" $Id: GPTLstart.3,v 1.4 2009-12-29 02:03:53 rosinski Exp $
 .TH GPTLstart 3 "February, 2007" "GPTL"
 
 .SH NAME
@@ -31,8 +31,7 @@ stops a timer defined by
 .I name
 -- name of timer to start/stop. Only the first 63 characters are
 significant. This limit can be modified in the GPTL library code by changing
-the value of MAX_CHARS in private.h. Though this action will affect the size
-of the internal hash table.
+the value of MAX_CHARS in private.h.
 
 .SH RESTRICTIONS
 .B GPTLinitialize()

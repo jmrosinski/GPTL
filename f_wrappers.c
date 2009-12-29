@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.48 2009-12-26 20:35:05 rosinski Exp $
+** $Id: f_wrappers.c,v 1.49 2009-12-29 02:03:53 rosinski Exp $
 **
 ** Author: Jim Rosinski
 ** 
@@ -41,8 +41,6 @@
 #define gptl_papilibraryinit GPTL_PAPILIBRARYINIT
 #define gptlevent_name_to_code GPTLEVENT_NAME_TO_CODE
 #define gptlevent_code_to_name GPTLEVENT_CODE_TO_NAME
-#define gptlis_initialized GPTLIS_INITIALIZED
-#define gptlpr_has_been_called GPTLPR_HAS_BEEN_CALLED
 
 #elif ( defined FORTRANUNDERSCORE )
 
@@ -70,8 +68,6 @@
 #define gptl_papilibraryinit gptl_papilibraryinit_
 #define gptlevent_name_to_code gptlevent_name_to_code_
 #define gptlevent_code_to_name gptlevent_code_to_name_
-#define gptlis_initialized gptlis_initialized_
-#define gptlpr_has_been_called gptlpr_has_been_called_
 
 #elif ( defined FORTRANDOUBLEUNDERSCORE )
 
@@ -99,8 +95,6 @@
 #define gptl_papilibraryinit gptl_papilibraryinit__
 #define gptlevent_name_to_code gptlevent_name_to_code__
 #define gptlevent_code_to_name gptlevent_code_to_name__
-#define gptlis_initialized gptlis_initialized__
-#define gptlpr_has_been_called gptlpr_has_been_called__
 
 #endif
 
@@ -351,14 +345,4 @@ int gptlevent_code_to_name (int *code, char *str, int nc)
   return 0;
 }
 #endif
-
-int gptlis_initialized ()
-{
-  return GPTLis_initialized ();
-}
-
-int gptlpr_has_been_called ()
-{
-  return GPTLpr_has_been_called ();
-}
 

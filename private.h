@@ -1,5 +1,5 @@
 /*
-** $Id: private.h,v 1.71 2009-12-28 21:46:17 rosinski Exp $
+** $Id: private.h,v 1.72 2009-12-29 02:03:53 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -151,4 +151,6 @@ extern int GPTLcreate_and_start_events (const int);
 #ifdef ENABLE_PMPI
 extern Timer *GPTLgetentry (char *);
 extern int GPTLpmpi_setoption (const int, const int);
+extern int GPTLis_initialized (void);
+extern int GPTLpr_has_been_called (void);
 #endif

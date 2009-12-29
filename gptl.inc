@@ -1,5 +1,5 @@
 !
-! $Id: gptl.inc,v 1.40 2009-12-26 19:27:22 rosinski Exp $
+! $Id: gptl.inc,v 1.41 2009-12-29 02:03:53 rosinski Exp $
 !
 ! Author: Jim Rosinski
 !
@@ -114,8 +114,6 @@
       integer gptl_papilibraryinit
       integer gptlevent_name_to_code
       integer gptlevent_code_to_name
-      integer gptlis_initialized
-      integer gptlpr_has_been_called
 
       external gptlsetoption
       external gptlinitialize
@@ -142,5 +140,3 @@
       external gptl_papilibraryinit
       external gptlevent_name_to_code
       external gptlevent_code_to_name
-      external gptlis_initialized
-      external gptlpr_has_been_called

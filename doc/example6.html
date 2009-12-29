@@ -18,9 +18,15 @@
 
 <h2>Example 6: Set ENABLE_PMPI to automatically generate MPI statistics</h2>
 This example is a Fortran code which uses the new and experimental
-<b>ENABLE_PMPI</b> option to automatically include MPI routines in the call tree
+<b>ENABLE_PMPI</b> option to automatically include various MPI routines in
+the call tree 
 along with number of invocations and average number of bytes transferred per
-call. 
+call. The set of MPI routines which can be automatically instrumented in this
+way is currently limited to just an important subset of critical routines
+(MPI_Send, MPI_Recv, MPI_Isend, MPI_Irecv, etc.). If any users would like to
+add some routines, please see files pmpi.c and f_wrappers.c. I'd be glad to
+add any of interest if you can provide them. It's just a methodical and
+repetitive process of typing in the appropriate wrapping code.
 <p>
 In this example we also set HAVE_IARGCGETARG in macros.make. This declares
 that libraries provided by the Fortran compiler or runtime contains entries

@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.h,v 1.54 2009-12-26 20:21:14 rosinski Exp $
+** $Id: gptl.h,v 1.55 2009-12-29 02:03:53 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -115,8 +115,6 @@ extern int GPTLget_regionname (int, int, char *, int);
 extern int GPTL_PAPIlibraryinit ();
 extern int GPTLevent_name_to_code (const char *, int *);
 extern int GPTLevent_code_to_name (const int, char *);
-extern int GPTLis_initialized (void);
-extern int GPTLpr_has_been_called (void);
 
 #ifdef __cplusplus
 };
