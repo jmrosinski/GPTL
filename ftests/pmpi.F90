@@ -23,10 +23,12 @@ program pmpi
   integer :: request
   integer :: dest
   integer :: source
+  integer :: displs(0:count-1)
 
   integer, allocatable :: atoabufsend(:)
   integer, allocatable :: atoabufrecv(:)
   integer, allocatable :: gsbuf(:,:)
+  integer, allocatable :: recvcounts(:)
 
   ret = gptlsetoption (gptloverhead, 0)
   ret = gptlsetoption (gptlpercent, 0)
@@ -99,8 +101,33 @@ program pmpi
   call chkbuf ("mpi_allreduce", recvbuf(:), count, sum)
 
   allocate (gsbuf(0:count-1,0:commsize-1))
+  allocate (recvcounts(0:commsize-1))
       
-  call mpi_gather (sendbuf, count, MPI_INTEGER, gsbuf, count, MPI_INTEGER, 0, comm, ret)
+  call mpi_gather (sendbuf, count, MPI_INTEGER, &
+                   gsbuf, count, MPI_INTEGER, 0, comm, ret)
+  if (iam == 0) then
+    do j=0,commsize-1
+      do i=0,count-1
+        if (gsbuf(i,j) /= j) then
+          write(6,*) "iam=", iam, "MPI_Gather: bad gsbuf(", i,",",j,")=", &
+                     gsbuf(i,j), " not= ",j
+          call mpi_abort (MPI_COMM_WORLD, -1, ret)
+        end if
+      end do
+    end do
+  end if
+!
+! mpi_gatherv: make just like mpi_gather for simplicity
+!
+  gsbuf(:,:) = 0
+  recvcounts(:) = count
+  displs(0) = 0
+  do i=1,commsize-1
+    displs(i) = displs(i-1) + recvcounts(i-1)
+  end do
+  call mpi_gatherv (sendbuf, count, MPI_INTEGER, &
+                    gsbuf, recvcounts, displs, &
+                    MPI_INTEGER, 0, comm, ret)
   if (iam == 0) then
     do j=0,commsize-1
       do i=0,count-1
@@ -146,6 +173,24 @@ program pmpi
     do i=0,count-1
       if (gsbuf(i,j) /= j) then
         write(6,*) "iam=", iam, "MPI_Allgather: bad gsbuf(",i,",",j,")=", &
+                    gsbuf(i,j)
+        call mpi_abort (MPI_COMM_WORLD, -1, ret)
+      end if
+    end do
+  end do
+!
+! mpi_allgatherv: Make just like mpi_allgather for simplicity
+!
+  gsbuf(:,:) = 0
+  recvcounts(:) = count
+  displs(0) = 0
+  call mpi_allgatherv (sendbuf, count, MPI_INTEGER, &
+                       gsbuf, recvcounts, displs, &
+                       MPI_INTEGER, comm, ret)
+  do j=0,commsize-1
+    do i=0,count-1
+      if (gsbuf(i,j) /= j) then
+        write(6,*) "iam=", iam, "MPI_Allgatherv: bad gsbuf(",i,",",j,")=", &
                     gsbuf(i,j)
         call mpi_abort (MPI_COMM_WORLD, -1, ret)
       end if

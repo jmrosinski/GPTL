@@ -22,10 +22,12 @@
 #define mpi_bcast MPI_BCAST
 #define mpi_allreduce MPI_ALLREDUCE
 #define mpi_gather MPI_GATHER
+#define mpi_gatherv MPI_GATHERV
 #define mpi_scatter MPI_SCATTER
 #define mpi_alltoall MPI_ALLTOALL
 #define mpi_reduce MPI_REDUCE
 #define mpi_allgather MPI_ALLGATHER
+#define mpi_allgatherv MPI_ALLGATHERV
 
 #elif ( defined FORTRANUNDERSCORE )
 
@@ -44,10 +46,12 @@
 #define mpi_bcast mpi_bcast_
 #define mpi_allreduce mpi_allreduce_
 #define mpi_gather mpi_gather_
+#define mpi_gatherv mpi_gatherv_
 #define mpi_scatter mpi_scatter_
 #define mpi_alltoall mpi_alltoall_
 #define mpi_reduce mpi_reduce_
 #define mpi_allgather mpi_allgather_
+#define mpi_allgatherv mpi_allgatherv_
 
 #elif ( defined FORTRANDOUBLEUNDERSCORE )
 
@@ -66,10 +70,12 @@
 #define mpi_bcast mpi_bcast__
 #define mpi_allreduce mpi_allreduce__
 #define mpi_gather mpi_gather__
+#define mpi_gatherv mpi_gatherv__
 #define mpi_scatter mpi_scatter__
 #define mpi_alltoall mpi_alltoall__
 #define mpi_reduce mpi_reduce__
 #define mpi_allgather mpi_allgather__
+#define mpi_allgatherv mpi_allgatherv__
 
 #endif
 
@@ -293,6 +299,15 @@ void mpi_gather (void *sendbuf, MPI_Fint *sendcount, MPI_Fint *sendtype,
 			MPI_Comm_f2c (*comm));
 }
 
+void mpi_gatherv (void *sendbuf, MPI_Fint *sendcount, MPI_Fint *sendtype,
+		  void *recvbuf, MPI_Fint *recvcounts, MPI_Fint *displs,
+		  MPI_Fint *recvtype, MPI_Fint *root, MPI_Fint *comm, MPI_Fint *__ierr)
+{
+  *__ierr = MPI_Gatherv (sendbuf, *sendcount, MPI_Type_f2c (*sendtype),
+			 recvbuf, recvcounts, displs, 
+			 MPI_Type_f2c (*recvtype), *root,MPI_Comm_f2c (*comm));
+}
+
 void mpi_scatter (void *sendbuf, MPI_Fint *sendcount, MPI_Fint *sendtype, 
 		  void *recvbuf, MPI_Fint *recvcount, MPI_Fint *recvtype, 
 		  MPI_Fint *root, MPI_Fint *comm, MPI_Fint *__ierr)
@@ -326,6 +341,15 @@ void mpi_allgather (void *sendbuf, MPI_Fint *sendcount, MPI_Fint *sendtype,
   *__ierr = MPI_Allgather (sendbuf, *sendcount, MPI_Type_f2c (*sendtype),
 			   recvbuf, *recvcount, MPI_Type_f2c (*recvtype), 
 			   MPI_Comm_f2c (*comm));
+}
+
+int mpi_allgatherv (void *sendbuf, MPI_Fint *sendcount, MPI_Fint *sendtype, 
+		    void *recvbuf, MPI_Fint *recvcounts, MPI_Fint *displs, 
+                    MPI_Fint *recvtype, MPI_Fint *comm, MPI_Fint *__ierr)
+{
+  *__ierr = MPI_Allgatherv (sendbuf, *sendcount, MPI_Type_f2c (*sendtype),
+			    recvbuf, recvcounts, displs, 
+			    MPI_Type_f2c (*recvtype), MPI_Comm_f2c (*comm));
 }
 
 #endif

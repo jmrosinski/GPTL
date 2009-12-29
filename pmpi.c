@@ -1,5 +1,5 @@
 /*
-** $Id: pmpi.c,v 1.3 2009-12-29 03:06:33 rosinski Exp $
+** $Id: pmpi.c,v 1.4 2009-12-29 14:35:31 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -258,14 +258,47 @@ int MPI_Gather (void *sendbuf, int sendcount, MPI_Datatype sendtype,
     ignoreret = PMPI_Comm_size (comm, &commsize);
     ignoreret = PMPI_Type_size (sendtype, &sendsize);
     ignoreret = PMPI_Type_size (recvtype, &recvsize);
-
+    timer->nbytes += (double) sendcount * sendsize;
     if (iam == root) {
+      timer->nbytes += (double) recvcount * recvsize * commsize;
+    }
+  }
+  return ret;
+}
 
-      /* Use size-1 to exclude root sending to himself */
+int MPI_Gatherv (void *sendbuf, int sendcount, MPI_Datatype sendtype, 
+		 void *recvbuf, int *recvcounts, int *displs, 
+                 MPI_Datatype recvtype, int root, MPI_Comm comm )
+{
+  int ret;
+  int iam;
+  int i;
+  int sendsize, recvsize;
+  int commsize;
+  int ignoreret;
+  Timer *timer;
 
-      timer->nbytes += (double) recvcount * recvsize * (commsize - 1);
-    } else {
-      timer->nbytes += (double) sendcount * sendsize;
+  if (sync_mpi) {
+    ignoreret = GPTLstart ("sync_Gatherv");
+    ignoreret = PMPI_Barrier (comm);
+    ignoreret = GPTLstop ("sync_Gatherv");
+  }
+    
+  ignoreret = GPTLstart ("MPI_Gatherv");
+  ret = PMPI_Gatherv (sendbuf, sendcount, sendtype, 
+		      recvbuf, recvcounts, displs, 
+		      recvtype, root, comm);
+  ignoreret = GPTLstop ("MPI_Gatherv");
+
+  if ((timer = GPTLgetentry ("MPI_Gatherv"))) {
+    ignoreret = PMPI_Comm_rank (comm, &iam);
+    ignoreret = PMPI_Comm_size (comm, &commsize);
+    ignoreret = PMPI_Type_size (sendtype, &sendsize);
+    ignoreret = PMPI_Type_size (recvtype, &recvsize);
+    timer->nbytes += (double) sendcount * sendsize;
+    if (iam == root) {
+      for (i = 0; i < commsize; ++i)
+	timer->nbytes += (double) recvcounts[i] * recvsize * commsize;
     }
   }
   return ret;
@@ -293,15 +326,11 @@ int MPI_Scatter (void *sendbuf, int sendcount, MPI_Datatype sendtype,
   ignoreret = GPTLstop ("MPI_Scatter");
   if ((timer = GPTLgetentry ("MPI_Scatter"))) {
     ignoreret = PMPI_Comm_rank (comm, &iam);
+    ignoreret = PMPI_Type_size (recvtype, &recvsize);
+    timer->nbytes += (double) recvcount * recvsize;
     if (iam == root) {
-
-      /* Use size-1 to exclude root sending to himself */
-
       ignoreret = PMPI_Type_size (sendtype, &sendsize);
       timer->nbytes += (double) sendcount * sendsize;
-    } else {
-      ignoreret = PMPI_Type_size (recvtype, &recvsize);
-      timer->nbytes += (double) recvcount * recvsize;
     }
   }
   return ret;
@@ -312,7 +341,6 @@ int MPI_Alltoall (void *sendbuf, int sendcount, MPI_Datatype sendtype,
 		  MPI_Comm comm)
 {
   int ret;
-  int iam;
   int sendsize, recvsize;
   int commsize;
   int ignoreret;
@@ -385,8 +413,8 @@ int MPI_Finalize (void)
 }
 
 int MPI_Allgather (void *sendbuf, int sendcount, MPI_Datatype sendtype, 
-		   void *recvbuf, int recvcount, MPI_Datatype recvtype, 
-		   MPI_Comm comm)
+                   void *recvbuf, int recvcount, MPI_Datatype recvtype, 
+                   MPI_Comm comm)
 {
   int ret;
   int sendsize, recvsize;
@@ -411,6 +439,40 @@ int MPI_Allgather (void *sendbuf, int sendcount, MPI_Datatype sendtype,
     ignoreret = PMPI_Type_size (recvtype, &recvsize);
     timer->nbytes += (double) sendcount * sendsize + 
                      (double) recvcount * recvsize * commsize;
+  }
+  return ret;
+}
+
+int MPI_Allgatherv (void *sendbuf, int sendcount, MPI_Datatype sendtype, 
+                    void *recvbuf, int *recvcounts, int *displs, 
+                    MPI_Datatype recvtype, MPI_Comm comm )
+{
+  int ret;
+  int i;
+  int sendsize, recvsize;
+  int commsize;
+  int ignoreret;
+  Timer *timer;
+
+  if (sync_mpi) {
+    ignoreret = GPTLstart ("sync_Allgatherv");
+    ignoreret = PMPI_Barrier (comm);
+    ignoreret = GPTLstop ("sync_Allgatherv");
+  }
+    
+  ignoreret = GPTLstart ("MPI_Allgatherv");
+  ret = PMPI_Allgatherv (sendbuf, sendcount, sendtype, 
+			 recvbuf, recvcounts, displs, 
+			 recvtype, comm);
+  ignoreret = GPTLstop ("MPI_Allgatherv");
+
+  if ((timer = GPTLgetentry ("MPI_Allgatherv"))) {
+    ignoreret = PMPI_Comm_size (comm, &commsize);
+    ignoreret = PMPI_Type_size (sendtype, &sendsize);
+    ignoreret = PMPI_Type_size (recvtype, &recvsize);
+    timer->nbytes += (double) sendcount * sendsize;
+    for (i = 0; i < commsize; ++i)
+      timer->nbytes += (double) recvcounts[i] * recvsize * commsize;
   }
   return ret;
 }
