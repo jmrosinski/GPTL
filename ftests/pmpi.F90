@@ -141,7 +141,7 @@ program pmpi
 
   gsbuf(:,:) = 0
   call mpi_allgather (sendbuf, count, MPI_INTEGER, &
-                      gsbuf, count, MPI_INTEGER, comm)
+                      gsbuf, count, MPI_INTEGER, comm, ret)
   do j=0,commsize-1
     do i=0,count-1
       if (gsbuf(i,j) /= j) then
