@@ -343,7 +343,7 @@ void mpi_allgather (void *sendbuf, MPI_Fint *sendcount, MPI_Fint *sendtype,
 			   MPI_Comm_f2c (*comm));
 }
 
-int mpi_allgatherv (void *sendbuf, MPI_Fint *sendcount, MPI_Fint *sendtype, 
+void mpi_allgatherv (void *sendbuf, MPI_Fint *sendcount, MPI_Fint *sendtype, 
 		    void *recvbuf, MPI_Fint *recvcounts, MPI_Fint *displs, 
                     MPI_Fint *recvtype, MPI_Fint *comm, MPI_Fint *__ierr)
 {
