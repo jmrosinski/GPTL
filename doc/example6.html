@@ -1,6 +1,6 @@
 <html>
 <head>
-<title>GPTL usage example 6: Set ENABLE_PMPI to automatically generate MPI statistics</title>
+<title>GPTL usage example 6: Automatic generation of MPI statistics</title>
 <meta name="example" content="MPI profile">
 <meta name="Keywords" content="gptl","papi","call tree","profile","timing","performance analysis">
 <meta name="Author" content="Jim Rosinski">
@@ -16,9 +16,9 @@
 
 <br />
 
-<h2>Example 6: Set ENABLE_PMPI to automatically generate MPI statistics</h2>
-This example is a Fortran code which uses new implemented option
-<b>ENABLE_PMPI</b> to automatically profile various MPI routines in
+<h2>Example 6: Automatic generation of MPI statistics</h2>
+This is a Fortran code which uses newly implemented option
+<b>ENABLE_PMPI</b> (in macros.make) to automatically profile various MPI routines in
 the call tree along with number of invocations and average number of bytes
 transferred per call. The set of MPI routines which can be automatically
 profiled in this way is currently limited to a subset of commonly called
@@ -26,12 +26,12 @@ routines (MPI_Send, MPI_Recv, MPI_Isend, MPI_Irecv, etc.). An easy
 way to see the list of supported routines is to run ftests/pmpi and examine
 output file timing.0 which it creates.
 <p>
-If you would like to add some routines, please see files pmpi.c and
+If you would like to add some routines, see files pmpi.c and
 f_wrappers.c. I'd be glad to add any of interest to the library if you can
 provide them. It's just a methodical and repetitive process of typing in the 
 appropriate wrapping code.
 <p>
-In this example we also set HAVE_IARGCGETARG in macros.make. This declares
+In this example HAVE_IARGCGETARG=yes in macros.make. This declares
 that libraries provided by the Fortran compiler or runtime contains entries
 for functions <b>iargc()</b> and <b>getarg()</b>. If these functions are
 available, <b>MPI_Init()</b> and <b>MPI_Finalize()</b> are automatically
@@ -71,10 +71,12 @@ program pmpi
   integer :: request
   integer :: dest
   integer :: source
+  integer :: displs(0:count-1)
 
   integer, allocatable :: atoabufsend(:)
   integer, allocatable :: atoabufrecv(:)
   integer, allocatable :: gsbuf(:,:)
+  integer, allocatable :: recvcounts(:)
 
   ret = gptlsetoption (gptloverhead, 0)
   ret = gptlsetoption (gptlpercent, 0)
@@ -147,8 +149,33 @@ program pmpi
   call chkbuf ("mpi_allreduce", recvbuf(:), count, sum)
 
   allocate (gsbuf(0:count-1,0:commsize-1))
+  allocate (recvcounts(0:commsize-1))
       
-  call mpi_gather (sendbuf, count, MPI_INTEGER, gsbuf, count, MPI_INTEGER, 0, comm, ret)
+  call mpi_gather (sendbuf, count, MPI_INTEGER, &
+                   gsbuf, count, MPI_INTEGER, 0, comm, ret)
+  if (iam == 0) then
+    do j=0,commsize-1
+      do i=0,count-1
+        if (gsbuf(i,j) /= j) then
+          write(6,*) "iam=", iam, "MPI_Gather: bad gsbuf(", i,",",j,")=", &
+                     gsbuf(i,j), " not= ",j
+          call mpi_abort (MPI_COMM_WORLD, -1, ret)
+        end if
+      end do
+    end do
+  end if
+!
+! mpi_gatherv: make just like mpi_gather for simplicity
+!
+  gsbuf(:,:) = 0
+  recvcounts(:) = count
+  displs(0) = 0
+  do i=1,commsize-1
+    displs(i) = displs(i-1) + recvcounts(i-1)
+  end do
+  call mpi_gatherv (sendbuf, count, MPI_INTEGER, &
+                    gsbuf, recvcounts, displs, &
+                    MPI_INTEGER, 0, comm, ret)
   if (iam == 0) then
     do j=0,commsize-1
       do i=0,count-1
@@ -186,6 +213,37 @@ program pmpi
     end do
     call chkbuf ("mpi_reduce", recvbuf(:), count, sum)
   end if
+
+  gsbuf(:,:) = 0
+  call mpi_allgather (sendbuf, count, MPI_INTEGER, &
+                      gsbuf, count, MPI_INTEGER, comm, ret)
+  do j=0,commsize-1
+    do i=0,count-1
+      if (gsbuf(i,j) /= j) then
+        write(6,*) "iam=", iam, "MPI_Allgather: bad gsbuf(",i,",",j,")=", &
+                    gsbuf(i,j)
+        call mpi_abort (MPI_COMM_WORLD, -1, ret)
+      end if
+    end do
+  end do
+!
+! mpi_allgatherv: Make just like mpi_allgather for simplicity
+!
+  gsbuf(:,:) = 0
+  recvcounts(:) = count
+  displs(0) = 0
+  call mpi_allgatherv (sendbuf, count, MPI_INTEGER, &
+                       gsbuf, recvcounts, displs, &
+                       MPI_INTEGER, comm, ret)
+  do j=0,commsize-1
+    do i=0,count-1
+      if (gsbuf(i,j) /= j) then
+        write(6,*) "iam=", iam, "MPI_Allgatherv: bad gsbuf(",i,",",j,")=", &
+                    gsbuf(i,j)
+        call mpi_abort (MPI_COMM_WORLD, -1, ret)
+      end if
+    end do
+  end do
 
   call mpi_finalize (ret)
 
@@ -248,20 +306,27 @@ Stats for thread 0:
     sync_Allreduce                 1    -       0.000     0.000     0.000       -       
     MPI_Allreduce                  1    -       0.000     0.000     0.000     8.192e+03 
     sync_Gather                    1    -       0.000     0.000     0.000       -       
-    MPI_Gather                     1    -       0.000     0.000     0.000     4.096e+03 
+    MPI_Gather                     1    -       0.000     0.000     0.000     1.229e+04 
+    sync_Gatherv                   1    -       0.000     0.000     0.000       -       
+    MPI_Gatherv                    1    -       0.000     0.000     0.000     2.048e+04 
     sync_Scatter                   1    -       0.000     0.000     0.000       -       
-    MPI_Scatter                    1    -       0.000     0.000     0.000     4.096e+03 
+    MPI_Scatter                    1    -       0.000     0.000     0.000     8.192e+03 
     sync_Alltoall                  1    -       0.000     0.000     0.000       -       
     MPI_Alltoall                   1    -       0.000     0.000     0.000     1.200e+01 
     sync_Reduce                    1    -       0.000     0.000     0.000       -       
     MPI_Reduce                     1    -       0.000     0.000     0.000     4.096e+03 
-Total calls           = 24
+    sync_Allgather                 1    -       0.000     0.000     0.000       -       
+    MPI_Allgather                  1    -       0.000     0.000     0.000     1.229e+04 
+    sync_Allgatherv                1    -       0.000     0.000     0.000       -       
+    MPI_Allgatherv                 1    -       0.000     0.000     0.000     2.048e+04 
+Total calls           = 30
 Total recursive calls = 0
 </div>
 </pre>
 <h3>Explanation of the above output</h3>
 All of this output was generated automatically. Other than some optional
-calls to <b>gptlsetoption()</b>, no user definition of regions was needed.
+calls to <b>gptlsetoption()</b>, no GPTL-specific modifications to the
+application code were made.
 Timings for various MPI calls were automatically generated because <b>GPTL</b> was
 built with <b>ENABLE_PMPI</b> (see macros.make.linux). A wrapping region
 named MPI_Init_thru_Finalize was automatically generated for the region
