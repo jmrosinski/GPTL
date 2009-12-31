@@ -1,5 +1,5 @@
 /*
-** $Id: threadutil.c,v 1.27 2009-12-26 19:27:22 rosinski Exp $
+** $Id: threadutil.c,v 1.28 2009-12-31 01:51:59 rosinski Exp $
 **
 ** Author: Jim Rosinski
 ** 
@@ -165,7 +165,6 @@ static pthread_t *threadid;
 int threadinit (int *nthreads, int *maxthreads)
 {
   int nbytes;
-  int rc;
   int t;
 
   /* Manage the threadid array which maps physical thread IDs to logical IDs */

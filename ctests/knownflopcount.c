@@ -117,6 +117,7 @@ int main (int argc, char **argv)
     diff = papicounters[n] - prvcounters[n];
     printf ("%s count = %20.14e\n", eventname[n], (double) diff);
   }
+  return 0;
 }
 
 void init (double *arr)
