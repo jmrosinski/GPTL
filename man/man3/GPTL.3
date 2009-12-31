@@ -1,4 +1,4 @@
-.\" $Id: GPTL.3,v 1.2 2009-12-31 01:07:11 rosinski Exp $
+.\" $Id: GPTL.3,v 1.3 2009-12-31 01:09:24 rosinski Exp $
 .TH GPTL 3 "July, 2009" "GPTL"
 
 .SH NAME
@@ -72,8 +72,7 @@ to its name"
 .BR GPTLsetoption(3) " - set a GPTL option (e.g. enable a PAPI counter)"
 .BR GPTLsetutr(3) " - set the default underlying timing routine"
 .BR gptlprocess_namelist(3) " - (Fortran only) set GPTL options by reading a Fortran namelist"
-.BR GPTLinitialize(3) " - initialize the GPTL library. Must be called after
-all calls to GPTLsetoption/GPTLsetutr/gptlprocess_namelist, and before all calls to GPTLstart, GPTLstop, and GPTLpr"
+.BR GPTLinitialize(3) " - initialize the GPTL library. Must be called after all calls to GPTLsetoption/GPTLsetutr/gptlprocess_namelist, and before all calls to GPTLstart, GPTLstop, and GPTLpr"
 .BR GPTLstart(3) " - start a region timer"
 .BR GPTLstop(3) " - stop a region timer"
 .BR GPTLbarrier(3) " - if MPI is enabled, set and time an MPI_Barrier"
