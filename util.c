@@ -1,5 +1,5 @@
 /*
-** $Id: util.c,v 1.12 2009-12-20 17:14:46 rosinski Exp $
+** $Id: util.c,v 1.13 2010-01-01 01:34:07 rosinski Exp $
 */
 
 #include <stdarg.h>
@@ -9,6 +9,7 @@
 #include "private.h"
 
 static bool abort_on_error = false; /* flag says to abort on any error */
+static int max_error = 500;         /* max number of error print msgs */
 
 /*
 ** GPTLerror: error return routine to print a message and return a failure
@@ -26,13 +27,19 @@ int GPTLerror (const char *fmt, ...)
   va_list args;
   
   va_start (args, fmt);
+  static int num_error = 0;
   
-  if (fmt != NULL)
+  if (fmt != NULL && num_error < max_error) {
 #ifdef HAVE_VPRINTF
     (void) vfprintf (stderr, fmt, args);
 #else
     (void) fprintf (stderr, "GPTLerror: no vfprintf: fmt is %s\n", fmt);
 #endif
+    if (num_error == max_error)
+      (void) fprintf (stderr, "Truncating further error print now after %d msgs",
+		      num_error);
+    ++num_error;
+  }    
   
   va_end (args);
   

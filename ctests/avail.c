@@ -6,7 +6,6 @@
 
 int main ()
 {
-  int i;
   int ret;
 
   if ((ret = PAPI_library_init (PAPI_VER_CURRENT)) != PAPI_VER_CURRENT) {
