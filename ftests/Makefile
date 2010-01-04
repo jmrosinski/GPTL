@@ -1,4 +1,9 @@
 include ../macros.make
+ifeq ($(OSTYPE),aix)
+  DEFINE = -WF,-D
+else
+  DEFINE = -D
+endif
 
 null =
 # TESTS defines which of EXES have a built-in testing procedure.
@@ -13,34 +18,34 @@ LDFLAGS = -L.. -l$(LIBNAME) $(ABIFLAGS)
 
 ifeq ($(HAVE_MPI),yes)
   EXES += summary
-  FFLAGS  += -DHAVE_MPI $(MPI_INCFLAGS)
+  FFLAGS  += $(DEFINE)HAVE_MPI $(MPI_INCFLAGS)
   LDFLAGS += $(MPI_LIBFLAGS)
 endif
 
 ifeq ($(ENABLE_PMPI),yes)
-  FFLAGS += -DENABLE_PMPI
+  FFLAGS += $(DEFINE)ENABLE_PMPI
   LIBNAME = gptl_pmpi
   EXES += pmpi
   ifeq ($(HAVE_IARGCGETARG),yes)
-    FFLAGS += -DHAVE_IARGCGETARG
+    FFLAGS += $(DEFINE)HAVE_IARGCGETARG
   endif
 else
   LIBNAME = gptl
 endif
 
 ifeq ($(OPENMP),yes)
-  FFLAGS  += -DTHREADED_OMP $(FOMPFLAG)
+  FFLAGS  += $(DEFINE)THREADED_OMP $(FOMPFLAG)
   LDFLAGS += $(FOMPFLAG)
 else
   ifeq ($(PTHREADS),yes)
 # Threaded tests use OpenMP
-    FFLAGS  += -DTHREADED_OMP $(FOMPFLAG)
+    FFLAGS  += $(DEFINE)THREADED_OMP $(FOMPFLAG)
     LDFLAGS += -lpthread $(FOMPFLAG)
   endif
 endif
 
 ifeq ($(HAVE_PAPI),yes)
-  FFLAGS  += -DHAVE_PAPI
+  FFLAGS  += $(DEFINE)HAVE_PAPI
   LDFLAGS += $(PAPI_LIBFLAGS)
 endif
 

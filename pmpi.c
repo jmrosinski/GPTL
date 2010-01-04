@@ -1,5 +1,5 @@
 /*
-** $Id: pmpi.c,v 1.4 2009-12-29 14:35:31 rosinski Exp $
+** $Id: pmpi.c,v 1.5 2010-01-04 02:30:40 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -9,9 +9,9 @@
 #include "private.h"
 #include "gptl.h"
 
-#include <mpi.h>
-
 #ifdef ENABLE_PMPI
+
+#include <mpi.h>
 
 static bool sync_mpi = false;
 
