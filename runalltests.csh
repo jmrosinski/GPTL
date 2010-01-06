@@ -36,14 +36,17 @@ echo "$0 Testing $usersettable = $newtest ..." >> results
 if ( $usersettable == PTHREADS ) then
   sed -e "s/^ *OPENMP *= *yes */OPENMP = no/g" \
       -e "s/^ *$usersettable *= *$oldtest */$usersettable = $newtest/g" $basescript >! macros.make
-# For HAVE_IARGCGETARG case, ensure ENABLE_PMPI is true
-else if ( $usersettable == HAVE_IARGCGETARG ) then
-  sed -e "s/^ *ENABLE_PMPI *= *no */ENABLE_PMPI = yes/g" \
-      -e "s/^ *$usersettable *= *$oldtest */$usersettable = $newtest/g" $basescript >! macros.make
-else
-  sed -e "s/^ *$usersettable *= *$oldtest */$usersettable = $newtest/g" $basescript >! macros.make
-endif
 
+# For HAVE_IARGCGETARG case, ensure HAVE_MPI and ENABLE_PMPI are true
+else if ( $usersettable == HAVE_IARGCGETARG ) then
+  sed -e "s/^ *HAVE_MPI *= *no */HAVE_MPI = yes/g" \
+      -e "s/^ *ENABLE_PMPI *= *no */ENABLE_PMPI = yes/g" \
+      -e "s/^ *$usersettable *= *$oldtest */$usersettable = $newtest/g" $basescript >! macros.make
+
+# For ENABLE_PMPI case, ensure HAVE_MPI is true
+else if ( $usersettable == ENABLE_PMPI ) then
+  sed -e "s/^ *HAVE_MPI *= *no */HAVE_MPI = yes/g" \
+      -e "s/^ *$usersettable *= *$oldtest */$usersettable = $newtest/g" $basescript >! macros.make
 else
   sed -e "s/^ *$usersettable *= *$oldtest */$usersettable = $newtest/g" $basescript >! macros.make
 endif
