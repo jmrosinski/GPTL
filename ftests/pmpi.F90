@@ -30,6 +30,8 @@ program pmpi
   integer, allocatable :: gsbuf(:,:)
   integer, allocatable :: recvcounts(:)
 
+  logical :: flag
+
   ret = gptlsetoption (gptloverhead, 0)
   ret = gptlsetoption (gptlpercent, 0)
   ret = gptlsetoption (gptlabort_on_error, 1)
@@ -53,10 +55,19 @@ program pmpi
   if (source < 0) then
     source = commsize - 1
   end if
-
+!
+! mpi_send
+! mpi_recv
+! mpi_probe
+!
   if (mod (commsize, 2) == 0) then
     if (mod (iam, 2) == 0) then
       call mpi_send (sendbuf, count, MPI_INTEGER, dest, tag, comm, ret)
+      call mpi_probe (source, tag, comm, status, ret)
+      if (ret /= MPI_SUCCESS) then
+        write(6,*) "iam=", iam, " mpi_probe: bad status return"
+        call mpi_abort (MPI_COMM_WORLD, -1, ret)
+      end if
       call mpi_recv (recvbuf, count, MPI_INTEGER, source, tag, comm, status, ret)
     else
       call mpi_recv (recvbuf, count, MPI_INTEGER, source, tag, comm, status, ret)
@@ -64,14 +75,46 @@ program pmpi
     end if
   end if
   call chkbuf ('mpi_send + mpi_recv', recvbuf(:), count, source)
-  
+!
+! mpi_ssend
+!
+  if (mod (commsize, 2) == 0) then
+    if (mod (iam, 2) == 0) then
+      call mpi_ssend (sendbuf, count, MPI_INTEGER, dest, tag, comm, ret)
+      call mpi_recv (recvbuf, count, MPI_INTEGER, source, tag, comm, status, ret)
+    else
+      call mpi_recv (recvbuf, count, MPI_INTEGER, source, tag, comm, status, ret)
+      call mpi_ssend (sendbuf, count, MPI_INTEGER, dest, tag, comm, ret)
+    end if
+  end if
+  call chkbuf ('mpi_send + mpi_recv', recvbuf(:), count, source)
+!
+! mpi_sendrecv
+! 
   call mpi_sendrecv (sendbuf, count, MPI_INTEGER, dest, tag, &
                      recvbuf, count, MPI_INTEGER, source, tag, &
                      comm, status, ret)
   call chkbuf ('mpi_sendrecv', recvbuf(:), count, source)
-
+!
+! mpi_irecv
+! mpi_isend
+! mpi_iprobe
+! mpi_test
+! mpi_wait
+! mpi_waitall
+!
   call mpi_irecv (recvbuf, count, MPI_INTEGER, source, tag, &
                   comm, request, ret)
+  call mpi_iprobe (source, tag, comm, flag, status, ret)
+  if (flag) then
+    write(6,*) "iam=", iam, " mpi_iprobe returns flag=.true. when it should be false"
+    call mpi_abort (MPI_COMM_WORLD, -1, ret)
+  end if
+  call mpi_test (request, flag, status, ret)
+  if (flag) then
+    write(6,*) "iam=", iam, " mpi_test returns flag=.true. when it should be false"
+    call mpi_abort (MPI_COMM_WORLD, -1, ret)
+  end if
   call mpi_isend (sendbuf, count, MPI_INTEGER, dest, tag, &
                   comm, request, ret)
   call mpi_wait (request, status, ret)
@@ -82,13 +125,27 @@ program pmpi
   call mpi_isend (sendbuf, count, MPI_INTEGER, dest, tag, &
                   comm, request, ret)
   call mpi_waitall (1, request, status, ret)
+  call mpi_iprobe (source, tag, comm, flag, status, ret)
+  if (.not. flag) then
+    write(6,*) "iam=", iam, " mpi_iprobe returns flag=.false. when it should be true"
+    call mpi_abort (MPI_COMM_WORLD, -1, ret)
+  end if
+  call mpi_test (request, flag, status, ret)
+  if (.not. flag) then
+    write(6,*) "iam=", iam, " mpi_test returns flag=.false. when it should be true"
+    call mpi_abort (MPI_COMM_WORLD, -1, ret)
+  end if
   call chkbuf ("mpi_waitall", recvbuf(:), count, source)
 
   call mpi_barrier (comm, ret)
-
+!
+! mpi_bcast
+!
   call mpi_bcast (sendbuf, count, MPI_INTEGER, 0, comm, ret)
   call chkbuf ("MPI_Bcast", sendbuf(:), count, 0)
-
+!
+! mpi_allreduce
+!
   do i=0,count-1
     sendbuf(i) = iam
   end do
@@ -102,14 +159,16 @@ program pmpi
 
   allocate (gsbuf(0:count-1,0:commsize-1))
   allocate (recvcounts(0:commsize-1))
-      
+!
+! mpi_gather
+!
   call mpi_gather (sendbuf, count, MPI_INTEGER, &
                    gsbuf, count, MPI_INTEGER, 0, comm, ret)
   if (iam == 0) then
     do j=0,commsize-1
       do i=0,count-1
         if (gsbuf(i,j) /= j) then
-          write(6,*) "iam=", iam, "MPI_Gather: bad gsbuf(", i,",",j,")=", &
+          write(6,*) "iam=", iam, "mpi_gather: bad gsbuf(", i,",",j,")=", &
                      gsbuf(i,j), " not= ",j
           call mpi_abort (MPI_COMM_WORLD, -1, ret)
         end if
@@ -132,14 +191,16 @@ program pmpi
     do j=0,commsize-1
       do i=0,count-1
         if (gsbuf(i,j) /= j) then
-          write(6,*) "iam=", iam, "MPI_Gather: bad gsbuf(", i,",",j,")=", &
+          write(6,*) "iam=", iam, "mpi_gatherv: bad gsbuf(", i,",",j,")=", &
                      gsbuf(i,j), " not= ",j
           call mpi_abort (MPI_COMM_WORLD, -1, ret)
         end if
       end do
     end do
   end if
-
+!
+! mpi_scatter
+!
   call mpi_scatter (gsbuf, count, MPI_INTEGER, recvbuf, count, MPI_INTEGER, 0, comm, ret)
   call chkbuf ("MPI_Scatter", recvbuf(:), count, iam)
 
@@ -148,15 +209,19 @@ program pmpi
   do i=0,commsize-1
     atoabufsend(i) = i
   end do
-
+!
+! mpi_alltoall
+!
   call mpi_alltoall (atoabufsend, 1, MPI_INTEGER, atoabufrecv, 1, MPI_INTEGER, comm, ret)
   do i=0,commsize-1
     if (atoabufrecv(i) /= iam) then
-      write(6,*) "iam=", iam, "MPI_Alltoall: bad atoabufrecv(",i,")=",atoabufrecv(i)
+      write(6,*) "iam=", iam, "mpi_alltoall: bad atoabufrecv(",i,")=",atoabufrecv(i)
       call mpi_abort (MPI_COMM_WORLD, -1, ret)
     end if
   end do
-
+!
+! mpi_reduce
+!
   call mpi_reduce (sendbuf, recvbuf, count, MPI_INTEGER, MPI_SUM, 0, comm, ret)
   if (iam == 0) then
     sum = 0.
@@ -165,14 +230,16 @@ program pmpi
     end do
     call chkbuf ("mpi_reduce", recvbuf(:), count, sum)
   end if
-
+!
+! mpi_allgather
+!
   gsbuf(:,:) = 0
   call mpi_allgather (sendbuf, count, MPI_INTEGER, &
                       gsbuf, count, MPI_INTEGER, comm, ret)
   do j=0,commsize-1
     do i=0,count-1
       if (gsbuf(i,j) /= j) then
-        write(6,*) "iam=", iam, "MPI_Allgather: bad gsbuf(",i,",",j,")=", &
+        write(6,*) "iam=", iam, "mpi_allgather: bad gsbuf(",i,",",j,")=", &
                     gsbuf(i,j)
         call mpi_abort (MPI_COMM_WORLD, -1, ret)
       end if
@@ -190,13 +257,15 @@ program pmpi
   do j=0,commsize-1
     do i=0,count-1
       if (gsbuf(i,j) /= j) then
-        write(6,*) "iam=", iam, "MPI_Allgatherv: bad gsbuf(",i,",",j,")=", &
+        write(6,*) "iam=", iam, "mpi_allgatherv: bad gsbuf(",i,",",j,")=", &
                     gsbuf(i,j)
         call mpi_abort (MPI_COMM_WORLD, -1, ret)
       end if
     end do
   end do
-
+!
+! mpi_finalize
+!
   call mpi_finalize (ret)
 
 #if ( ! defined HAVE_IARGCGETARG )

@@ -1,5 +1,5 @@
 /*
-** $Id: pmpi.c,v 1.5 2010-01-04 02:30:40 rosinski Exp $
+** $Id: pmpi.c,v 1.6 2010-02-14 18:55:13 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -225,8 +225,8 @@ int MPI_Allreduce (void *sendbuf, void *recvbuf, int count, MPI_Datatype datatyp
   ignoreret = GPTLstop ("MPI_Allreduce");
   if ((timer = GPTLgetentry ("MPI_Allreduce"))) {
     ignoreret = PMPI_Type_size (datatype, &size);
-    /* Estimate size as 2*count*size */
-    timer->nbytes += 2*((double) count) * size;
+    /* Estimate size as 1 send plus 1 recv */
+    timer->nbytes += 2.*((double) count) * size;
   }
   return ret;
 }
@@ -260,7 +260,7 @@ int MPI_Gather (void *sendbuf, int sendcount, MPI_Datatype sendtype,
     ignoreret = PMPI_Type_size (recvtype, &recvsize);
     timer->nbytes += (double) sendcount * sendsize;
     if (iam == root) {
-      timer->nbytes += (double) recvcount * recvsize * commsize;
+      timer->nbytes += (double) recvcount * recvsize * (commsize-1);
     }
   }
   return ret;
@@ -295,10 +295,12 @@ int MPI_Gatherv (void *sendbuf, int sendcount, MPI_Datatype sendtype,
     ignoreret = PMPI_Comm_size (comm, &commsize);
     ignoreret = PMPI_Type_size (sendtype, &sendsize);
     ignoreret = PMPI_Type_size (recvtype, &recvsize);
-    timer->nbytes += (double) sendcount * sendsize;
     if (iam == root) {
       for (i = 0; i < commsize; ++i)
-	timer->nbytes += (double) recvcounts[i] * recvsize * commsize;
+	if (i != iam)
+	  timer->nbytes += (double) recvcounts[i] * recvsize;
+    } else {
+      timer->nbytes += (double) sendcount * sendsize;
     }
   }
   return ret;
@@ -361,8 +363,8 @@ int MPI_Alltoall (void *sendbuf, int sendcount, MPI_Datatype sendtype,
     ignoreret = PMPI_Type_size (sendtype, &sendsize);
     ignoreret = PMPI_Type_size (recvtype, &recvsize);
 
-    timer->nbytes += ((double) sendcount * sendsize) + 
-                     ((double) recvcount * recvsize * commsize);
+    timer->nbytes += ((double) sendcount * sendsize * (commsize-1)) + 
+                     ((double) recvcount * recvsize * (commsize-1));
   }
   return ret;
 }
@@ -386,6 +388,7 @@ int MPI_Reduce (void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype,
   ignoreret = GPTLstop ("MPI_Reduce");
   if ((timer = GPTLgetentry ("MPI_Reduce"))) {
     ignoreret = PMPI_Type_size (datatype, &size);
+    /* Estimate byte count as 1 send */
     timer->nbytes += ((double) count) * size;
   }
   return ret;
@@ -437,8 +440,8 @@ int MPI_Allgather (void *sendbuf, int sendcount, MPI_Datatype sendtype,
     ignoreret = PMPI_Comm_size (comm, &commsize);
     ignoreret = PMPI_Type_size (sendtype, &sendsize);
     ignoreret = PMPI_Type_size (recvtype, &recvsize);
-    timer->nbytes += (double) sendcount * sendsize + 
-                     (double) recvcount * recvsize * commsize;
+    timer->nbytes += (double) sendcount * sendsize * (commsize-1)+ 
+                     (double) recvcount * recvsize * (commsize-1);
   }
   return ret;
 }
@@ -448,6 +451,7 @@ int MPI_Allgatherv (void *sendbuf, int sendcount, MPI_Datatype sendtype,
                     MPI_Datatype recvtype, MPI_Comm comm )
 {
   int ret;
+  int iam;
   int i;
   int sendsize, recvsize;
   int commsize;
@@ -467,13 +471,158 @@ int MPI_Allgatherv (void *sendbuf, int sendcount, MPI_Datatype sendtype,
   ignoreret = GPTLstop ("MPI_Allgatherv");
 
   if ((timer = GPTLgetentry ("MPI_Allgatherv"))) {
+    ignoreret = PMPI_Comm_rank (comm, &iam);
     ignoreret = PMPI_Comm_size (comm, &commsize);
     ignoreret = PMPI_Type_size (sendtype, &sendsize);
     ignoreret = PMPI_Type_size (recvtype, &recvsize);
-    timer->nbytes += (double) sendcount * sendsize;
+    timer->nbytes += (double) sendcount * sendsize * (commsize-1);
     for (i = 0; i < commsize; ++i)
-      timer->nbytes += (double) recvcounts[i] * recvsize * commsize;
+      if (i != iam)
+	timer->nbytes += (double) recvcounts[i] * recvsize;
   }
+  return ret;
+}
+
+int MPI_Iprobe (int source, int tag, MPI_Comm comm, int *flag,
+		MPI_Status *status)
+{
+  int ret;
+  int ignoreret;
+
+  ignoreret = GPTLstart ("MPI_Iprobe");
+  ret = PMPI_Iprobe (source, tag, comm, flag, status);
+  ignoreret = GPTLstop ("MPI_Iprobe");
+  return ret;
+}
+
+int MPI_Probe (int source, int tag, MPI_Comm comm, MPI_Status *status)
+{
+  int ret;
+  int ignoreret;
+
+  if (sync_mpi) {
+    ignoreret = GPTLstart ("sync_Probe");
+    ignoreret = PMPI_Barrier (comm);
+    ignoreret = GPTLstop ("sync_Probe");
+  }
+    
+  ignoreret = GPTLstart ("MPI_Probe");
+  ret = PMPI_Probe (source, tag, comm, status);
+  ignoreret = GPTLstop ("MPI_Probe");
+  return ret;
+}
+
+int MPI_Ssend (void *buf, int count, MPI_Datatype datatype,
+	       int dest, int tag, MPI_Comm comm)
+{
+  int ret;
+  int ignoreret;
+  int size;
+  Timer *timer;
+
+  if (sync_mpi) {
+    ignoreret = GPTLstart ("sync_Ssend");
+    ignoreret = PMPI_Barrier (comm);
+    ignoreret = GPTLstop ("sync_Ssend");
+  }
+    
+  ignoreret = GPTLstart ("MPI_Ssend");
+  ret = PMPI_Ssend (buf, count, datatype, dest, tag, comm);
+  ignoreret = GPTLstop ("MPI_Ssend");
+  if ((timer = GPTLgetentry ("MPI_Ssend"))) {
+    ignoreret = PMPI_Type_size (datatype, &size);
+    timer->nbytes += ((double) count) * size;
+  }
+  return ret;
+}
+
+int MPI_Alltoallv (void *sendbuf, int *sendcounts, int *sdispls,
+		   MPI_Datatype sendtype, void *recvbuf, int *recvcounts,
+		   int *rdispls, MPI_Datatype recvtype, MPI_Comm comm)
+{
+  int ret;
+  int iam;
+  int i;
+  int sendsize, recvsize;
+  int commsize;
+  int ignoreret;
+  Timer *timer;
+  
+  if (sync_mpi) {
+    ignoreret = GPTLstart ("sync_Alltoallv");
+    ignoreret = PMPI_Barrier (comm);
+    ignoreret = GPTLstop ("sync_Alltoallv");
+  }
+  
+  ignoreret = GPTLstart ("MPI_Alltoallv");
+  ret = PMPI_Alltoallv (sendbuf, sendcounts, sdispls,
+			sendtype, recvbuf, recvcounts,
+			rdispls, recvtype, comm);
+  
+  ignoreret = GPTLstop ("MPI_Alltoallv");
+  if ((timer = GPTLgetentry ("MPI_Alltoallv"))) {
+    ignoreret = PMPI_Comm_rank (comm, &iam);
+    ignoreret = PMPI_Comm_size (comm, &commsize);
+    ignoreret = PMPI_Type_size (sendtype, &sendsize);
+    ignoreret = PMPI_Type_size (recvtype, &recvsize);
+    for (i = 0; i < commsize; ++i) {
+      if (i != iam) {
+	timer->nbytes += (double) sendcounts[i] * sendsize;
+	timer->nbytes += (double) recvcounts[i] * recvsize;
+      }
+    }
+  }
+  return ret;
+}
+
+int MPI_Scatterv (void *sendbuf, int *sendcounts, int *displs,
+		  MPI_Datatype sendtype, void *recvbuf, int recvcount,
+		  MPI_Datatype recvtype, int root, MPI_Comm comm)
+{
+  int ret;
+  int iam;
+  int i;
+  int sendsize, recvsize;
+  int commsize;
+  int ignoreret;
+  Timer *timer;
+
+  if (sync_mpi) {
+    ignoreret = GPTLstart ("sync_Scatterv");
+    ignoreret = PMPI_Barrier (comm);
+    ignoreret = GPTLstop ("sync_Scatterv");
+  }
+    
+  ignoreret = GPTLstart ("MPI_Scatterv");
+  ret = PMPI_Scatterv (sendbuf, sendcounts, displs,
+		       sendtype, recvbuf, recvcount, 
+		       recvtype, root, comm);
+  ignoreret = GPTLstop ("MPI_Scatterv");
+  if ((timer = GPTLgetentry ("MPI_Scatterv"))) {
+    ignoreret = PMPI_Comm_rank (comm, &iam);
+    ignoreret = PMPI_Comm_size (comm, &commsize);
+    ignoreret = PMPI_Type_size (sendtype, &sendsize);
+    ignoreret = PMPI_Type_size (recvtype, &recvsize);
+    timer->nbytes += (double) recvcount * recvsize;
+    if (iam == root) {
+      for (i = 0; i < commsize; ++i)
+	if (i != iam)
+	  timer->nbytes += (double) sendcounts[i] * sendsize;
+    } else {
+      timer->nbytes += (double) recvcount * recvsize;
+    }
+  }
+  return ret;
+}
+
+int MPI_Test (MPI_Request *request, int *flag, MPI_Status *status)
+{
+  int ret;
+  int ignoreret;
+
+  ignoreret = GPTLstart ("MPI_Test");
+  ret = PMPI_Test (request, flag, status);
+  ignoreret = GPTLstop ("MPI_Test");
   return ret;
 }
 

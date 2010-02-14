@@ -28,6 +28,12 @@
 #define mpi_reduce MPI_REDUCE
 #define mpi_allgather MPI_ALLGATHER
 #define mpi_allgatherv MPI_ALLGATHERV
+#define mpi_iprobe MPI_IPROBE
+#define mpi_probe MPI_PROBE
+#define mpi_ssend MPI_SSEND
+#define mpi_alltoallv MPI_ALLTOALLV
+#define mpi_scatterv MPI_SCATTERV
+#define mpi_test MPI_TEST
 
 #elif ( defined FORTRANUNDERSCORE )
 
@@ -52,6 +58,12 @@
 #define mpi_reduce mpi_reduce_
 #define mpi_allgather mpi_allgather_
 #define mpi_allgatherv mpi_allgatherv_
+#define mpi_iprobe mpi_iprobe_
+#define mpi_probe mpi_probe_
+#define mpi_ssend mpi_ssend_
+#define mpi_alltoallv mpi_alltoallv_
+#define mpi_scatterv mpi_scatterv_
+#define mpi_test mpi_test_
 
 #elif ( defined FORTRANDOUBLEUNDERSCORE )
 
@@ -76,6 +88,12 @@
 #define mpi_reduce mpi_reduce__
 #define mpi_allgather mpi_allgather__
 #define mpi_allgatherv mpi_allgatherv__
+#define mpi_iprobe mpi_iprobe__
+#define mpi_probe mpi_probe__
+#define mpi_ssend mpi_ssend__
+#define mpi_alltoallv mpi_alltoallv__
+#define mpi_scatterv mpi_scatterv__
+#define mpi_test mpi_test__
 
 #endif
 
@@ -237,9 +255,9 @@ void mpi_waitall (MPI_Fint *count, MPI_Fint array_of_requests[],
 
   if (MPI_STATUS_SIZE != sizeof(MPI_Status)/sizeof(int)) {
     /* Warning - */
-    fprintf( stderr, "Warning: The Fortran GPTL code expected the sizeof MPI_Status\n\
- to be %d integers but it is %d.  Rebuild GPTL and make sure that the\n \
- correct value is found and set in f_wrappers.c\n", MPI_STATUS_SIZE,
+    fprintf (stderr, "Warning: The Fortran GPTL code expected the sizeof MPI_Status\n"
+	     "to be %d integers but it is %d.  Rebuild GPTL and make sure that the\n"
+	     "correct value is found and set in f_wrappers.c\n", MPI_STATUS_SIZE,
 	     (int) (sizeof(MPI_Status)/sizeof(int)) );
     fprintf (stderr, "Aborting...\n");
     (void) MPI_Abort (MPI_COMM_WORLD, -1);
@@ -344,12 +362,54 @@ void mpi_allgather (void *sendbuf, MPI_Fint *sendcount, MPI_Fint *sendtype,
 }
 
 void mpi_allgatherv (void *sendbuf, MPI_Fint *sendcount, MPI_Fint *sendtype, 
-		    void *recvbuf, MPI_Fint *recvcounts, MPI_Fint *displs, 
-                    MPI_Fint *recvtype, MPI_Fint *comm, MPI_Fint *__ierr)
+		     void *recvbuf, MPI_Fint *recvcounts, MPI_Fint *displs, 
+		     MPI_Fint *recvtype, MPI_Fint *comm, MPI_Fint *__ierr)
 {
   *__ierr = MPI_Allgatherv (sendbuf, *sendcount, MPI_Type_f2c (*sendtype),
 			    recvbuf, recvcounts, displs, 
 			    MPI_Type_f2c (*recvtype), MPI_Comm_f2c (*comm));
 }
+
+void mpi_iprobe (MPI_Fint *source, MPI_Fint *tag, MPI_Fint *comm,
+		 MPI_Fint *flag, MPI_Fint *status, MPI_Fint *__ierr)
+{
+  int        l_flag;
+  MPI_Status c_status;
+  *__ierr = MPI_Iprobe ((int) *source, (int) *tag, MPI_Comm_f2c (*comm),
+			&l_flag, &c_status );
+  /* 
+  ** The following setting ASSUMES that the C value for l_flag (0=false, non-zero=true)
+  ** maps properly to a Fortran logical. Have tested gfortran, Cray, Intel, PGI,
+  ** Pathscale and found this to be valid in all cases.
+  */
+
+  *flag = (MPI_Fint) l_flag;
+  if (l_flag) {
+    MPI_Status_c2f (&c_status, status);
+  }
+}
+
+void mpi_test (MPI_Fint *request, MPI_Fint *flag, MPI_Fint *status, 
+	       MPI_Fint *__ierr )
+{
+  int        l_flag;
+  MPI_Status c_status;
+  MPI_Request lrequest = MPI_Request_f2c (*request);
+  
+  *__ierr = MPI_Test (&lrequest, &l_flag, &c_status);
+  *request = MPI_Request_c2f (lrequest);  /* In case request is changed */
+
+  /* 
+  ** The following setting ASSUMES that the C value for l_flag (0=false, non-zero=true)
+  ** maps properly to a Fortran logical. Have tested gfortran, Cray, Intel, PGI,
+  ** Pathscale and found this to be valid in all cases.
+  */
+
+  *flag = (MPI_Fint) l_flag;
+  if (l_flag) {
+    MPI_Status_c2f (&c_status, status);
+  }
+}
+
 
 #endif
