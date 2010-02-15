@@ -389,6 +389,43 @@ void mpi_iprobe (MPI_Fint *source, MPI_Fint *tag, MPI_Fint *comm,
   }
 }
 
+void mpi_probe (MPI_Fint *source, MPI_Fint *tag, MPI_Fint *comm,
+		MPI_Fint *status, MPI_Fint *__ierr)
+{
+  MPI_Status c_status;
+  *__ierr = MPI_Probe ((int) *source, (int) *tag, MPI_Comm_f2c (*comm),
+		       &c_status );
+  MPI_Status_c2f (&c_status, status);
+}
+
+void mpi_ssend (void *buf, MPI_Fint *count, MPI_Fint *datatype, MPI_Fint *dest,
+		MPI_Fint *tag, MPI_Fint *comm, MPI_Fint *__ierr)
+{
+  *__ierr = MPI_Ssend (buf, *count, MPI_Type_f2c (*datatype), *dest, *tag, 
+		       MPI_Comm_f2c (*comm));
+}
+
+void mpi_alltoallv (void *sendbuf, MPI_Fint *sendcnts, MPI_Fint *sdispls, 
+		    MPI_Fint *sendtype, void *recvbuf, MPI_Fint *recvcnts,
+		    MPI_Fint *rdispls, MPI_Fint *recvtype, MPI_Fint *comm, 
+		    MPI_Fint *__ierr)
+{
+  *__ierr = MPI_Alltoallv (sendbuf, sendcnts, sdispls, 
+			   MPI_Type_f2c (*sendtype), recvbuf,
+			   recvcnts, rdispls, MPI_Type_f2c (*recvtype),
+			   MPI_Comm_f2c (*comm));
+}
+
+void mpi_scatterv (void *sendbuf, MPI_Fint *sendcnts, MPI_Fint *displs, 
+		   MPI_Fint *sendtype, void *recvbuf, MPI_Fint *recvcnt,
+		   MPI_Fint *recvtype, MPI_Fint *root, MPI_Fint *comm, 
+		   MPI_Fint *__ierr )
+{
+  *__ierr = MPI_Scatterv (sendbuf, sendcnts, displs, MPI_Type_f2c (*sendtype),
+			  recvbuf, *recvcnt, MPI_Type_f2c (*recvtype), *root,
+			  MPI_Comm_f2c (*comm));
+}
+
 void mpi_test (MPI_Fint *request, MPI_Fint *flag, MPI_Fint *status, 
 	       MPI_Fint *__ierr )
 {

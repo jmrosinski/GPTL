@@ -23,14 +23,17 @@ program pmpi
   integer :: request
   integer :: dest
   integer :: source
-  integer :: displs(0:count-1)
+  integer :: rdispls(0:count-1)
+  integer :: sdispls(0:count-1)
 
   integer, allocatable :: atoabufsend(:)
   integer, allocatable :: atoabufrecv(:)
-  integer, allocatable :: gsbuf(:,:)
+  integer, allocatable :: gsbuf(:,:)      ! gather/scatter buffer
   integer, allocatable :: recvcounts(:)
+  integer, allocatable :: sendcounts(:)
 
   logical :: flag
+  integer :: debugflag = 1
 
   ret = gptlsetoption (gptloverhead, 0)
   ret = gptlsetoption (gptlpercent, 0)
@@ -43,6 +46,12 @@ program pmpi
 #endif
 
   call mpi_init (ret)
+
+! For debugging, go into infinite loop so debugger can attach and reset
+#ifdef DEBUG
+  do while (debugflag == 1)
+  end do
+#endif
   call mpi_comm_rank (comm, iam, ret)
   call mpi_comm_size (comm, commsize, ret)
   
@@ -61,24 +70,37 @@ program pmpi
 ! mpi_probe
 !
   if (mod (commsize, 2) == 0) then
+    if (iam == 0) then
+      write(6,*)'pmpi.F90: testing send, recv, probe...'
+    end if
+
     if (mod (iam, 2) == 0) then
+      write(6,*)'even calling send'
       call mpi_send (sendbuf, count, MPI_INTEGER, dest, tag, comm, ret)
+      write(6,*)'even calling recv'
+      call mpi_recv (recvbuf, count, MPI_INTEGER, source, tag, comm, status, ret)
+    else
+      write(6,*)'odd calling probe'
       call mpi_probe (source, tag, comm, status, ret)
       if (ret /= MPI_SUCCESS) then
         write(6,*) "iam=", iam, " mpi_probe: bad status return"
         call mpi_abort (MPI_COMM_WORLD, -1, ret)
       end if
+      write(6,*)'odd calling recv'
       call mpi_recv (recvbuf, count, MPI_INTEGER, source, tag, comm, status, ret)
-    else
-      call mpi_recv (recvbuf, count, MPI_INTEGER, source, tag, comm, status, ret)
+      write(6,*)'odd calling send'
       call mpi_send (sendbuf, count, MPI_INTEGER, dest, tag, comm, ret)
     end if
-  end if
-  call chkbuf ('mpi_send + mpi_recv', recvbuf(:), count, source)
+    call chkbuf ('mpi_send + mpi_recv', recvbuf(:), count, source)
+
+    if (iam == 0) then
+      write(6,*)'Success'
+      write(6,*)'pmpi.F90: testing ssend...'
+    end if
+    stop 0
 !
 ! mpi_ssend
 !
-  if (mod (commsize, 2) == 0) then
     if (mod (iam, 2) == 0) then
       call mpi_ssend (sendbuf, count, MPI_INTEGER, dest, tag, comm, ret)
       call mpi_recv (recvbuf, count, MPI_INTEGER, source, tag, comm, status, ret)
@@ -86,8 +108,12 @@ program pmpi
       call mpi_recv (recvbuf, count, MPI_INTEGER, source, tag, comm, status, ret)
       call mpi_ssend (sendbuf, count, MPI_INTEGER, dest, tag, comm, ret)
     end if
+    call chkbuf ('mpi_send + mpi_recv', recvbuf(:), count, source)
+    if (iam == 0) then
+      write(6,*)'Success'
+      write(6,*)'pmpi.F90: testing sendrecv...'
+    end if
   end if
-  call chkbuf ('mpi_send + mpi_recv', recvbuf(:), count, source)
 !
 ! mpi_sendrecv
 ! 
@@ -95,6 +121,10 @@ program pmpi
                      recvbuf, count, MPI_INTEGER, source, tag, &
                      comm, status, ret)
   call chkbuf ('mpi_sendrecv', recvbuf(:), count, source)
+  if (iam == 0) then
+    write(6,*)'Success'
+    write(6,*)'pmpi.F90: testing irecv, isend, iprobe, itest, wait, waitall...'
+  end if
 !
 ! mpi_irecv
 ! mpi_isend
@@ -138,11 +168,19 @@ program pmpi
   call chkbuf ("mpi_waitall", recvbuf(:), count, source)
 
   call mpi_barrier (comm, ret)
+  if (iam == 0) then
+    write(6,*)'Success'
+    write(6,*)'pmpi.F90: testing bcast...'
+  end if
 !
 ! mpi_bcast
 !
   call mpi_bcast (sendbuf, count, MPI_INTEGER, 0, comm, ret)
   call chkbuf ("MPI_Bcast", sendbuf(:), count, 0)
+  if (iam == 0) then
+    write(6,*)'Success'
+    write(6,*)'pmpi.F90: testing allreduce...'
+  end if
 !
 ! mpi_allreduce
 !
@@ -156,9 +194,14 @@ program pmpi
     sum = sum + i
   end do
   call chkbuf ("mpi_allreduce", recvbuf(:), count, sum)
+  if (iam == 0) then
+    write(6,*)'Success'
+    write(6,*)'pmpi.F90: testing gather...'
+  end if
 
   allocate (gsbuf(0:count-1,0:commsize-1))
   allocate (recvcounts(0:commsize-1))
+  allocate (sendcounts(0:commsize-1))
 !
 ! mpi_gather
 !
@@ -175,17 +218,21 @@ program pmpi
       end do
     end do
   end if
+  if (iam == 0) then
+    write(6,*)'Success'
+    write(6,*)'pmpi.F90: testing gatherv...'
+  end if
 !
 ! mpi_gatherv: make just like mpi_gather for simplicity
 !
   gsbuf(:,:) = 0
   recvcounts(:) = count
-  displs(0) = 0
+  rdispls(0) = 0
   do i=1,commsize-1
-    displs(i) = displs(i-1) + recvcounts(i-1)
+    rdispls(i) = rdispls(i-1) + recvcounts(i-1)
   end do
   call mpi_gatherv (sendbuf, count, MPI_INTEGER, &
-                    gsbuf, recvcounts, displs, &
+                    gsbuf, recvcounts, rdispls, &
                     MPI_INTEGER, 0, comm, ret)
   if (iam == 0) then
     do j=0,commsize-1
@@ -198,17 +245,48 @@ program pmpi
       end do
     end do
   end if
+  if (iam == 0) then
+    write(6,*)'Success'
+    write(6,*)'pmpi.F90: testing scatter...'
+  end if
 !
 ! mpi_scatter
 !
   call mpi_scatter (gsbuf, count, MPI_INTEGER, recvbuf, count, MPI_INTEGER, 0, comm, ret)
   call chkbuf ("MPI_Scatter", recvbuf(:), count, iam)
+  if (iam == 0) then
+    write(6,*)'Success'
+    write(6,*)'pmpi.F90: testing scatterv...'
+  end if
 
   allocate (atoabufsend(0:commsize-1))
   allocate (atoabufrecv(0:commsize-1))
   do i=0,commsize-1
     atoabufsend(i) = i
   end do
+!
+! mpi_scatterv: make just like mpi_scatter for simplicity.
+!
+  gsbuf(:,:) = 0
+  sendcounts(:) = count
+  sdispls(0) = 0
+  do i=1,commsize-1
+    sdispls(i) = sdispls(i-1) + sendcounts(i-1)
+  end do
+  call mpi_scatterv (sendbuf, sendcounts, sdispls, &
+                     MPI_INTEGER, gsbuf, count, &
+                     MPI_INTEGER, 0, comm, ret)
+  do i=0,count-1
+    if (gsbuf(i,iam) /= iam) then
+      write(6,*) "iam=", iam, "mpi_scatterv: bad gsbuf(", i,",",iam,")=", &
+           gsbuf(i,j), " not= ",iam
+      call mpi_abort (MPI_COMM_WORLD, -1, ret)
+    end if
+  end do
+  if (iam == 0) then
+    write(6,*)'Success'
+    write(6,*)'pmpi.F90: testing alltoall...'
+  end if
 !
 ! mpi_alltoall
 !
@@ -219,6 +297,35 @@ program pmpi
       call mpi_abort (MPI_COMM_WORLD, -1, ret)
     end if
   end do
+  if (iam == 0) then
+    write(6,*)'Success'
+    write(6,*)'pmpi.F90: testing alltoallv...'
+  end if
+!
+! mpi_alltoallv
+!
+  do j=0,commsize-1
+    if (j == iam) then
+      gsbuf(:,j) = j
+    else
+      gsbuf(:,j) = 0
+    end if
+  end do
+  call mpi_alltoallv (gsbuf, sendcounts, sdispls, MPI_INTEGER, &
+                      gsbuf, recvcounts, rdispls, MPI_INTEGER, comm, ret)
+  do j=0,commsize-1
+    do i=0,count-1
+      if (gsbuf(i,j) /= j) then
+        write(6,*) "iam=", iam, "mpi_alltoallv: bad gsbuf(", i,",",j,")=", &
+             gsbuf(i,j), " not= ",j
+        call mpi_abort (MPI_COMM_WORLD, -1, ret)
+      end if
+    end do
+  end do
+  if (iam == 0) then
+    write(6,*)'Success'
+    write(6,*)'pmpi.F90: testing reduce...'
+  end if
 !
 ! mpi_reduce
 !
@@ -245,14 +352,17 @@ program pmpi
       end if
     end do
   end do
+  if (iam == 0) then
+    write(6,*)'Success'
+    write(6,*)'pmpi.F90: testing allgatherv...'
+  end if
 !
 ! mpi_allgatherv: Make just like mpi_allgather for simplicity
 !
   gsbuf(:,:) = 0
   recvcounts(:) = count
-  displs(0) = 0
   call mpi_allgatherv (sendbuf, count, MPI_INTEGER, &
-                       gsbuf, recvcounts, displs, &
+                       gsbuf, recvcounts, rdispls, &
                        MPI_INTEGER, comm, ret)
   do j=0,commsize-1
     do i=0,count-1
