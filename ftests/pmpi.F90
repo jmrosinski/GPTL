@@ -1,3 +1,4 @@
+#undef DEBUG
 module myvars
   integer :: iam
   integer :: commsize

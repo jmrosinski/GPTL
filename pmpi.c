@@ -1,5 +1,5 @@
 /*
-** $Id: pmpi.c,v 1.6 2010-02-14 18:55:13 rosinski Exp $
+** $Id: pmpi.c,v 1.7 2010-02-17 16:58:12 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -75,7 +75,8 @@ int MPI_Recv (void *buf, int count, MPI_Datatype datatype, int source, int tag,
 
   if (sync_mpi) {
     ignoreret = GPTLstart ("sync_Recv");
-    ignoreret = PMPI_Barrier (comm);
+    /* Ignore status */
+    ignoreret = PMPI_Probe (source, tag, comm, status);
     ignoreret = GPTLstop ("sync_Recv");
   }
     
@@ -500,12 +501,6 @@ int MPI_Probe (int source, int tag, MPI_Comm comm, MPI_Status *status)
   int ret;
   int ignoreret;
 
-  if (sync_mpi) {
-    ignoreret = GPTLstart ("sync_Probe");
-    ignoreret = PMPI_Barrier (comm);
-    ignoreret = GPTLstop ("sync_Probe");
-  }
-    
   ignoreret = GPTLstart ("MPI_Probe");
   ret = PMPI_Probe (source, tag, comm, status);
   ignoreret = GPTLstop ("MPI_Probe");
@@ -520,12 +515,6 @@ int MPI_Ssend (void *buf, int count, MPI_Datatype datatype,
   int size;
   Timer *timer;
 
-  if (sync_mpi) {
-    ignoreret = GPTLstart ("sync_Ssend");
-    ignoreret = PMPI_Barrier (comm);
-    ignoreret = GPTLstop ("sync_Ssend");
-  }
-    
   ignoreret = GPTLstart ("MPI_Ssend");
   ret = PMPI_Ssend (buf, count, datatype, dest, tag, comm);
   ignoreret = GPTLstop ("MPI_Ssend");
