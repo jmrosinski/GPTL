@@ -49,9 +49,7 @@ program pmpi
   ret = gptlstart ("total")
 #endif
 
-  write(0,*)'Calling mpi_init'
   call mpi_init (ret)
-  write(0,*)'Calling setlinebuf_stdout'
 !  call setlinebuf_stdout ()
 
 ! For debugging, go into infinite loop so debugger can attach and reset
@@ -59,13 +57,10 @@ program pmpi
   do while (debugflag == 1)
   end do
 #endif
-  write(0,*)'Calling mpi_comm_rank'
+
   call mpi_comm_rank (comm, iam, ret)
-  write(0,*)'Hello from rank ', iam
-  write(0,*)'iam=',iam,'Calling mpi_comm_size'
   call mpi_comm_size (comm, commsize, ret)
-  write(0,*)'iam=',iam,'commsize is ', commsize
-  call flush()
+  if (iam == 0) write(6,*)'commsize is ', commsize
 
 !  stop 0
 
@@ -84,40 +79,28 @@ program pmpi
 ! mpi_probe
 !
   recvbuf(:) = -1
-  write(6,*)'iam=',iam,'Starting first mpi loop'
   if (mod (commsize, 2) == 0) then
     if (iam == 0) then
-      write(6,*)'pmpi.F90: testing send, recv, probe...'
+      write(6,*)'Testing send, recv, probe...'
     end if
 
     if (mod (iam, 2) == 0) then
-      write(6,*)'iam=',iam,'even calling send'
-      call flush()
       call mpi_send (sendbuf, count, MPI_INTEGER, dest, tag, comm, ret)
-      write(6,*)'iam=',iam,'even calling recv'
-      call flush()
       call mpi_recv (recvbuf, count, MPI_INTEGER, source, tag, comm, status, ret)
     else
-      write(6,*)'iam=',iam,'odd calling probe'
-      call flush()
       call mpi_probe (source, tag, comm, status, ret)
       if (ret /= MPI_SUCCESS) then
         write(6,*) "iam=", iam, " mpi_probe: bad return"
         call mpi_abort (MPI_COMM_WORLD, -1, ret)
       end if
-      write(6,*)'iam=',iam,'odd calling recv'
-      call flush()
       call mpi_recv (recvbuf, count, MPI_INTEGER, source, tag, comm, status, ret)
-      write(6,*)'iam=',iam,'odd calling send'
-      call flush()
       call mpi_send (sendbuf, count, MPI_INTEGER, dest, tag, comm, ret)
     end if
     call chkbuf ('mpi_send + mpi_recv', recvbuf(:), count, source)
 
     if (iam == 0) then
       write(6,*)'Success'
-      write(6,*)'pmpi.F90: testing ssend...'
-      call flush()
+      write(6,*)'Testing ssend...'
     end if
 !
 ! mpi_ssend
@@ -133,9 +116,11 @@ program pmpi
     call chkbuf ('mpi_send + mpi_recv', recvbuf(:), count, source)
     if (iam == 0) then
       write(6,*)'Success'
-      write(6,*)'pmpi.F90: testing sendrecv...'
-      call flush()
+      write(6,*)'Testing sendrecv...'
     end if
+  else
+    if (iam == 0) write(6,*)'NOTE: commsize=',commsize,' is odd so wont test', &
+                            'send, recv, probe, ssend'
   end if
 !
 ! mpi_sendrecv
@@ -147,8 +132,7 @@ program pmpi
   call chkbuf ('mpi_sendrecv', recvbuf(:), count, source)
   if (iam == 0) then
     write(6,*)'Success'
-    write(6,*)'pmpi.F90: testing irecv, isend, iprobe, itest, wait, waitall...'
-    call flush()
+    write(6,*)'Testing irecv, isend, iprobe, itest, wait, waitall...'
   end if
 !
 ! mpi_irecv
@@ -158,45 +142,28 @@ program pmpi
 ! mpi_wait
 ! mpi_waitall
 !
-  write(6,*)'iam=',iam,' calling irecv...'
-  call flush()
   recvbuf(:) = -1
   call mpi_irecv (recvbuf, count, MPI_INTEGER, source, tag, &
                   comm, recvreq, ret)
-  write(6,*)'iam=',iam,'calling iprobe...'
-  call flush()
   call mpi_iprobe (source, tag, comm, flag, status, ret)
-  write(6,*)'iam=',iam,'calling test...'
-  call flush()
   call mpi_test (recvreq, flag, status, ret)
-  write(6,*)'iam=',iam,'calling isend...'
-  call flush()
   call mpi_isend (sendbuf, count, MPI_INTEGER, dest, tag, &
                   comm, sendreq, ret)
-  write(6,*)'iam=',iam,'calling wait...'
-  call flush()
   call mpi_wait (recvreq, status, ret)
   call chkbuf ("mpi_wait", recvbuf(:), count, source)
 
-  write(6,*)'iam=',iam,'calling irecv 2nd time...'
-  call flush()
   recvbuf(:) = -1
   call mpi_irecv (recvbuf, count, MPI_INTEGER, source, tag, &
                   comm, recvreq, ret)
-  write(6,*)'iam=',iam,'calling isend 2nd time...'
-  call flush()
   call mpi_isend (sendbuf, count, MPI_INTEGER, dest, tag, &
                   comm, sendreq, ret)
-  write(6,*)'iam=',iam,'calling waitall...'
-  call flush()
   call mpi_waitall (1, recvreq, status, ret)
   call chkbuf ("mpi_waitall", recvbuf(:), count, source)
 
   call mpi_barrier (comm, ret)
   if (iam == 0) then
     write(6,*)'Success'
-    write(6,*)'pmpi.F90: testing bcast...'
-    call flush()
+    write(6,*)'Testing bcast...'
   end if
 !
 ! mpi_bcast
@@ -205,8 +172,7 @@ program pmpi
   call chkbuf ("mpi_bcast", sendbuf(:), count, 0)
   if (iam == 0) then
     write(6,*)'Success'
-    write(6,*)'pmpi.F90: testing allreduce...'
-    call flush()
+    write(6,*)'Testing allreduce...'
   end if
 !
 ! mpi_allreduce: need to reset sendbuf due to bcast just done
@@ -224,8 +190,7 @@ program pmpi
   call chkbuf ("mpi_allreduce", recvbuf(:), count, sum)
   if (iam == 0) then
     write(6,*)'Success'
-    write(6,*)'pmpi.F90: testing gather...'
-    call flush()
+    write(6,*)'Testing gather...'
   end if
 
   allocate (gsbufsend(0:count-1,0:commsize-1))
@@ -243,8 +208,7 @@ program pmpi
       call chkbuf ("mpi_gather", gsbufrecv(:,j), count, j)
     end do
     write(6,*)'Success'
-    write(6,*)'pmpi.F90: testing gatherv...'
-    call flush()
+    write(6,*)'Testing gatherv...'
   end if
 !
 ! mpi_gatherv: make just like mpi_gather for simplicity
@@ -263,8 +227,7 @@ program pmpi
       call chkbuf ("mpi_gatherv", gsbufrecv(:,j), count, j)
     end do
     write(6,*)'Success'
-    write(6,*)'pmpi.F90: testing scatter...'
-    call flush()
+    write(6,*)'Testing scatter...'
   end if
 !
 ! mpi_scatter
@@ -284,8 +247,7 @@ program pmpi
   call chkbuf ("mpi_scatter", recvbuf(:), count, iam)
   if (iam == 0) then
     write(6,*)'Success'
-    write(6,*)'pmpi.F90: testing scatterv...'
-    call flush()
+    write(6,*)'Testing scatterv...'
   end if
 !
 ! mpi_scatterv: make just like mpi_scatter for simplicity.
@@ -309,8 +271,7 @@ program pmpi
   call chkbuf ("mpi_scatterv", recvbuf(:), count, iam)
   if (iam == 0) then
     write(6,*)'Success'
-    write(6,*)'pmpi.F90: testing alltoall...'
-    call flush()
+    write(6,*)'Testing alltoall...'
   end if
 !
 ! mpi_alltoall
@@ -327,8 +288,7 @@ program pmpi
   call chkbuf ("mpi_alltoall", atoabufrecv(:), 1, iam)
   if (iam == 0) then
     write(6,*)'Success'
-    write(6,*)'pmpi.F90: testing alltoallv...'
-    call flush()
+    write(6,*)'Testing alltoallv...'
   end if
 !
 ! mpi_alltoallv
@@ -346,8 +306,7 @@ program pmpi
 
   if (iam == 0) then
     write(6,*)'Success'
-    write(6,*)'pmpi.F90: testing reduce...'
-    call flush()
+    write(6,*)'Testing reduce...'
   end if
 !
 ! mpi_reduce
@@ -363,8 +322,7 @@ program pmpi
 
   if (iam == 0) then
     write(6,*)'Success'
-    write(6,*)'pmpi.F90: testing allgather...'
-    call flush()
+    write(6,*)'Testing allgather...'
   end if
 !
 ! mpi_allgather
@@ -378,8 +336,7 @@ program pmpi
 
   if (iam == 0) then
     write(6,*)'Success'
-    write(6,*)'pmpi.F90: testing allgatherv...'
-    call flush()
+    write(6,*)'Testing allgatherv...'
   end if
 !
 ! mpi_allgatherv: Make just like mpi_allgather for simplicity
@@ -395,7 +352,6 @@ program pmpi
 
   if (iam == 0) then
     write(6,*)'Success. Calling finalize'
-    call flush()
   end if
 !
 ! mpi_finalize
