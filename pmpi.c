@@ -1,5 +1,5 @@
 /*
-** $Id: pmpi.c,v 1.7 2010-02-17 16:58:12 rosinski Exp $
+** $Id: pmpi.c,v 1.8 2010-02-17 23:12:13 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -18,14 +18,17 @@ static bool sync_mpi = false;
 int GPTLpmpi_setoption (const int option,
 			const int val)
 {
+  int retval;
+
   switch (option) {
   case GPTLsync_mpi:
     sync_mpi = (bool) val;
-    return 0;
+    retval = 0;
+    break;
   default:
-    return 1;
+    retval = 1;
   }
-  return 0;
+  return retval;
 }
 
 /*
