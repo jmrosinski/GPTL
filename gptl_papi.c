@@ -1,15 +1,15 @@
 /*
-** $Id: gptl_papi.c,v 1.75 2009-09-18 18:24:52 rosinski Exp $
+** $Id: gptl_papi.c,v 1.76 2010-02-17 23:59:54 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
 ** Contains routines which interface to PAPI library
 */
  
-#ifdef HAVE_PAPI
-
 #include "gptl.h"
 #include "private.h"
+
+#ifdef HAVE_PAPI
 
 #include <papi.h>
 #include <stdlib.h>
@@ -1279,7 +1279,7 @@ int GPTLget_npapievents (void)
 }
 
 #else
-#include "private.h"
+
 /*
 ** "Should not be called" entry points for public routines
 */

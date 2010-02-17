@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.c,v 1.150 2009-12-28 21:46:17 rosinski Exp $
+** $Id: gptl.c,v 1.151 2010-02-17 23:59:54 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -1204,7 +1204,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.150 2009-12-28 21:46:17 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.151 2010-02-17 23:59:54 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1824,7 +1824,7 @@ static void printstats (const Timer *timer,
   }
 
 #ifdef ENABLE_PMPI
-  if (timer->nbytes == 0)
+  if (timer->nbytes == 0.)
     fprintf (fp, "      -       ");
   else
     fprintf (fp, "%13.3e ", timer->nbytes / timer->count);
@@ -1942,7 +1942,7 @@ int GPTLpr_summary (MPI_Comm comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.150 2009-12-28 21:46:17 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.151 2010-02-17 23:59:54 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 
     /* Print heading */

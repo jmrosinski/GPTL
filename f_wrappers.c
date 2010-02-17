@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.49 2009-12-29 02:03:53 rosinski Exp $
+** $Id: f_wrappers.c,v 1.50 2010-02-17 23:59:54 rosinski Exp $
 **
 ** Author: Jim Rosinski
 ** 
@@ -98,12 +98,56 @@
 
 #endif
 
-int gptlinitialize ()
+/*
+** Local function prototypes
+*/
+
+int gptlinitialize (void);
+int gptlfinalize (void);
+int gptlpr (int *procid);
+int gptlpr_file (char *file, int nc1);
+#ifdef HAVE_MPI
+int gptlpr_summary (int *fcomm);
+int gptlbarrier (int *fcomm, char *name, int nc1);
+#else
+int gptlpr_summary (void);
+int gptlbarrier (void);
+#endif
+int gptlreset (void);
+int gptlstamp (double *wall, double *usr, double *sys);
+int gptlstart (char *name, int nc1);
+int gptlstop (char *name, int nc1);
+int gptlsetoption (int *option, int *val);
+int gptlenable (void);
+int gptldisable (void);
+int gptlsetutr (int *option);
+int gptlquery (const char *name, int *t, int *count, int *onflg, double *wallclock, 
+	       double *usr, double *sys, long long *papicounters_out, int *maxcounters, 
+	       int nc);
+int gptlquerycounters (const char *name, int *t, long long *papicounters_out, int nc);
+int gptlget_wallclock (const char *name, int *t, double *value, int nc);
+int gptlget_eventvalue (const char *timername, const char *eventname, int *t, double *value, 
+			int nc1, int nc2);
+int gptlget_nregions (int *t, int *nregions);
+int gptlget_regionname (int *t, int *region, char *name, int nc);
+int gptlget_memusage (int *size, int *rss, int *share, int *text, int *datastack);
+int gptlprint_memusage (const char *str, int nc);
+#ifdef HAVE_PAPI
+void gptl_papilibraryinit (void);
+int gptlevent_name_to_code (const char *str, int *code, int nc);
+int gptlevent_code_to_name (int *code, char *str, int nc);
+#endif
+
+/*
+** Fortran wrapper functions start here
+*/
+
+int gptlinitialize (void)
 {
   return GPTLinitialize ();
 }
 
-int gptlfinalize ()
+int gptlfinalize (void)
 {
   return GPTLfinalize ();
 }
@@ -175,9 +219,9 @@ int gptlbarrier (void)
 #endif
 
 
-int gptlreset ()
+int gptlreset (void)
 {
-  return GPTLreset();
+  return GPTLreset ();
 }
 
 int gptlstamp (double *wall, double *usr, double *sys)
@@ -212,12 +256,12 @@ int gptlsetoption (int *option, int *val)
   return GPTLsetoption (*option, *val);
 }
 
-int gptlenable ()
+int gptlenable (void)
 {
   return GPTLenable ();
 }
 
-int gptldisable ()
+int gptldisable (void)
 {
   return GPTLdisable ();
 }
@@ -309,7 +353,7 @@ int gptlprint_memusage (const char *str, int nc)
 #ifdef HAVE_PAPI
 #include <papi.h>
 
-void gptl_papilibraryinit ()
+void gptl_papilibraryinit (void)
 {
   (void) GPTL_PAPIlibraryinit ();
   return;

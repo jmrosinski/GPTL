@@ -1,5 +1,5 @@
 /*
-** $Id: get_memusage.c,v 1.5 2009-12-31 01:51:59 rosinski Exp $
+** $Id: get_memusage.c,v 1.6 2010-02-17 23:59:54 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -30,6 +30,8 @@
 #include <stdio.h>
 #include <unistd.h>
 #endif
+
+#include "gptl.h"    /* function prototypes */
 
 int GPTLget_memusage (int *size, int *rss, int *share, int *text, int *datastack)
 {
