@@ -102,8 +102,17 @@ void mpi_init (MPI_Fint *ierr);
 void mpi_finalize (MPI_Fint *ierr);
 #endif
 
+/*
+** Wart needed for MPI_Waitall
+*/
+
 #ifndef MPI_STATUS_SIZE
 #define MPI_STATUS_SIZE 5
+#endif
+
+/*
+** Local prototypes
+*/
 
 void mpi_send (void *buf, MPI_Fint *count, MPI_Fint *datatype, MPI_Fint *dest,
 	       MPI_Fint *tag, MPI_Fint *comm, MPI_Fint *__ierr);
@@ -171,13 +180,13 @@ void mpi_test (MPI_Fint *request, MPI_Fint *flag, MPI_Fint *status,
 
 #ifdef ENABLE_PMPI
 /*
-** These routines were adapted from the FPMPI distribution.
-** They ensure profiling of Fortran codes, using the routines defined in
-** gptl_pmpi.c
+** These routines were adapted from the FPMPI distribution. They ensure profiling of 
+** Fortran codes, using the routines defined in pmpi.c
 */
 
 /*
-** mpi_init requires iargc and getarg
+** mpi_init requires iargc and getarg. If these exist, define mpi_init and mpi_finalize
+** wrappers so that GPTLinitialize and GPTLpr will be called.
 */
 
 #ifdef HAVE_IARGCGETARG
@@ -237,7 +246,6 @@ void mpi_finalize (MPI_Fint *ierr)
 {
   *ierr = MPI_Finalize();
 }
-#endif
 #endif
 
 void mpi_send (void *buf, MPI_Fint *count, MPI_Fint *datatype, MPI_Fint *dest,
