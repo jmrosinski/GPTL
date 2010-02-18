@@ -97,6 +97,78 @@
 
 #endif
 
+#ifdef HAVE_IARGCGETARG
+void mpi_init (MPI_Fint *ierr)
+void mpi_finalize (MPI_Fint *ierr)
+#endif
+
+#ifndef MPI_STATUS_SIZE
+#define MPI_STATUS_SIZE 5
+
+void mpi_send (void *buf, MPI_Fint *count, MPI_Fint *datatype, MPI_Fint *dest,
+	       MPI_Fint *tag, MPI_Fint *comm, MPI_Fint *__ierr);
+void mpi_recv (void *buf, MPI_Fint *count, MPI_Fint *datatype, 
+	       MPI_Fint *source, MPI_Fint *tag, MPI_Fint *comm, 
+	       MPI_Fint *status, MPI_Fint *__ierr);
+void mpi_sendrecv (void *sendbuf, MPI_Fint *sendcount, MPI_Fint *sendtype, 
+		   MPI_Fint *dest, MPI_Fint *sendtag, 
+		   void *recvbuf, MPI_Fint *recvcount, MPI_Fint *recvtype, 
+		   MPI_Fint *source, MPI_Fint *recvtag, 
+		   MPI_Fint *comm, MPI_Fint *status, MPI_Fint *__ierr);
+void mpi_isend (void *buf, MPI_Fint *count, MPI_Fint *datatype, 
+		MPI_Fint *dest, MPI_Fint *tag, MPI_Fint *comm, 
+		MPI_Fint *request, MPI_Fint *__ierr);
+void mpi_irecv (void *buf, MPI_Fint *count, MPI_Fint *datatype, 
+		MPI_Fint *source, MPI_Fint *tag, MPI_Fint *comm, 
+		MPI_Fint *request, MPI_Fint *__ierr);
+void mpi_wait (MPI_Fint *request, MPI_Fint *status, MPI_Fint *__ierr);
+void mpi_waitall (MPI_Fint *count, MPI_Fint array_of_requests[], 
+                  MPI_Fint array_of_statuses[][MPI_STATUS_SIZE], 
+                  MPI_Fint *__ierr);
+void mpi_barrier (MPI_Fint *comm, MPI_Fint *__ierr);
+void mpi_bcast (void *buffer, MPI_Fint *count, MPI_Fint *datatype, 
+		MPI_Fint *root, MPI_Fint *comm, MPI_Fint *__ierr);
+void mpi_allreduce (void *sendbuf, void *recvbuf, MPI_Fint *count, 
+		    MPI_Fint *datatype, MPI_Fint *op, MPI_Fint *comm,
+		    MPI_Fint *__ierr);
+void mpi_gather (void *sendbuf, MPI_Fint *sendcount, MPI_Fint *sendtype,
+		 void *recvbuf, MPI_Fint *recvcount, MPI_Fint *recvtype, 
+		 MPI_Fint *root, MPI_Fint *comm, MPI_Fint *__ierr);
+void mpi_gatherv (void *sendbuf, MPI_Fint *sendcount, MPI_Fint *sendtype,
+		  void *recvbuf, MPI_Fint *recvcounts, MPI_Fint *displs,
+		  MPI_Fint *recvtype, MPI_Fint *root, MPI_Fint *comm, MPI_Fint *__ierr);
+void mpi_scatter (void *sendbuf, MPI_Fint *sendcount, MPI_Fint *sendtype, 
+		  void *recvbuf, MPI_Fint *recvcount, MPI_Fint *recvtype, 
+		  MPI_Fint *root, MPI_Fint *comm, MPI_Fint *__ierr);
+void mpi_alltoall (void *sendbuf, MPI_Fint *sendcount, MPI_Fint *sendtype,
+		   void *recvbuf, MPI_Fint *recvcount, MPI_Fint *recvtype, 
+		   MPI_Fint *comm, MPI_Fint *__ierr);
+void mpi_reduce (void *sendbuf, void *recvbuf, MPI_Fint *count, 
+		 MPI_Fint *datatype, MPI_Fint *op, MPI_Fint *root, 
+		 MPI_Fint *comm, MPI_Fint *__ierr);
+void mpi_allgather (void *sendbuf, MPI_Fint *sendcount, MPI_Fint *sendtype,
+		    void *recvbuf, MPI_Fint *recvcount, MPI_Fint *recvtype, 
+		    MPI_Fint *comm, MPI_Fint *__ierr);
+void mpi_allgatherv (void *sendbuf, MPI_Fint *sendcount, MPI_Fint *sendtype, 
+		     void *recvbuf, MPI_Fint *recvcounts, MPI_Fint *displs, 
+		     MPI_Fint *recvtype, MPI_Fint *comm, MPI_Fint *__ierr);
+void mpi_iprobe (MPI_Fint *source, MPI_Fint *tag, MPI_Fint *comm,
+		 MPI_Fint *flag, MPI_Fint *status, MPI_Fint *__ierr);
+void mpi_probe (MPI_Fint *source, MPI_Fint *tag, MPI_Fint *comm,
+		MPI_Fint *status, MPI_Fint *__ierr);
+void mpi_ssend (void *buf, MPI_Fint *count, MPI_Fint *datatype, MPI_Fint *dest,
+		MPI_Fint *tag, MPI_Fint *comm, MPI_Fint *__ierr);
+void mpi_alltoallv (void *sendbuf, MPI_Fint *sendcnts, MPI_Fint *sdispls, 
+		    MPI_Fint *sendtype, void *recvbuf, MPI_Fint *recvcnts,
+		    MPI_Fint *rdispls, MPI_Fint *recvtype, MPI_Fint *comm, 
+		    MPI_Fint *__ierr);
+void mpi_scatterv (void *sendbuf, MPI_Fint *sendcnts, MPI_Fint *displs, 
+		   MPI_Fint *sendtype, void *recvbuf, MPI_Fint *recvcnt,
+		   MPI_Fint *recvtype, MPI_Fint *root, MPI_Fint *comm, 
+		   MPI_Fint *__ierr );
+void mpi_test (MPI_Fint *request, MPI_Fint *flag, MPI_Fint *status, 
+	       MPI_Fint *__ierr );
+
 #ifdef ENABLE_PMPI
 /*
 ** These routines were adapted from the FPMPI distribution.
@@ -166,9 +238,6 @@ void mpi_finalize (MPI_Fint *ierr)
   *ierr = MPI_Finalize();
 }
 #endif
-
-#ifndef MPI_STATUS_SIZE
-#define MPI_STATUS_SIZE 5
 #endif
 
 void mpi_send (void *buf, MPI_Fint *count, MPI_Fint *datatype, MPI_Fint *dest,
