@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.h,v 1.55 2009-12-29 02:03:53 rosinski Exp $
+** $Id: gptl.h,v 1.56 2010-02-18 04:23:08 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -112,7 +112,7 @@ extern int GPTLget_wallclock (const char *, int, double *);
 extern int GPTLget_eventvalue (const char *, const char *, int, double *);
 extern int GPTLget_nregions (int, int *);
 extern int GPTLget_regionname (int, int, char *, int);
-extern int GPTL_PAPIlibraryinit ();
+extern int GPTL_PAPIlibraryinit (void);
 extern int GPTLevent_name_to_code (const char *, int *);
 extern int GPTLevent_code_to_name (const int, char *);
 
