@@ -98,8 +98,8 @@
 #endif
 
 #ifdef HAVE_IARGCGETARG
-void mpi_init (MPI_Fint *ierr)
-void mpi_finalize (MPI_Fint *ierr)
+void mpi_init (MPI_Fint *ierr);
+void mpi_finalize (MPI_Fint *ierr);
 #endif
 
 #ifndef MPI_STATUS_SIZE
