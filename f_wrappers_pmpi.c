@@ -102,6 +102,8 @@ void mpi_init (MPI_Fint *ierr);
 void mpi_finalize (MPI_Fint *ierr);
 #endif
 
+#ifdef HAVE_MPI
+
 /*
 ** Wart needed for MPI_Waitall
 */
@@ -525,5 +527,7 @@ void mpi_test (MPI_Fint *request, MPI_Fint *flag, MPI_Fint *status,
   }
 }
 
-
+/* ENABLE_PMPI */
+#endif
+/* HAVE_MPI */
 #endif
