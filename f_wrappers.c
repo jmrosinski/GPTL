@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.50 2010-02-17 23:59:54 rosinski Exp $
+** $Id: f_wrappers.c,v 1.51 2010-02-18 00:03:19 rosinski Exp $
 **
 ** Author: Jim Rosinski
 ** 
@@ -102,40 +102,40 @@
 ** Local function prototypes
 */
 
-int gptlinitialize (void);
-int gptlfinalize (void);
-int gptlpr (int *procid);
-int gptlpr_file (char *file, int nc1);
+extern int gptlinitialize (void);
+extern int gptlfinalize (void);
+extern int gptlpr (int *procid);
+extern int gptlpr_file (char *file, int nc1);
 #ifdef HAVE_MPI
-int gptlpr_summary (int *fcomm);
-int gptlbarrier (int *fcomm, char *name, int nc1);
+extern int gptlpr_summary (int *fcomm);
+extern int gptlbarrier (int *fcomm, char *name, int nc1);
 #else
-int gptlpr_summary (void);
-int gptlbarrier (void);
+extern int gptlpr_summary (void);
+extern int gptlbarrier (void);
 #endif
-int gptlreset (void);
-int gptlstamp (double *wall, double *usr, double *sys);
-int gptlstart (char *name, int nc1);
-int gptlstop (char *name, int nc1);
-int gptlsetoption (int *option, int *val);
-int gptlenable (void);
-int gptldisable (void);
-int gptlsetutr (int *option);
-int gptlquery (const char *name, int *t, int *count, int *onflg, double *wallclock, 
-	       double *usr, double *sys, long long *papicounters_out, int *maxcounters, 
-	       int nc);
-int gptlquerycounters (const char *name, int *t, long long *papicounters_out, int nc);
-int gptlget_wallclock (const char *name, int *t, double *value, int nc);
-int gptlget_eventvalue (const char *timername, const char *eventname, int *t, double *value, 
+extern int gptlreset (void);
+extern int gptlstamp (double *wall, double *usr, double *sys);
+extern int gptlstart (char *name, int nc1);
+extern int gptlstop (char *name, int nc1);
+extern int gptlsetoption (int *option, int *val);
+extern int gptlenable (void);
+extern int gptldisable (void);
+extern int gptlsetutr (int *option);
+extern int gptlquery (const char *name, int *t, int *count, int *onflg, double *wallclock, 
+		      double *usr, double *sys, long long *papicounters_out, int *maxcounters, 
+		      int nc);
+extern int gptlquerycounters (const char *name, int *t, long long *papicounters_out, int nc);
+extern int gptlget_wallclock (const char *name, int *t, double *value, int nc);
+extern int gptlget_eventvalue (const char *timername, const char *eventname, int *t, double *value, 
 			int nc1, int nc2);
-int gptlget_nregions (int *t, int *nregions);
-int gptlget_regionname (int *t, int *region, char *name, int nc);
-int gptlget_memusage (int *size, int *rss, int *share, int *text, int *datastack);
-int gptlprint_memusage (const char *str, int nc);
+extern int gptlget_nregions (int *t, int *nregions);
+extern int gptlget_regionname (int *t, int *region, char *name, int nc);
+extern int gptlget_memusage (int *size, int *rss, int *share, int *text, int *datastack);
+extern int gptlprint_memusage (const char *str, int nc);
 #ifdef HAVE_PAPI
-void gptl_papilibraryinit (void);
-int gptlevent_name_to_code (const char *str, int *code, int nc);
-int gptlevent_code_to_name (int *code, char *str, int nc);
+extern void gptl_papilibraryinit (void);
+extern int gptlevent_name_to_code (const char *str, int *code, int nc);
+extern int gptlevent_code_to_name (int *code, char *str, int nc);
 #endif
 
 /*
