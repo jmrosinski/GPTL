@@ -46,7 +46,6 @@ hopefully useful data can be gathered.
 <b><em>pmpi.F90:</em></b>
 <pre>
 <div style="background-color:white;">
-#undef DEBUG
 module myvars
   integer :: iam
   integer :: commsize
@@ -85,7 +84,6 @@ program pmpi
   integer, allocatable :: atoadispls(:)
 
   logical :: flag
-  integer :: debugflag = 1
 
   ret = gptlsetoption (gptloverhead, 0)
   ret = gptlsetoption (gptlpercent, 0)
