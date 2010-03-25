@@ -8,7 +8,7 @@ dynamic call tree">
 <meta name="Author" content="Jim Rosinski">
 <h1>GPTL - General Purpose Timing Library</h1>
 <h2>(with optional PAPI interface)</h2>
-<h2>Download the latest release by clicking <a href="gptl3_6.tar.gz">here</a>
+<h2>Download the latest release by clicking <a href="gptl3_6_1.tar.gz">here</a>
 </head>
 <body bgcolor="peachpuff">
 
@@ -112,7 +112,19 @@ Stats for thread 0:
 
 <HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
 <h2>What's new in the latest release
-  (<a href="gptl3_6.tar.gz">gptl3_6</a>)</h2>
+  (<a href="gptl3_6_1.tar.gz">gptl3_6_1.tar.gz</a>)</h2>
+<ul>
+<li>Bugfix for auto-profiling MPI_Recv wrapper (when ENABLE_PMPI is set in macros.make): 
+ previous version could cause hangs in some cases.
+<li>Added auto-profiling entries for more MPI routines: MPI_Iprobe, MPI_Probe, MPI_Ssend, 
+ MPI_Alltoallv, MPI_Scatterv, MPI_Test.
+<li>Better estimates of bytes transferred for auto-profiled MPI routines.
+</ul>
+
+<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
+<h2>What was new in previous releases
+
+<h3>GPTL3.6 (<a href="older/gptl3_6.tar.gz">gptl3_6.tar.gz</a>)</h3>
 <ul>
 <li>Makefile simplification. Can now run "make" from ctests/ and ftests/.
 <li>Initial set of PMPI wrappers. Automatically generates MPI times and
@@ -121,9 +133,6 @@ Stats for thread 0:
   macros.make.linux). Note that the set of MPI routines profiled is not yet
   complete. This option has not yet been fully tested.
 </ul>
-
-<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
-<h2>What was new in previous releases
 
 <h3>GPTL3.5.2 (<a href="older/gptl3_5_2.tar.gz">gptl3_5_2.tar.gz</a>)</h3>
 <ul>
@@ -170,7 +179,7 @@ than an integer index.
 <li> <em><b>hex2name.pl</b></em> converts auto-instrumented entries for thread summary regions.
 </ul>
 
-<h3>GPTL3.4.7 <a href="older/gptl3_4_7.tar.gz">gptl3_4_7.tar.gz</a>)</h3>
+<h3>GPTL3.4.7 <a href="older/gptl3_4_7.tar.gz">(gptl3_4_7.tar.gz</a>)</h3>
 <ul>
 <li> Derived events based on PAPI:
   <ul>
@@ -208,7 +217,7 @@ than an integer index.
 <HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
 <h2>Download and Installation</h2>
 <ul> 
-<li> Download the most recent release by clicking this link: <a href="gptl3_6.tar.gz">gptl3_6.tar.gz</a>.
+<li> Download the most recent release by clicking this link: <a href="gptl3_6_1.tar.gz">gptl3_6_1.tar.gz</a>.
 <li> Earlier versions can be found <a href="older/">here</a>.
 <li> To build and install <b>GPTL</b>, see the <A HREF="./INSTALL">INSTALL</a> file.
   You'll need to create a <b><em>macros.make</em></b> file appropriate for your target
