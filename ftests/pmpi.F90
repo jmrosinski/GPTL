@@ -62,8 +62,6 @@ program pmpi
   call mpi_comm_size (comm, commsize, ret)
   if (iam == 0) write(6,*)'commsize is ', commsize
 
-!  stop 0
-
   do i=0,count-1
     sendbuf(i) = iam
   end do

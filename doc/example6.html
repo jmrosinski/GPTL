@@ -46,6 +46,7 @@ hopefully useful data can be gathered.
 <b><em>pmpi.F90:</em></b>
 <pre>
 <div style="background-color:white;">
+#undef DEBUG
 module myvars
   integer :: iam
   integer :: commsize
@@ -409,7 +410,7 @@ subroutine chkbuf (msg, recvbuf, count, val)
   use myvars
   implicit none
 
-#include <mpif.h>
+#include &#60mpif.h&gt
 
   character(len=*), intent(in) :: msg
 
