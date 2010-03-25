@@ -112,7 +112,7 @@ Stats for thread 0:
 
 <HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
 <h2>What's new in the latest release
-  (<a href="gptl3_6.tar.gz">gptl3_6.tar.gz</a>)</h2>
+  (<a href="gptl3_6.tar.gz">gptl3_6</a>)</h2>
 <ul>
 <li>Makefile simplification. Can now run "make" from ctests/ and ftests/.
 <li>Initial set of PMPI wrappers. Automatically generates MPI times and
@@ -125,13 +125,13 @@ Stats for thread 0:
 <HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
 <h2>What was new in previous releases
 
-<h3>GPTL3.5.2 <a href="older/gptl3_5_2.tar.gz">gptl3_5_2.tar.gz</a>)</h3>
+<h3>GPTL3.5.2 (<a href="older/gptl3_5_2.tar.gz">gptl3_5_2.tar.gz</a>)</h3>
 <ul>
 <li> Bugfix for when omp_get_max_threads() returns zero.
 <li> <b>GPTLallocate()</b> returns error when asked for zero bytes.
 </ul>
 
-<h3>GPTL3.5.1 <a href="older/gptl3_5_1.tar.gz">gptl3_5_1.tar.gz</a>)</h3>
+<h3>GPTL3.5.1 (<a href="older/gptl3_5_1.tar.gz">gptl3_5_1.tar.gz</a>)</h3>
 <ul>
 <li> OpenMP applications now work when GPTL is built with PTHREADS
 <li> Fortran bugfix enables longer event names. This allows one to enable the
@@ -140,7 +140,7 @@ Stats for thread 0:
 <li> Tested on AIX.
 </ul>
 
-<h3>GPTL3.5 <a href="older/gptl3_5.tar.gz">gptl3_5.tar.gz</a>)</h3>
+<h3>GPTL3.5 (<a href="older/gptl3_5.tar.gz">gptl3_5.tar.gz</a>)</h3>
 <ul>
 <li> Easier linking with C++ applications.
 <li> Options for call-tree generation based on number of invocations per
@@ -251,6 +251,7 @@ Comments in the sample <b><em>macros.make</em></b> files describe
   <A HREF="example5.html">Example 5</A> is a Fortran code which uses
   <b>gptlprocess_namelist()</b> and an associated namelist file to
   set <b>GPTL</b> options.
+  <p>
   <A HREF="example6.html">Example 6</A> is a Fortran code which utilizes the
   new <b>ENABLE_PMPI</b> option to automatically time various MPI calls and print the
   average number of bytes transferred.
