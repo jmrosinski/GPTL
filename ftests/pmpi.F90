@@ -119,7 +119,7 @@ program pmpi
       write(6,*)'Testing sendrecv...'
     end if
   else
-    if (iam == 0) write(6,*)'NOTE: commsize=',commsize,' is odd so wont test', &
+    if (iam == 0) write(6,*)'NOTE: commsize=',commsize,' is odd so wont test ', &
                             'send, recv, probe, ssend'
   end if
 !

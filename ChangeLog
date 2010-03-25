@@ -1,3 +1,8 @@
+gptl3_6_1: Bugfix for auto-profiling MPI_Recv: it could hang in gptl3_6.
+	   Auto-profiling support for additional MPI routines.
+	   Better estimates of bytes transfer for some auto-profiled
+	   MPI routines.
+gptl3_6:   Support for auto-profiling some MPI routines.
 gptl3_5_3: Makefile simplification. Can now run "make" from ctests/ and
 	   ftests/. Initial set of PMPI wrappers, and synchronize option.
 gptl3_5_2: Bugfix for when omp_get_max_threads() returns zero.
