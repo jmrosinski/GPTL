@@ -439,10 +439,10 @@ Now compile and run:
 Here's the output contained in file timing.1:
 <pre>
 <div style="background-color:white;">
-Stats for thread 1:
+Stats for thread 0:
                             Called  Recurse Wallclock max       min       AVG_MPI_BYTES 
-  MPI_Init_thru_Finalize           1    -       0.003     0.003     0.003       -       
-    MPI_Probe                      1    -       0.001     0.001     0.001       -       
+  MPI_Init_thru_Finalize           1    -       0.001     0.001     0.001       -       
+    MPI_Probe                      1    -       0.000     0.000     0.000       -       
     sync_Recv                      2    -       0.000     0.000     0.000       -       
     MPI_Recv                       2    -       0.000     0.000     0.000     4.096e+03 
     MPI_Send                       1    -       0.000     0.000     0.000     4.096e+03 
@@ -452,7 +452,7 @@ Stats for thread 1:
     MPI_Iprobe                     1    -       0.000     0.000     0.000       -       
     MPI_Test                       1    -       0.000     0.000     0.000       -       
     MPI_Isend                      2    -       0.000     0.000     0.000     4.096e+03 
-    MPI_Wait                       1    -       0.000     0.000     0.000       -       
+    MPI_Wait                       2    -       0.000     0.000     0.000       -       
     MPI_Waitall                    1    -       0.000     0.000     0.000       -       
     MPI_Barrier                    1    -       0.000     0.000     0.000       -       
     sync_Bcast                     1    -       0.000     0.000     0.000       -       
@@ -477,7 +477,7 @@ Stats for thread 1:
     MPI_Allgather                  1    -       0.000     0.000     0.000     8.192e+03 
     sync_Allgatherv                1    -       0.000     0.000     0.000       -       
     MPI_Allgatherv                 1    -       0.000     0.000     0.000     8.192e+03 
-Total calls           = 40
+Total calls           = 41
 Total recursive calls = 0
 </div>
 </pre>
