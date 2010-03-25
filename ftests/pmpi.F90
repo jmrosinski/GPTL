@@ -50,7 +50,6 @@ program pmpi
 #endif
 
   call mpi_init (ret)
-!  call setlinebuf_stdout ()
 
 ! For debugging, go into infinite loop so debugger can attach and reset
 #ifdef DEBUG
@@ -157,6 +156,7 @@ program pmpi
   call mpi_isend (sendbuf, count, MPI_INTEGER, dest, tag, &
                   comm, sendreq, ret)
   call mpi_waitall (1, recvreq, status, ret)
+  call mpi_waitall (1, sendreq, status, ret)
   call chkbuf ("mpi_waitall", recvbuf(:), count, source)
 
   call mpi_barrier (comm, ret)
