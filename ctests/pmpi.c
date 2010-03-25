@@ -19,7 +19,7 @@ int main (int argc, char **argv)
   int *atoabufsend, *atoabufrecv;
   int sum;
   MPI_Status status;
-  MPI_Request request;
+  MPI_Request sendreq, recvreq;
   int dest;
   int source;
 
@@ -73,17 +73,19 @@ int main (int argc, char **argv)
   chkbuf ("MPI_Sendrecv", recvbuf, count, source);
 
   ret = MPI_Irecv (recvbuf, count, MPI_INT, source, tag, 
-		   comm, &request);
+		   comm, &recvreq);
   ret = MPI_Isend (sendbuf, count, MPI_INT, dest, tag, 
-		   comm, &request);
-  ret = MPI_Wait (&request, &status);
+		   comm, &sendreq);
+  ret = MPI_Wait (&recvreq, &status);
+  ret = MPI_Wait (&sendreq, &status);
   chkbuf ("MPI_Wait", recvbuf, count, source);
 
   ret = MPI_Irecv (recvbuf, count, MPI_INT, source, tag, 
-		   comm, &request);
+		   comm, &recvreq);
   ret = MPI_Isend (sendbuf, count, MPI_INT, dest, tag, 
-		   comm, &request);
-  ret = MPI_Waitall (1, &request, &status);
+		   comm, &sendreq);
+  ret = MPI_Waitall (1, &recvreq, &status);
+  ret = MPI_Waitall (1, &sendreq, &status);
   chkbuf ("MPI_Waitall", recvbuf, count, source);
 
   ret = MPI_Barrier (comm);
