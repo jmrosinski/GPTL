@@ -97,13 +97,10 @@ program pmpi
 #endif
 
   call mpi_init (ret)
-!  call setlinebuf_stdout ()
 
   call mpi_comm_rank (comm, iam, ret)
   call mpi_comm_size (comm, commsize, ret)
   if (iam == 0) write(6,*)'commsize is ', commsize
-
-!  stop 0
 
   do i=0,count-1
     sendbuf(i) = iam
@@ -160,7 +157,7 @@ program pmpi
       write(6,*)'Testing sendrecv...'
     end if
   else
-    if (iam == 0) write(6,*)'NOTE: commsize=',commsize,' is odd so wont test', &
+    if (iam == 0) write(6,*)'NOTE: commsize=',commsize,' is odd so wont test ', &
                             'send, recv, probe, ssend'
   end if
 !
@@ -412,7 +409,7 @@ subroutine chkbuf (msg, recvbuf, count, val)
   use myvars
   implicit none
 
-#include &#60mpif.h&gt
+#include <mpif.h>
 
   character(len=*), intent(in) :: msg
 
