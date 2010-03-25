@@ -191,6 +191,7 @@ program pmpi
   call mpi_isend (sendbuf, count, MPI_INTEGER, dest, tag, &
                   comm, sendreq, ret)
   call mpi_wait (recvreq, status, ret)
+  call mpi_wait (sendreq, status, ret)
   call chkbuf ("mpi_wait", recvbuf(:), count, source)
 
   recvbuf(:) = -1
