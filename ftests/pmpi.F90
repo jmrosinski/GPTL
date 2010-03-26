@@ -12,7 +12,7 @@ program pmpi
 #include "../gptl.inc"
 
   integer, parameter :: tag = 98
-  integer, parameter :: count = 1024
+  integer, parameter :: count = 100000
 
   integer :: i, j, ret
   integer :: val
