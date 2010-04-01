@@ -1,5 +1,5 @@
 /*
-** $Id: print_memusage.c,v 1.8 2010-04-01 15:35:32 rosinski Exp $
+** $Id: print_memusage.c,v 1.9 2010-04-01 18:54:16 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -16,7 +16,7 @@
 #include <stdlib.h>
 
 static int nearest_powerof2 (const int);
-static int convert_to_bytes = 1;   /* true */
+static int convert_to_mb = 1;   /* true */
 
 int GPTLprint_memusage (const char *str)
 {
@@ -34,11 +34,25 @@ int GPTLprint_memusage (const char *str)
     return -1;
 
   /*
+  ** Under AIX use max rss as returned by getrusage. If someone knows how to 
+  ** get the process size under AIX please tell me.
+  */
+
+#ifdef _AIX
+  bytesperblock = 1024;
+  blockstomb = bytesperblock / (1024.*1024.);
+  if (convert_to_mb)
+    printf ("%s MAX rss=%.1f MB\n", str, size*blockstomb);
+  else
+    printf ("%s MAX rss=%d\n", str, size);
+#else
+
+  /*
   ** Determine size in bytes of memory usage info presented by the OS: Method: allocate a 
   ** known amount of memory and see how much bigger the process becomes.
   */
 
-  if (convert_to_bytes && bytesperblock == -1 && (space = malloc (nbytes))) {
+  if (convert_to_mb && bytesperblock == -1 && (space = malloc (nbytes))) {
     if (GPTLget_memusage (&size2, &rss2, &share2, &text2, &datastack2) == 0) {
       /*
       ** Estimate bytes per block, then refine to nearest power of 2.
@@ -60,6 +74,7 @@ int GPTLprint_memusage (const char *str)
   else
     printf ("%s size=%d rss=%d share=%d text=%d datastack=%d\n", 
 	    str, size, rss, share, text, datastack);
+#endif
 
   return 0;
 }

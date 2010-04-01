@@ -7,7 +7,9 @@
       integer :: nregions
       integer count, of       ! for gptlquery
       integer(8) :: pc        ! for gptlquery
+      integer(8), allocatable :: iarr8(:)
       real(8) :: wc, usr, sys ! for gptlquery
+      character(len=80) :: str
 
       write(6,*)'testbasics: Testing basic GPTL usage...'
       write(6,*)'Testing gptlinitialize...'
@@ -46,10 +48,20 @@
       write(6,*)'Success: wc=', wc
 
       write(6,*)'Testing gptlprint_memusage...'
-      if (gptlprint_memusage ('testbasics') /= 0) then
+      str = 'testbasics before allocating 100 MB'
+      if (gptlprint_memusage (trim(str)) /= 0) then
         write(6,*)'Failure in gptlprint_memusage'
         call exit(1)
       end if
+
+      allocate (iarr8(13107200))
+
+      str = 'testbasics after allocating 100 MB'
+      if (gptlprint_memusage (trim(str)) /= 0) then
+        write(6,*)'Failure in gptlprint_memusage'
+        call exit(1)
+      end if
+
       write(6,*)'Success'
 
       write(6,*)'Testing gptldisable/gptlenable...'

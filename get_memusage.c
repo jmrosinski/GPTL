@@ -1,5 +1,5 @@
 /*
-** $Id: get_memusage.c,v 1.7 2010-04-01 15:35:32 rosinski Exp $
+** $Id: get_memusage.c,v 1.8 2010-04-01 18:54:16 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -16,7 +16,8 @@
 
 #include <sys/resource.h>
 
-#ifdef AIX
+/* _AIX is automatically defined when using the AIX C compilers */
+#ifdef _AIX
 #include <sys/times.h>
 #endif
 
