@@ -55,6 +55,7 @@
       end if
 
       allocate (iarr8(13107200))
+      iarr8(:) = 0
 
       str = 'testbasics after allocating 100 MB'
       if (gptlprint_memusage (trim(str)) /= 0) then

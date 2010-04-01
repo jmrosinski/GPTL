@@ -1,5 +1,5 @@
 /*
-** $Id: print_memusage.c,v 1.9 2010-04-01 18:54:16 rosinski Exp $
+** $Id: print_memusage.c,v 1.10 2010-04-01 18:59:27 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -42,9 +42,9 @@ int GPTLprint_memusage (const char *str)
   bytesperblock = 1024;
   blockstomb = bytesperblock / (1024.*1024.);
   if (convert_to_mb)
-    printf ("%s MAX rss=%.1f MB\n", str, size*blockstomb);
+    printf ("%s max rss=%.1f MB\n", str, rss*blockstomb);
   else
-    printf ("%s MAX rss=%d\n", str, size);
+    printf ("%s max rss=%d\n", str, rss);
 #else
 
   /*
