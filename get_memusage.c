@@ -1,5 +1,5 @@
 /*
-** $Id: get_memusage.c,v 1.6 2010-02-17 23:59:54 rosinski Exp $
+** $Id: get_memusage.c,v 1.7 2010-04-01 15:35:32 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -41,8 +41,8 @@ int GPTLget_memusage (int *size, int *rss, int *share, int *text, int *datastack
   static char *head = "/proc/";   /* part of path */
   static char *tail = "/statm";   /* part of path */
   char file[19];                  /* full path to file in /proc */
-  int dum;                        /* unused */
-  int ret;
+  int dum;                        /* placeholder for unused return arguments */
+  int ret;                        /* function return value */
 
   /*
   ** The file we want to open is /proc/<pid>/statm
@@ -65,7 +65,8 @@ int GPTLget_memusage (int *size, int *rss, int *share, int *text, int *datastack
   ** arguments, close the file and return.
   */
 
-  ret = fscanf (fd, "%d %d %d %d %d %d %d", size, rss, share, text, datastack, &dum, &dum);
+  ret = fscanf (fd, "%d %d %d %d %d %d %d", 
+		size, rss, share, text, datastack, &dum, &dum);
   ret = fclose (fd);
   return 0;
 

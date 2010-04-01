@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.52 2010-02-18 04:45:58 rosinski Exp $
+** $Id: f_wrappers.c,v 1.53 2010-04-01 15:35:32 rosinski Exp $
 **
 ** Author: Jim Rosinski
 ** 
@@ -133,7 +133,7 @@ int gptlget_regionname (int *t, int *region, char *name, int nc);
 int gptlget_memusage (int *size, int *rss, int *share, int *text, int *datastack);
 int gptlprint_memusage (const char *str, int nc);
 #ifdef HAVE_PAPI
-void gptl_papilibraryinit (void);
+int gptl_papilibraryinit (void);
 int gptlevent_name_to_code (const char *str, int *code, int nc);
 int gptlevent_code_to_name (int *code, char *str, int nc);
 #endif
@@ -353,10 +353,9 @@ int gptlprint_memusage (const char *str, int nc)
 #ifdef HAVE_PAPI
 #include <papi.h>
 
-void gptl_papilibraryinit (void)
+int gptl_papilibraryinit (void)
 {
-  (void) GPTL_PAPIlibraryinit ();
-  return;
+  return GPTL_PAPIlibraryinit ();;
 }
 
 int gptlevent_name_to_code (const char *str, int *code, int nc)

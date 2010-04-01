@@ -141,6 +141,7 @@ ifeq ($(TEST_AUTOPROFILE),yes)
 endif
 	@echo
 	@echo "All C tests passed"
+	@echo
 
 install: $(UTILEXES)
 ifneq ($(UTILEXES),)

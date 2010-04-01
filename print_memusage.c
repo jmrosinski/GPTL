@@ -1,5 +1,5 @@
 /*
-** $Id: print_memusage.c,v 1.7 2010-03-27 18:39:00 rosinski Exp $
+** $Id: print_memusage.c,v 1.8 2010-04-01 15:35:32 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -15,28 +15,35 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static int nearest_powerof2 (int);
+static int nearest_powerof2 (const int);
 static int convert_to_bytes = 1;   /* true */
 
 int GPTLprint_memusage (const char *str)
 {
-  int size, size2;
-  int rss, rss2;
-  int share, share2;
-  int text, text2;
-  int datastack, datastack2;
+  int size, size2;                        /* process size (returned from OS) */
+  int rss, rss2;                          /* resident set size (returned from OS) */
+  int share, share2;                      /* shared data segment size (returned from OS) */
+  int text, text2;                        /* text segment size (returned from OS) */
+  int datastack, datastack2;              /* data/stack size (returned from OS) */
   static int bytesperblock = -1;          /* convert to bytes (init to invalid) */
   static const int nbytes = 1024*1024*10; /* allocate 10 MB */
-  static double blockstomb;                      /* convert blocks to MB */
+  static double blockstomb;               /* convert blocks to MB */
   void *space;                            /* allocated space */
   
   if (GPTLget_memusage (&size, &rss, &share, &text, &datastack) < 0)
     return -1;
 
+  /*
+  ** Determine size in bytes of memory usage info presented by the OS: Method: allocate a 
+  ** known amount of memory and see how much bigger the process becomes.
+  */
+
   if (convert_to_bytes && bytesperblock == -1 && (space = malloc (nbytes))) {
     if (GPTLget_memusage (&size2, &rss2, &share2, &text2, &datastack2) == 0) {
       /*
-      ** Estimate bytes per block, then refine to nearest power of 2
+      ** Estimate bytes per block, then refine to nearest power of 2.
+      ** The assumption is that the OS presents memory usage info in
+      ** units that are a power of 2. 
       */
       bytesperblock = (int) ((nbytes / (double) (size2 - size)) + 0.5);
       bytesperblock = nearest_powerof2 (bytesperblock);
@@ -57,21 +64,32 @@ int GPTLprint_memusage (const char *str)
   return 0;
 }
 
-static int nearest_powerof2 (int bytesperblock)
-{
-  int lower;
-  int higher;
-  int delta1;
-  int delta2;
+/*
+** nearest_powerof2: 
+**   Determine nearest integer which is a power of 2.
+**   Note: algorithm can't use anything that requires -lm because this is a library.
+**
+** Input arguments:
+**   val: input integer
+**
+** Return value: nearest integer to val which is a power of 2
+*/
 
-  if (bytesperblock < 2)
+static int nearest_powerof2 (const int val)
+{
+  int lower;  /* power of 2 which is just less than val */
+  int higher; /* power of 2 which is just more than val */
+  int delta1; /* difference between val and lower */
+  int delta2; /* difference between val and higher */
+
+  if (val < 2)
     return 0;
 
-  for (higher = 1; higher < bytesperblock; higher *= 2)
+  for (higher = 1; higher < val; higher *= 2)
     lower = higher;
 
-  delta1 = bytesperblock - lower;
-  delta2 = higher - bytesperblock;
+  delta1 = val - lower;
+  delta2 = higher - val;
   
   if (delta1 < delta2)
     return lower;
