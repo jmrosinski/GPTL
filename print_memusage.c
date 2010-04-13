@@ -1,5 +1,5 @@
 /*
-** $Id: print_memusage.c,v 1.10 2010-04-01 18:59:27 rosinski Exp $
+** $Id: print_memusage.c,v 1.11 2010-04-13 16:52:58 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -33,22 +33,9 @@ int GPTLprint_memusage (const char *str)
   if (GPTLget_memusage (&size, &rss, &share, &text, &datastack) < 0)
     return -1;
 
+#ifdef HAVE_SLASHPROC
   /*
-  ** Under AIX use max rss as returned by getrusage. If someone knows how to 
-  ** get the process size under AIX please tell me.
-  */
-
-#ifdef _AIX
-  bytesperblock = 1024;
-  blockstomb = bytesperblock / (1024.*1024.);
-  if (convert_to_mb)
-    printf ("%s max rss=%.1f MB\n", str, rss*blockstomb);
-  else
-    printf ("%s max rss=%d\n", str, rss);
-#else
-
-  /*
-  ** Determine size in bytes of memory usage info presented by the OS: Method: allocate a 
+  ** Determine size in bytes of memory usage info presented by the OS. Method: allocate a 
   ** known amount of memory and see how much bigger the process becomes.
   */
 
@@ -74,6 +61,24 @@ int GPTLprint_memusage (const char *str)
   else
     printf ("%s size=%d rss=%d share=%d text=%d datastack=%d\n", 
 	    str, size, rss, share, text, datastack);
+
+#else
+
+  /*
+  ** Under AIX use max rss as returned by getrusage. If someone knows how to 
+  ** get the process size under AIX please tell me.
+  */
+
+#ifdef _AIX
+  bytesperblock = 1024;
+  blockstomb = bytesperblock / (1024.*1024.);
+  if (convert_to_mb)
+    printf ("%s max rss=%.1f MB\n", str, rss*blockstomb);
+  else
+    printf ("%s max rss=%d\n", str, rss);
+#else
+  printf ("%s max rss=%d\n", str, rss);
+#endif
 #endif
 
   return 0;
