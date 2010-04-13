@@ -117,6 +117,7 @@ Stats for thread 0:
 <li>print_memusage() converts to MB by default (if possible).
 <li>Added "support" for bluegene (see macros.make.bluegene).
 <li>Bugfix for gptl_papilibraryinit (Fortran): needed to return an int.
+<li>Bugfix for GPTLpr_summary: slave tried to receive too much data.
 <li>Changed LINUX ifdef to HAVE_SLASHPROC. Not all Linux systems have /proc/pid/statm.
 <li>Added auto-profiling entries for more MPI routines: MPI_Iprobe, MPI_Probe, MPI_Ssend, 
  MPI_Alltoallv, MPI_Scatterv, MPI_Test.

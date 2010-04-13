@@ -1,6 +1,7 @@
 gptl3_6_2: print_memusage converts to MB by default (if possible).
 	   Added print_memusage test to testbasics.F90
 	   Added macros.make.bluegene (tested at ORNL)
+	   Bugfix for GPTLpr_summary: slave tried to receive too much data.
 	   Bugfix for process_namelist.F90: Needs to close opened file
 	   on error.
 	   Bugfix for gptl_papilibraryinit (Fortran): returns an int.
