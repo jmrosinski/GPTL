@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.c,v 1.152 2010-04-13 15:19:13 rosinski Exp $
+** $Id: gptl.c,v 1.153 2010-04-13 21:41:50 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -1200,7 +1200,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.152 2010-04-13 15:19:13 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.153 2010-04-13 21:41:50 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1920,7 +1920,13 @@ int GPTLpr_summary (MPI_Comm comm)
   char name[MAX_CHARS+1];                   /* timer name requested by master */
   Summarystats summarystats_slave;          /* stats sent to master */
   MPI_Status status;                        /* required by MPI_Recv */
-  char *emptystring = "";
+  char emptystring[MAX_CHARS+1];            /* needs to be as big as name */
+
+  /*
+  ** Ensure that emptystring starts with \0
+  */
+
+  emptystring[0] = '\0';
 
   if (((int) comm) == 0)
     comm = MPI_COMM_WORLD;
@@ -1938,7 +1944,7 @@ int GPTLpr_summary (MPI_Comm comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.152 2010-04-13 15:19:13 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.153 2010-04-13 21:41:50 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 
     /* Print heading */
@@ -2004,7 +2010,7 @@ int GPTLpr_summary (MPI_Comm comm)
 
     /* Signal that we're done */
 
-    ret = MPI_Bcast (emptystring, 1, MPI_CHAR, 0, comm);
+    ret = MPI_Bcast (emptystring, MAX_CHARS+1, MPI_CHAR, 0, comm);
 
   } else {   /* iam != 0 (slave) */
 
