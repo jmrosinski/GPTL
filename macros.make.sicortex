@@ -84,11 +84,6 @@ HAVE_PAPI = yes
 ifeq ($(HAVE_PAPI),yes)
   PAPI_INCFLAGS = 
   PAPI_LIBFLAGS = -lpapi
-  ifeq ($(FORTRAN),yes)
-# Modify FFLAGS for PAPI use by some codes in ftests/: Normally 
-# Fortran ifdefs are done with -D, though AIX requires -WF,-D.
-    FFLAGS += -DHAVE_PAPI
-  endif
 endif
 
 # Whether to build GPTL with MPI support. Set inc and lib info if needed. 
@@ -100,10 +95,6 @@ ifeq ($(HAVE_MPI),yes)
   MPI_INCFLAGS = 
   MPI_LIBFLAGS = -lscmpi
   MPICMD = srun
-  ifeq ($(FORTRAN),yes)
-# Modify FFLAGS for ftests/: Normally it's -D, but AIX requires -WF,-D
-    FFLAGS += -DHAVE_MPI
-  endif
 endif
 
 # clock_gettime() in librt.a is an option for gathering wallclock time stats
@@ -138,7 +129,12 @@ ifeq ($(TEST_AUTOPROFILE),yes)
 endif
 
 # Whether to enable PMPI wrappers. Turning this on will result in automatic 
-# entries for a number of MPI calls
+# start/stop entries for a number of MPI calls.
 ifeq ($(HAVE_MPI),yes)
   ENABLE_PMPI = yes
+# If Fortran is enabled, the ability to automatically initialize GPTL from
+# mpi_init can be enabled if iargc() and getarg() are available.
+  ifeq ($(FORTRAN),yes)
+    HAVE_IARGCGETARG = no
+  endif
 endif

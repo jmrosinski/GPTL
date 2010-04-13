@@ -89,11 +89,6 @@ ifeq ($(HAVE_PAPI),yes)
 #  PAPI_LIBFLAGS = -L/contrib/papi-3.6.2/lib -lpapi -lpmapi
   PAPI_INCFLAGS = -I<path_to_papi_include>
   PAPI_LIBFLAGS = -L<path_to_papi_library> -lpapi -lpmapi
-  ifeq ($(FORTRAN),yes)
-# Modify FFLAGS for PAPI use by some codes in ftests/: Normally 
-# Fortran ifdefs are done with -D, though AIX requires -WF,-D.
-    FFLAGS += -WF,-DHAVE_PAPI
-  endif
 endif
 
 # Whether to build GPTL with MPI support. Set inc and lib info if needed. 
@@ -110,8 +105,6 @@ ifeq ($(HAVE_MPI),yes)
   ifeq ($(FORTRAN),yes)
 # Fortran compiler
     FC = mpxlf90_r
-# Modify FFLAGS for ftests/: Normally it's -D, but AIX requires -WF,-D
-    FFLAGS += -WF,-DHAVE_MPI
   endif
 else
 # C and Fortran compilers

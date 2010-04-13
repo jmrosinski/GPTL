@@ -1,3 +1,12 @@
+gptl3_6_2: print_memusage converts to MB by default (if possible).
+	   Added print_memusage test to testbasics.F90
+	   Added macros.make.bluegene (tested at ORNL)
+	   Bugfix for process_namelist.F90: Needs to close opened file
+	   on error.
+	   Bugfix for gptl_papilibraryinit (Fortran): returns an int.
+	   Changed LINUX ifdef to HAVE_SLASHPROC. Not all Linux systems
+	   have /proc/pid/statm.
+	   
 gptl3_6_1: Bugfix for auto-profiling MPI_Recv: it could hang in gptl3_6.
 	   Auto-profiling support for additional MPI routines.
 	   Better estimates of bytes transfer for some auto-profiled

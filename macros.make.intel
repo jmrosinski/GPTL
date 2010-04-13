@@ -84,11 +84,6 @@ HAVE_PAPI = no
 ifeq ($(HAVE_PAPI),yes)
   PAPI_INCFLAGS = 
   PAPI_LIBFLAGS = 
-  ifeq ($(FORTRAN),yes)
-# Modify FFLAGS for PAPI use by some codes in ftests/: Normally 
-# Fortran ifdefs are done with -D, though AIX requires -WF,-D.
-    FFLAGS += -DHAVE_PAPI
-  endif
 endif
 
 # Whether to build GPTL with MPI support. Set inc and lib info if needed. 
@@ -100,10 +95,6 @@ ifeq ($(HAVE_MPI),yes)
   MPI_INCFLAGS = 
   MPI_LIBFLAGS = -lmpi
   MPICMD = mpiexec_mpt
-  ifeq ($(FORTRAN),yes)
-# Modify FFLAGS for ftests/: Normally it's -D, but AIX requires -WF,-D
-    FFLAGS += -DHAVE_MPI
-  endif
 endif
 
 # clock_gettime() in librt.a is an option for gathering wallclock time stats
