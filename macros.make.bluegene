@@ -82,10 +82,10 @@ AR = ar
 
 # PAPI: If the PAPI library is already installed, set HAVE_PAPI=yes and set inc and lib 
 # info as appropriate. 
-HAVE_PAPI = yes
+HAVE_PAPI = no
 ifeq ($(HAVE_PAPI),yes)
-  PAPI_INCFLAGS = -I/contrib/papi-3.6.2/include
-  PAPI_LIBFLAGS = -L/contrib/papi-3.6.2/lib -lpapi -lpmapi
+  PAPI_INCFLAGS = -I<path_to_papi_include>
+  PAPI_LIBFLAGS = -L<path_to_papi_library> -lpapi -lpmapi
   ifeq ($(FORTRAN),yes)
 # Modify FFLAGS for PAPI use by some codes in ftests/: Normally 
 # Fortran ifdefs are done with -D, though AIX requires -WF,-D.
@@ -98,7 +98,7 @@ endif
 HAVE_MPI = yes
 ifeq ($(HAVE_MPI),yes)
 # C compiler
-  CC = mpcc_r
+  CC = mpxlc_r
 # Hopefully MPI_Comm_f2c() exists, but if not, set HAVE_COMM_F2C = no
   HAVE_COMM_F2C = yes
   MPI_INCFLAGS = 
