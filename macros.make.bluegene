@@ -98,7 +98,7 @@ endif
 HAVE_MPI = yes
 ifeq ($(HAVE_MPI),yes)
 # C compiler
-  CC = mpxlc_r
+  CC = mpixlc_r
 # Hopefully MPI_Comm_f2c() exists, but if not, set HAVE_COMM_F2C = no
   HAVE_COMM_F2C = yes
   MPI_INCFLAGS = 
@@ -106,7 +106,7 @@ ifeq ($(HAVE_MPI),yes)
   MPICMD = mpirun.lsf
   ifeq ($(FORTRAN),yes)
 # Fortran compiler
-    FC = mpxlf90_r
+    FC = mpixlf90_r
 # Modify FFLAGS for ftests/: Normally it's -D, but AIX requires -WF,-D
     FFLAGS += -WF,-DHAVE_MPI
   endif

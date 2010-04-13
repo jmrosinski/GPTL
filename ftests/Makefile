@@ -1,5 +1,6 @@
 include ../macros.make
-ifeq ($(OSTYPE),aix)
+# *xlf* (IBM) compilers use a different mechanism for #defines than other compilers
+ifeq ($(findstring xlf, $(FC)),xlf)
   DEFINE = -WF,-D
 else
   DEFINE = -D
