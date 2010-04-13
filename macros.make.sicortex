@@ -27,8 +27,9 @@ endif
 # Normally this can be blank.
 ABIFLAGS =
 
-# Linux system or not? If "yes", get_memusage() will use the /proc interface.
-LINUX = yes
+# Is the /proc filesystem available? On most Linux systems it is. If available, get_memusage() 
+# reads from it to find memory usage info. Otherwise get_memusage() will use get_rusage()
+HAVE_SLASHPROC = yes
 
 # GPTL can enable threading either via OPENMP=yes, or PTHREADS=yes. Since
 # most OpenMP implementations are built on top of pthreads, OpenMP

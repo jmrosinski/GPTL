@@ -1,5 +1,5 @@
 /*
-** $Id: get_memusage.c,v 1.8 2010-04-01 18:54:16 rosinski Exp $
+** $Id: get_memusage.c,v 1.9 2010-04-13 15:19:13 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -25,7 +25,7 @@
 #include <sys/time.h>
 #endif
 
-#ifdef LINUX
+#ifdef HAVE_SLASHPROC
 #include <sys/time.h>
 #include <sys/types.h>
 #include <stdio.h>
@@ -36,7 +36,7 @@
 
 int GPTLget_memusage (int *size, int *rss, int *share, int *text, int *datastack)
 {
-#ifdef LINUX
+#ifdef HAVE_SLASHPROC
   FILE *fd;                       /* file descriptor for fopen */
   int pid;                        /* process id */
   static char *head = "/proc/";   /* part of path */

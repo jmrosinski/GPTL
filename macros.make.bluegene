@@ -7,7 +7,7 @@
 ##########################################################################
 
 # Where to install GPTL library and include files
-INSTALLDIR = $(HOME)/aix
+INSTALLDIR = $(HOME)/bluegene
 
 # Where to install man pages (if blank, defaults to $INSTALLDIR)
 MANDIR = 

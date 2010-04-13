@@ -21,8 +21,8 @@ ifeq ($(MANDIR),$(null))
   MANDIR = $(INSTALLDIR)
 endif
 
-ifeq ($(LINUX),yes)
-  CFLAGS += -DLINUX
+ifeq ($(HAVE_SLASHPROC),yes)
+  CFLAGS += -DHAVE_SLASHPROC
 endif
 
 ifeq ($(OPENMP),yes)

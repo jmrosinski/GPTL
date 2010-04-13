@@ -1,6 +1,6 @@
 subroutine gptlprocess_namelist (filename, unitno, outret)
 !
-! $Id: process_namelist.F90,v 1.2 2010-02-17 22:53:13 rosinski Exp $
+! $Id: process_namelist.F90,v 1.3 2010-04-13 15:19:13 rosinski Exp $
 !
 ! Author: Jim Rosinski
 !
@@ -84,6 +84,7 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
   if (ios /= 0) then
     write(6,*)'gptlprocess_namelist: failure reading namelist'
     outret = -1
+    close (unit=unitno)
     return
   end if
 

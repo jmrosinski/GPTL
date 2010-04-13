@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.c,v 1.151 2010-02-17 23:59:54 rosinski Exp $
+** $Id: gptl.c,v 1.152 2010-04-13 15:19:13 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -19,10 +19,6 @@
 #include <ctype.h>         /* isdigit */
 #include <sys/types.h>     /* u_int8_t, u_int16_t */
 #include <assert.h>
-
-#ifdef LINUX
-#include <endian.h>
-#endif
 
 #ifdef HAVE_PAPI
 #include <papi.h>          /* PAPI_get_real_usec */
@@ -1204,7 +1200,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.151 2010-02-17 23:59:54 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.152 2010-04-13 15:19:13 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1942,7 +1938,7 @@ int GPTLpr_summary (MPI_Comm comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.151 2010-02-17 23:59:54 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.152 2010-04-13 15:19:13 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 
     /* Print heading */
