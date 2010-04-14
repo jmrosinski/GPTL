@@ -18,7 +18,7 @@ EXES = $(TESTS) errtest utrtest
 LDFLAGS = -L.. -l$(LIBNAME) $(ABIFLAGS)
 
 ifeq ($(HAVE_MPI),yes)
-  EXES += summary
+  EXES += summary pmpi
   FFLAGS  += $(DEFINE)HAVE_MPI $(MPI_INCFLAGS)
   LDFLAGS += $(MPI_LIBFLAGS)
 endif
@@ -26,7 +26,6 @@ endif
 ifeq ($(ENABLE_PMPI),yes)
   FFLAGS += $(DEFINE)ENABLE_PMPI
   LIBNAME = gptl_pmpi
-  EXES += pmpi
   ifeq ($(HAVE_IARGCGETARG),yes)
     FFLAGS += $(DEFINE)HAVE_IARGCGETARG
   endif
