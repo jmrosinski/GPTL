@@ -1,5 +1,5 @@
 /*
-** $Id: print_memusage.c,v 1.11 2010-04-13 16:52:58 rosinski Exp $
+** $Id: print_memusage.c,v 1.12 2010-04-14 19:58:13 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -65,20 +65,16 @@ int GPTLprint_memusage (const char *str)
 #else
 
   /*
-  ** Under AIX use max rss as returned by getrusage. If someone knows how to 
+  ** Use max rss as returned by getrusage. If someone knows how to 
   ** get the process size under AIX please tell me.
   */
 
-#ifdef _AIX
   bytesperblock = 1024;
   blockstomb = bytesperblock / (1024.*1024.);
   if (convert_to_mb)
     printf ("%s max rss=%.1f MB\n", str, rss*blockstomb);
   else
     printf ("%s max rss=%d\n", str, rss);
-#else
-  printf ("%s max rss=%d\n", str, rss);
-#endif
 #endif
 
   return 0;

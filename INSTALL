@@ -4,8 +4,7 @@ the main directory.
 
 After untarring the distribution, construct a macros.make file by editing one
 of the templates provided that is closest to the machine you're building the
-library on. Currenty available template files are macros.make.linux,
-macros.make.intel, and macros.make.AIX. Step-by-step instructions for setting
+library on (e.g. macros.make.linux). Step-by-step instructions for setting
 each configuration option are embedded in that file. If unsure of some
 settings, you can run "./suggestions". This is an autoconf "configure" script
 which has been modified to just print suggestions, rather than creating any
