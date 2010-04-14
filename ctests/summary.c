@@ -19,9 +19,13 @@ double sub (int);
 
 int main (int argc, char **argv)
 {
+  char pname[MPI_MAX_PROCESSOR_NAME];
+
   int iter;
   int counter;
   int c;
+  int tnum;
+  int resultlen;
 
   double ret;
 
@@ -67,13 +71,18 @@ int main (int argc, char **argv)
   ret = MPI_Comm_rank (MPI_COMM_WORLD, &iam);
   ret = MPI_Comm_size (MPI_COMM_WORLD, &nproc);
 
+  ret = MPI_Get_processor_name (pname, &resultlen);
+  printf ("Rank %d is running on processor %s\n", iam, pname);
+
 #ifdef THREADED_OMP
   nthreads = omp_get_max_threads ();
 #endif
 
-#pragma omp parallel for private (iter, ret)
+#pragma omp parallel for private (iter, ret, tnum)
 
   for (iter = 1; iter <= nthreads; iter++) {
+    tnum = omp_get_thread_num ();
+    printf ("Thread %d of rank %d on processor %s\n", tnum, iam, pname);
     ret = sub (iter);
   }
 
