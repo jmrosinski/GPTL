@@ -114,14 +114,11 @@ Stats for thread 0:
 <h2>What's new in the latest release
   (<a href="gptl3_6_2.tar.gz">gptl3_6_2.tar.gz</a>)</h2>
 <ul>
-<li>print_memusage() converts to MB by default (if possible).
-<li>Added "support" for bluegene (see macros.make.bluegene).
+<li>GPTLprint_memusage() converts memory usage units to MB by default (if possible).
+<li>Added support for bluegene (see macros.make.bluegene).
 <li>Bugfix for gptl_papilibraryinit (Fortran): needed to return an int.
 <li>Bugfix for GPTLpr_summary: slave tried to receive too much data.
 <li>Changed LINUX ifdef to HAVE_SLASHPROC. Not all Linux systems have /proc/pid/statm.
-<li>Added auto-profiling entries for more MPI routines: MPI_Iprobe, MPI_Probe, MPI_Ssend, 
- MPI_Alltoallv, MPI_Scatterv, MPI_Test.
-<li>Better estimates of bytes transferred for auto-profiled MPI routines.
 </ul>
 
 <HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
