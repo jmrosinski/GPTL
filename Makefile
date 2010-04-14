@@ -1,5 +1,11 @@
 include macros.make
 
+ifeq ($(findstring xlf, $(FC)),xlf)
+  DEFINE = -WF,-D
+else
+  DEFINE = -D
+endif
+
 null =
 OBJS = gptl.o util.o threadutil.o get_memusage.o print_memusage.o \
        gptl_papi.o pmpi.o
@@ -44,8 +50,9 @@ endif
 CFLAGS += $(INLINEFLAG) $(UNDERSCORING)
 
 ifeq ($(HAVE_PAPI),yes)
-  CFLAGS       += -DHAVE_PAPI
-  CFLAGS       += $(PAPI_INCFLAGS)
+  CFLAGS += -DHAVE_PAPI
+  CFLAGS += $(PAPI_INCFLAGS)
+  FFLAGS += $(DEFINE)HAVE_PAPI
 endif
 
 ifeq ($(HAVE_MPI),yes)
