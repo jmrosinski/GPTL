@@ -105,7 +105,8 @@ void mpi_finalize (MPI_Fint *ierr);
 #ifdef HAVE_MPI
 
 /*
-** Wart needed for MPI_Waitall
+** Wart needed for MPI_Waitall. fpmpi configure figures this out--I just hardwired
+** the most common value. It currently fails on NCAR bluefire machine.
 */
 
 #ifndef MPI_STATUS_SIZE
@@ -309,9 +310,9 @@ void mpi_wait (MPI_Fint *request, MPI_Fint *status, MPI_Fint *__ierr)
   MPI_Request lrequest;
   MPI_Status c_status;
 
-  lrequest = MPI_Request_f2c(*request);
-  *__ierr = MPI_Wait(&lrequest, &c_status);
-  *request = MPI_Request_c2f(lrequest);
+  lrequest = MPI_Request_f2c (*request);
+  *__ierr = MPI_Wait (&lrequest, &c_status);
+  *request = MPI_Request_c2f (lrequest);
 
   MPI_Status_c2f (&c_status, status);
 }
@@ -327,30 +328,34 @@ void mpi_waitall (MPI_Fint *count, MPI_Fint array_of_requests[],
                   MPI_Fint array_of_statuses[][MPI_STATUS_SIZE], 
                   MPI_Fint *__ierr)
 {
-  const int LOCAL_ARRAY_SIZE = 1000;
+  const int LOCAL_ARRAY_SIZE = 128;
   int i;
   MPI_Request lrequest[LOCAL_ARRAY_SIZE];
   MPI_Status c_status[LOCAL_ARRAY_SIZE];
 
   if (MPI_STATUS_SIZE != sizeof(MPI_Status)/sizeof(int)) {
     /* Warning - */
-    fprintf (stderr, "Warning: The Fortran GPTL code expected the sizeof MPI_Status\n"
-	     "to be %d integers but it is %d.  Rebuild GPTL and make sure that the\n"
-	     "correct value is found and set in f_wrappers.c\n", MPI_STATUS_SIZE,
+    fprintf (stderr, "ERROR from GPTL: mpi_waitall expected sizeof MPI_Status\n"
+	          "to be %d integers but it is %d. Rebuild GPTL after ensuring that the\n"
+	          "correct value is found and set in f_wrappers_pmpi.c\n", MPI_STATUS_SIZE,
 	     (int) (sizeof(MPI_Status)/sizeof(int)) );
     fprintf (stderr, "Aborting...\n");
     (void) MPI_Abort (MPI_COMM_WORLD, -1);
   }
 
+  /*
+  ** fpmpi does mallocs. Instead used fixed array sizes and Abort if too many
+  */
+
   if ((int) *count > LOCAL_ARRAY_SIZE) {
-    fprintf (stderr, "mpi_waitall: %d is too many requests: recompile f_wrappers.c "
+    fprintf (stderr, "mpi_waitall: %d is too many requests: recompile f_wrappers_pmpi.c "
 	     "with LOCAL_ARRAY_SIZE > %d\n", (int)*count, LOCAL_ARRAY_SIZE);
     fprintf (stderr, "Aborting...\n");
     (void) MPI_Abort (MPI_COMM_WORLD, -1);
   }
 
-  if ((int)*count > 0) {
-    for (i = 0; i < (int)*count; i++) {
+  if ((int) *count > 0) {
+    for (i = 0; i < (int) *count; i++) {
       lrequest[i] = MPI_Request_f2c (array_of_requests[i]);
     }
 
