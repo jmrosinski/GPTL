@@ -24,7 +24,7 @@ int main (int argc, char **argv)
   int iter;
   int counter;
   int c;
-  int tnum;
+  int tnum = 0;
   int resultlen;
 
   double ret;
@@ -76,12 +76,13 @@ int main (int argc, char **argv)
 
 #ifdef THREADED_OMP
   nthreads = omp_get_max_threads ();
+#pragma omp parallel for private (iter, ret, tnum)
 #endif
 
-#pragma omp parallel for private (iter, ret, tnum)
-
   for (iter = 1; iter <= nthreads; iter++) {
+#ifdef THREADED_OMP
     tnum = omp_get_thread_num ();
+#endif
     printf ("Thread %d of rank %d on processor %s\n", tnum, iam, pname);
     ret = sub (iter);
   }
