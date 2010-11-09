@@ -1,9 +1,9 @@
 /*
-** $Id: gptl.h,v 1.56 2010-02-18 04:23:08 rosinski Exp $
+** $Id: gptl.h,v 1.57 2010-11-09 19:08:53 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
-** #include this file in C and C++ codes which invoke GPTL functions.
+** GPTL header file to be included in user code
 */
 
 #ifndef GPTL_H
@@ -18,23 +18,23 @@
 */
 
 typedef enum {
-  GPTLsync_mpi       = 0,  /* Synchronize before certain MPI calls (PMPI-mode only) */
-  GPTLwall           = 1,  /* Collect wallclock stats (true) */
-  GPTLcpu            = 2,  /* Collect CPU stats (false)*/
-  GPTLabort_on_error = 3,  /* Abort on failure (false) */
-  GPTLoverhead       = 4,  /* Estimate overhead of underlying timing routine (true) */
-  GPTLdepthlimit     = 5,  /* Only print timers this depth or less in the tree (inf) */
-  GPTLverbose        = 6,  /* Verbose output (false) */
-  GPTLnarrowprint    = 7,  /* Print PAPI and derived stats in 8 columns not 16 (true) */
-  GPTLpercent        = 9,  /* Add a column for percent of first timer (false) */
-  GPTLpersec         = 10, /* Add a PAPI column that prints "per second" stats (true) */
-  GPTLmultiplex      = 11, /* Allow PAPI multiplexing (false) */
-  GPTLdopr_preamble  = 12, /* Print preamble info (true) */
-  GPTLdopr_threadsort= 13, /* Print sorted thread stats (true) */
-  GPTLdopr_multparent= 14, /* Print multiple parent info (true) */
-  GPTLdopr_collision = 15, /* Print hastable collision info (true) */
-  GPTLprint_method   = 16, /* Tree print method: first parent, last parent
-			      most frequent, or full tree (most frequent) */
+  GPTLsync_mpi        = 0,  /* Synchronize before certain MPI calls (PMPI-mode only) */
+  GPTLwall            = 1,  /* Collect wallclock stats (true) */
+  GPTLcpu             = 2,  /* Collect CPU stats (false)*/
+  GPTLabort_on_error  = 3,  /* Abort on failure (false) */
+  GPTLoverhead        = 4,  /* Estimate overhead of underlying timing routine (true) */
+  GPTLdepthlimit      = 5,  /* Only print timers this depth or less in the tree (inf) */
+  GPTLverbose         = 6,  /* Verbose output (false) */
+  GPTLnarrowprint     = 7,  /* Print PAPI and derived stats in 8 columns not 16 (true) */
+  GPTLpercent         = 9,  /* Add a column for percent of first timer (false) */
+  GPTLpersec          = 10, /* Add a PAPI column that prints "per second" stats (true) */
+  GPTLmultiplex       = 11, /* Allow PAPI multiplexing (false) */
+  GPTLdopr_preamble   = 12, /* Print preamble info (true) */
+  GPTLdopr_threadsort = 13, /* Print sorted thread stats (true) */
+  GPTLdopr_multparent = 14, /* Print multiple parent info (true) */
+  GPTLdopr_collision  = 15, /* Print hastable collision info (true) */
+  GPTLprint_method    = 16, /* Tree print method: first parent, last parent
+			       most frequent, or full tree (most frequent) */
   /*
   ** These are derived counters based on PAPI counters. All default to false
   */

@@ -1,7 +1,8 @@
 /*
-** $Id: get_memusage.c,v 1.9 2010-04-13 15:19:13 rosinski Exp $
+** $Id: get_memusage.c,v 1.10 2010-11-09 19:08:53 rosinski Exp $
 **
 ** Author: Jim Rosinski
+**   Credit to Chuck Bardeen for MACOS section (__APPLE__ ifdef)
 **
 ** get_memusage: 
 **
@@ -26,10 +27,18 @@
 #endif
 
 #ifdef HAVE_SLASHPROC
+
 #include <sys/time.h>
 #include <sys/types.h>
 #include <stdio.h>
 #include <unistd.h>
+
+#elif (defined __APPLE__)
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
 #endif
 
 #include "gptl.h"    /* function prototypes */
@@ -69,6 +78,24 @@ int GPTLget_memusage (int *size, int *rss, int *share, int *text, int *datastack
   ret = fscanf (fd, "%d %d %d %d %d %d %d", 
 		size, rss, share, text, datastack, &dum, &dum);
   ret = fclose (fd);
+  return 0;
+
+#elif (defined __APPLE__)
+
+  FILE *fd;
+  char cmd[60];  
+  int pid = (int) getpid ();
+  
+  sprintf (cmd, "ps -o vsz -o rss -o tsiz -p %d | grep -v RSS", pid);
+  fd = popen (cmd, "r");
+
+  if (fd) {
+    fscanf (fd, "%d %d %d", size, rss, text);
+    *share     = -1;
+    *datastack = -1;
+    (void) pclose (fd);
+  }
+
   return 0;
 
 #else

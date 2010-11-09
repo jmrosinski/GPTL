@@ -22,6 +22,9 @@ int main (int argc, char **argv)
   MPI_Request sendreq, recvreq;
   int dest;
   int source;
+  int resultlen;                      /* returned length of string from MPI routine */
+  int provided;                       /* level of threading support in this MPI lib */
+  char string[MPI_MAX_ERROR_STRING];  /* character string returned from MPI routine */
 
   void chkbuf (const char *, int *, const int, const int);
 
@@ -44,10 +47,37 @@ int main (int argc, char **argv)
   ret = GPTLstart ("total");                   /* Time the whole program */
 #endif
 
-  ret = MPI_Init (&argc, &argv);               /* Initialize MPI */
+
+  /*
+  ** Initialize MPI by using MPI_Init_thread: report back level of MPI support
+  */
+
+  if ((ret = MPI_Init_thread (&argc, &argv, MPI_THREAD_SINGLE, &provided)) != 0) {
+    MPI_Error_string (ret, string, &resultlen);
+    printf ("Error from MPI_Init_thread: %s\n", string);
+    MPI_Abort (comm, -1);
+  }
+  
   ret = MPI_Comm_rank (comm, &iam);            /* Get my rank */
   ret = MPI_Comm_size (comm, &commsize);       /* Get communicator size */
 
+  if (iam == 0) {
+    switch (provided) {
+    case MPI_THREAD_SINGLE:
+      printf ("MPI support level is MPI_THREAD_SINGLE\n");
+      break;
+    case MPI_THREAD_SERIALIZED:
+      printf ("MPI support level is MPI_THREAD_SERIALIZED\n");
+      break;
+    case MPI_THREAD_MULTIPLE:
+      printf ("MPI support level is MPI_THREAD_MULTIPLE\n");
+      break;
+    default:
+      printf ("MPI support level is not known\n");
+      MPI_Abort (comm, -1);
+    }
+  }
+       
   for (i = 0; i < count; ++i)
     sendbuf[i] = iam;
 

@@ -1,9 +1,19 @@
       program main 
+
+      use gptl
+
+      implicit none
+
 #include <mpif.h>
-#include "../gptl.inc"
+
+#ifdef THREADED_OMP
+      integer, external :: omp_get_max_threads
+#endif
+
       double precision, external :: sub
       double precision result
 
+      integer :: iam
       integer :: nthreads = 1 ! number of threads (default 1)
       integer :: nproc = 1
       integer iter

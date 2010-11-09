@@ -17,6 +17,9 @@ EXES = $(TESTS) errtest utrtest
 
 LDFLAGS = -L.. -l$(LIBNAME) $(ABIFLAGS)
 
+#For gptlf.mod
+FFLAGS += -I..
+
 ifeq ($(HAVE_MPI),yes)
   EXES += summary pmpi
   FFLAGS  += $(DEFINE)HAVE_MPI $(MPI_INCFLAGS)

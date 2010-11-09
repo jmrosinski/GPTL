@@ -8,7 +8,7 @@ dynamic call tree">
 <meta name="Author" content="Jim Rosinski">
 <h1>GPTL - General Purpose Timing Library</h1>
 <h2>(with optional PAPI interface)</h2>
-<h2>Download the latest release by clicking <a href="gptl3_6_3.tar.gz">here</a>
+<h2>Download the latest release by clicking <a href="gptl-3.7.tar.gz">here</a>
 </head>
 <body bgcolor="peachpuff">
 
@@ -112,7 +112,21 @@ Stats for thread 0:
 
 <HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
 <h2>What's new in the latest release
-  (<a href="gptl3_6_3.tar.gz">gptl3_6_3.tar.gz</a>)</h2>
+  (<a href="gptl-3.7.tar.gz">gptl-3.7.tar.gz</a>)</h2>
+<ul>
+<li>Added Fortran module enabling "use gptl" instead of "include gptl.inc". 
+Adds interface block for argument checking.
+<li>Enable auto-profiling under AIX
+<li>Enable GPTLprint_memusage under MacOS (thanks to Chuck Bardeen).
+<li>Bugfix for "make install" creates directories if they're not already there.
+<li>Added auto-profiling entry for MPI_Init_thread.
+<li>Changed default print method from most_frequent to full_tree.
+</ul>
+
+<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
+<h2>What was new in previous releases
+
+<h3>GPTL3.6.3 (<a href="older/gptl3_6_3.tar.gz">gptl3_6_3.tar.gz</a>)</h3>
 <ul>
 <li>GPTLprint_memusage() converts memory usage units to MB by default (if possible).
 <li>Added support for bluegene (see macros.make.bluegene).

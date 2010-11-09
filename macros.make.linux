@@ -122,7 +122,7 @@ HAVE_GETTIMEOFDAY = yes
 # Whether to test auto-profiling (adds 2 tests to "make test"). If compiler is gcc or 
 # pathscale, set INSTRFLAG to -finstrument-functions. PGI 8.0.2 and later provide 
 # -Minstrument:functions.
-TEST_AUTOPROFILE = no
+TEST_AUTOPROFILE = yes
 ifeq ($(TEST_AUTOPROFILE),yes)
   INSTRFLAG = -finstrument-functions
   CXX = mpicxx

@@ -20,6 +20,7 @@ else
   LIBNAME = gptl
 endif
 
+# Always run the C tests. Add Fortran tests if Fortran enabled
 MAKETESTS = ctests/all
 RUNTESTS = ctests/test
 
@@ -41,7 +42,7 @@ endif
 
 FOBJS =
 ifeq ($(FORTRAN),yes)
-  FOBJS      = process_namelist.o
+  FOBJS      = process_namelist.o gptlf.o
   OBJS      += f_wrappers.o f_wrappers_pmpi.o
   MAKETESTS += ftests/all
   RUNTESTS  += ftests/test
@@ -57,6 +58,7 @@ endif
 
 ifeq ($(HAVE_MPI),yes)
   CFLAGS       += -DHAVE_MPI
+  FFLAGS       += $(DEFINE)HAVE_MPI
   ifeq ($(HAVE_COMM_F2C),yes)
     CFLAGS     += -DHAVE_COMM_F2C
   endif
@@ -115,19 +117,27 @@ lib$(LIBNAME).a: $(OBJS) $(FOBJS)
 	$(RM) -f ctests/*.o ftests/*.o
 
 install: lib$(LIBNAME).a
+	install -d $(INSTALLDIR)/lib
+	install -d $(INSTALLDIR)/include
+	install -d $(INSTALLDIR)/bin
+	install -d $(INSTALLDIR)/man/man3 
 	install -m 0644 lib$(LIBNAME).a $(INSTALLDIR)/lib
-	install -m 0644 gptl.h gptl.inc $(INSTALLDIR)/include
+	install -m 0644 gptl.h $(INSTALLDIR)/include
+ifeq ($(FORTRAN),yes)
+	install -m 0644 gptl.inc gptl.mod $(INSTALLDIR)/include
+endif
 	install -m 0644 man/man3/*.3 $(MANDIR)/man/man3
 	install -m 0755 *pl $(INSTALLDIR)/bin
 	(cd ctests/ && make install INSTALLDIR=$(INSTALLDIR))
 
+# Some Fortran compilers name modules in upper case, so account for both possibilities
 uninstall:
 	$(RM) -f $(INSTALLDIR)/lib/lib$(LIBNAME).a
-	$(RM) -f $(INSTALLDIR)/include/gptl.h $(INSTALLDIR)/include/gptl.inc
+	$(RM) -f $(INSTALLDIR)/include/gptl.h $(INSTALLDIR)/include/gptl.inc $(INSTALLDIR)/include/gptl.mod $(INSTALLDIR)/include/GPTL.mod
 	$(RM) -f $(MANDIR)/man/man3/GPTL*.3
 
 clean:
-	$(RM) -f $(OBJS) $(FOBJS) lib$(LIBNAME).a
+	$(RM) -f $(OBJS) $(FOBJS) lib$(LIBNAME).a *.mod
 	(cd ctests && $(MAKE) clean)
 	(cd ftests && $(MAKE) clean)
 
@@ -138,5 +148,7 @@ util.o: gptl.h private.h
 threadutil.o: gptl.h private.h
 gptl_papi.o: gptl.h private.h
 process_namelist.o: process_namelist.F90 gptl.inc
+	$(FC) -c $(FFLAGS) $<
+gptlf.o: gptlf.F90 gptl.inc
 	$(FC) -c $(FFLAGS) $<
 pmpi.o: gptl.h private.h

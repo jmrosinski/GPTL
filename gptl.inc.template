@@ -1,5 +1,5 @@
 !
-! $Id: gptl.inc,v 1.42 2010-11-09 19:08:53 rosinski Exp $
+! $Id: gptl.inc.template,v 1.1 2010-11-09 19:08:53 rosinski Exp $
 !
 ! Author: Jim Rosinski
 !
@@ -47,45 +47,45 @@
       integer GPTLmost_frequent
       integer GPTLfull_tree
 
-      parameter (GPTLsync_mpi       = 0)
-      parameter (GPTLwall           = 1)
-      parameter (GPTLcpu            = 2)
-      parameter (GPTLabort_on_error = 3)
-      parameter (GPTLoverhead       = 4)
-      parameter (GPTLdepthlimit     = 5)
-      parameter (GPTLverbose        = 6)
-      parameter (GPTLnarrowprint    = 7)
-      parameter (GPTLpercent        = 9)
-      parameter (GPTLpersec         = 10)
-      parameter (GPTLmultiplex      = 11)
-      parameter (GPTLdopr_preamble  = 12)
-      parameter (GPTLdopr_threadsort= 13)
-      parameter (GPTLdopr_multparent= 14)
-      parameter (GPTLdopr_collision = 15)
-      parameter (GPTLprint_method   = 16)
+      parameter (GPTLsync_mpi       = #GPTLsync_mpi)
+      parameter (GPTLwall           = #GPTLwall)
+      parameter (GPTLcpu            = #GPTLcpu)
+      parameter (GPTLabort_on_error = #GPTLabort_on_error)
+      parameter (GPTLoverhead       = #GPTLoverhead)
+      parameter (GPTLdepthlimit     = #GPTLdepthlimit)
+      parameter (GPTLverbose        = #GPTLverbose)
+      parameter (GPTLnarrowprint    = #GPTLnarrowprint)
+      parameter (GPTLpercent        = #GPTLpercent)
+      parameter (GPTLpersec         = #GPTLpersec)
+      parameter (GPTLmultiplex      = #GPTLmultiplex)
+      parameter (GPTLdopr_preamble  = #GPTLdopr_preamble)
+      parameter (GPTLdopr_threadsort= #GPTLdopr_threadsort)
+      parameter (GPTLdopr_multparent= #GPTLdopr_multparent)
+      parameter (GPTLdopr_collision = #GPTLdopr_collision)
+      parameter (GPTLprint_method   = #GPTLprint_method)
 
-      parameter (GPTL_IPC           = 17)
-      parameter (GPTL_CI            = 18)
-      parameter (GPTL_FPC           = 19)
-      parameter (GPTL_FPI           = 20)
-      parameter (GPTL_LSTPI         = 21)
-      parameter (GPTL_DCMRT         = 22)
-      parameter (GPTL_LSTPDCM       = 23)
-      parameter (GPTL_L2MRT         = 24)
-      parameter (GPTL_LSTPL2M       = 25)
-      parameter (GPTL_L3MRT         = 26)
+      parameter (GPTL_IPC           = #GPTL_IPC)
+      parameter (GPTL_CI            = #GPTL_CI)
+      parameter (GPTL_FPC           = #GPTL_FPC)
+      parameter (GPTL_FPI           = #GPTL_FPI)
+      parameter (GPTL_LSTPI         = #GPTL_LSTPI)
+      parameter (GPTL_DCMRT         = #GPTL_DCMRT)
+      parameter (GPTL_LSTPDCM       = #GPTL_LSTPDCM)
+      parameter (GPTL_L2MRT         = #GPTL_L2MRT)
+      parameter (GPTL_LSTPL2M       = #GPTL_LSTPL2M)
+      parameter (GPTL_L3MRT         = #GPTL_L3MRT)
 
-      parameter (GPTLgettimeofday   = 1)
-      parameter (GPTLnanotime       = 2)
-      parameter (GPTLrtc            = 3)
-      parameter (GPTLmpiwtime       = 4)
-      parameter (GPTLclockgettime   = 5)
-      parameter (GPTLpapitime       = 6)
+      parameter (GPTLgettimeofday   = #GPTLgettimeofday)
+      parameter (GPTLnanotime       = #GPTLnanotime)
+      parameter (GPTLrtc            = #GPTLrtc)
+      parameter (GPTLmpiwtime       = #GPTLmpiwtime)
+      parameter (GPTLclockgettime   = #GPTLclockgettime)
+      parameter (GPTLpapitime       = #GPTLpapitime)
 
-      parameter (GPTLfirst_parent   = 1)
-      parameter (GPTLlast_parent    = 2)
-      parameter (GPTLmost_frequent  = 3)
-      parameter (GPTLfull_tree      = 4)
+      parameter (GPTLfirst_parent   = #GPTLfirst_parent)
+      parameter (GPTLlast_parent    = #GPTLlast_parent)
+      parameter (GPTLmost_frequent  = #GPTLmost_frequent)
+      parameter (GPTLfull_tree      = #GPTLfull_tree)
 
 ! Externals
 

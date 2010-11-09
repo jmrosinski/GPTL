@@ -1,5 +1,5 @@
 /*
-** $Id: print_memusage.c,v 1.12 2010-04-14 19:58:13 rosinski Exp $
+** $Id: print_memusage.c,v 1.13 2010-11-09 19:08:54 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -33,7 +33,7 @@ int GPTLprint_memusage (const char *str)
   if (GPTLget_memusage (&size, &rss, &share, &text, &datastack) < 0)
     return -1;
 
-#ifdef HAVE_SLASHPROC
+#if (defined HAVE_SLASHPROC || defined __APPLE__)
   /*
   ** Determine size in bytes of memory usage info presented by the OS. Method: allocate a 
   ** known amount of memory and see how much bigger the process becomes.

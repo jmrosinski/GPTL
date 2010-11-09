@@ -1,5 +1,5 @@
 /*
-** $Id: pmpi.c,v 1.8 2010-02-17 23:12:13 rosinski Exp $
+** $Id: pmpi.c,v 1.9 2010-11-09 19:08:54 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -47,6 +47,20 @@ int MPI_Init (int *argc, char ***argv)
 
   ignoreret = GPTLstart ("MPI_Init_thru_Finalize");
 
+  return ret;
+}
+
+int MPI_Init_thread (int *argc, char ***argv, int required, int *provided)
+{
+  int ret;
+  int ignoreret;
+  
+  ret = PMPI_Init_thread (argc, argv, required, provided);
+  if ( ! GPTLis_initialized ())
+    ignoreret = GPTLinitialize ();
+  
+  ignoreret = GPTLstart ("MPI_Init_thru_Finalize");
+  
   return ret;
 }
 

@@ -6,10 +6,11 @@ end module myvars
 
 program pmpi
   use myvars
+  use gptl
+
   implicit none
 
 #include <mpif.h>
-#include "../gptl.inc"
 
   integer, parameter :: tag = 98
   integer, parameter :: count = 100000

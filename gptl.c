@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.c,v 1.153 2010-04-13 21:41:50 rosinski Exp $
+** $Id: gptl.c,v 1.154 2010-11-09 19:08:53 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -103,7 +103,7 @@ typedef struct {
 static Timer ***callstack;       /* call stack */
 static Nofalse *stackidx;        /* index into callstack: */
 
-static Method method = GPTLmost_frequent;  /* default parent/child printing mechanism */
+static Method method = GPTLfull_tree;  /* default parent/child printing mechanism */
 
 /* Local function prototypes */
 
@@ -168,7 +168,7 @@ static Funcentry funclist[] = {
 static const int nfuncentries = sizeof (funclist) / sizeof (Funcentry);
 
 static double (*ptr2wtimefunc)() = 0;             /* init to invalid */
-static int funcidx = 0;                           /* default timer is gettimeofday*/  
+static int funcidx = 0;                           /* default timer is gettimeofday */
 
 #ifdef HAVE_NANOTIME
 static float cpumhz = -1.;                        /* init to bad value */
@@ -1200,7 +1200,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.153 2010-04-13 21:41:50 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.154 2010-11-09 19:08:53 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1944,7 +1944,7 @@ int GPTLpr_summary (MPI_Comm comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.153 2010-04-13 21:41:50 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.154 2010-11-09 19:08:53 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 
     /* Print heading */
@@ -2588,6 +2588,25 @@ static inline Timer *getentry (const Hashentry *hashtable, /* hash table */
 extern "C" {
 #endif
 
+#ifdef _AIX
+void __func_trace_enter (const char *function_name,
+			 const char *file_name,
+			 int line_number,
+			 void **const user_data)
+{
+  (void) GPTLstart (function_name);
+}
+
+void __func_trace_exit (const char *function_name,
+			const char *file_name,
+			int line_number,
+			void **const user_data)
+{
+  (void) GPTLstop (function_name);
+}
+
+#else
+
 void __cyg_profile_func_enter (void *this_fn,
                                void *call_site)
 {
@@ -2599,6 +2618,7 @@ void __cyg_profile_func_exit (void *this_fn,
 {
   (void) GPTLstop_instr (this_fn);
 }
+#endif
 
 #ifdef __cplusplus
 };

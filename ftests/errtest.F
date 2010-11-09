@@ -1,7 +1,8 @@
       program errtest
-      implicit none
 
-#include "../gptl.inc"
+      use gptl
+
+      implicit none
 
       integer ret, iter
       integer val

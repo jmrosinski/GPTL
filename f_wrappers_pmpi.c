@@ -10,6 +10,7 @@
 #define iargc IARGC
 #define getarg GETARG
 #define mpi_init MPI_INIT
+#define mpi_init_thread MPI_INIT_THREAD
 #define mpi_finalize MPI_FINALIZE
 #define mpi_send MPI_SEND
 #define mpi_recv MPI_RECV
@@ -40,6 +41,7 @@
 #define iargc iargc_
 #define getarg getarg_
 #define mpi_init mpi_init_
+#define mpi_init_thread mpi_init_thread_
 #define mpi_finalize mpi_finalize_
 #define mpi_send mpi_send_
 #define mpi_recv mpi_recv_
@@ -70,6 +72,7 @@
 #define iargc iargc_
 #define getarg getarg_
 #define mpi_init mpi_init__
+#define mpi_init_thread mpi_init_thread__
 #define mpi_finalize mpi_finalize__
 #define mpi_send mpi_send__
 #define mpi_recv mpi_recv__
@@ -236,6 +239,55 @@ void mpi_init (MPI_Fint *ierr)
   }
   
   *ierr = MPI_Init (&Argc, &Argv);
+    
+  /* Recover space */
+  for (i = 0; i < ArgcSave; i++) {
+    free (ArgvValSave[i]);
+  }
+  free (ArgvValSave);
+  free (ArgvSave);
+}
+
+void mpi_init_thread (MPI_Fint *required, MPI_Fint *provided, MPI_Fint *ierr)
+{
+  int Argc;
+  int i, argsize = 1024;
+  char **Argv, *p;
+  int  ArgcSave;           /* Save the argument count */
+  char **ArgvSave;         /* Save the pointer to the argument vector */
+  char **ArgvValSave;      /* Save entries in the argument vector */
+
+/* Recover the args with the Fortran routines iargc and getarg */
+  ArgcSave    = Argc = iargc() + 1; 
+  ArgvSave    = Argv = (char **) malloc (Argc * sizeof(char *));
+  ArgvValSave = (char**) malloc (Argc * sizeof(char *));
+  if ( ! Argv) {
+    fprintf (stderr, "Out of space in MPI_INIT");
+    *ierr = -1;
+    return;
+  }
+
+  for (i = 0; i < Argc; i++) {
+    ArgvValSave[i] = Argv[i] = (char *) malloc (argsize + 1);
+    if ( ! Argv[i]) {
+      fprintf (stderr, "Out of space in MPI_INIT");
+      *ierr = -1;
+      return;
+    }
+    getarg (&i, Argv[i], argsize);
+
+    /* Trim trailing blanks */
+    p = Argv[i] + argsize - 1;
+    while (p > Argv[i]) {
+      if (*p != ' ') {
+	p[1] = '\0';
+	break;
+      }
+      p--;
+    }
+  }
+  
+  *ierr = MPI_Init_thread (&Argc, &Argv, *required, provided);
     
   /* Recover space */
   for (i = 0; i < ArgcSave; i++) {

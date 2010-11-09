@@ -1,7 +1,8 @@
       program testbasics
-      implicit none
 
-#include "../gptl.inc"
+      use gptl
+
+      implicit none
 
       integer :: ret
       integer :: nregions

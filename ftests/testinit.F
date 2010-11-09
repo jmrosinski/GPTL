@@ -1,7 +1,8 @@
       program testinit
-      implicit none
 
-#include "../gptl.inc"
+      use gptl
+
+      implicit none
 
       integer ret
 

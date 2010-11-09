@@ -1,10 +1,13 @@
       program utrtest
+
+      use gptl
+
       implicit none
+
       external sub
 #ifdef HAVE_MPI
-#include "mpif.h"
+#include <mpif.h>
 #endif
-#include "../gptl.inc"
       double precision sum
       integer ret
       sum = 0.
@@ -44,8 +47,10 @@
       end program utrtest
 
       subroutine sub (outer, inner, name, sum)
+
+      use gptl
+
       implicit none
-#include "../gptl.inc"
 
       integer outer
       integer inner
