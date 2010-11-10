@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.c,v 1.154 2010-11-09 19:08:53 rosinski Exp $
+** $Id: gptl.c,v 1.155 2010-11-10 16:46:42 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -1200,7 +1200,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.154 2010-11-09 19:08:53 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.155 2010-11-10 16:46:42 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1944,7 +1944,7 @@ int GPTLpr_summary (MPI_Comm comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.154 2010-11-09 19:08:53 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.155 2010-11-10 16:46:42 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 
     /* Print heading */
@@ -2459,8 +2459,8 @@ int GPTLget_regionname (int t,      /* thread number */
   ptr = timers[t]->next;
   for (i = 0; i < region; i++) {
     if ( ! ptr)
-      return GPTLerror ("GPTLget_regionname: timer %d does not exist in thread %d\n",
-			t, region);
+      return GPTLerror ("GPTLget_regionname: timer number %d does not exist in thread %d\n",
+			region, t);
     ptr = ptr->next;
   }
 
@@ -2475,8 +2475,8 @@ int GPTLget_regionname (int t,      /* thread number */
     if (ncpy < nc)
       name[ncpy] = '\0';
   } else {
-    return GPTLerror ("GPTLget_regionname: timer %d does not exist in thread %d\n",
-		      t, region);
+    return GPTLerror ("GPTLget_regionname: timer number %d does not exist in thread %d\n",
+		      region, t);
   }
   return 0;
 }
@@ -2664,7 +2664,7 @@ static float get_clockfreq ()
     if (strncmp (buf, "cpu MHz", 7) == 0) {
       for (is = 7; buf[is] != '\0' && !isdigit (buf[is]); is++);
       if (isdigit (buf[is]))
-	return atof (&buf[is]);
+	return (float) atof (&buf[is]);
     }
   }
 

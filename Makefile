@@ -149,6 +149,6 @@ threadutil.o: gptl.h private.h
 gptl_papi.o: gptl.h private.h
 process_namelist.o: process_namelist.F90 gptl.inc
 	$(FC) -c $(FFLAGS) $<
-gptlf.o: gptlf.F90 gptl.inc
+gptlf.o: gptlf.F90
 	$(FC) -c $(FFLAGS) $<
 pmpi.o: gptl.h private.h

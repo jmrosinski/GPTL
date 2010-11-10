@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.53 2010-04-01 15:35:32 rosinski Exp $
+** $Id: f_wrappers.c,v 1.54 2010-11-10 16:46:42 rosinski Exp $
 **
 ** Author: Jim Rosinski
 ** 
@@ -332,7 +332,15 @@ int gptlget_nregions (int *t, int *nregions)
 
 int gptlget_regionname (int *t, int *region, char *name, int nc)
 {
-  return GPTLget_regionname (*t, *region, name, nc);
+  int n;
+  int ret;
+
+  ret = GPTLget_regionname (*t, *region, name, nc);
+  /* Turn nulls into spaces for fortran */
+  for (n = 0; n < nc; ++n)
+    if (name[n] == '\0')
+      name[n] = ' ';
+  return ret;
 }
 
 int gptlget_memusage (int *size, int *rss, int *share, int *text, int *datastack)

@@ -1,5 +1,5 @@
 /*
-** $Id: gptl_papi.c,v 1.77 2010-11-09 19:08:53 rosinski Exp $
+** $Id: gptl_papi.c,v 1.78 2010-11-10 16:46:42 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -672,8 +672,8 @@ int GPTL_PAPIlibraryinit ()
 
   if ((ret = PAPI_is_initialized ()) == PAPI_NOT_INITED) {
     if ((ret = PAPI_library_init (PAPI_VER_CURRENT)) != PAPI_VER_CURRENT) {
-      fprintf(stderr, "GPTL_PAPIlibraryinit: ret=%d PAPI_VER_CURRENT=%d\n", 
-	      ret, PAPI_VER_CURRENT);
+      fprintf (stderr, "GPTL_PAPIlibraryinit: ret=%d PAPI_VER_CURRENT=%d\n", 
+	       ret, (int) PAPI_VER_CURRENT);
       return GPTLerror ("GPTL_PAPIlibraryinit: PAPI_library_init failure:%s\n",
 			PAPI_strerror (ret));
     }

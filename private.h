@@ -1,5 +1,5 @@
 /*
-** $Id: private.h,v 1.72 2009-12-29 02:03:53 rosinski Exp $
+** $Id: private.h,v 1.73 2010-11-10 16:46:42 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -112,8 +112,10 @@ extern void threadfinalize (void);             /* finalize threading environment
 extern void print_threadmapping (int, FILE *); /* print mapping of thread ids */
 extern int get_thread_num (int *, int *);      /* get 0-based thread number */
 
-extern int GPTLstart_instr (void *);
-extern int GPTLstop_instr (void *);
+extern int GPTLstart_instr (void *);           /* auto-instrumented start */
+extern int GPTLstop_instr (void *);            /* auto-instrumented stop */
+extern int GPTLis_initialized (void);          /* needed by MPI_Init wrapper */
+extern int GPTLpr_has_been_called (void);      /* needed by MPI_Finalize wrapper*/
 
 #ifdef __cplusplus
 extern "C" {
@@ -151,6 +153,4 @@ extern int GPTLcreate_and_start_events (const int);
 #ifdef ENABLE_PMPI
 extern Timer *GPTLgetentry (char *);
 extern int GPTLpmpi_setoption (const int, const int);
-extern int GPTLis_initialized (void);
-extern int GPTLpr_has_been_called (void);
 #endif

@@ -118,7 +118,9 @@ Stats for thread 0:
 Adds interface block for argument checking.
 <li>Enable auto-profiling under AIX
 <li>Enable GPTLprint_memusage under MacOS (thanks to Chuck Bardeen).
-<li>Bugfix for "make install" creates directories if they're not already there.
+<li>Bugfix for gptlget_regionname (Fortran) to remove null terminator put 
+there by underlying GPTLget_regionname.
+<li>Bugfix for "make install" creates directories if they don't already exist.
 <li>Added auto-profiling entry for MPI_Init_thread.
 <li>Changed default print method from most_frequent to full_tree.
 </ul>
@@ -293,6 +295,7 @@ Comments in the sample <b><em>macros.make</em></b> files describe
 
 <h2>Bugs</h2>
 <ul>
+<li> PMPI interface doesn't work on AIX
 <li> Calling <b>GPTLinitialize()</b> after <b>GPTLfinalize()</b> is untested.
 <li> Increasing the thread count after <b>GPTLinitialize()</b> has been
   called does not work when <b>GPTL</b> threading is via OMP. This should
