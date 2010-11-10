@@ -124,7 +124,8 @@ install: lib$(LIBNAME).a
 	install -m 0644 lib$(LIBNAME).a $(INSTALLDIR)/lib
 	install -m 0644 gptl.h $(INSTALLDIR)/include
 ifeq ($(FORTRAN),yes)
-	install -m 0644 gptl.inc gptl.mod $(INSTALLDIR)/include
+# *.mod will install either gptl.mod or GPTL.mod
+	install -m 0644 gptl.inc *.mod $(INSTALLDIR)/include
 endif
 	install -m 0644 man/man3/*.3 $(MANDIR)/man/man3
 	install -m 0755 *pl $(INSTALLDIR)/bin
