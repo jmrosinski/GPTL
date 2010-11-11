@@ -18,11 +18,12 @@ dynamic call tree">
 performance analysis and profiling. The instrumentation can be inserted
 manually by the user wherever they wish, or it can be done automatically by
 the compiler at function entry and exit points if the application being
-profiled is built with GNU, Pathscale, Intel, or PGI (8.0.2 or later)
-compilers. To auto-instrument an application,
-add <b><em>-finstrument-functions</em></b> (Pathscale, GNU, Intel)
-or <b><em>-Minstrument:functions</em></b> (PGI) to the compile and link flags
-of the source files to be profiled.
+profiled is built with GNU, Pathscale, Intel, PGI (8.0.2 or later), or AIX
+compilers. To auto-instrument an application, add
+<b><em>-finstrument-functions</em></b> (Pathscale, GNU, Intel) or
+<b><em>-Minstrument:functions</em></b> (PGI) or
+<b><em>-qdebug=function_trace</em></b> (AIX) 
+to the compile and link flags of the source files to be profiled.
 <p>
 Automatic instrumentation of a number of MPI routines is also possible. In this
 case no special compiler flags are necessary, and users can obtain profiles
@@ -137,9 +138,6 @@ there by underlying GPTLget_regionname.
 <li>Changed LINUX ifdef to HAVE_SLASHPROC. Not all Linux systems have /proc/pid/statm.
 <li>Makefile uses "findstring xlf" to decide how Fortran defines are set.
 </ul>
-
-<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
-<h2>What was new in previous releases
 
 <h3>GPTL3.6.1 (<a href="older/gptl3_6_1.tar.gz">gptl3_6_1.tar.gz</a>)</h3>
 <ul>
