@@ -38,7 +38,7 @@ HAVE_SLASHPROC = yes
 # if either OPENMP=yes, or PTHREADS=yes. If OPENMP=no and PTHREADS=no, GPTL 
 # will not be thread-safe.
 OPENMP = no
-COMPFLAG = -openmp
+COMPFLAG = -fopenmp
 # Set PTHREADS if available and OPENMP=no
 ifeq ($(OPENMP),no)
   PTHREADS = yes
