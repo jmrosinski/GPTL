@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.54 2010-11-10 16:46:42 rosinski Exp $
+** $Id: f_wrappers.c,v 1.55 2010-11-15 18:40:15 rosinski Exp $
 **
 ** Author: Jim Rosinski
 ** 
@@ -22,6 +22,7 @@
 #define gptlpr GPTLPR
 #define gptlpr_file GPTLPR_FILE
 #define gptlpr_summary GPTLPR_SUMMARY
+#define gptlbarrier GPTLBARRIER
 #define gptlreset GPTLRESET
 #define gptlstamp GPTLSTAMP
 #define gptlstart GPTLSTART
@@ -49,6 +50,7 @@
 #define gptlpr gptlpr_
 #define gptlpr_file gptlpr_file_
 #define gptlpr_summary gptlpr_summary_
+#define gptlbarrier gptlbarrier_
 #define gptlreset gptlreset_
 #define gptlstamp gptlstamp_
 #define gptlstart gptlstart_
@@ -76,6 +78,7 @@
 #define gptlpr gptlpr_
 #define gptlpr_file gptlpr_file__
 #define gptlpr_summary gptlpr_summary__
+#define gptlbarrier gptlbarrier_
 #define gptlreset gptlreset_
 #define gptlstamp gptlstamp_
 #define gptlstart gptlstart_
