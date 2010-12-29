@@ -1,5 +1,5 @@
 !
-! $Id: gptl.inc,v 1.42 2010-11-09 19:08:53 rosinski Exp $
+! $Id: gptl.inc,v 1.43 2010-12-29 18:46:42 rosinski Exp $
 !
 ! Author: Jim Rosinski
 !
@@ -36,11 +36,11 @@
       integer GPTL_L3MRT
 
       integer GPTLnanotime
-      integer GPTLrtc
       integer GPTLmpiwtime
       integer GPTLclockgettime
       integer GPTLgettimeofday
       integer GPTLpapitime
+      integer GPTLread_real_time
 
       integer GPTLfirst_parent
       integer GPTLlast_parent
@@ -77,10 +77,10 @@
 
       parameter (GPTLgettimeofday   = 1)
       parameter (GPTLnanotime       = 2)
-      parameter (GPTLrtc            = 3)
       parameter (GPTLmpiwtime       = 4)
       parameter (GPTLclockgettime   = 5)
       parameter (GPTLpapitime       = 6)
+      parameter (GPTLread_real_time = 3)
 
       parameter (GPTLfirst_parent   = 1)
       parameter (GPTLlast_parent    = 2)
@@ -92,7 +92,9 @@
       integer gptlsetoption
       integer gptlinitialize
       integer gptlstart
+      integer gptlstart_handle
       integer gptlstop
+      integer gptlstop_handle
       integer gptlstamp 
       integer gptlpr
       integer gptlpr_file
@@ -118,7 +120,9 @@
       external gptlsetoption
       external gptlinitialize
       external gptlstart
+      external gptlstart_handle
       external gptlstop
+      external gptlstop_handle
       external gptlstamp 
       external gptlpr
       external gptlpr_file

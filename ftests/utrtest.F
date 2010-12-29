@@ -21,7 +21,7 @@
       ret = gptlsetoption (gptlverbose, 0)
 
       ret = gptlsetutr (gptlmpiwtime)
-      ret = gptlsetutr (gptlrtc)
+      ret = gptlsetutr (gptlread_real_time)
       ret = gptlsetutr (gptlclockgettime)
       ret = gptlsetutr (gptlgettimeofday)
       ret = gptlsetutr (gptlpapitime)

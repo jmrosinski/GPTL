@@ -13,7 +13,7 @@ TESTS = testbasics nlreader
 ifeq ($(HAVE_PAPI),yes)
   TESTS += testinit testpapi
 endif
-EXES = $(TESTS) errtest utrtest 
+EXES = $(TESTS) errtest utrtest overhead
 
 LDFLAGS = -L.. -l$(LIBNAME) $(ABIFLAGS)
 
@@ -84,6 +84,9 @@ pmpi: pmpi.o
 	$(FC) $(FFLAGS) -o $@ $< $(LDFLAGS)
 pmpi.o: pmpi.F90
 	$(FC) -c $(FFLAGS) $<
+
+overhead: overhead.f90
+	$(FC) $(FFLAGS) -o $@ $< $(LDFLAGS)
 
 # Built-in tests to ensure that GPTL is behaving as expected
 # Invoke as "make test" from one dir above

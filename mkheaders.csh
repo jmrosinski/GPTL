@@ -36,7 +36,7 @@ set GPTL_L3MRT         = 26
 
 set GPTLgettimeofday   = 1
 set GPTLnanotime       = 2
-set GPTLrtc            = 3
+set GPTLread_real_time = 3
 set GPTLmpiwtime       = 4
 set GPTLclockgettime   = 5
 set GPTLpapitime       = 6
@@ -78,7 +78,6 @@ s/#GPTL_LSTPL2M/$GPTL_LSTPL2M/1
 s/#GPTL_L3MRT/$GPTL_L3MRT/1
 s/#GPTLgettimeofday/$GPTLgettimeofday/1
 s/#GPTLnanotime/$GPTLnanotime/1
-s/#GPTLrtc/$GPTLrtc/1
 s/#GPTLmpiwtime/$GPTLmpiwtime/1
 s/#GPTLclockgettime/$GPTLclockgettime/1
 s/#GPTLpapitime/$GPTLpapitime/1
@@ -86,6 +85,7 @@ s/#GPTLfirst_parent/$GPTLfirst_parent/1
 s/#GPTLlast_parent/$GPTLlast_parent/1
 s/#GPTLmost_frequent/$GPTLmost_frequent/1
 s/#GPTLfull_tree/$GPTLfull_tree/1
+s/#GPTLread_real_time/$GPTLread_real_time/1
 EOF
 
 # Run the sed script to create the 3 header files

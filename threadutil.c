@@ -1,5 +1,5 @@
 /*
-** $Id: threadutil.c,v 1.28 2009-12-31 01:51:59 rosinski Exp $
+** $Id: threadutil.c,v 1.29 2010-12-29 18:46:42 rosinski Exp $
 **
 ** Author: Jim Rosinski
 ** 
@@ -146,8 +146,8 @@ void print_threadmapping (int nthreads, FILE *fp)
 
 #include <pthread.h>
 
-static int lock_mutex (void);      /* lock a mutex for entry into a critical region */
-static int unlock_mutex (void);    /* unlock a mutex for exit from a critical region */
+static inline int lock_mutex (void);      /* lock a mutex for entry into a critical region */
+static inline int unlock_mutex (void);    /* unlock a mutex for exit from a critical region */
 
 static pthread_mutex_t t_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_t *threadid;
@@ -297,7 +297,7 @@ int get_thread_num (int *nthreads, int *maxthreads)
 ** lock_mutex: lock a mutex for private access
 */
 
-static int lock_mutex ()
+static inline int lock_mutex ()
 {
   if (pthread_mutex_lock (&t_mutex) != 0)
     return GPTLerror ("pthread_lock_mutex failure\n");
@@ -308,7 +308,7 @@ static int lock_mutex ()
 ** unlock_mutex: unlock a mutex from private access
 */
 
-static int unlock_mutex ()
+static inline int unlock_mutex ()
 {
   if (pthread_mutex_unlock (&t_mutex) != 0)
     return GPTLerror ("pthread_unlock_mutex failure\n");

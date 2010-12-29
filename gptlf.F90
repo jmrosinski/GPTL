@@ -37,10 +37,10 @@ module gptl
 
   integer, parameter :: GPTLgettimeofday   = 1
   integer, parameter :: GPTLnanotime       = 2
-  integer, parameter :: GPTLrtc            = 3
   integer, parameter :: GPTLmpiwtime       = 4
   integer, parameter :: GPTLclockgettime   = 5
   integer, parameter :: GPTLpapitime       = 6
+  integer, parameter :: GPTLread_real_time = 3
 					                
   integer, parameter :: GPTLfirst_parent   = 1
   integer, parameter :: GPTLlast_parent    = 2
@@ -92,9 +92,21 @@ module gptl
        character(len=*) :: name
      end function gptlstart
 
+     integer function gptlstart_handle (name, handle)
+       character(len=*) :: name
+!JR ASSUME pointers are max 8 bytes.
+       integer(8) :: handle
+     end function gptlstart_handle
+
      integer function gptlstop (name)
        character(len=*) :: name
      end function gptlstop
+
+     integer function gptlstop_handle (name, handle)
+       character(len=*) :: name
+!JR ASSUME pointers are max 8 bytes.
+       integer(8) :: handle
+     end function gptlstop_handle
 
      integer function gptlsetoption (option, val)
        integer :: option, val

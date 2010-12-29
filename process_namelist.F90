@@ -1,6 +1,6 @@
 subroutine gptlprocess_namelist (filename, unitno, outret)
 !
-! $Id: process_namelist.F90,v 1.3 2010-04-13 15:19:13 rosinski Exp $
+! $Id: process_namelist.F90,v 1.4 2010-12-29 18:46:42 rosinski Exp $
 !
 ! Author: Jim Rosinski
 !
@@ -260,8 +260,8 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
       ret = gptlsetutr (gptlgettimeofday)
     else if (trim(utr) == 'nanotime') then
       ret = gptlsetutr (gptlnanotime)
-    else if (trim(utr) == 'rtc') then
-      ret = gptlsetutr (gptlrtc)
+    else if (trim(utr) == 'read_real_time') then
+      ret = gptlsetutr (gptlread_real_time)
     else if (trim(utr) == 'mpiwtime') then
       ret = gptlsetutr (gptlmpiwtime)
     else if (trim(utr) == 'clockgettime') then

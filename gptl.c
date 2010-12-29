@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.c,v 1.155 2010-11-10 16:46:42 rosinski Exp $
+** $Id: gptl.c,v 1.156 2010-12-29 18:46:42 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -24,12 +24,12 @@
 #include <papi.h>          /* PAPI_get_real_usec */
 #endif
 
-#ifdef UNICOSMP
-#include <intrinsics.h>    /* rtc */
-#endif
-
 #ifdef HAVE_LIBRT
 #include <time.h>
+#endif
+
+#ifdef _AIX
+#include <sys/systemcfg.h>
 #endif
 
 #include "private.h"
@@ -57,6 +57,9 @@ static bool dopr_collision = true;  /* whether to print hash collision info */
 
 static time_t ref_gettimeofday = -1; /* ref start point for gettimeofday */
 static time_t ref_clock_gettime = -1;/* ref start point for clock_gettime */
+#ifdef _AIX
+static time_t ref_read_real_time = -1; /* ref start point for read_real_time */
+#endif
 static long long ref_papitime = -1;  /* ref start point for PAPI_get_real_usec */
 
 typedef struct {
@@ -126,17 +129,17 @@ static char *methodstr (Method);
 /* These are the (possibly) supported underlying wallclock timers */
 
 static inline double utr_nanotime (void);
-static inline double utr_rtc (void);
 static inline double utr_mpiwtime (void);
 static inline double utr_clock_gettime (void);
 static inline double utr_papitime (void);
+static inline double utr_read_real_time (void);
 static inline double utr_gettimeofday (void);
 
 static int init_nanotime (void);
-static int init_rtc (void);
 static int init_mpiwtime (void);
 static int init_clock_gettime (void);
 static int init_papitime (void);
+static int init_read_real_time (void);
 static int init_gettimeofday (void);
 
 static double utr_getoverhead (void);
@@ -158,12 +161,12 @@ typedef struct {
 } Funcentry;
 
 static Funcentry funclist[] = {
-  {GPTLgettimeofday, utr_gettimeofday,  init_gettimeofday,  "gettimeofday"},
-  {GPTLnanotime,     utr_nanotime,      init_nanotime,      "nanotime"},
-  {GPTLrtc,          utr_rtc,           init_rtc,           "_rtc"},
-  {GPTLmpiwtime,     utr_mpiwtime,      init_mpiwtime,      "MPI_Wtime"},
-  {GPTLclockgettime, utr_clock_gettime, init_clock_gettime, "clock_gettime"},
-  {GPTLpapitime,     utr_papitime,      init_papitime,      "PAPI_get_real_usec"}
+  {GPTLgettimeofday,   utr_gettimeofday,   init_gettimeofday,  "gettimeofday"},
+  {GPTLnanotime,       utr_nanotime,       init_nanotime,      "nanotime"},
+  {GPTLmpiwtime,       utr_mpiwtime,       init_mpiwtime,      "MPI_Wtime"},
+  {GPTLclockgettime,   utr_clock_gettime,  init_clock_gettime, "clock_gettime"},
+  {GPTLpapitime,       utr_papitime,       init_papitime,      "PAPI_get_real_usec"},
+  {GPTLread_real_time, utr_read_real_time, init_read_real_time,"read_real_time"}     /* AIX only */
 };
 static const int nfuncentries = sizeof (funclist) / sizeof (Funcentry);
 
@@ -175,10 +178,6 @@ static float cpumhz = -1.;                        /* init to bad value */
 static double cyc2sec = -1;                       /* init to bad value */
 static unsigned inline long long nanotime (void); /* read counter (assembler) */
 static float get_clockfreq (void);                /* cycles/sec */
-#endif
-
-#ifdef UNICOSMP
-static double ticks2sec = -1;                     /* init to bad value */
 #endif
 
 static const int tablesize = 128*MAX_CHARS;       /* 128 is size of ASCII char set */
@@ -578,12 +577,6 @@ int GPTLstart (const char *name)               /* timer name */
   int t;           /* thread index (of this thread) */
   int indx;        /* hash table index */
 
-#ifdef UNICOSMP
-#ifndef SSP
-  if (__streaming() == 0) return 0;  /* timers don't work in this situation so disable */
-#endif
-#endif
-
   if (disabled)
     return 0;
 
@@ -650,8 +643,101 @@ int GPTLstart (const char *name)               /* timer name */
 }
 
 /*
+** GPTLstart_handle: start a timer based on a handle
+**
+** Input arguments:
+**   name: timer name (required when on input, handle=0)
+**   handle: pointer to timer matching "name"
+**
+** Return value: 0 (success) or GPTLerror (failure)
+*/
+
+int GPTLstart_handle (const char *name,     /* timer name */
+		      void **handle)        /* handle (output if input value is 0) */
+{
+  Timer *ptr;               /* linked list pointer */
+  int t;                    /* thread index (of this thread) */
+  int indx = -99999;        /* hash table index: init to bad value */
+
+  if (disabled)
+    return 0;
+
+  if ( ! initialized)
+    return GPTLerror ("GPTLstart name=%s: GPTLinitialize has not been called\n", name);
+
+  if ((t = get_thread_num (&GPTLnthreads, &maxthreads)) < 0)
+    return GPTLerror ("GPTLstart: bad return from get_thread_num\n");
+
+  /*
+  ** If current depth exceeds a user-specified limit for print, just
+  ** increment and return
+  */
+
+  if (stackidx[t].val >= depthlimit) {
+    ++stackidx[t].val;
+    return 0;
+  }
+
+  /*
+  ** If on input, handle references a non-zero value, assume it's a previously returned Timer* 
+  ** passed in by the user. If zero, generate the hash entry and return it to the user.
+  */
+
+  if (*handle) {
+    ptr = (Timer *) *handle;
+  } else {
+    ptr = getentry (hashtable[t], name, &indx);
+  }
+    
+  /* 
+  ** Recursion => increment depth in recursion and return.  We need to return 
+  ** because we don't want to restart the timer.  We want the reported time for
+  ** the timer to reflect the outermost layer of recursion.
+  */
+
+  if (ptr && ptr->onflg) {
+    ++ptr->recurselvl;
+    return 0;
+  }
+
+  /*
+  ** Increment stackidx[t] unconditionally. This is necessary to ensure the correct
+  ** behavior when GPTLstop decrements stackidx[t] unconditionally.
+  */
+
+  if (++stackidx[t].val > MAX_STACK-1)
+    return GPTLerror ("GPTLstart: stack too big\n");
+
+  if ( ! ptr) { /* Add a new entry and initialize */
+    ptr = (Timer *) GPTLallocate (sizeof (Timer));
+    memset (ptr, 0, sizeof (Timer));
+
+    strncpy (ptr->name, name, MAX_CHARS);
+    ptr->name[MAX_CHARS] = '\0';
+
+    if (update_ll_hash (ptr, t, indx) != 0)
+      return GPTLerror ("GPTLstart_handle: update_ll_hash error\n");
+  }
+
+  if (update_parent_info (ptr, callstack[t], stackidx[t].val) != 0)
+    return GPTLerror ("GPTLstart_handle: find_parent error\n");
+
+  if (update_ptr (ptr, t) != 0)
+    return GPTLerror ("GPTLstart_handle: update_ptr error\n");
+
+  /*
+  ** If on input, *handle was 0, return the pointer to the timer for future input
+  */
+
+  if ( ! *handle)
+    *handle = (void *) ptr;
+
+  return (0);
+}
+
+/*
 ** update_ll_hash: Update linked list and hash table.
-**                 Called by GPTLstart and GPTLstart_instr
+**                 Called by GPTLstart and GPTLstart_instr and GPTLstart_handle
 **
 ** Input arguments:
 **   ptr:  pointer to timer
@@ -687,7 +773,7 @@ static inline int update_ll_hash (Timer *ptr, const int t, const int indx)
 }
 
 /*
-** update_ptr: Update timer contents. Called by GPTLstart and GPTLstart_instr
+** update_ptr: Update timer contents. Called by GPTLstart and GPTLstart_instr and GPTLstart_handle
 **
 ** Input arguments:
 **   ptr:  pointer to timer
@@ -809,12 +895,6 @@ int GPTLstop_instr (void *self)
   long usr = 0;              /* user time (returned from get_cpustamp) */
   long sys = 0;              /* system time (returned from get_cpustamp) */
 
-#ifdef UNICOSMP
-#ifndef SSP
-  if (__streaming() == 0) return 0;  /* timers don't work in this situation so disable */
-#endif
-#endif
-
   if (disabled)
     return 0;
 
@@ -889,12 +969,6 @@ int GPTLstop (const char *name)               /* timer name */
   long usr = 0;              /* user time (returned from get_cpustamp) */
   long sys = 0;              /* system time (returned from get_cpustamp) */
 
-#ifdef UNICOSMP
-#ifndef SSP
-  if (__streaming() == 0) return 0;  /* timers don't work in this situation so disable */
-#endif
-#endif
-
   if (disabled)
     return 0;
 
@@ -925,6 +999,81 @@ int GPTLstop (const char *name)               /* timer name */
 
   if ( ! (ptr = getentry (hashtable[t], name, &indx)))
     return GPTLerror ("GPTLstop: timer for %s had not been started.\n", name);
+
+  if ( ! ptr->onflg )
+    return GPTLerror ("GPTLstop: timer %s was already off.\n",ptr->name);
+
+  ++ptr->count;
+
+  /* 
+  ** Recursion => decrement depth in recursion and return.  We need to return
+  ** because we don't want to stop the timer.  We want the reported time for
+  ** the timer to reflect the outermost layer of recursion.
+  */
+
+  if (ptr->recurselvl > 0) {
+    ++ptr->nrecurse;
+    --ptr->recurselvl;
+    return 0;
+  }
+
+  if (update_stats (ptr, tp1, usr, sys, t) != 0)
+    return GPTLerror ("GPTLstop: update_stats\n");
+
+  return 0;
+}
+
+/*
+** GPTLstop_handle: stop a timer based on a handle
+**
+** Input arguments:
+**   name: timer name (used only for diagnostics)
+**   handle: pointer to timer
+**
+** Return value: 0 (success) or -1 (failure)
+*/
+
+int GPTLstop_handle (const char *name,     /* timer name */
+		     void **handle)        /* handle */
+{
+  double tp1 = 0.0;          /* time stamp */
+  Timer *ptr;                /* linked list pointer */
+  int t;                     /* thread number for this process */
+  long usr = 0;              /* user time (returned from get_cpustamp) */
+  long sys = 0;              /* system time (returned from get_cpustamp) */
+
+  if (disabled)
+    return 0;
+
+  if ( ! initialized)
+    return GPTLerror ("GPTLstop: GPTLinitialize has not been called\n");
+
+  /* Get the timestamp */
+    
+  if (wallstats.enabled) {
+    tp1 = (*ptr2wtimefunc) ();
+  }
+
+  if (cpustats.enabled && get_cpustamp (&usr, &sys) < 0)
+    return GPTLerror (0);
+
+  if ((t = get_thread_num (&GPTLnthreads, &maxthreads)) < 0)
+    return GPTLerror ("GPTLstop\n");
+
+  /*
+  ** If current depth exceeds a user-specified limit for print, just
+  ** decrement and return
+  */
+
+  if (stackidx[t].val > depthlimit) {
+    --stackidx[t].val;
+    return 0;
+  }
+
+  if ( ! *handle) 
+    return GPTLerror ("GPTLstop_handle: bad input handle for timer %s.\n", name);
+    
+  ptr = (Timer *) *handle;
 
   if ( ! ptr->onflg )
     return GPTLerror ("GPTLstop: timer %s was already off.\n",ptr->name);
@@ -1200,7 +1349,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.155 2010-11-10 16:46:42 rosinski Exp $\n");
+  fprintf (fp, "$Id: gptl.c,v 1.156 2010-12-29 18:46:42 rosinski Exp $\n");
 
 #ifdef HAVE_NANOTIME
   if (funcidx == GPTLnanotime)
@@ -1944,7 +2093,7 @@ int GPTLpr_summary (MPI_Comm comm)
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.155 2010-11-10 16:46:42 rosinski Exp $\n");
+    fprintf (fp, "$Id: gptl.c,v 1.156 2010-12-29 18:46:42 rosinski Exp $\n");
     fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
 
     /* Print heading */
@@ -2706,33 +2855,6 @@ static inline double utr_nanotime ()
 }
 
 /*
-** rtc is currently only available on UNICOSMP
-*/
-
-static int init_rtc ()
-{
-#ifdef UNICOSMP
-  extern long long rtc_rate_();
-  ticks2sec = 1./rtc_rate_();
-  if (verbose)
-    printf ("init_rtc: ticks per sec=%g\n", rtc_rate_());
-  return 0;
-#else
-  return GPTLerror ("init_rtc: not enabled\n");
-#endif
-}
-  
-static inline double utr_rtc ()
-{
-#ifdef UNICOSMP
-  return _rtc () * ticks2sec;
-#else
-  (void) GPTLerror ("utr_rtc: not enabled\n");
-  return -1.;
-#endif
-}
-
-/*
 ** MPI_Wtime requires the MPI lib.
 */
 
@@ -2808,6 +2930,37 @@ static inline double utr_clock_gettime ()
 #else
   (void) GPTLerror ("utr_clock_gettime: not enabled\n");
   return -1.;
+#endif
+}
+
+/*
+** High-res timer on AIX: read_real_time
+*/
+
+static int init_read_real_time ()
+{
+#ifdef _AIX
+  timebasestruct_t ibmtime;
+  (void) read_real_time (&ibmtime, TIMEBASE_SZ);
+  (void) time_base_to_time (&ibmtime, TIMEBASE_SZ);
+  ref_read_real_time = ibmtime.tb_high;
+  if (verbose)
+    printf ("init_read_real_time: ref_read_real_time=%ld\n", (long) ref_read_real_time);
+  return 0;
+#else
+  return GPTLerror ("init_read_real_time: not enabled\n");
+#endif
+}
+
+static inline double utr_read_real_time ()
+{
+#ifdef _AIX
+  timebasestruct_t ibmtime;
+  (void) read_real_time (&ibmtime, TIMEBASE_SZ);
+  (void) time_base_to_time (&ibmtime, TIMEBASE_SZ);
+  return (ibmtime.tb_high - ref_read_real_time) + 1.e-9*ibmtime.tb_low;
+#else
+  return GPTLerror ("utr_read_real_time: not enabled\n");
 #endif
 }
 

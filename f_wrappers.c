@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.55 2010-11-15 18:40:15 rosinski Exp $
+** $Id: f_wrappers.c,v 1.56 2010-12-29 18:46:42 rosinski Exp $
 **
 ** Author: Jim Rosinski
 ** 
@@ -26,7 +26,9 @@
 #define gptlreset GPTLRESET
 #define gptlstamp GPTLSTAMP
 #define gptlstart GPTLSTART
+#define gptlstart_handle GPTLSTART_HANDLE
 #define gptlstop GPTLSTOP
+#define gptlstop_handle GPTLSTOP_HANDLE
 #define gptlsetoption GPTLSETOPTION
 #define gptlenable GPTLENABLE
 #define gptldisable GPTLDISABLE
@@ -54,7 +56,9 @@
 #define gptlreset gptlreset_
 #define gptlstamp gptlstamp_
 #define gptlstart gptlstart_
+#define gptlstart_handle gptlstart_handle_
 #define gptlstop gptlstop_
+#define gptlstop_handle gptlstop_handle_
 #define gptlsetoption gptlsetoption_
 #define gptlenable gptlenable_
 #define gptldisable gptldisable_
@@ -82,7 +86,9 @@
 #define gptlreset gptlreset_
 #define gptlstamp gptlstamp_
 #define gptlstart gptlstart_
+#define gptlstart_handle gptlstart_handle__
 #define gptlstop gptlstop_
+#define gptlstop_handle gptlstop_handle__
 #define gptlsetoption gptlsetoption_
 #define gptlenable gptlenable_
 #define gptldisable gptldisable_
@@ -119,7 +125,9 @@ int gptlbarrier (void);
 int gptlreset (void);
 int gptlstamp (double *wall, double *usr, double *sys);
 int gptlstart (char *name, int nc1);
+int gptlstart_handle (char *name, void **, int nc1);
 int gptlstop (char *name, int nc1);
+int gptlstop_handle (char *name, void **, int nc1);
 int gptlsetoption (int *option, int *val);
 int gptlenable (void);
 int gptldisable (void);
@@ -243,6 +251,21 @@ int gptlstart (char *name, int nc1)
   return GPTLstart (cname);
 }
 
+int gptlstart_handle (char *name, void **handle, int nc1)
+{
+  char cname[MAX_CHARS+1];
+  int numchars;
+
+  if (*handle) {
+    cname[0] = '\0';
+  } else {
+    numchars = MIN (nc1, MAX_CHARS);
+    strncpy (cname, name, numchars);
+    cname[numchars] = '\0';
+  }
+  return GPTLstart_handle (cname, handle);
+}
+
 int gptlstop (char *name, int nc1)
 {
   char cname[MAX_CHARS+1];
@@ -252,6 +275,21 @@ int gptlstop (char *name, int nc1)
   strncpy (cname, name, numchars);
   cname[numchars] = '\0';
   return GPTLstop (cname);
+}
+
+int gptlstop_handle (char *name, void **handle, int nc1)
+{
+  char cname[MAX_CHARS+1];
+  int numchars;
+
+  if (*handle) {
+    cname[0] = '\0';
+  } else {
+    numchars = MIN (nc1, MAX_CHARS);
+    strncpy (cname, name, numchars);
+    cname[numchars] = '\0';
+  }
+  return GPTLstop_handle (cname, handle);
 }
 
 int gptlsetoption (int *option, int *val)

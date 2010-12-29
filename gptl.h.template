@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.h.template,v 1.1 2010-11-09 19:08:53 rosinski Exp $
+** $Id: gptl.h.template,v 1.2 2010-12-29 18:46:42 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -59,10 +59,10 @@ typedef enum {
 typedef enum {
   GPTLgettimeofday   = #GPTLgettimeofday, /* the default */
   GPTLnanotime       = #GPTLnanotime, /* only available on x86 */
-  GPTLrtc            = #GPTLrtc, /* real time clock (UNICOSMP only) */
   GPTLmpiwtime       = #GPTLmpiwtime, /* MPI_Wtime */
   GPTLclockgettime   = #GPTLclockgettime, /* clock_gettime */
-  GPTLpapitime       = #GPTLpapitime  /* only if PAPI is available */
+  GPTLpapitime       = #GPTLpapitime,  /* only if PAPI is available */
+  GPTLread_real_time = #GPTLread_real_time  /* AIX only */
 } Funcoption;
 
 /*
@@ -87,7 +87,9 @@ extern "C" {
 extern int GPTLsetoption (const int, const int);
 extern int GPTLinitialize (void);
 extern int GPTLstart (const char *);
+extern int GPTLstart_handle (const char *, void **);
 extern int GPTLstop (const char *);
+extern int GPTLstop_handle (const char *, void **);
 extern int GPTLstamp (double *, double *, double *);
 extern int GPTLpr (const int);
 extern int GPTLpr_file (const char *);

@@ -144,7 +144,7 @@ clean:
 
 f_wrappers.o: gptl.h private.h
 f_wrappers_pmpi.o: gptl.h private.h
-gptl.o: gptl.h private.h
+gptl.o: threadutil.o gptl.h private.h
 util.o: gptl.h private.h
 threadutil.o: gptl.h private.h
 gptl_papi.o: gptl.h private.h
