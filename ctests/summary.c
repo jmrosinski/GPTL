@@ -113,7 +113,7 @@ int main (int argc, char **argv)
 double sub (int iter)
 {
   unsigned long usec;
-  unsigned long looplen = iam*iter*10000;
+  unsigned long looplen = iam*iter*100000;
   unsigned long i;
   double sum;
 

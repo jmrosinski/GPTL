@@ -4,11 +4,11 @@
 <meta name="description" content="Profile multi-threaded and multi-tasked 
 C, C++, and Fortran codes. Optional PAPI interface. Automatically generate a
 dynamic call tree">
-<meta name="Keywords" content="gptl","papi","call tree","profile","timing","performance analysis">
+<meta name="Keywords" content="gptl","papi","profile","call tree","timing","performance analysis">
 <meta name="Author" content="Jim Rosinski">
 <h1>GPTL - General Purpose Timing Library</h1>
 <h2>(with optional PAPI interface)</h2>
-<h2>Download the latest release by clicking <a href="gptl-3.7.tar.gz">here</a>
+<h2>Download the latest release by clicking <a href="gptl-4.0.tar.gz">here</a>
 </head>
 <body bgcolor="peachpuff">
 
@@ -26,8 +26,8 @@ compilers. To auto-instrument an application, add
 to the compile and link flags of the source files to be profiled.
 <p>
 Automatic instrumentation of a number of MPI routines is also possible. In this
-case no special compiler flags are necessary, and users can obtain profiles
-with zero changes to their source files. See 
+case no special compiler flags are necessary, and profiles are obtained
+with zero changes to application source files. See 
 <A HREF="example6.html">Example 6</A> for further details.  
 <p>
 Here is a portion of <b>GPTL</b> printout after running the HPCC benchmark
@@ -112,8 +112,29 @@ Stats for thread 0:
 	entry and exit points.
 
 <HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
-<h2>What's new in the latest release
-  (<a href="gptl-3.7.tar.gz">gptl-3.7.tar.gz</a>)</h2>
+<h2>What's new in the latest release <a href="gptl-4.0.tar.gz">(gptl-4.0)</a></h2>
+<ul>
+<li>Speedups for PTHREADS implementation eliminate
+  critical sections except on 1st invocation of each timer. Library overhead
+  is significantly reduced on many machines, especially when applications
+  are profiled with high thread counts.
+<li>New entries <b>GPTLstart_handle()</b> and <b>GPTLstop_handle()</b>. These
+  routines work just like <b>GPTLstart()</b> and <b>GPTLstop()</b>, except
+  they take a 2nd argument, a "handle" to the region being
+  timed. The space for this argument is provided by the user, but is managed
+  by GPTL. It contains the address of the region being timed, and allows GPTL
+  to bypass determing the hash value and performing an address lookup on each
+  call. See "man GPTLstart_handle", and <A HREF="example7.html">Example 7</A>.
+<li>New underlying timer option for AIX "read_real_time", provides
+  significantly better granularity than gettimeofday, with somewhat lower
+  overhead.
+<li>Now safe to call <b>GPTLinitialize()</b> after <b>GPTLfinalize()</b>.
+<li>Works with craycc/crayftn (see macros.make.xt5).
+</ul>
+
+<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
+<h2>What was new in previous releases</h2>
+<h3>GPTL3.7 (<a href="older/gptl-3.7.tar.gz">gptl-3.7.tar.gz</a>)</h3>
 <ul>
 <li>Added Fortran module enabling "use gptl" instead of "include gptl.inc". 
 Adds interface block for argument checking.
@@ -125,9 +146,6 @@ there by underlying <b>GPTLget_regionname()</b>.
 <li>Added auto-profiling entry for MPI_Init_thread.
 <li>Changed default print method from most_frequent to full_tree.
 </ul>
-
-<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
-<h2>What was new in previous releases
 
 <h3>GPTL3.6.3 (<a href="older/gptl3_6_3.tar.gz">gptl3_6_3.tar.gz</a>)</h3>
 <ul>
@@ -241,9 +259,9 @@ than an integer index.
 <HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
 <h2>Download and Installation</h2>
 <ul> 
-<li> Download the most recent release by clicking this link: <a href="gptl-3.7.tar.gz">gptl3.7.tar.gz</a>.
+<li> Download the most recent release by clicking this link: <a href="gptl-4.0.tar.gz">gptl4.0.tar.gz</a>.
 <li> Earlier versions can be found <a href="older/">here</a>.
-<li> To build and install <b>GPTL</b>, see the <A HREF="./INSTALL">INSTALL</a> file.
+<li> To build and install <b>GPTL</b>, see the <A HREF="../INSTALL">INSTALL</a> file.
   You'll need to create a <b><em>macros.make</em></b> file appropriate for your target
   platform. Example files for various architectures are
   included in the tar file (e.g. <b><em>macros.make.linux</em></b>). An autoconf-based 
@@ -286,15 +304,19 @@ Comments in the sample <b><em>macros.make</em></b> files describe
   set <b>GPTL</b> options.
   <p>
   <A HREF="example6.html">Example 6</A> is a Fortran code which utilizes the
-  new <b>ENABLE_PMPI</b> option to automatically time various MPI calls and print the
+  <b>ENABLE_PMPI</b> option to automatically time various MPI calls and print the
   average number of bytes transferred.
+  <p>
+  <A HREF="example7.html">Example 7</A> is a Fortran code which utilizes the
+  functions <b>GPTLstart_handle()</b> and <b>GPTLstop_handle()</b>, which
+  avoid much of the table lookup overhead of their siblings
+  <b>GPTLstart()</b> and <b>GPTLstop()</b>.
 
 <HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
 
 <h2>Bugs</h2>
 <ul>
 <li> PMPI interface doesn't work on AIX
-<li> Calling <b>GPTLinitialize()</b> after <b>GPTLfinalize()</b> is untested.
 <li> Increasing the thread count after <b>GPTLinitialize()</b> has been
   called does not work when <b>GPTL</b> threading is via OMP. This should
   work OK with PTHREADS, but is untested.
@@ -311,8 +333,8 @@ Please email me bug reports and/or feature requests (jmrosinski2 AT gmail DOT co
 <h2>Author</h2>
 <b>GPTL</b> was written
 by <a HREF="http://www.burningserver.net/rosinski">Jim Rosinski</a>,
-currently at <a HREF="http://www.ornl.gov">ORNL</a>, formerly
-  at <a HREF="http://www.sicortex.com">SiCortex</a>,
+currently at <a HREF="http://www.esrl.noaa.gov">NOAA/ESRL</a>, formerly
+  at <a HREF="http://www.ornl.gov">ORNL</a>, <a HREF="http://www.sicortex.com">SiCortex</a>,
 and <a HREF="http://www.ucar.edu">NCAR</a>. 
 <h2>Copyright</h2>
 This software is <b>Open Source</b>. My only request is that you don't

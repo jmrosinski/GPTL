@@ -4,7 +4,7 @@
 # Fortran module file gptlf.F90. DRY programming: define the header values
 # in one place (this script)
 
-# Set shell variables which will be substituted in the header files
+# Set shell variables which will be substituted in the header files:
 
 set GPTLsync_mpi        = 0
 set GPTLwall            = 1
@@ -22,6 +22,7 @@ set GPTLdopr_threadsort = 13
 set GPTLdopr_multparent = 14
 set GPTLdopr_collision  = 15
 set GPTLprint_method    = 16
+set GPTLtablesize       = 50
 
 set GPTL_IPC           = 17
 set GPTL_CI            = 18
@@ -66,6 +67,7 @@ s/#GPTLdopr_threadsort/$GPTLdopr_threadsort/1
 s/#GPTLdopr_multparent/$GPTLdopr_multparent/1
 s/#GPTLdopr_collision/$GPTLdopr_collision/1
 s/#GPTLprint_method/$GPTLprint_method/1
+s/#GPTLtablesize/$GPTLtablesize/1
 s/#GPTL_IPC/$GPTL_IPC/1
 s/#GPTL_CI/$GPTL_CI/1
 s/#GPTL_FPC/$GPTL_FPC/1

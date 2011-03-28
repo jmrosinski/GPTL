@@ -77,11 +77,15 @@
 
 
       double precision function sub (iter, iam)
+      use gptl
+      implicit none
+
       integer, intent (in) :: iter
       integer, intent (in) :: iam
 
       integer (8) :: looplen
       integer (8) :: i
+      integer :: ret
       double precision sum
 
       looplen = iam*iter*10000

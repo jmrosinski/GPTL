@@ -7,7 +7,7 @@
 ##########################################################################
 
 # Where to install GPTL library and include files
-INSTALLDIR = $(HOME)/frost/intel
+INSTALLDIR = /usr/local
 
 # Where to install man pages (if blank, defaults to $INSTALLDIR)
 MANDIR = 
@@ -82,19 +82,20 @@ AR = ar
 # info as appropriate. 
 HAVE_PAPI = no
 ifeq ($(HAVE_PAPI),yes)
-  PAPI_INCFLAGS = 
-  PAPI_LIBFLAGS = 
+  PAPI_INCFLAGS = -I/opt/papi/4.1.0/include
+  PAPI_LIBFLAGS = -L/opt/papi/4.1.0/lib -lpapi
 endif
 
 # Whether to build GPTL with MPI support. Set inc and lib info if needed. 
 # If CC=mpicc, MPI_INCFLAGS and MPI_LIBFLAGS can be blank.
-HAVE_MPI = yes
+HAVE_MPI = no
 ifeq ($(HAVE_MPI),yes)
 # Hopefully MPI_Comm_f2c() exists, but if not, set HAVE_COMM_F2C = no
   HAVE_COMM_F2C = yes
   MPI_INCFLAGS = 
-  MPI_LIBFLAGS = -lmpi
-  MPICMD = mpiexec_mpt
+  MPI_LIBFLAGS = 
+# Want 2 MPI tasks
+  MPICMD = mpiexec -n 2
 endif
 
 # clock_gettime() in librt.a is an option for gathering wallclock time stats
@@ -125,7 +126,7 @@ HAVE_GETTIMEOFDAY = yes
 TEST_AUTOPROFILE = yes
 ifeq ($(TEST_AUTOPROFILE),yes)
   INSTRFLAG = -finstrument-functions
-  CXX = icpc
+  CXX = mpicxx
 endif
 
 # Whether to enable PMPI wrappers. Turning this on will result in automatic 

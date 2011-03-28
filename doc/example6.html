@@ -9,15 +9,15 @@
 
 <hr />
 <a href="example5.html"><img border="0" src="btn_previous.gif"
-				  width="100" height="20" alt="Example 4"
+				  width="100" height="20" alt="Example 5"
 				  /></a> 
-<a href="gptl_homepage.html"><img border="0" src="btn_next.gif"
-			     width="100" height="20" alt="GPTL home page" /></a>
+<a href="example7.html"><img border="0" src="btn_next.gif"
+			     width="100" height="20" alt="Example 7" /></a>
 
 <br />
 
 <h2>Example 6: Automatic generation of MPI statistics</h2>
-This is a Fortran code which uses newly implemented option
+This is a Fortran code which uses option
 <b>ENABLE_PMPI</b> (in macros.make) to automatically profile various MPI routines in
 the call tree along with number of invocations and average number of bytes
 transferred per call. The set of MPI routines which can be automatically
@@ -432,7 +432,7 @@ end subroutine chkbuf
 Now compile and run:
 <pre>
 <div>
-% mpif90 -fopenmp -o pmpi pmpi.F90 -lgptl
+% mpif90 -fopenmp -o pmpi pmpi.F90 -L.. -lgptl
 % mpiexec -n 2 ./pmpi
 </div>
 </pre>
@@ -496,10 +496,10 @@ routine <b>MPI_Barrier()</b> was called prior to certain collectives, and
 synchronization time reported.
 <hr />
 <a href="example5.html"><img border="0" src="btn_previous.gif"
-				  width="100" height="20" alt="Example 3"
+				  width="100" height="20" alt="Example 5"
 				  /></a> 
-<a href="gptl_homepage.html"><img border="0" src="btn_next.gif"
-			     width="100" height="20" alt="GPTL home page" /></a>
+<a href="example7.html"><img border="0" src="btn_next.gif"
+			     width="100" height="20" alt="Example 7" /></a>
 
 <br />
 

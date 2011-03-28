@@ -94,7 +94,7 @@ ifeq ($(HAVE_MPI),yes)
   HAVE_COMM_F2C = yes
   MPI_INCFLAGS = 
   MPI_LIBFLAGS = -lscmpi
-  MPICMD = srun
+  MPICMD = srun -n2
 endif
 
 # clock_gettime() in librt.a is an option for gathering wallclock time stats

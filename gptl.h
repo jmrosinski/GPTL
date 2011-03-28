@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.h,v 1.58 2010-12-29 18:46:42 rosinski Exp $
+** $Id: gptl.h,v 1.59 2011-03-28 20:55:19 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -35,6 +35,7 @@ typedef enum {
   GPTLdopr_collision  = 15, /* Print hastable collision info (true) */
   GPTLprint_method    = 16, /* Tree print method: first parent, last parent
 			       most frequent, or full tree (most frequent) */
+  GPTLtablesize       = 50, /* per-thread size of hash table (1024) */
   /*
   ** These are derived counters based on PAPI counters. All default to false
   */

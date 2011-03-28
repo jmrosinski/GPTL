@@ -1,5 +1,5 @@
 !
-! $Id: gptl.inc,v 1.43 2010-12-29 18:46:42 rosinski Exp $
+! $Id: gptl.inc,v 1.44 2011-03-28 20:55:19 rosinski Exp $
 !
 ! Author: Jim Rosinski
 !
@@ -23,6 +23,7 @@
       integer GPTLdopr_multparent
       integer GPTLdopr_collision
       integer GPTLprint_method
+      integer GPTLtablesize
 
       integer GPTL_IPC
       integer GPTL_CI
@@ -63,6 +64,7 @@
       parameter (GPTLdopr_multparent= 14)
       parameter (GPTLdopr_collision = 15)
       parameter (GPTLprint_method   = 16)
+      parameter (GPTLtablesize      = 50)
 
       parameter (GPTL_IPC           = 17)
       parameter (GPTL_CI            = 18)

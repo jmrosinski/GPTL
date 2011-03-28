@@ -95,6 +95,8 @@ ifeq ($(HAVE_MPI),yes)
   MPI_INCFLAGS = 
   MPI_LIBFLAGS = 
   MPICMD = mpiexec
+# Want 2 MPI tasks
+  MPICMD = mpiexec -n 2
 endif
 
 # clock_gettime() in librt.a is an option for gathering wallclock time stats

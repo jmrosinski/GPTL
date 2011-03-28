@@ -1,13 +1,13 @@
 /*
-** $Id: gptl_papi.c,v 1.78 2010-11-10 16:46:42 rosinski Exp $
+** $Id: gptl_papi.c,v 1.79 2011-03-28 20:55:19 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
 ** Contains routines which interface to PAPI library
 */
  
-#include "gptl.h"
 #include "private.h"
+#include "gptl.h"
 
 #ifdef HAVE_PAPI
 
@@ -1101,8 +1101,13 @@ void GPTL_PAPIfinalize (int maxthreads)
 
   /* Reset initial values */
 
-  nevents = 0;
   npapievents = 0;
+  nevents = 0;
+  is_multiplexed = false;
+  narrowprint = true;
+  persec = true;
+  enable_multiplexing = false;
+  verbose = false;
 }
 
 /*
@@ -1299,7 +1304,7 @@ int GPTLget_npapievents (void)
 #else
 
 /*
-** "Should not be called" entry points for public routines
+** HAVE_PAPI not defined branch: "Should not be called" entry points for public routines
 */
 
 int GPTLevent_name_to_code (const char *name, int *code)

@@ -28,6 +28,10 @@ program pmpi
   integer :: rdispls(0:count-1)
   integer :: sdispls(0:count-1)
 
+  integer :: kount, of           ! for gptlquery
+  real(8) :: wc, usr, sys ! for gptlquery
+  integer(8) :: pc               ! for gptlquery
+
   integer, allocatable :: atoabufsend(:)
   integer, allocatable :: atoabufrecv(:)
   integer, allocatable :: gsbufsend(:,:)      ! gather/scatter buffer send
@@ -358,7 +362,17 @@ program pmpi
 !
   call mpi_finalize (ret)
 
-#if ( ! defined HAVE_IARGCGETARG )
+#if ( defined HAVE_IARGCGETARG )
+  if (iam == 0) then
+    write(6,*)'Testing for auto-generated MPI_Init_thru_Finalize region...'
+    ret = gptlquery ('MPI_Init_thru_Finalize', 0, kount, of, wc, usr, sys, pc, 0)
+    if (ret == 0) then
+      write(6,*)'Success'
+    else
+      write(6,*)'Failure'
+    end if
+  end if
+#else
   ret = gptlstop ("total")
   ret = gptlpr (iam)
 #endif

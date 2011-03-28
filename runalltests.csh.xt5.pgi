@@ -7,8 +7,17 @@
 # try to run a PAPI test where HAVE_PAPI is permuted from "no" to "yes", and
 # the test will fail.
 
-set basescript = macros.make.linux  # This is the base script to start from
+set basescript = macros.make.xt5.pgi  # This is the base script to start from
 set make = make                     # Name of gnu make program
+
+# jaguarpf: Normally would load xt-papi module here, but that doesn'twork
+# It must be set in the environment
+
+if ( ! $?PAPI_INCLUDE_OPTS ) then
+  echo "$0 Need to have done module load xt-papi from the environment"
+  exit 1
+endif
+
 echo "$0 Testing $basescript..."
 echo "$basescript settings:"
 foreach setting (DEBUG OPENMP PTHREADS FORTRAN HAVE_PAPI HAVE_MPI TEST_AUTOPROFILE \

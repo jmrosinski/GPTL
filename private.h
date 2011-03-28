@@ -1,5 +1,5 @@
 /*
-** $Id: private.h,v 1.73 2010-11-10 16:46:42 rosinski Exp $
+** $Id: private.h,v 1.74 2011-03-28 20:55:19 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -74,6 +74,7 @@ typedef struct {
 
 typedef struct TIMER {
   char name[MAX_CHARS+1];   /* timer name (user input) */
+  bool onflg;               /* timer currently on or off */
 #ifdef ENABLE_PMPI
   double nbytes;            /* number of bytes for MPI call */
 #endif
@@ -94,7 +95,6 @@ typedef struct TIMER {
   unsigned int nparent;     /* number of parents */
   unsigned int norphan;     /* number of times this timer was an orphan */
   int num_desc;             /* number of descendants */
-  bool onflg;               /* timer currently on or off */
 } Timer;
 
 typedef struct {
@@ -107,15 +107,10 @@ typedef struct {
 extern int GPTLerror (const char *, ...);      /* print error msg and return */
 extern void GPTLset_abort_on_error (bool val); /* set flag to abort on error */
 extern void *GPTLallocate (const int);         /* malloc wrapper */
-extern int threadinit (int *, int *);          /* initialize threading environment */
-extern void threadfinalize (void);             /* finalize threading environment */
-extern void print_threadmapping (int, FILE *); /* print mapping of thread ids */
-extern int get_thread_num (int *, int *);      /* get 0-based thread number */
 
 extern int GPTLstart_instr (void *);           /* auto-instrumented start */
 extern int GPTLstop_instr (void *);            /* auto-instrumented stop */
 extern int GPTLis_initialized (void);          /* needed by MPI_Init wrapper */
-extern int GPTLpr_has_been_called (void);      /* needed by MPI_Finalize wrapper*/
 
 #ifdef __cplusplus
 extern "C" {
@@ -151,6 +146,7 @@ extern int GPTLcreate_and_start_events (const int);
 #endif
 
 #ifdef ENABLE_PMPI
-extern Timer *GPTLgetentry (char *);
+extern Timer *GPTLgetentry (const char *);
 extern int GPTLpmpi_setoption (const int, const int);
+extern int GPTLpr_has_been_called (void);      /* needed by MPI_Finalize wrapper*/
 #endif

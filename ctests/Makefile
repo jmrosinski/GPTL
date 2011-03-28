@@ -4,7 +4,11 @@
 include ../macros.make
 
 null =
-CFLAGS = -g
+
+# For some reason, -g seems to disable -h omp with craycc
+# Override CFLAGS settings in macros.make: Use -O0 to avoid confusing optimizations
+CFLAGS = -g -O0
+
 TESTS =
 ifeq ($(HAVE_MPI),yes)
   TESTS += summary pmpi
@@ -24,7 +28,7 @@ else
   LIBNAME = gptl
 endif
 
-LDFLAGS = -L.. -l$(LIBNAME) $(ABIFLAGS)
+LDFLAGS = -g -L.. -l$(LIBNAME) $(ABIFLAGS)
 
 ifeq ($(OPENMP),yes)
   CFLAGS  += -DTHREADED_OMP $(COMPFLAG)
@@ -81,7 +85,7 @@ gptl_knownflopcount: knownflopcount.o
 	$(CC) -o $@ $< $(LDFLAGS)
 
 gptl_gran_overhead: gran_overhead.o
-	$(CC) -o $@ $< $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
 
 papiomptest: papiomptest.o
 	$(CC) $(THREADFLAGS) -o $@ $< $(LDFLAGS)
@@ -117,16 +121,16 @@ ifeq ($(HAVE_PAPI),yes)
 endif
 
 ifeq ($(HAVE_MPI),yes)
-	@echo Running env OMP_NUM_THREADS=2 $(MPICMD) -n 2 ./summary...
-	@env OMP_NUM_THREADS=2 $(MPICMD) -n 2 ./summary || (echo "Failure to run" && exit 1)
+	@echo Running env OMP_NUM_THREADS=2 $(MPICMD) ./summary...
+	@env OMP_NUM_THREADS=2 $(MPICMD) ./summary || (echo "Failure to run" && exit 1)
 	@echo Success
 	@echo "Shell is checking contents of timing.summary produced by ./summary for a specific region name..."
 	@grep -q sleep timing.summary || (echo "Failure" && exit 1)
 ifeq ($(ENABLE_PMPI),yes)
 	@echo Success
 	@echo
-	@echo Running $(MPICMD) -n 2 ./pmpi
-	@env $(MPICMD) -n 2 ./pmpi || (echo "Failure" && exit 1)
+	@echo Running $(MPICMD) ./pmpi
+	@env $(MPICMD) ./pmpi || (echo "Failure" && exit 1)
 	@echo Success
 endif
 endif
@@ -140,7 +144,7 @@ ifeq ($(TEST_AUTOPROFILE),yes)
 	@(../hex2name.pl ./cygprofile timing.0 | grep -q callutil100times) && echo "Success" || (echo "Failure" && exit 1)
 endif
 	@echo
-	@echo "All C tests passed"
+	@echo "All C and C++ tests passed"
 	@echo
 
 install: $(UTILEXES)

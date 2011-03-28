@@ -7,7 +7,7 @@ else
 endif
 
 null =
-OBJS = gptl.o util.o threadutil.o get_memusage.o print_memusage.o \
+OBJS = gptl.o util.o get_memusage.o print_memusage.o \
        gptl_papi.o pmpi.o
 
 ifeq ($(ENABLE_PMPI),yes)
@@ -144,9 +144,8 @@ clean:
 
 f_wrappers.o: gptl.h private.h
 f_wrappers_pmpi.o: gptl.h private.h
-gptl.o: threadutil.o gptl.h private.h
+gptl.o: gptl.h private.h
 util.o: gptl.h private.h
-threadutil.o: gptl.h private.h
 gptl_papi.o: gptl.h private.h
 process_namelist.o: process_namelist.F90 gptl.inc
 	$(FC) -c $(FFLAGS) $<

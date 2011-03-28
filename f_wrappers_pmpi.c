@@ -113,7 +113,11 @@ void mpi_finalize (MPI_Fint *ierr);
 */
 
 #ifndef MPI_STATUS_SIZE
+#ifdef _AIX
+#define MPI_STATUS_SIZE 10
+#else
 #define MPI_STATUS_SIZE 5
+#endif
 #endif
 
 /*

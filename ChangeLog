@@ -1,3 +1,24 @@
+gptl4_0: When THREADED_PTHREADS is enabled, mutex locking only happens
+	   when a new thread is found instead of on each start/stop
+	   call. Can improve efficiency dramatically (on AIX anyway).
+	 New entries start_handle and stop_handle added to improve
+	   efficiency in fine-grained regions.
+	 Moved threadutil.c contents back inside gptl.c for efficiency. 
+	 Can now call GPTLinitialize after GPTLfinalize.
+	 Bugfix for GPTLstart* routines: Ensure don't read more than
+           strlen(name) characters from input name.
+	 Added support for Cray compilers crayftn and craycc.
+	 Bugfix for add: bump tout->count even when wallstats disabled.
+	 Removed obsolete utr_rtc() code and ifdefs.
+	 Added AIX-based read_real_time() function.
+	 Added "volatile" attribute in appropriate places.
+	 Cut tablesize to 1024, and added option to set it via GPTLsetoption
+	 Added diagnostic print about how GPTL was built.
+	 Bugfix for diagnostic prints when nanotime is true.
+	 Print of memusage stats no longer based on dopr_collision.
+	 Added to ./suggestions (Run autoconf, move configure to
+  	   suggestions, then set "silent=yes" in the script.
+	 Added checks to MPI returns in MPIpr_summary.
 gptl3_6_2: print_memusage converts to MB by default (if possible).
 	   Added print_memusage test to testbasics.F90
 	   Added macros.make.bluegene (tested at ORNL)

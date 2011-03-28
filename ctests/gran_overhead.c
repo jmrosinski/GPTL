@@ -4,15 +4,20 @@
 #endif
 #include <stdio.h>
 
+void *handle; /* for _handle routines--used by both granularity and overhead */
+
 int main (int argc, char **argv)
 {
   typedef struct {
     char *name;
     int utr;
   } Vals;
+  /*
+  ** Don't test MPI_Wtime: too complex to get to work everywhere.
+  */
   Vals vals[] = {{"gettimeofday",   GPTLgettimeofday},
 		 {"nanotime",       GPTLnanotime},
-		 {"mpiwtime",       GPTLmpiwtime},
+		 /*		 {"mpiwtime",       GPTLmpiwtime}, */
 		 {"clockgettime",   GPTLclockgettime},
 		 {"papitime",       GPTLpapitime},
 		 {"read_real_time", GPTLread_real_time}};
@@ -20,8 +25,8 @@ int main (int argc, char **argv)
     
   int ret;
   int n;
-  char *mingranname;
-  char *minohname;
+  char *mingranname = 0;
+  char *minohname = 0;
   double mingran = 99999.;
   double minoh = 99999.;
   double val;
@@ -29,25 +34,41 @@ int main (int argc, char **argv)
   extern double granularity (void);
   extern double overhead (void);
 
-#ifdef HAVE_MPI
-  ret = MPI_Init (&argc, &argv);
-#endif
-
   for (n = 0; n < nvals; n++) {
     printf ("Checking %s...\n", vals[n].name);
     if ((ret = GPTLsetutr (vals[n].utr)) == 0) {
       ret = GPTLsetoption (GPTLoverhead, 0);
+
       if ((ret = GPTLinitialize ()) != 0) {
 	printf ("GPTLinitialize failure\n");
 	return -1;
       }
-	
-      /* 
-      ** Warm up the timing lib by starting/stopping a single timer
+
+      /* Need to call MPI_Init when the UTR is MPI_Wtime */
+
+      /*
+      ** Don't test MPI_Wtime: too complex to get to work everywhere.
       */
-      ret = GPTLstart ("zzz");
-      ret = GPTLstop ("zzz");
+
+      /*
+      if (vals[n].utr == GPTLmpiwtime) {
+	if ((ret = MPI_Init (&argc, &argv)) != 0) {
+	  printf ("Failure from MPI_Init: skipping MPI_Wtime...\n");
+	  continue;
+	}
+      }
+      */
+
+      /*
+      ** Warm up the handle routines, especially the first "start" call
+      ** which adds the entry point.
+      */
+
+      handle = (void *) 0;
+      ret = GPTLstart_handle ("zzz", &handle);
+      ret = GPTLstop_handle ("zzz", &handle);
       ret = GPTLreset ();
+
       val = granularity ();
       if (val < mingran) {
 	mingran = val;
@@ -81,9 +102,11 @@ double granularity ()
   double sys;
   long long papi;
 
+  /* handle was initialized in main*/
+
   do {
-    ret = GPTLstart ("zzz");
-    ret = GPTLstop ("zzz");
+    ret = GPTLstart_handle ("zzz", &handle);
+    ret = GPTLstop_handle ("zzz", &handle);
     ret = GPTLquery ("zzz", 0, &count, &onflg, &wallclock, &usr, &sys, &papi, 0);
   } while (wallclock == 0.);
   
@@ -104,9 +127,11 @@ double overhead ()
   double sys;
   long long papi;
 
+  /* handle was initialized in main*/
+
   for (n = 0; n < 10000; n++) {
-    ret = GPTLstart ("zzz");
-    ret = GPTLstop ("zzz");
+    ret = GPTLstart_handle ("zzz", &handle);
+    ret = GPTLstop_handle ("zzz", &handle);
   }
   ret = GPTLquery ("zzz", 0, &count, &onflg, &wallclock, &usr, &sys, &papi, 0);
   oh = 0.0001 * wallclock;

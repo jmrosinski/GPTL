@@ -7,6 +7,11 @@ else
 endif
 
 null =
+
+# For some reason, -g seems to disable -h omp with crayftn
+# Override FFLAGS settings in macros.make: Use -O0 to avoid confusing optimizations
+FFLAGS = -g -O1
+
 # TESTS defines which of EXES have a built-in testing procedure.
 TESTS = testbasics nlreader
 
@@ -15,7 +20,7 @@ ifeq ($(HAVE_PAPI),yes)
 endif
 EXES = $(TESTS) errtest utrtest overhead
 
-LDFLAGS = -L.. -l$(LIBNAME) $(ABIFLAGS)
+LDFLAGS = -g -L.. -l$(LIBNAME) $(ABIFLAGS)
 
 #For gptlf.mod
 FFLAGS += -I..
@@ -85,7 +90,7 @@ pmpi: pmpi.o
 pmpi.o: pmpi.F90
 	$(FC) -c $(FFLAGS) $<
 
-overhead: overhead.f90
+overhead: overhead.F90 ../lib$(LIBNAME).a
 	$(FC) $(FFLAGS) -o $@ $< $(LDFLAGS)
 
 # Built-in tests to ensure that GPTL is behaving as expected
@@ -114,9 +119,9 @@ ifeq ($(HAVE_PAPI),yes)
 endif
 ifeq ($(ENABLE_PMPI),yes)
 	@echo
-	@echo Running $(MPICMD) -n 2 ./pmpi
-	@env $(MPICMD) -n 2 ./pmpi || (echo "Failed" && exit 1)
-	@echo Checking contents of timing.0 for a specific region name...
+	@echo Running $(MPICMD) ./pmpi
+	@env $(MPICMD) ./pmpi || (echo "Failed" && exit 1)
+	@echo Checking contents of timing.0 for region name MPI_Send...
 	@grep -q MPI_Send timing.0 || (echo "Failed" && exit 1)
 	@echo Success
 endif

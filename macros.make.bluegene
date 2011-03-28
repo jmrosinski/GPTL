@@ -92,15 +92,16 @@ endif
 # If CC=mpicc, MPI_INCFLAGS and MPI_LIBFLAGS can be blank.
 HAVE_MPI = yes
 ifeq ($(HAVE_MPI),yes)
-# C compiler
+# C compiler for MPI
   CC = mpixlc_r
 # Hopefully MPI_Comm_f2c() exists, but if not, set HAVE_COMM_F2C = no
   HAVE_COMM_F2C = yes
   MPI_INCFLAGS = 
   MPI_LIBFLAGS = 
+# Want 2 MPI tasks. On AIX this is specified by the batch system
   MPICMD = mpirun.lsf
+# Fortran compiler for MPI
   ifeq ($(FORTRAN),yes)
-# Fortran compiler
     FC = mpixlf90_r
   endif
 else

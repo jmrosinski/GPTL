@@ -23,6 +23,7 @@ module gptl
   integer, parameter :: GPTLdopr_multparent= #GPTLdopr_multparent
   integer, parameter :: GPTLdopr_collision = #GPTLdopr_collision
   integer, parameter :: GPTLprint_method   = #GPTLprint_method
+  integer, parameter :: GPTLtablesize      = #GPTLtablesize
 
   integer, parameter :: GPTL_IPC           = #GPTL_IPC
   integer, parameter :: GPTL_CI            = #GPTL_CI
@@ -94,7 +95,7 @@ module gptl
 
      integer function gptlstart_handle (name, handle)
        character(len=*) :: name
-!JR ASSUME pointers are max 8 bytes.
+! ASSUME pointers are max 8 bytes.
        integer(8) :: handle
      end function gptlstart_handle
 
@@ -104,7 +105,7 @@ module gptl
 
      integer function gptlstop_handle (name, handle)
        character(len=*) :: name
-!JR ASSUME pointers are max 8 bytes.
+! ASSUME pointers are max 8 bytes.
        integer(8) :: handle
      end function gptlstop_handle
 
