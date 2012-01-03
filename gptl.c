@@ -2550,7 +2550,7 @@ int GPTLquery (const char *name,
   
   ptr = getentry (hashtable[t], name, &indx);
   if ( !ptr)
-    return GPTLerror ("%s: requested timer %s does not exist\n", thisfunc, name);
+    return GPTLerror ("%s: requested timer %s does not have a name hash\n", thisfunc, name);
 
   *onflg     = ptr->onflg;
   *count     = ptr->count;
@@ -2600,7 +2600,7 @@ int GPTLquerycounters (const char *name,
   
   ptr = getentry (hashtable[t], name, &indx);
   if ( !ptr)
-    return GPTLerror ("%s: requested timer %s does not exist\n", thisfunc, name);
+    return GPTLerror ("%s: requested timer %s does not have a name hash\n", thisfunc, name);
 
 #ifdef HAVE_PAPI
   /* The 999 is a hack to say "give me all the counters" */
@@ -2624,6 +2624,7 @@ int GPTLget_wallclock (const char *timername,
 		      int t,
 		      double *value)
 {
+  void *self;          /* timer address when hash entry generated with *_instr */
   Timer *ptr;          /* linked list pointer */
   unsigned int indx;   /* hash index returned from getentry (unused) */
   static const char *thisfunc = "GPTLget_wallclock";
@@ -2646,10 +2647,19 @@ int GPTLget_wallclock (const char *timername,
       return GPTLerror ("%s: requested thread %d is too big\n", thisfunc, t);
   }
   
-  ptr = getentry (hashtable[t], timername, &indx);
-  if ( !ptr)
-    return GPTLerror ("%s: requested timer %s does not exist\n", thisfunc, timername);
+  /* 
+  ** Don't know whether hashtable entry for timername was generated with 
+  ** *_instr() or not, so try both possibilities
+  */
 
+  ptr = getentry (hashtable[t], timername, &indx);
+  if ( !ptr) {
+    if (sscanf (timername, "%lx", (unsigned long *) &self) < 1)
+      return GPTLerror ("%s: requested timer %s does not exist\n", thisfunc, timername);
+    ptr = getentry_instr (hashtable[t], self, &indx);
+    if ( !ptr)
+      return GPTLerror ("%s: requested timer %s does not exist\n", thisfunc, timername);
+  }
   *value = ptr->wall.accum;
   return 0;
 }
@@ -2672,6 +2682,7 @@ int GPTLget_eventvalue (const char *timername,
 			int t,
 			double *value)
 {
+  void *self;          /* timer address when hash entry generated with *_instr */
   Timer *ptr;          /* linked list pointer */
   unsigned int indx;   /* hash index returned from getentry (unused) */
   static const char *thisfunc = "GPTLget_eventvalue";
@@ -2691,9 +2702,19 @@ int GPTLget_eventvalue (const char *timername,
       return GPTLerror ("%s: requested thread %d is too big\n", thisfunc, t);
   }
   
+  /* 
+  ** Don't know whether hashtable entry for timername was generated with 
+  ** *_instr() or not, so try both possibilities
+  */
+
   ptr = getentry (hashtable[t], timername, &indx);
-  if ( !ptr)
-    return GPTLerror ("%s: requested timer %s does not exist\n", thisfunc, timername);
+  if ( !ptr) {
+    if (sscanf (timername, "%lx", (unsigned long *) &self) < 1)
+      return GPTLerror ("%s: requested timer %s does not exist\n", thisfunc, timername);
+    ptr = getentry_instr (hashtable[t], self, &indx);
+    if ( !ptr)
+      return GPTLerror ("%s: requested timer %s does not exist\n", thisfunc, timername);
+  }
 
 #ifdef HAVE_PAPI
   return GPTL_PAPIget_eventvalue (eventname, &ptr->aux, value);
@@ -2755,7 +2776,7 @@ int GPTLget_nregions (int t,
 int GPTLget_regionname (int t,      /* thread number */
 			int region, /* region number (0-based) */
 			char *name, /* output region name */
-			int nc)     /* number of chars in name (free from Fortran) */
+			int nc)     /* number of chars in name (free form Fortran) */
 {
   int ncpy;    /* number of characters to copy */
   int i;       /* index */

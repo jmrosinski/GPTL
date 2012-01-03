@@ -129,7 +129,7 @@ ifeq ($(HAVE_MPI),yes)
 ifeq ($(ENABLE_PMPI),yes)
 	@echo Success
 	@echo
-	@echo Running $(MPICMD) ./pmpi
+	@echo Running $(MPICMD) ./pmpi...
 	@env $(MPICMD) ./pmpi || (echo "Failure" && exit 1)
 	@echo Success
 endif

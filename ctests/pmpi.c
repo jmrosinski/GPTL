@@ -25,6 +25,11 @@ int main (int argc, char **argv)
   int resultlen;                      /* returned length of string from MPI routine */
   int provided;                       /* level of threading support in this MPI lib */
   char string[MPI_MAX_ERROR_STRING];  /* character string returned from MPI routine */
+  const char *mpiroutine[] = {"MPI_Ssend", "MPI_Send", "MPI_Recv", "MPI_Sendrecv", "MPI_Irecv",
+			      "MPI_Isend", "MPI_Waitall", "MPI_Barrier", "MPI_Bcast", "MPI_Allreduce",
+			      "MPI_Gather", "MPI_Scatter", "MPI_Alltoall", "MPI_Reduce"};
+  const int nroutines = sizeof (mpiroutine) / sizeof (char *);
+  double wallclock;
 
   void chkbuf (const char *, int *, const int, const int);
 
@@ -54,7 +59,7 @@ int main (int argc, char **argv)
 
   if ((ret = MPI_Init_thread (&argc, &argv, MPI_THREAD_SINGLE, &provided)) != 0) {
     MPI_Error_string (ret, string, &resultlen);
-    printf ("Error from MPI_Init_thread: %s\n", string);
+    printf ("%s: error from MPI_Init_thread: %s\n", argv[0], string);
     MPI_Abort (comm, -1);
   }
   
@@ -62,6 +67,7 @@ int main (int argc, char **argv)
   ret = MPI_Comm_size (comm, &commsize);       /* Get communicator size */
 
   if (iam == 0) {
+    printf ("%s: testing suite of MPI routines for auto-instrumentation via GPTL PMPI layer\n", argv[0]);
     switch (provided) {
     case MPI_THREAD_SINGLE:
       printf ("MPI support level is MPI_THREAD_SINGLE\n");
@@ -86,13 +92,19 @@ int main (int argc, char **argv)
   if (source < 0)
     source = commsize - 1;
 
+  /* Send, Ssend */
+
   if (commsize % 2 == 0) {
     if (iam % 2 == 0) {
       ret = MPI_Send (sendbuf, count, MPI_INT, dest, tag, comm);
+      ret = MPI_Ssend (sendbuf, count, MPI_INT, dest, tag, comm);
+      ret = MPI_Recv (recvbuf, count, MPI_INT, source, tag, comm, &status);
       ret = MPI_Recv (recvbuf, count, MPI_INT, source, tag, comm, &status);
     } else {
       ret = MPI_Recv (recvbuf, count, MPI_INT, source, tag, comm, &status);
+      ret = MPI_Recv (recvbuf, count, MPI_INT, source, tag, comm, &status);
       ret = MPI_Send (sendbuf, count, MPI_INT, dest, tag, comm);
+      ret = MPI_Ssend (sendbuf, count, MPI_INT, dest, tag, comm);
     }
   }
   chkbuf ("mpi_send + mpi_recv", recvbuf, count, source);
@@ -183,6 +195,20 @@ int main (int argc, char **argv)
   ret = GPTLstop ("total");
   ret = GPTLpr (iam);             /* Print the results */
 #endif
+
+  /* Check that PMPI entries were generated for all expected routines */
+
+  if (iam == 0) {
+    for (i = 0; i < nroutines; ++i) {
+      printf ("%s: checking that there is a GPTL entry for MPI routine %s...\n", argv[0], mpiroutine[i]);
+      ret = GPTLget_wallclock (mpiroutine[i], 0, &wallclock);
+      if (ret < 0) {
+	printf ("Failure\n");
+	return -1;
+      }
+      printf("Success\n");
+    }
+  }
   return 0;
 }
 

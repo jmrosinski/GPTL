@@ -1,7 +1,7 @@
 #include <mpi.h>
 
 #include <stdio.h>
-#include <stdlib.h>  /* atoi */
+#include <stdlib.h>
 #include <unistd.h>  /* getopt */
 #include <string.h>  /* memset */
 

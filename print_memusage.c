@@ -14,6 +14,7 @@
 #include "gptl.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 static int nearest_powerof2 (const int);
 static int convert_to_mb = 1;   /* true */
@@ -40,16 +41,19 @@ int GPTLprint_memusage (const char *str)
   */
 
   if (convert_to_mb && bytesperblock == -1 && (space = malloc (nbytes))) {
+    memset (space, 0, nbytes);  /* ensure the space is really allocated */
     if (GPTLget_memusage (&size2, &rss2, &share2, &text2, &datastack2) == 0) {
-      /*
-      ** Estimate bytes per block, then refine to nearest power of 2.
-      ** The assumption is that the OS presents memory usage info in
-      ** units that are a power of 2. 
-      */
-      bytesperblock = (int) ((nbytes / (double) (size2 - size)) + 0.5);
-      bytesperblock = nearest_powerof2 (bytesperblock);
-      blockstomb = bytesperblock / (1024.*1024.);
-      printf ("GPTLprint_memusage: Using bytesperblock=%d\n", bytesperblock);
+      if (size2 > size) {
+	/*
+	** Estimate bytes per block, then refine to nearest power of 2.
+	** The assumption is that the OS presents memory usage info in
+	** units that are a power of 2. 
+	*/
+	bytesperblock = (int) ((nbytes / (double) (size2 - size)) + 0.5);
+	bytesperblock = nearest_powerof2 (bytesperblock);
+	blockstomb = bytesperblock / (1024.*1024.);
+	printf ("GPTLprint_memusage: Using bytesperblock=%d\n", bytesperblock);
+      }
     }
     free (space);
   }
@@ -83,7 +87,9 @@ int GPTLprint_memusage (const char *str)
 /*
 ** nearest_powerof2: 
 **   Determine nearest integer which is a power of 2.
-**   Note: algorithm can't use anything that requires -lm because this is a library.
+**   Note: algorithm can't use anything that requires -lm because this is a library,
+**   and we don't want to burden the user with having to add extra libraries to the
+**   link line.
 **
 ** Input arguments:
 **   val: input integer
