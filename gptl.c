@@ -209,8 +209,9 @@ static int funcidx = 0;               /* default timer is gettimeofday */
 #ifdef HAVE_NANOTIME
 static float cpumhz = -1.;                        /* init to bad value */
 static double cyc2sec = -1;                       /* init to bad value */
-static unsigned inline long long nanotime (void); /* read counter (assembler) */
+static inline long long nanotime (void);          /* read counter (assembler) */
 static float get_clockfreq (void);                /* cycles/sec */
+static char *clock_source = "UNKNOWN";            /* where clock found */
 #endif
 
 static int tablesize = 1024;  /* per-thread size of hash table (settable parameter) */
@@ -380,7 +381,7 @@ int GPTLsetutr (const int option)
       */
 
       if ((*funclist[i].funcinit)() < 0)
-	return GPTLerror ("%s: utr=%s not available\n", thisfunc, funclist[i].name);
+	return GPTLerror ("%s: utr=%s not available or doesn't work\n", thisfunc, funclist[i].name);
       else
 	return 0;
     }
@@ -1451,6 +1452,11 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 #ifdef HAVE_NANOTIME
   if (funclist[funcidx].option == GPTLnanotime) {
     fprintf (fp, "Clock rate = %f MHz\n", cpumhz);
+    fprintf (fp, "Source of clock rate was %s\n", clock_source);
+    if (strcmp (clock_source, "/proc/cpuinfo") == 0) {
+      fprintf (fp, "WARNING: The contents of /proc/cpuinfo can change in variable frequency CPUs");
+      fprintf (fp, "Therefore the use of nanotime (register read) is not recommended on machines so equipped");
+    }
 #ifdef BIT64
     fprintf (fp, "  BIT64 was true\n");
 #else
@@ -1826,6 +1832,7 @@ int construct_tree (Timer *timerst, Method method)
   int nparent;      /* number of parents */
   int maxcount;     /* max calls by a single parent */
   int n;            /* loop over nparent */
+  static const char *thisfunc = "construct_tree";
 
   /*
   ** Walk the linked list to build the parent-child tree, using whichever
@@ -1869,7 +1876,7 @@ int construct_tree (Timer *timerst, Method method)
       }
       break;
     default:
-      return GPTLerror ("construct_tree: method %d is not known\n", method);
+      return GPTLerror ("GPTL: %s: method %d is not known\n", thisfunc, method);
     }
   }
   return 0;
@@ -1922,7 +1929,7 @@ static int newchild (Timer *parent, Timer *child)
   */
 
   if (is_descendant (child, parent)) {
-    return GPTLerror ("%s: loop detected: NOT adding %s to descendant list of %s. "
+    return GPTLerror ("GPTL: %s: loop detected: NOT adding %s to descendant list of %s. "
 		      "Proposed parent is in child's descendant path.\n",
 		      thisfunc, child->name, parent->name);
   }
@@ -2496,7 +2503,7 @@ static inline int get_cpustamp (long *usr, long *sys)
   *sys = buf.tms_stime;
   return 0;
 #else
-  return GPTLerror ("get_cpustamp: times() not available\n");
+  return GPTLerror ("GPTL: get_cpustamp: times() not available\n");
 #endif
 }
 
@@ -2961,27 +2968,21 @@ void __cyg_profile_func_exit (void *this_fn,
 #endif
 
 #ifdef HAVE_NANOTIME
+/* Copied from PAPI library */
+static inline long long nanotime (void)
+{
+  long long val = 0;
 #ifdef BIT64
-/* 64-bit code copied from PAPI library */
-static inline unsigned long long nanotime (void)
-{
-  unsigned long long val;
   do {
-    unsigned int a,d;
-    asm volatile("rdtsc" : "=a" (a), "=d" (d));
-    (val) = ((unsigned long)a) | (((unsigned long)d)<<32);
-  } while(0);
-
-  return (val);
-}
+    unsigned int a, d;
+    asm volatile ("rdtsc":"=a" (a), "=d" (d));
+    (val) = ((long long) a) | (((long long) d) << 32);
+  } while (0);
 #else
-static inline unsigned long long nanotime (void)
-{
-  unsigned long long val;
-  __asm__ __volatile__("rdtsc" : "=A" (val) : );
-  return (val);
-}
+  __asm__ __volatile__("rdtsc":"=A" (val): );
 #endif
+  return val;
+}
 
 #define LEN 4096
 
@@ -2990,20 +2991,53 @@ static float get_clockfreq ()
   FILE *fd = 0;
   char buf[LEN];
   int is;
+  float freq = -1.;             /* clock frequency (MHz) */
+  static const char *thisfunc = "get_clockfreq";
+  static char *max_freq_fn = "/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq";
+  static char *cpuinfo_fn = "/proc/cpuinfo";
 
-  if ( ! (fd = fopen ("/proc/cpuinfo", "r"))) {
-    fprintf (stderr, "get_clockfreq: can't open /proc/cpuinfo\n");
+  /* First look for max_freq, but that isn't guaranteed to exist */
+
+  if ((fd = fopen (max_freq_fn, "r"))) {
+    if (fgets (buf, LEN, fd)) {
+      freq = 0.001 * (float) atof (buf);  /* Convert from KHz to MHz */
+      if (verbose)
+	printf ("GPTL: %s: Using max clock freq = %f for timing\n", thisfunc, freq);
+      (void) fclose (fd);
+      clock_source = max_freq_fn;
+      return freq;
+    } else {
+      (void) fclose (fd);
+    }
+  }
+
+  /* 
+  ** Next try /proc/cpuinfo. That has the disadvantage that it may give wrong info
+  ** for processors that have either idle or turbo mode
+  */
+
+  if (verbose && freq < 0.)
+    printf ("GPTL: %s: CAUTION: Can't find max clock freq. Trying %s instead\n",
+	    thisfunc, cpuinfo_fn);
+
+  if ( ! (fd = fopen (cpuinfo_fn, "r"))) {
+    fprintf (stderr, "get_clockfreq: can't open %s\n", cpuinfo_fn);
     return -1.;
   }
 
   while (fgets (buf, LEN, fd)) {
     if (strncmp (buf, "cpu MHz", 7) == 0) {
       for (is = 7; buf[is] != '\0' && !isdigit (buf[is]); is++);
-      if (isdigit (buf[is]))
-	return (float) atof (&buf[is]);
+      if (isdigit (buf[is])) {
+	freq = (float) atof (&buf[is]);
+	(void) fclose (fd);
+	clock_source = cpuinfo_fn;
+	return freq;
+      }
     }
   }
 
+  (void) fclose (fd);
   return -1.;
 }
 #endif
@@ -3027,7 +3061,7 @@ static int init_nanotime ()
   cyc2sec = 1./(cpumhz * 1.e6);
   return 0;
 #else
-  return GPTLerror ("%s: not enabled\n", thisfunc);
+  return GPTLerror ("GPTL: %s: not enabled\n", thisfunc);
 #endif
 }
 
@@ -3039,7 +3073,7 @@ static inline double utr_nanotime ()
   return timestamp;
 #else
   static const char *thisfunc = "utr_nanotime";
-  (void) GPTLerror ("%s: not enabled\n", thisfunc);
+  (void) GPTLerror ("GPTL: %s: not enabled\n", thisfunc);
   return -1.;
 #endif
 }
@@ -3054,7 +3088,7 @@ static int init_mpiwtime ()
   return 0;
 #else
   static const char *thisfunc = "init_mpiwtime";
-  return GPTLerror ("%s: not enabled\n", thisfunc);
+  return GPTLerror ("GPTL: %s: not enabled\n", thisfunc);
 #endif
 }
 
@@ -3064,7 +3098,7 @@ static inline double utr_mpiwtime ()
   return MPI_Wtime ();
 #else
   static const char *thisfunc = "utr_mpiwtime";
-  (void) GPTLerror ("%s: not enabled\n", thisfunc);
+  (void) GPTLerror ("GPTL: %s: not enabled\n", thisfunc);
   return -1.;
 #endif
 }
@@ -3082,7 +3116,7 @@ static int init_papitime ()
     printf ("%s: ref_papitime=%ld\n", thisfunc, (long) ref_papitime);
   return 0;
 #else
-  return GPTLerror ("%s: not enabled\n", thisfunc);
+  return GPTLerror ("GPTL: %s: not enabled\n", thisfunc);
 #endif
 }
   
@@ -3092,7 +3126,7 @@ static inline double utr_papitime ()
   return (PAPI_get_real_usec () - ref_papitime) * 1.e-6;
 #else
   static const char *thisfunc = "utr_papitime";
-  (void) GPTLerror ("%s: not enabled\n", thisfunc);
+  (void) GPTLerror ("GPTL: %s: not enabled\n", thisfunc);
   return -1.;
 #endif
 }
@@ -3112,7 +3146,7 @@ static int init_clock_gettime ()
     printf ("%s: ref_clock_gettime=%ld\n", thisfunc, (long) ref_clock_gettime);
   return 0;
 #else
-  return GPTLerror ("%s: not enabled\n", thisfunc);
+  return GPTLerror ("GPTL: %s: not enabled\n", thisfunc);
 #endif
 }
 
@@ -3124,7 +3158,7 @@ static inline double utr_clock_gettime ()
   return (tp.tv_sec - ref_clock_gettime) + 1.e-9*tp.tv_nsec;
 #else
   static const char *thisfunc = "utr_clock_gettime";
-  (void) GPTLerror ("%s: not enabled\n", thisfunc);
+  (void) GPTLerror ("GPTL: %s: not enabled\n", thisfunc);
   return -1.;
 #endif
 }
@@ -3145,7 +3179,7 @@ static int init_read_real_time ()
     printf ("%s: ref_read_real_time=%ld\n", thisfunc, (long) ref_read_real_time);
   return 0;
 #else
-  return GPTLerror ("%s: not enabled\n", thisfunc);
+  return GPTLerror ("GPTL: %s: not enabled\n", thisfunc);
 #endif
 }
 
@@ -3158,7 +3192,7 @@ static inline double utr_read_real_time ()
   return (ibmtime.tb_high - ref_read_real_time) + 1.e-9*ibmtime.tb_low;
 #else
   static const char *thisfunc = "utr_read_real_time";
-  return GPTLerror ("%s: not enabled\n", thisfunc);
+  return GPTLerror ("GPTL: %s: not enabled\n", thisfunc);
 #endif
 }
 
@@ -3177,7 +3211,7 @@ static int init_gettimeofday ()
     printf ("%s: ref_gettimeofday=%ld\n", thisfunc, (long) ref_gettimeofday);
   return 0;
 #else
-  return GPTLerror ("%s: not enabled\n", thisfunc);
+  return GPTLerror ("GPTL: %s: not enabled\n", thisfunc);
 #endif
 }
 
@@ -3189,7 +3223,7 @@ static inline double utr_gettimeofday ()
   return (tp.tv_sec - ref_gettimeofday) + 1.e-6*tp.tv_usec;
 #else
   static const char *thisfunc = "utr_gettimeofday";
-  return GPTLerror ("%s: not enabled\n", thisfunc);
+  return GPTLerror ("GPTL: %s: not enabled\n", thisfunc);
 #endif
 }
 
@@ -3294,7 +3328,7 @@ int GPTLpr_has_been_called (void)
 */
 
 /* Max allowable number of threads (used only when THREADED_PTHREADS is true) */
-#define MAX_THREADS 128
+#define MAX_THREADS 256
 
 /**********************************************************************************/
 /* 
@@ -3414,7 +3448,7 @@ static inline int get_thread_num (void)
 #endif
 
     if (GPTLcreate_and_start_events (t) < 0)
-      return GPTLerror ("OMP %s: error from GPTLcreate_and_start_events for thread %d\n", thisfunc, t);
+      return GPTLerror ("GPTL: OMP %s: error from GPTLcreate_and_start_events for thread %d\n", thisfunc, t);
   }
 #endif
 
@@ -3424,7 +3458,7 @@ static inline int get_thread_num (void)
   
   nthreads = maxthreads;
 #ifdef VERBOSE
-  printf ("OMP %s: nthreads=%d\n", thisfunc, nthreads);
+  printf ("GPTL: OMP %s: nthreads=%d\n", thisfunc, nthreads);
 #endif
 
   return t;
@@ -3476,7 +3510,7 @@ static int threadinit (void)
   if (nthreads == -1)
     nthreads = 0;
   else
-    return GPTLerror ("PTHREADS %s: has already been called.\n"
+    return GPTLerror ("GPTL: PTHREADS %s: has already been called.\n"
 		      "Maybe mistakenly called by multiple threads?\n", thisfunc);
 
   /*
@@ -3491,7 +3525,7 @@ static int threadinit (void)
 
 #ifdef MUTEX_API
   if ((ret = pthread_mutex_init ((pthread_mutex_t *) &t_mutex, NULL)) != 0)
-    return GPTLerror ("PTHREADS %s: mutex init failure: ret=%d\n", thisfunc, ret);
+    return GPTLerror ("GPTL: PTHREADS %s: mutex init failure: ret=%d\n", thisfunc, ret);
 #endif
   
   /* 
@@ -3499,9 +3533,10 @@ static int threadinit (void)
   */
 
   if (threadid) 
-    return GPTLerror ("PTHREADS %s: threadid not null\n", thisfunc);
+    return GPTLerror ("GPTL: PTHREADS %s: threadid not null\n", thisfunc);
   else if ( ! (threadid = (pthread_t *) GPTLallocate (MAX_THREADS * sizeof (pthread_t))))
-    return GPTLerror ("PTHREADS %s: malloc failure for %d elements of threadid\n", thisfunc, MAX_THREADS);
+    return GPTLerror ("GPTL: PTHREADS %s: malloc failure for %d elements of threadid\n", 
+		      thisfunc, MAX_THREADS);
   
   maxthreads = MAX_THREADS;
 
@@ -3514,7 +3549,7 @@ static int threadinit (void)
     threadid[t] = (pthread_t) -1;
 
 #ifdef VERBOSE
-  printf ("PTHREADS %s: Set maxthreads=%d nthreads=%d\n", thisfunc, maxthreads, nthreads);
+  printf ("GPTL: PTHREADS %s: Set maxthreads=%d nthreads=%d\n", thisfunc, maxthreads, nthreads);
 #endif
 
   return 0;
@@ -3534,7 +3569,7 @@ static void threadfinalize ()
 
 #ifdef MUTEX_API
   if ((ret = pthread_mutex_destroy ((pthread_mutex_t *) &t_mutex)) != 0)
-    printf ("threadfinalize: failed attempt to destroy t_mutex: ret=%d\n", ret);
+    printf ("GPTL: threadfinalize: failed attempt to destroy t_mutex: ret=%d\n", ret);
 #endif
   free ((void *) threadid);
   threadid = 0;
@@ -3588,7 +3623,7 @@ static inline int get_thread_num (void)
   */
 
   if (lock_mutex () < 0)
-    return GPTLerror ("PTHREADS %s: mutex lock failure\n", thisfunc);
+    return GPTLerror ("GPTL: PTHREADS %s: mutex lock failure\n", thisfunc);
 
   /*
   ** If our thread id is not in the known list, add to it after checking that
@@ -3597,7 +3632,7 @@ static inline int get_thread_num (void)
 
   if (nthreads >= MAX_THREADS) {
     if (unlock_mutex () < 0)
-      fprintf (stderr, "PTHREADS %s: mutex unlock failure\n", thisfunc);
+      fprintf (stderr, "GPTL: PTHREADS %s: mutex unlock failure\n", thisfunc);
 
     return GPTLerror ("PTHREADS %s: nthreads=%d is too big. Recompile "
 		      "with larger value of MAX_THREADS\n", thisfunc, nthreads);
@@ -3624,9 +3659,9 @@ static inline int get_thread_num (void)
 #endif
     if (GPTLcreate_and_start_events (nthreads) < 0) {
       if (unlock_mutex () < 0)
-	fprintf (stderr, "PTHREADS %s: mutex unlock failure\n", thisfunc);
+	fprintf (stderr, "GPTL: PTHREADS %s: mutex unlock failure\n", thisfunc);
 
-      return GPTLerror ("PTHREADS %s: error from GPTLcreate_and_start_events for thread %d\n", 
+      return GPTLerror ("GPTL: PTHREADS %s: error from GPTLcreate_and_start_events for thread %d\n", 
 			thisfunc, nthreads);
     }
   }
@@ -3645,7 +3680,7 @@ static inline int get_thread_num (void)
 #endif
 
   if (unlock_mutex () < 0)
-    return GPTLerror ("PTHREADS %s: mutex unlock failure\n", thisfunc);
+    return GPTLerror ("GPTL: PTHREADS %s: mutex unlock failure\n", thisfunc);
 
   return retval;
 }
@@ -3659,7 +3694,7 @@ static int lock_mutex ()
   static const char *thisfunc = "lock_mutex";
 
   if (pthread_mutex_lock ((pthread_mutex_t *) &t_mutex) != 0)
-    return GPTLerror ("%s: failure from pthread_lock_mutex\n", thisfunc);
+    return GPTLerror ("GPTL: %s: failure from pthread_lock_mutex\n", thisfunc);
 
   return 0;
 }
@@ -3673,7 +3708,7 @@ static int unlock_mutex ()
   static const char *thisfunc = "unlock_mutex";
 
   if (pthread_mutex_unlock ((pthread_mutex_t *) &t_mutex) != 0)
-    return GPTLerror ("%s: failure from pthread_unlock_mutex\n", thisfunc);
+    return GPTLerror ("GPTL: %s: failure from pthread_unlock_mutex\n", thisfunc);
   return 0;
 }
 
@@ -3699,7 +3734,7 @@ static int threadinit (void)
   static const char *thisfunc = "threadinit";
 
   if (nthreads != -1)
-    return GPTLerror ("Unthreaded %s: MUST only be called once", thisfunc);
+    return GPTLerror ("GPTL: Unthreaded %s: MUST only be called once", thisfunc);
 
   nthreads = 0;
   maxthreads = 1;
@@ -3722,7 +3757,7 @@ static inline int get_thread_num ()
 
   if (threadid == -1 && GPTLget_npapievents () > 0) {
     if (GPTLcreate_and_start_events (0) < 0)
-      return GPTLerror ("Unthreaded %s: error from GPTLcreate_and_start_events for thread %0\n", thisfunc);
+      return GPTLerror ("GPTL: Unthreaded %s: error from GPTLcreate_and_start_events for thread %0\n", thisfunc);
 
     threadid = 0;
   }

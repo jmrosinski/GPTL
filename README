@@ -27,11 +27,12 @@ are available on the target architecture.
 Using GPTL 
 ----------
 
-C codes making GPTL library calls should #include <gptl.h>. Fortran codes
-should #include or Fortran include 'gptl.inc'. The C and Fortran interfaces
-are identical, except that the C interface uses mixed case. All
+C codes making GPTL library calls should #include <gptl.h>. Fortran codes can
+"use gptl" or #include or Fortran include 'gptl.inc'. The C and Fortran
+interfaces are identical, except that the C interface uses mixed case. All
 user-accessible functions return either 0 (success) or -1 (failure). Example
-codes that use the library can be found in subdirectories ctests/ and ftests/.
+codes that use the library can be found in subdirectories ctests/ and
+ftests/.
 
 Code instrumentation to utilize GPTL involves zero or more calls to
 GPTLsetoption(), then a single call to GPTLinitialize(), then an arbitrary

@@ -1,5 +1,4 @@
 program overhead
-      
   use gptl
 
   implicit none

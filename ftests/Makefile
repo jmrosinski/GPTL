@@ -6,10 +6,8 @@ else
   DEFINE = -D
 endif
 
-null =
-
 # For some reason, -g seems to disable -h omp with crayftn
-# Override FFLAGS settings in macros.make: Use -O0 to avoid confusing optimizations
+# Override FFLAGS settings in macros.make: Use -O1 to avoid confusing optimizations
 FFLAGS = -g -O1
 
 # TESTS defines which of EXES have a built-in testing procedure.
@@ -58,6 +56,9 @@ ifeq ($(HAVE_PAPI),yes)
 endif
 
 OBJS = $(patsubst %,%.o,$(EXES))
+
+%.o: %.F90
+	$(FC) $(FFLAGS) -c $<
 
 all: $(EXES)
 

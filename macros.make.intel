@@ -126,7 +126,7 @@ HAVE_GETTIMEOFDAY = yes
 TEST_AUTOPROFILE = yes
 ifeq ($(TEST_AUTOPROFILE),yes)
   INSTRFLAG = -finstrument-functions
-  CXX = mpicxx
+  CXX = icpc
 endif
 
 # Whether to enable PMPI wrappers. Turning this on will result in automatic 
