@@ -167,6 +167,7 @@ static inline double utr_clock_gettime (void);
 static inline double utr_papitime (void);
 static inline double utr_read_real_time (void);
 static inline double utr_gettimeofday (void);
+static inline double utr_placebo (void);
 
 static int init_nanotime (void);
 static int init_mpiwtime (void);
@@ -174,6 +175,7 @@ static int init_clock_gettime (void);
 static int init_papitime (void);
 static int init_read_real_time (void);
 static int init_gettimeofday (void);
+static int init_placebo (void);
 
 static double utr_getoverhead (void);
 static inline Timer *getentry_instr (const Hashentry *, void *, unsigned int *);
@@ -199,7 +201,8 @@ static Funcentry funclist[] = {
   {GPTLmpiwtime,       utr_mpiwtime,       init_mpiwtime,      "MPI_Wtime"},
   {GPTLclockgettime,   utr_clock_gettime,  init_clock_gettime, "clock_gettime"},
   {GPTLpapitime,       utr_papitime,       init_papitime,      "PAPI_get_real_usec"},
-  {GPTLread_real_time, utr_read_real_time, init_read_real_time,"read_real_time"}     /* AIX only */
+  {GPTLread_real_time, utr_read_real_time, init_read_real_time,"read_real_time"},     /* AIX only */
+  {GPTLplacebo,        utr_placebo,        init_placebo,       "placebo"}      /* does nothing */
 };
 static const int nfuncentries = sizeof (funclist) / sizeof (Funcentry);
 
@@ -3225,6 +3228,21 @@ static inline double utr_gettimeofday ()
   static const char *thisfunc = "utr_gettimeofday";
   return GPTLerror ("GPTL: %s: not enabled\n", thisfunc);
 #endif
+}
+
+/*
+** placebo: does nothing and returns zero always. Useful for estimating overhead costs
+*/
+
+static int init_placebo ()
+{
+  return 0;
+}
+
+static inline double utr_placebo ()
+{
+  static const double zero = 0.;
+  return zero;
 }
 
 /* 

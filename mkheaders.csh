@@ -41,6 +41,7 @@ set GPTLread_real_time = 3
 set GPTLmpiwtime       = 4
 set GPTLclockgettime   = 5
 set GPTLpapitime       = 6
+set GPTLplacebo        = 7
 
 set GPTLfirst_parent  = 1
 set GPTLlast_parent   = 2
@@ -83,6 +84,7 @@ s/#GPTLnanotime/$GPTLnanotime/1
 s/#GPTLmpiwtime/$GPTLmpiwtime/1
 s/#GPTLclockgettime/$GPTLclockgettime/1
 s/#GPTLpapitime/$GPTLpapitime/1
+s/#GPTLplacebo/$GPTLplacebo/1
 s/#GPTLfirst_parent/$GPTLfirst_parent/1
 s/#GPTLlast_parent/$GPTLlast_parent/1
 s/#GPTLmost_frequent/$GPTLmost_frequent/1

@@ -41,6 +41,7 @@
       integer GPTLclockgettime
       integer GPTLgettimeofday
       integer GPTLpapitime
+      integer GPTLplacebo
       integer GPTLread_real_time
 
       integer GPTLfirst_parent
@@ -82,6 +83,7 @@
       parameter (GPTLmpiwtime       = #GPTLmpiwtime)
       parameter (GPTLclockgettime   = #GPTLclockgettime)
       parameter (GPTLpapitime       = #GPTLpapitime)
+      parameter (GPTLplacebo        = #GPTLplacebo)
       parameter (GPTLread_real_time = #GPTLread_real_time)
 
       parameter (GPTLfirst_parent   = #GPTLfirst_parent)

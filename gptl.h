@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.h,v 1.59 2011-03-28 20:55:19 rosinski Exp $
+** $Id: gptl.h.template,v 1.3 2011-03-28 20:55:19 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -63,6 +63,7 @@ typedef enum {
   GPTLmpiwtime       = 4, /* MPI_Wtime */
   GPTLclockgettime   = 5, /* clock_gettime */
   GPTLpapitime       = 6,  /* only if PAPI is available */
+  GPTLplacebo        = 7,  /* do-nothing */
   GPTLread_real_time = 3  /* AIX only */
 } Funcoption;
 
