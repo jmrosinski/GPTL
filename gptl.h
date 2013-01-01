@@ -35,7 +35,8 @@ typedef enum {
   GPTLdopr_collision  = 15, /* Print hastable collision info (true) */
   GPTLprint_method    = 16, /* Tree print method: first parent, last parent
 			       most frequent, or full tree (most frequent) */
-  GPTLtablesize       = 50, /* per-thread size of hash table (1024) */
+  GPTLtablesize       = 50, /* per-thread size of hash table */
+  GPTLmaxthreads      = 51, /* maximum number of threads */
   /*
   ** These are derived counters based on PAPI counters. All default to false
   */

@@ -1,6 +1,5 @@
 /*
-** $Id: gptl.c,v 1.157 2011-03-28 20:55:18 rosinski Exp $
-**
+** gptl.c
 ** Author: Jim Rosinski
 **
 ** Main file contains most user-accessible GPTL functions
@@ -18,6 +17,7 @@
 #include <string.h>        /* memset, strcmp (via STRMATCH) */
 #include <ctype.h>         /* isdigit */
 #include <sys/types.h>     /* u_int8_t, u_int16_t */
+#include <math.h>          /* sqrt */
 #include <assert.h>
 
 #ifdef HAVE_PAPI
@@ -35,37 +35,49 @@
 #include "private.h"
 #include "gptl.h"
 
-static Timer **timers = 0;           /* linked list of timers */
-static Timer **last = 0;             /* last element in list */
-static int *max_depth;               /* maximum indentation level encountered */
-static int *max_name_len;            /* max length of timer name */
-static volatile int nthreads = -1;   /* num threads. Init to bad value */
-static volatile int maxthreads = -1; /* max threads (=nthreads for OMP). Init to bad value */
-static int depthlimit = 99999;       /* max depth for timers (99999 is effectively infinite) */
-static volatile bool disabled = false;           /* Timers disabled? */
+static Timer **timers = 0;             /* linked list of timers */
+static Timer **last = 0;               /* last element in list */
+static int *max_depth;                 /* maximum indentation level encountered */
+static int *max_name_len;              /* max length of timer name */
+static volatile int nthreads = -1;     /* num threads. Init to bad value */
+/* 
+** For THREADED_PTHREADS case, default maxthreads to a big number.
+** For THREADED_OMP, the value will be set to $OMP_NUM_THREADS, OR:
+** For either case, the user can specify maxthreads with a GPTLsetoption call.
+*/
+#ifdef THREADED_PTHREADS
+#define MAX_THREADS 64
+static volatile int maxthreads = MAX_THREADS;
+#else
+static volatile int maxthreads = -1;   /* max threads */
+#endif
+static int depthlimit = 99999;         /* max depth for timers (99999 is effectively infinite) */
+static volatile bool disabled = false; /* Timers disabled? */
 static volatile bool initialized = false;        /* GPTLinitialize has been called */
 static volatile bool pr_has_been_called = false; /* GPTLpr_file has been called */
-static Entry eventlist[MAX_AUX];    /* list of PAPI-based events to be counted */
-static int nevents = 0;             /* number of PAPI events (init to 0) */
-static bool dousepapi = false;      /* saves a function call if stays false */
-static bool verbose = false;        /* output verbosity */
-static bool percent = false;        /* print wallclock also as percent of 1st timers[0] */
-static bool dopr_preamble = true;   /* whether to print preamble info */
-static bool dopr_threadsort = true; /* whether to print sorted thread stats */
-static bool dopr_multparent = true; /* whether to print multiple parent info */
-static bool dopr_collision = true;  /* whether to print hash collision info */
+#ifdef HAVE_PAPI
+static Entry eventlist[MAX_AUX];       /* list of PAPI-based events to be counted */
+static int nevents = 0;                /* number of PAPI events (init to 0) */
+#endif
+static bool dousepapi = false;         /* saves a function call if stays false */
+static bool verbose = false;           /* output verbosity */
+static bool percent = false;           /* print wallclock also as percent of 1st timers[0] */
+static bool dopr_preamble = true;      /* whether to print preamble info */
+static bool dopr_threadsort = true;    /* whether to print sorted thread stats */
+static bool dopr_multparent = true;    /* whether to print multiple parent info */
+static bool dopr_collision = true;     /* whether to print hash collision info */
 
-static time_t ref_gettimeofday = -1; /* ref start point for gettimeofday */
-static time_t ref_clock_gettime = -1;/* ref start point for clock_gettime */
+static time_t ref_gettimeofday = -1;   /* ref start point for gettimeofday */
+static time_t ref_clock_gettime = -1;  /* ref start point for clock_gettime */
 #ifdef _AIX
 static time_t ref_read_real_time = -1; /* ref start point for read_real_time */
 #endif
-static long long ref_papitime = -1;  /* ref start point for PAPI_get_real_usec */
+static long long ref_papitime = -1;    /* ref start point for PAPI_get_real_usec */
 
 #if ( defined THREADED_OMP )
 
 #include <omp.h>
-static volatile int *threadid_omp = 0;        /* array of thread ids */
+static volatile int *threadid_omp = 0; /* array of thread ids */
 
 #elif ( defined THREADED_PTHREADS )
 
@@ -94,30 +106,30 @@ typedef struct {
   bool enabled;         /* flag */
 } Settings;
 
-/* For Summary stats */
-
+/* MPI summary stats */
 typedef struct {
-  double wallmax;
-  double wallmin;
 #ifdef HAVE_PAPI
-  double papimax[MAX_AUX];
-  double papimin[MAX_AUX];
+  double papimax[MAX_AUX]; /* max counter value across threads, tasks */
+  double papimin[MAX_AUX]; /* max counter value across threads, tasks */
+  int papimax_p[MAX_AUX];  /* task producing papimax */
+  int papimax_t[MAX_AUX];  /* thread producing papimax */
+  int papimin_p[MAX_AUX];  /* task producing papimin */
+  int papimin_t[MAX_AUX];  /* thread producing papimin */
 #endif
-  unsigned long count;
-  int wallmax_p;               /* over processes */
-  int wallmax_t;               /* over threads */
-  int wallmin_p;
-  int wallmin_t;
-#ifdef HAVE_PAPI
-  int papimax_p[MAX_AUX];      /* over processes */
-  int papimax_t[MAX_AUX];      /* over threads */
-  int papimin_p[MAX_AUX];
-  int papimin_t[MAX_AUX];
-#endif
-} Summarystats;
+  unsigned int totcalls;   /* number of calls to the region across threads and tasks */
+  unsigned int tottsk;     /* number of tasks which invoked this region */
+  float wallmax;           /* max time across threads, tasks */
+  float wallmin;           /* min time across threads, tasks */
+  float mean;              /* accumulated mean */
+  float m2;                /* from Chan, et. al. */
+  int wallmax_p;           /* task producing wallmax */
+  int wallmax_t;           /* thread producing wallmax */
+  int wallmin_p;           /* task producing wallmin */
+  int wallmin_t;           /* thread producing wallmin */
+  char name[MAX_CHARS+1];  /* timer name */
+} Global;
 
 /* Options, print strings, and default enable flags */
-
 static Settings cpustats =      {GPTLcpu,      "Usr       sys       usr+sys   ", false};
 static Settings wallstats =     {GPTLwall,     "Wallclock max       min       ", true };
 static Settings overheadstats = {GPTLoverhead, "UTR_Overhead  "                , true };
@@ -135,32 +147,27 @@ static Nofalse *stackidx;        /* index into callstack: */
 static Method method = GPTLfull_tree;  /* default parent/child printing mechanism */
 
 /* Local function prototypes */
-
 static void printstats (const Timer *, FILE *, const int, const int, const bool, double);
 static void add (Timer *, const Timer *);
 
 #ifdef HAVE_MPI
-static void get_threadstats (const char *, Summarystats *);
-static void get_summarystats (Summarystats *, const Summarystats *, int);
+static void get_threadstats (int, const char *, Global *);
 #endif
 
 static void print_multparentinfo (FILE *, Timer *);
 static inline int get_cpustamp (long *, long *);
 static int newchild (Timer *, Timer *);
 static int get_max_depth (const Timer *, const int);
-static int num_descendants (Timer *);
 static int is_descendant (const Timer *, const Timer *);
 static char *methodstr (Method);
 
 /* Prototypes from previously separate file threadutil.c */
-
 static int threadinit (void);                    /* initialize threading environment */
 static void threadfinalize (void);               /* finalize threading environment */
 static void print_threadmapping (FILE *);        /* print mapping of thread ids */
 static inline int get_thread_num (void);         /* get 0-based thread number */
 
 /* These are the (possibly) supported underlying wallclock timers */
-
 static inline double utr_nanotime (void);
 static inline double utr_mpiwtime (void);
 static inline double utr_clock_gettime (void);
@@ -217,8 +224,9 @@ static float get_clockfreq (void);                /* cycles/sec */
 static char *clock_source = "UNKNOWN";            /* where clock found */
 #endif
 
-static int tablesize = 1024;  /* per-thread size of hash table (settable parameter) */
-static char *outdir = 0;      /* dir to write output files to (currently unused) */
+#define DEFAULT_TABLE_SIZE 1023
+static int tablesize = DEFAULT_TABLE_SIZE;  /* per-thread size of hash table (settable parameter) */
+static char *outdir = 0;                    /* dir to write output files to (currently unused) */
 
 /* VERBOSE is a debugging ifdef local to the rest of this file */
 #undef VERBOSE
@@ -232,9 +240,8 @@ static char *outdir = 0;      /* dir to write output files to (currently unused)
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-
 int GPTLsetoption (const int option,  /* option */
-		   const int val)     /* value */
+                   const int val)     /* value */
 {
   static const char *thisfunc = "GPTLsetoption";
 
@@ -329,12 +336,15 @@ int GPTLsetoption (const int option,  /* option */
       printf ("%s: boolean sync_mpi = %d\n", thisfunc, val);
     return 0;
 
-  /* 
-  ** Allow GPTLmultiplex to fall through because it will be handled by 
-  ** GPTL_PAPIsetoption()
-  */
+  case GPTLmaxthreads:
+    if (val < 1)
+      return GPTLerror ("%s: maxthreads must be positive. %d is invalid\n", thisfunc, val);
 
+    maxthreads = val;
+    return 0;
+    
   case GPTLmultiplex:
+    /* Allow GPTLmultiplex to fall through because it will be handled by GPTL_PAPIsetoption() */
   default:
     break;
   }
@@ -347,7 +357,6 @@ int GPTLsetoption (const int option,  /* option */
   }
 #else
   /* Make GPTLnarrowprint a placebo if PAPI not enabled */
-
   if (option == GPTLnarrowprint)
     return 0;
 #endif
@@ -363,7 +372,6 @@ int GPTLsetoption (const int option,  /* option */
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-
 int GPTLsetutr (const int option)
 {
   int i;  /* index over number of underlying timer  */
@@ -375,7 +383,7 @@ int GPTLsetutr (const int option)
   for (i = 0; i < nfuncentries; i++) {
     if (option == (int) funclist[i].option) {
       if (verbose)
-	printf ("%s: underlying wallclock timer = %s\n", thisfunc, funclist[i].name);
+        printf ("%s: underlying wallclock timer = %s\n", thisfunc, funclist[i].name);
       funcidx = i;
 
       /*
@@ -384,9 +392,9 @@ int GPTLsetutr (const int option)
       */
 
       if ((*funclist[i].funcinit)() < 0)
-	return GPTLerror ("%s: utr=%s not available or doesn't work\n", thisfunc, funclist[i].name);
+        return GPTLerror ("%s: utr=%s not available or doesn't work\n", thisfunc, funclist[i].name);
       else
-	return 0;
+        return 0;
     }
   }
   return GPTLerror ("%s: unknown option %d\n", thisfunc, option);
@@ -400,7 +408,6 @@ int GPTLsetutr (const int option)
 **
 ** return value: 0 (success) or GPTLerror (failure)
 */
-
 int GPTLinitialize (void)
 {
   int i;          /* loop index */
@@ -418,7 +425,6 @@ int GPTLinitialize (void)
     return GPTLerror ("%s: failure from sysconf (_SC_CLK_TCK)\n", thisfunc);
 
   /* Allocate space for global arrays */
-
   callstack     = (Timer ***)    GPTLallocate (maxthreads * sizeof (Timer **));
   stackidx      = (Nofalse *)    GPTLallocate (maxthreads * sizeof (Nofalse));
   timers        = (Timer **)     GPTLallocate (maxthreads * sizeof (Timer *));
@@ -428,7 +434,6 @@ int GPTLinitialize (void)
   hashtable     = (Hashentry **) GPTLallocate (maxthreads * sizeof (Hashentry *));
 
   /* Initialize array values */
-
   for (t = 0; t < maxthreads; t++) {
     max_depth[t]    = -1;
     max_name_len[t] = 0;
@@ -439,10 +444,7 @@ int GPTLinitialize (void)
       hashtable[t][i].entries = 0;
     }
 
-    /*
-    ** Make a timer "GPTL_ROOT" to ensure no orphans, and to simplify printing.
-    */
-
+    /* Make a timer "GPTL_ROOT" to ensure no orphans, and to simplify printing. */
     timers[t] = (Timer *) GPTLallocate (sizeof (Timer));
     memset (timers[t], 0, sizeof (Timer));
     strcpy (timers[t]->name, "GPTL_ROOT");
@@ -460,13 +462,10 @@ int GPTLinitialize (void)
     return GPTLerror ("%s: Failure from GPTL_PAPIinitialize\n", thisfunc);
 #endif
 
-  /* 
-  ** Call init routine for underlying timing routine.
-  */
-
+  /* Call init routine for underlying timing routine. */
   if ((*funclist[funcidx].funcinit)() < 0) {
     fprintf (stderr, "%s: Failure initializing %s. Reverting underlying timer to %s\n", 
-	     thisfunc, funclist[funcidx].name, funclist[0].name);
+             thisfunc, funclist[funcidx].name, funclist[0].name);
     funcidx = 0;
   }
 
@@ -492,7 +491,6 @@ int GPTLinitialize (void)
 **
 ** return value: 0 (success) or GPTLerror (failure)
 */
-
 int GPTLfinalize (void)
 {
   int t;                /* thread index */
@@ -506,7 +504,7 @@ int GPTLfinalize (void)
   for (t = 0; t < maxthreads; ++t) {
     for (n = 0; n < tablesize; ++n) {
       if (hashtable[t][n].nument > 0)
-	free (hashtable[t][n].entries);
+        free (hashtable[t][n].entries);
     }
     free (hashtable[t]);
     hashtable[t] = NULL;
@@ -514,11 +512,11 @@ int GPTLfinalize (void)
     for (ptr = timers[t]; ptr; ptr = ptrnext) {
       ptrnext = ptr->next;
       if (ptr->nparent > 0) {
-	free (ptr->parent);
-	free (ptr->parent_count);
+        free (ptr->parent);
+        free (ptr->parent_count);
       }
       if (ptr->nchildren > 0)
-	free (ptr->children);
+        free (ptr->children);
       free (ptr);
     }
   }
@@ -538,13 +536,16 @@ int GPTLfinalize (void)
 #endif
 
   /* Reset initial values */
-
   timers = 0;
   last = 0;
   max_depth = 0;
   max_name_len = 0;
   nthreads = -1;
+#ifdef THREADED_PTHREADS
+  maxthreads = MAX_THREADS;
+#else
   maxthreads = -1;
+#endif
   depthlimit = 99999;
   disabled = false;
   initialized = false;
@@ -568,7 +569,7 @@ int GPTLfinalize (void)
   cyc2sec = -1;
 #endif
   outdir = 0;
-  tablesize = 1024;
+  tablesize = DEFAULT_TABLE_SIZE;
 
   return 0;
 }
@@ -581,7 +582,6 @@ int GPTLfinalize (void)
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-
 int GPTLstart_instr (void *self)
 {
   Timer *ptr;              /* linked list pointer */
@@ -598,11 +598,7 @@ int GPTLstart_instr (void *self)
   if ((t = get_thread_num ()) < 0)
     return GPTLerror ("%s: bad return from get_thread_num\n", thisfunc);
 
-  /*
-  ** If current depth exceeds a user-specified limit for print, just
-  ** increment and return
-  */
-
+  /* If current depth exceeds a user-specified limit for print, just increment and return */
   if (stackidx[t].val >= depthlimit) {
     ++stackidx[t].val;
     return 0;
@@ -615,7 +611,6 @@ int GPTLstart_instr (void *self)
   ** because we don't want to restart the timer.  We want the reported time for
   ** the timer to reflect the outermost layer of recursion.
   */
-  
   if (ptr && ptr->onflg) {
     ++ptr->recurselvl;
     return 0;
@@ -625,7 +620,6 @@ int GPTLstart_instr (void *self)
   ** Increment stackidx[t] unconditionally. This is necessary to ensure the correct
   ** behavior when GPTLstop_instr decrements stackidx[t] unconditionally.
   */
-
   if (++stackidx[t].val > MAX_STACK-1)
     return GPTLerror ("%s: stack too big\n", thisfunc);
 
@@ -637,7 +631,6 @@ int GPTLstart_instr (void *self)
     ** Need to save the address string for later conversion back to a real
     ** name by an offline tool.
     */
-
     snprintf (ptr->name, MAX_CHARS+1, "%lx", (unsigned long) self);
     ptr->address = self;
 
@@ -662,7 +655,6 @@ int GPTLstart_instr (void *self)
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-
 int GPTLstart (const char *name)               /* timer name */
 {
   Timer *ptr;        /* linked list pointer */
@@ -690,11 +682,7 @@ int GPTLstart (const char *name)               /* timer name */
     return 0;
   }
 
-  /* 
-  ** ptr will point to the requested timer in the current list,
-  ** or NULL if this is a new entry 
-  */
-
+  /* ptr will point to the requested timer in the current list, or NULL if this is a new entry */
   ptr = getentry (hashtable[t], name, &indx);
 
   /* 
@@ -702,7 +690,6 @@ int GPTLstart (const char *name)               /* timer name */
   ** because we don't want to restart the timer.  We want the reported time for
   ** the timer to reflect the outermost layer of recursion.
   */
-
   if (ptr && ptr->onflg) {
     ++ptr->recurselvl;
     return 0;
@@ -712,7 +699,6 @@ int GPTLstart (const char *name)               /* timer name */
   ** Increment stackidx[t] unconditionally. This is necessary to ensure the correct
   ** behavior when GPTLstop decrements stackidx[t] unconditionally.
   */
-
   if (++stackidx[t].val > MAX_STACK-1)
     return GPTLerror ("%s: stack too big\n", thisfunc);
 
@@ -746,9 +732,8 @@ int GPTLstart (const char *name)               /* timer name */
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-
 int GPTLstart_handle (const char *name,  /* timer name */
-		      void **handle)     /* handle (output if input value is 0) */
+                      void **handle)     /* handle (output if input value is 0) */
 {
   Timer *ptr;                            /* linked list pointer */
   int t;                                 /* thread index (of this thread) */
@@ -765,11 +750,7 @@ int GPTLstart_handle (const char *name,  /* timer name */
   if ((t = get_thread_num ()) < 0)
     return GPTLerror ("%s: bad return from get_thread_num\n", thisfunc);
 
-  /*
-  ** If current depth exceeds a user-specified limit for print, just
-  ** increment and return
-  */
-
+  /* If current depth exceeds a user-specified limit for print, just increment and return */
   if (stackidx[t].val >= depthlimit) {
     ++stackidx[t].val;
     return 0;
@@ -779,7 +760,6 @@ int GPTLstart_handle (const char *name,  /* timer name */
   ** If on input, handle references a non-zero value, assume it's a previously returned Timer* 
   ** passed in by the user. If zero, generate the hash entry and return it to the user.
   */
-
   if (*handle) {
     ptr = (Timer *) *handle;
   } else {
@@ -791,7 +771,6 @@ int GPTLstart_handle (const char *name,  /* timer name */
   ** because we don't want to restart the timer.  We want the reported time for
   ** the timer to reflect the outermost layer of recursion.
   */
-
   if (ptr && ptr->onflg) {
     ++ptr->recurselvl;
     return 0;
@@ -801,7 +780,6 @@ int GPTLstart_handle (const char *name,  /* timer name */
   ** Increment stackidx[t] unconditionally. This is necessary to ensure the correct
   ** behavior when GPTLstop decrements stackidx[t] unconditionally.
   */
-
   if (++stackidx[t].val > MAX_STACK-1)
     return GPTLerror ("%s: stack too big\n", thisfunc);
 
@@ -823,10 +801,7 @@ int GPTLstart_handle (const char *name,  /* timer name */
   if (update_ptr (ptr, t) != 0)
     return GPTLerror ("%s: update_ptr error\n", thisfunc);
 
-  /*
-  ** If on input, *handle was 0, return the pointer to the timer for future input
-  */
-
+  /* If on input, *handle was 0, return the pointer to the timer for future input */
   if ( ! *handle)
     *handle = (void *) ptr;
 
@@ -844,7 +819,6 @@ int GPTLstart_handle (const char *name,  /* timer name */
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-
 static int update_ll_hash (Timer *ptr, const int t, const unsigned int indx)
 {
   int nchars;      /* number of chars */
@@ -879,7 +853,6 @@ static int update_ll_hash (Timer *ptr, const int t, const unsigned int indx)
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-
 static inline int update_ptr (Timer *ptr, const int t)
 {
   double tp2;    /* time stamp */
@@ -911,10 +884,9 @@ static inline int update_ptr (Timer *ptr, const int t)
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-
 static inline int update_parent_info (Timer *ptr, 
-				      Timer **callstackt, 
-				      int stackidxt) 
+                                      Timer **callstackt, 
+                                      int stackidxt) 
 {
   int n;             /* loop index through known parents */
   Timer *pptr;       /* pointer to parent in callstack */
@@ -931,11 +903,7 @@ static inline int update_parent_info (Timer *ptr,
 
   callstackt[stackidxt] = ptr;
 
-  /* 
-  ** If the region has no parent, bump its orphan count
-  ** (should never happen since "GPTL_ROOT" added).
-  */
-
+  /* If the region has no parent, bump its orphan count (should never happen since "GPTL_ROOT" added) */
   if (stackidxt == 0) {
     ++ptr->norphan;
     return 0;
@@ -944,7 +912,6 @@ static inline int update_parent_info (Timer *ptr,
   pptr = callstackt[stackidxt-1];
 
   /* If this parent occurred before, bump its count */
-
   for (n = 0; n < ptr->nparent; ++n) {
     if (ptr->parent[n] == pptr) {
       ++ptr->parent_count[n];
@@ -953,7 +920,6 @@ static inline int update_parent_info (Timer *ptr,
   }
 
   /* If this is a new parent, update info */
-
   if (n == ptr->nparent) {
     ++ptr->nparent;
     nparent = ptr->nparent;
@@ -982,7 +948,6 @@ static inline int update_parent_info (Timer *ptr,
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-
 int GPTLstop_instr (void *self)
 {
   double tp1 = 0.0;          /* time stamp */
@@ -999,8 +964,7 @@ int GPTLstop_instr (void *self)
   if ( ! initialized)
     return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
 
-  /* Get the timestamp */
-    
+  /* Get the timestamp */    
   if (wallstats.enabled) {
     tp1 = (*ptr2wtimefunc) ();
   }
@@ -1011,11 +975,7 @@ int GPTLstop_instr (void *self)
   if ((t = get_thread_num ()) < 0)
     return GPTLerror ("%s: bad return from get_thread_num\n", thisfunc);
 
-  /*
-  ** If current depth exceeds a user-specified limit for print, just
-  ** decrement and return
-  */
-
+  /* If current depth exceeds a user-specified limit for print, just decrement and return */
   if (stackidx[t].val > depthlimit) {
     --stackidx[t].val;
     return 0;
@@ -1036,7 +996,6 @@ int GPTLstop_instr (void *self)
   ** because we don't want to stop the timer.  We want the reported time for
   ** the timer to reflect the outermost layer of recursion.
   */
-
   if (ptr->recurselvl > 0) {
     ++ptr->nrecurse;
     --ptr->recurselvl;
@@ -1057,7 +1016,6 @@ int GPTLstop_instr (void *self)
 **
 ** Return value: 0 (success) or -1 (failure)
 */
-
 int GPTLstop (const char *name)               /* timer name */
 {
   double tp1 = 0.0;          /* time stamp */
@@ -1086,11 +1044,7 @@ int GPTLstop (const char *name)               /* timer name */
   if ((t = get_thread_num ()) < 0)
     return GPTLerror ("%s: bad return from get_thread_num\n", thisfunc);
 
-  /*
-  ** If current depth exceeds a user-specified limit for print, just
-  ** decrement and return
-  */
-
+  /* If current depth exceeds a user-specified limit for print, just decrement and return */
   if (stackidx[t].val > depthlimit) {
     --stackidx[t].val;
     return 0;
@@ -1109,7 +1063,6 @@ int GPTLstop (const char *name)               /* timer name */
   ** because we don't want to stop the timer.  We want the reported time for
   ** the timer to reflect the outermost layer of recursion.
   */
-
   if (ptr->recurselvl > 0) {
     ++ptr->nrecurse;
     --ptr->recurselvl;
@@ -1131,9 +1084,8 @@ int GPTLstop (const char *name)               /* timer name */
 **
 ** Return value: 0 (success) or -1 (failure)
 */
-
 int GPTLstop_handle (const char *name,     /* timer name */
-		     void **handle)        /* handle */
+                     void **handle)        /* handle */
 {
   double tp1 = 0.0;          /* time stamp */
   Timer *ptr;                /* linked list pointer */
@@ -1160,11 +1112,7 @@ int GPTLstop_handle (const char *name,     /* timer name */
   if ((t = get_thread_num ()) < 0)
     return GPTLerror ("%s: bad return from get_thread_num\n", thisfunc);
 
-  /*
-  ** If current depth exceeds a user-specified limit for print, just
-  ** decrement and return
-  */
-
+  /* If current depth exceeds a user-specified limit for print, just decrement and return */
   if (stackidx[t].val > depthlimit) {
     --stackidx[t].val;
     return 0;
@@ -1185,7 +1133,6 @@ int GPTLstop_handle (const char *name,     /* timer name */
   ** because we don't want to stop the timer.  We want the reported time for
   ** the timer to reflect the outermost layer of recursion.
   */
-
   if (ptr->recurselvl > 0) {
     ++ptr->nrecurse;
     --ptr->recurselvl;
@@ -1211,12 +1158,11 @@ int GPTLstop_handle (const char *name,     /* timer name */
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-
 static inline int update_stats (Timer *ptr, 
-				const double tp1, 
-				const long usr, 
-				const long sys,
-				const int t)
+                                const double tp1, 
+                                const long usr, 
+                                const long sys,
+                                const int t)
 {
   double delta;       /* difference */
   static const char *thisfunc = "update_stats";
@@ -1246,9 +1192,9 @@ static inline int update_stats (Timer *ptr,
       ptr->wall.min = delta;
     } else {
       if (delta > ptr->wall.max)
-	ptr->wall.max = delta;
+        ptr->wall.max = delta;
       if (delta < ptr->wall.min)
-	ptr->wall.min = delta;
+        ptr->wall.min = delta;
     }
   }
 
@@ -1266,7 +1212,6 @@ static inline int update_stats (Timer *ptr,
 **
 ** Return value: 0 (success)
 */
-
 int GPTLenable (void)
 {
   disabled = false;
@@ -1278,7 +1223,6 @@ int GPTLenable (void)
 **
 ** Return value: 0 (success)
 */
-
 int GPTLdisable (void)
 {
   disabled = true;
@@ -1295,7 +1239,6 @@ int GPTLdisable (void)
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-
 int GPTLstamp (double *wall, double *usr, double *sys)
 {
   struct tms buf;            /* argument to times */
@@ -1322,7 +1265,6 @@ int GPTLstamp (double *wall, double *usr, double *sys)
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-
 int GPTLreset (void)
 {
   int t;             /* index over threads */
@@ -1358,7 +1300,6 @@ int GPTLreset (void)
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-
 int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
 {
   char outfile[14];         /* name of output file: timing.xxxxxx */
@@ -1383,7 +1324,6 @@ int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-
 int GPTLpr_file (const char *outfile) /* output file to write */
 {
   FILE *fp;                 /* file handle to write to */
@@ -1412,13 +1352,12 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   int num_two;              /* number of buckets with 2 collisions */
   int num_more;             /* number of buckets with more than 2 collisions */
   int most;                 /* biggest collision count */
-  int numtimers = 0;        /* number of timers */
+  int numtimers;            /* number of timers */
   float hashmem;            /* hash table memory usage */
   float regionmem;          /* timer memory usage */
   float papimem;            /* PAPI stats memory usage */
   float pchmem;             /* parent/child array memory usage */
-  float gptlmem;            /* total per-thread GPTL memory usage estimate */
-  float totmem;             /* sum of gptlmem across threads */
+  float totmem;             /* total GPTL memory usage */
 
   static const char *thisfunc = "GPTLpr_file";
 
@@ -1446,12 +1385,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (outpath);
 
-  fprintf (fp, "$Id: gptl.c,v 1.157 2011-03-28 20:55:18 rosinski Exp $\n");
-
-  /*
-  ** A set of nasty ifdefs to tell important aspects of how GPTL was built
-  */
-
+  /* A set of nasty ifdefs to tell important aspects of how GPTL was built */
 #ifdef HAVE_NANOTIME
   if (funclist[funcidx].option == GPTLnanotime) {
     fprintf (fp, "Clock rate = %f MHz\n", cpumhz);
@@ -1508,10 +1442,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   fprintf (fp, "HAVE_PAPI was false\n");
 #endif
 
-  /*
-  ** Estimate underlying timing routine overhead
-  */
-
+  /* Estimate underlying timing routine overhead */
   utr_overhead = utr_getoverhead ();
   fprintf (fp, "Underlying timing routine was %s.\n", funclist[funcidx].name);
   fprintf (fp, "Per-call utr overhead est: %g sec.\n", utr_overhead);
@@ -1528,31 +1459,29 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   tot_overhead = utr_overhead + papi_overhead;
   if (dopr_preamble) {
     fprintf (fp, "If overhead stats are printed, roughly half the estimated number is\n"
-	     "embedded in the wallclock stats for each timer.\n"
-	     "Print method was %s.\n", methodstr (method));
+             "embedded in the wallclock stats for each timer.\n"
+             "Print method was %s.\n", methodstr (method));
 #ifdef ENABLE_PMPI
     fprintf (fp, "If a AVG_MPI_BYTES field is present, it is an estimate of the per-call "
-	     "average number of bytes handled by that process.\n"
-	     "If timers beginning with sync_ are present, it means MPI synchronization "
-	     "was turned on.\n");
+             "average number of bytes handled by that process.\n"
+             "If timers beginning with sync_ are present, it means MPI synchronization "
+             "was turned on.\n");
 #endif
     fprintf (fp, "If a \'%%_of\' field is present, it is w.r.t. the first timer for thread 0.\n"
-	     "If a \'e6_per_sec\' field is present, it is in millions of PAPI counts per sec.\n\n"
-	     "A '*' in column 1 below means the timer had multiple parents, though the\n"
-	     "values printed are for all calls.\n"
-	     "Further down the listing may be more detailed information about multiple\n"
-	     "parents. Look for 'Multiple parent info'\n\n");
+             "If a \'e6_per_sec\' field is present, it is in millions of PAPI counts per sec.\n\n"
+             "A '*' in column 1 below means the timer had multiple parents, though the\n"
+             "values printed are for all calls.\n"
+             "Further down the listing may be more detailed information about multiple\n"
+             "parents. Look for 'Multiple parent info'\n\n");
   }
 
   sum = (float *) GPTLallocate (nthreads * sizeof (float));
   
   for (t = 0; t < nthreads; ++t) {
-
     /*
     ** Construct tree for printing timers in parent/child form. get_max_depth() must be called 
     ** AFTER construct_tree() because it relies on the per-parent children arrays being complete.
     */
-
     if (construct_tree (timers[t], method) != 0)
       printf ("GPTLpr_file: failure from construct_tree: output will be incomplete\n");
     max_depth[t] = get_max_depth (timers[t], 0);
@@ -1574,9 +1503,9 @@ int GPTLpr_file (const char *outfile) /* output file to write */
     if (wallstats.enabled) {
       fprintf (fp, "%s", wallstats.str);
       if (percent && timers[0]->next)
-	fprintf (fp, "%%_of_%5.5s ", timers[0]->next->name);
+        fprintf (fp, "%%_of_%5.5s ", timers[0]->next->name);
       if (overheadstats.enabled)
-	fprintf (fp, "%s", overheadstats.str);
+        fprintf (fp, "%s", overheadstats.str);
     }
 
 #ifdef ENABLE_PMPI
@@ -1593,14 +1522,12 @@ int GPTLpr_file (const char *outfile) /* output file to write */
     ** Print call tree and stats via recursive routine. "-1" is flag to
     ** avoid printing dummy outermost timer, and initialize the depth.
     */
-
     printself_andchildren (timers[t], fp, t, -1, tot_overhead);
 
     /* 
     ** Sum of overhead across timers is meaningful.
     ** Factor of 2 is because there are 2 utr calls per start/stop pair.
     */
-
     sum[t]     = 0;
     totcount   = 0;
     for (ptr = timers[t]->next; ptr; ptr = ptr->next) {
@@ -1617,7 +1544,6 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   }
 
   /* Print per-name stats for all threads */
-
   if (dopr_threadsort && nthreads > 1) {
     fprintf (fp, "\nSame stats sorted by timer for threaded regions:\n");
     fprintf (fp, "Thd ");
@@ -1632,9 +1558,9 @@ int GPTLpr_file (const char *outfile) /* output file to write */
     if (wallstats.enabled) {
       fprintf (fp, "%s", wallstats.str);
       if (percent && timers[0]->next)
-	fprintf (fp, "%%_of_%5.5s ", timers[0]->next->name);
+        fprintf (fp, "%%_of_%5.5s ", timers[0]->next->name);
       if (overheadstats.enabled)
-	fprintf (fp, "%s", overheadstats.str);
+        fprintf (fp, "%s", overheadstats.str);
     }
 
 #ifdef HAVE_PAPI
@@ -1644,90 +1570,83 @@ int GPTLpr_file (const char *outfile) /* output file to write */
     fprintf (fp, "\n");
 
     /* Start at next to skip dummy */
-
-    for (ptr = timers[0]->next; ptr; ptr = ptr->next) {
-      
+    for (ptr = timers[0]->next; ptr; ptr = ptr->next) {      
       /* 
       ** To print sum stats, first create a new timer then copy thread 0
       ** stats into it. then sum using "add", and finally print.
       */
-
       foundany = false;
       first = true;
       sumstats = *ptr;
       for (t = 1; t < nthreads; ++t) {
-	found = false;
-	for (tptr = timers[t]->next; tptr && ! found; tptr = tptr->next) {
-	  if (STRMATCH (ptr->name, tptr->name)) {
+        found = false;
+        for (tptr = timers[t]->next; tptr && ! found; tptr = tptr->next) {
+          if (STRMATCH (ptr->name, tptr->name)) {
 
-	    /* Only print thread 0 when this timer found for other threads */
+            /* Only print thread 0 when this timer found for other threads */
+            if (first) {
+              first = false;
+              fprintf (fp, "%3.3d ", 0);
+              printstats (ptr, fp, 0, 0, false, tot_overhead);
+            }
 
-	    if (first) {
-	      first = false;
-	      fprintf (fp, "%3.3d ", 0);
-	      printstats (ptr, fp, 0, 0, false, tot_overhead);
-	    }
-
-	    found = true;
-	    foundany = true;
-	    fprintf (fp, "%3.3d ", t);
-	    printstats (tptr, fp, 0, 0, false, tot_overhead);
-	    add (&sumstats, tptr);
-	  }
-	}
+            found = true;
+            foundany = true;
+            fprintf (fp, "%3.3d ", t);
+            printstats (tptr, fp, 0, 0, false, tot_overhead);
+            add (&sumstats, tptr);
+          }
+        }
       }
 
       if (foundany) {
-	fprintf (fp, "SUM ");
-	printstats (&sumstats, fp, 0, 0, false, tot_overhead);
-	fprintf (fp, "\n");
+        fprintf (fp, "SUM ");
+        printstats (&sumstats, fp, 0, 0, false, tot_overhead);
+        fprintf (fp, "\n");
       }
     }
 
     /* Repeat overhead print in loop over threads */
-
     if (wallstats.enabled && overheadstats.enabled) {
       osum = 0.;
       for (t = 0; t < nthreads; ++t) {
-	fprintf (fp, "OVERHEAD.%3.3d (wallclock seconds) = %9.3g\n", t, sum[t]);
-	osum += sum[t];
+        fprintf (fp, "OVERHEAD.%3.3d (wallclock seconds) = %9.3g\n", t, sum[t]);
+        osum += sum[t];
       }
       fprintf (fp, "OVERHEAD.SUM (wallclock seconds) = %9.3g\n", osum);
     }
   }
 
   /* Print info about timers with multiple parents */
-
   if (dopr_multparent) {
     for (t = 0; t < nthreads; ++t) {
       bool some_multparents = false;   /* thread has entries with multiple parents? */
       for (ptr = timers[t]->next; ptr; ptr = ptr->next) {
-	if (ptr->nparent > 1) {
-	  some_multparents = true;
-	  break;
-	}
+        if (ptr->nparent > 1) {
+          some_multparents = true;
+          break;
+        }
       }
 
       if (some_multparents) {
-	fprintf (fp, "\nMultiple parent info for thread %d:\n", t);
-	if (dopr_preamble && t == 0) {
-	  fprintf (fp, "Columns are count and name for the listed child\n"
-		   "Rows are each parent, with their common child being the last entry, "
-		   "which is indented.\n"
-		   "Count next to each parent is the number of times it called the child.\n"
-		   "Count next to child is total number of times it was called by the "
-		   "listed parents.\n\n");
-	}
+        fprintf (fp, "\nMultiple parent info for thread %d:\n", t);
+        if (dopr_preamble && t == 0) {
+          fprintf (fp, "Columns are count and name for the listed child\n"
+                   "Rows are each parent, with their common child being the last entry, "
+                   "which is indented.\n"
+                   "Count next to each parent is the number of times it called the child.\n"
+                   "Count next to child is total number of times it was called by the "
+                   "listed parents.\n\n");
+        }
 
-	for (ptr = timers[t]->next; ptr; ptr = ptr->next)
-	  if (ptr->nparent > 1)
-	    print_multparentinfo (fp, ptr);
+        for (ptr = timers[t]->next; ptr; ptr = ptr->next)
+          if (ptr->nparent > 1)
+            print_multparentinfo (fp, ptr);
       }
     }
   }
 
   /* Print hash table stats */
-
   if (dopr_collision) {
     for (t = 0; t < nthreads; t++) {
       first = true;
@@ -1737,75 +1656,75 @@ int GPTLpr_file (const char *outfile) /* output file to write */
       num_two  = 0;
       num_more = 0;
       most     = 0;
-      numtimers= 0;
 
       for (i = 0; i < tablesize; i++) {
-	nument = hashtable[t][i].nument;
-	if (nument > 1) {
-	  totent += nument-1;
-	  if (first) {
-	    first = false;
-	    fprintf (fp, "\nthread %d had some hash collisions:\n", t);
-	  }
-	  fprintf (fp, "hashtable[%d][%d] had %d entries:", t, i, nument);
-	  for (ii = 0; ii < nument; ii++)
-	    fprintf (fp, " %s", hashtable[t][i].entries[ii]->name);
-	  fprintf (fp, "\n");
-	}
-	switch (nument) {
-	case 0:
-	  ++num_zero;
-	  break;
-	case 1:
-	  ++num_one;
-	  break;
-	case 2:
-	  ++num_two;
-	  break;
-	default:
-	  ++num_more;
-	  break;
-	}
-	most = MAX (most, nument);
-	numtimers += nument;
+        nument = hashtable[t][i].nument;
+        if (nument > 1) {
+          totent += nument-1;
+          if (first) {
+            first = false;
+            fprintf (fp, "\nthread %d had some hash collisions:\n", t);
+          }
+          fprintf (fp, "hashtable[%d][%d] had %d entries:", t, i, nument);
+          for (ii = 0; ii < nument; ii++)
+            fprintf (fp, " %s", hashtable[t][i].entries[ii]->name);
+          fprintf (fp, "\n");
+        }
+        switch (nument) {
+        case 0:
+          ++num_zero;
+          break;
+        case 1:
+          ++num_one;
+          break;
+        case 2:
+          ++num_two;
+          break;
+        default:
+          ++num_more;
+          break;
+        }
+        most = MAX (most, nument);
       }
 
       if (totent > 0) {
-	fprintf (fp, "Total collisions thread %d = %d\n", t, totent);
-	fprintf (fp, "Entry information:\n");
-	fprintf (fp, "num_zero = %d num_one = %d num_two = %d num_more = %d\n",
-		 num_zero, num_one, num_two, num_more);
-	fprintf (fp, "Most = %d\n", most);
+        fprintf (fp, "Total collisions thread %d = %d\n", t, totent);
+        fprintf (fp, "Entry information:\n");
+        fprintf (fp, "num_zero = %d num_one = %d num_two = %d num_more = %d\n",
+                 num_zero, num_one, num_two, num_more);
+        fprintf (fp, "Most = %d\n", most);
       }
     }
+    fprintf (fp, "Size of hash table was %d\n", tablesize);
+
   }
 
   /* Stats on GPTL memory usage */
-
-  totmem = 0.;
+  pchmem    = 0.;
+  regionmem = 0.;
+  papimem   = 0.;
+  hashmem   = (float) sizeof (Hashentry) * tablesize * maxthreads;  /* fixed size of table */
   for (t = 0; t < nthreads; t++) {
-    hashmem = (float) sizeof (Hashentry) * tablesize;
-    regionmem = (float) numtimers * sizeof (Timer);
+    numtimers = 0;
+    for (ptr = timers[t]->next; ptr; ptr = ptr->next) {
+      ++numtimers;
+      pchmem  += (float) sizeof (Timer *) * (ptr->nchildren + ptr->nparent);
+    }
+    hashmem   += (float) numtimers * sizeof (Timer *);
+    regionmem += (float) numtimers * sizeof (Timer);
 #ifdef HAVE_PAPI
-    papimem = (float) numtimers * sizeof (Papistats);
-#else
-    papimem = 0.;
+    papimem += (float) numtimers * sizeof (Papistats);
 #endif
-    pchmem = 0.;
-    for (ptr = timers[t]->next; ptr; ptr = ptr->next)
-      pchmem += (float) (sizeof (Timer *)) * (ptr->nchildren + ptr->nparent);
-
-    gptlmem = hashmem + regionmem + pchmem;
-    totmem += gptlmem;
-    fprintf (fp, "\n");
-    fprintf (fp, "Thread %d total memory usage = %g KB\n", t, gptlmem*.001);
-    fprintf (fp, "  Hashmem                   = %g KB\n" 
-	         "  Regionmem                 = %g KB (papimem portion = %g KB)\n"
-	         "  Parent/child arrays       = %g KB\n",
-	     hashmem*.001, regionmem*.001, papimem*.001, pchmem*.001);
   }
+
+  totmem = hashmem + regionmem + pchmem;
   fprintf (fp, "\n");
-  fprintf (fp, "Total memory usage all threads = %g KB\n", totmem*0.001);
+  fprintf (fp, "Total GPTL memory usage = %g KB\n", totmem*.001);
+  fprintf (fp, "Components:\n");
+  fprintf (fp, "Hashmem                 = %g KB\n" 
+               "Regionmem               = %g KB (papimem portion = %g KB)\n"
+               "Parent/child arrays     = %g KB\n",
+           hashmem*.001, regionmem*.001, papimem*.001, pchmem*.001);
 
   print_threadmapping (fp);
   free (sum);
@@ -1827,7 +1746,6 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-
 int construct_tree (Timer *timerst, Method method)
 {
   Timer *ptr;       /* loop through linked list */
@@ -1841,41 +1759,37 @@ int construct_tree (Timer *timerst, Method method)
   ** Walk the linked list to build the parent-child tree, using whichever
   ** mechanism is in place. newchild() will prevent loops.
   */
-
   for (ptr = timerst; ptr; ptr = ptr->next) {
     switch (method) {
     case GPTLfirst_parent:
       if (ptr->nparent > 0) {
-	pptr = ptr->parent[0];
-	if (newchild (pptr, ptr) != 0);
+        pptr = ptr->parent[0];
+        if (newchild (pptr, ptr) != 0);
       }
       break;
     case GPTLlast_parent:
       if (ptr->nparent > 0) {
-	nparent = ptr->nparent;
-	pptr = ptr->parent[nparent-1];
-	if (newchild (pptr, ptr) != 0);
+        nparent = ptr->nparent;
+        pptr = ptr->parent[nparent-1];
+        if (newchild (pptr, ptr) != 0);
       }
       break;
     case GPTLmost_frequent:
       maxcount = 0;
       for (n = 0; n < ptr->nparent; ++n) {
-	if (ptr->parent_count[n] > maxcount) {
-	  pptr = ptr->parent[n];
-	  maxcount = ptr->parent_count[n];
-	}
+        if (ptr->parent_count[n] > maxcount) {
+          pptr = ptr->parent[n];
+          maxcount = ptr->parent_count[n];
+        }
       }
       if (maxcount > 0) {   /* not an orphan */
-	if (newchild (pptr, ptr) != 0);
+        if (newchild (pptr, ptr) != 0);
       }
       break;
     case GPTLfull_tree:
-      /* 
-      ** Careful: this one can create *lots* of output!
-      */
       for (n = 0; n < ptr->nparent; ++n) {
-	pptr = ptr->parent[n];
-	if (newchild (pptr, ptr) != 0);
+        pptr = ptr->parent[n];
+        if (newchild (pptr, ptr) != 0);
       }
       break;
     default:
@@ -1891,7 +1805,6 @@ int construct_tree (Timer *timerst, Method method)
 ** Input arguments:
 **   method: method type
 */
-
 static char *methodstr (Method method)
 {
   if (method == GPTLfirst_parent)
@@ -1916,7 +1829,6 @@ static char *methodstr (Method method)
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-
 static int newchild (Timer *parent, Timer *child)
 {
   int nchildren;     /* number of children (temporary) */
@@ -1930,15 +1842,13 @@ static int newchild (Timer *parent, Timer *child)
   ** To guarantee no loops, ensure that proposed parent isn't already a descendant of 
   ** proposed child
   */
-
   if (is_descendant (child, parent)) {
     return GPTLerror ("GPTL: %s: loop detected: NOT adding %s to descendant list of %s. "
-		      "Proposed parent is in child's descendant path.\n",
-		      thisfunc, child->name, parent->name);
+                      "Proposed parent is in child's descendant path.\n",
+                      thisfunc, child->name, parent->name);
   }
 
   /* Safe to add the child to the parent's list of children */
-
   ++parent->nchildren;
   nchildren = parent->nchildren;
   chptr = (Timer **) realloc (parent->children, nchildren * sizeof (Timer *));
@@ -1960,7 +1870,6 @@ static int newchild (Timer *parent, Timer *child)
 **
 ** Return value: maximum depth
 */
-
 static int get_max_depth (const Timer *ptr, const int startdepth)
 {
   int maxdepth = startdepth;
@@ -1975,28 +1884,6 @@ static int get_max_depth (const Timer *ptr, const int startdepth)
 }
 
 /* 
-** num_descendants: Determine the number of descendants of a timer by traversing
-**   the tree recursively. This function is not currently used. It could be
-**   useful in a pruning algorithm
-**
-** Input arguments:
-**   ptr: Starting timer
-**
-** Return value: number of descendants
-*/
-
-static int num_descendants (Timer *ptr)
-{
-  int n;
-
-  ptr->num_desc = ptr->nchildren;
-  for (n = 0; n < ptr->nchildren; ++n) {
-    ptr->num_desc += num_descendants (ptr->children[n]);
-  }
-  return ptr->num_desc;
-}
-
-/* 
 ** is_descendant: Determine whether node2 is in the descendant list for
 **   node1
 **
@@ -2006,13 +1893,11 @@ static int num_descendants (Timer *ptr)
 **
 ** Return value: true or false
 */
-
 static int is_descendant (const Timer *node1, const Timer *node2)
 {
   int n;
 
   /* Breadth before depth for efficiency */
-
   for (n = 0; n < node1->nchildren; ++n)
     if (node1->children[n] == node2)
       return 1;
@@ -2035,13 +1920,12 @@ static int is_descendant (const Timer *node1, const Timer *node2)
 **   doindent:     whether indenting will be done
 **   tot_overhead: underlying timing routine overhead
 */
-
 static void printstats (const Timer *timer,
-			FILE *fp,
-			const int t,
-			const int depth,
-			const bool doindent,
-			const double tot_overhead)
+                        FILE *fp,
+                        const int t,
+                        const int depth,
+                        const bool doindent,
+                        const double tot_overhead)
 {
   int i;               /* index */
   int indent;          /* index for indenting */
@@ -2058,7 +1942,6 @@ static void printstats (const Timer *timer,
     fprintf (stderr, "printstats: timer %s had not been turned off\n", timer->name);
 
   /* Flag regions having multiple parents with a "*" in column 1 */
-
   if (doindent) {
     if (timer->nparent > 1)
       fprintf (fp, "* ");
@@ -2066,7 +1949,6 @@ static void printstats (const Timer *timer,
       fprintf (fp, "  ");
 
     /* Indent to depth of this timer */
-
     for (indent = 0; indent < depth; ++indent)
       fprintf (fp, "  ");
   }
@@ -2074,13 +1956,11 @@ static void printstats (const Timer *timer,
   fprintf (fp, "%s", timer->name);
 
   /* Pad to length of longest name */
-
   extraspace = max_name_len[t] - strlen (timer->name);
   for (i = 0; i < extraspace; ++i)
     fprintf (fp, " ");
 
   /* Pad to max indent level */
-
   if (doindent)
     for (indent = depth; indent < max_depth[t]; ++indent)
       fprintf (fp, "  ");
@@ -2113,14 +1993,11 @@ static void printstats (const Timer *timer,
     if (percent && timers[0]->next) {
       ratio = 0.;
       if (timers[0]->next->wall.accum > 0.)
-	ratio = (timer->wall.accum * 100.) / timers[0]->next->wall.accum;
+        ratio = (timer->wall.accum * 100.) / timers[0]->next->wall.accum;
       fprintf (fp, " %9.2f ", ratio);
     }
 
-    /*
-    ** Factor of 2 is because there are 2 utr calls per start/stop pair.
-    */
-
+    /* Factor of 2 is because there are 2 utr calls per start/stop pair */
     if (overheadstats.enabled) {
       fprintf (fp, "%13.3f ", timer->count * 2 * tot_overhead);
     }
@@ -2147,7 +2024,7 @@ static void printstats (const Timer *timer,
 ** Input/output arguments:
 */
 void print_multparentinfo (FILE *fp, 
-			   Timer *ptr)
+                           Timer *ptr)
 {
   int n;
 
@@ -2179,9 +2056,8 @@ void print_multparentinfo (FILE *fp,
 ** Input/output arguments:
 **   tout: output timer summed into
 */
-
 static void add (Timer *tout,   
-		 const Timer *tin)
+                 const Timer *tin)
 {
   tout->count += tin->count;
 
@@ -2203,39 +2079,49 @@ static void add (Timer *tout,
 
 #ifdef HAVE_MPI
 /* 
-** GPTLpr_summary: When MPI enabled, gather and print summary stats across 
-**                 threads and MPI tasks
+** GPTLpr_summary: When MPI enabled, gather and print summary stats across threads
+**                 and MPI tasks. The communication algorithm is O(log nranks) so
+**                 it easily scales to thousands of ranks. Added local memory usage 
+**                 is 2*(number_of_regions)*sizeof(Global) on each rank.
 **
 ** Input arguments:
 **   comm: commuicator (e.g. MPI_COMM_WORLD). If zero, use MPI_COMM_WORLD
 */
-
 int GPTLpr_summary (MPI_Comm comm)
 {
-  const char *outfile = "timing.summary";
-  int iam = 0;                     /* MPI rank: default master */
-  int n;                           /* index */
-  int extraspace;                  /* for padding to length of longest name */
-  Summarystats summarystats;       /* stats to be printed */
-  Timer *ptr;                      /* timer */
-  FILE *fp = 0;                    /* output file */
-
-  int nproc;                                /* number of procs in MPI communicator */
-  int p;                                    /* process index */
-  int ret;                                  /* return code */
-  const int nbytes = sizeof (Summarystats); /* number of bytes to be sent */
-  const int tag = 99;                       /* tag for MPI message */
-  char name[MAX_CHARS+1];                   /* timer name requested by master */
-  Summarystats summarystats_slave;          /* stats sent to master */
-  MPI_Status status;                        /* required by MPI_Recv */
-  char emptystring[MAX_CHARS+1];            /* needs to be as big as name */
-  static const char *thisfunc = "GPTLpr_summary";
-
-  /*
-  ** Ensure that emptystring starts with \0
-  */
-
-  emptystring[0] = '\0';
+  int ret;             /* return code */
+  int iam;             /* my rank */
+  int nranks;          /* number of ranks in communicator */
+  int nregions;        /* number of regions aggregated across all tasks */
+  int nregions_p;      /* number of regions for a single task */
+  int n, nn;           /* region index */
+  int i;               /* index */
+  Timer *ptr;          /* linked list pointer */
+  int incr;            /* increment for tree sum */
+  int twoincr;         /* 2*incr */
+  int dosend;          /* logical indicating whether to send this iteration */
+  int dorecv;          /* logical indicating whether to recv this iteration */
+  int sendto;          /* rank to send to */
+  int p;               /* rank to recv fm */
+  int mnl;             /* max name length across all threads and tasks */
+  MPI_Status status;   /* required by MPI_Recv */
+  int extraspace;      /* for padding to length of longest name */
+  int multithread;     /* flag indicates multithreaded or not for any task */
+  int multithread_p;   /* recvd flag for other processor indicates multithreaded or not */
+  Global *global;      /* stats to be printed accumulated across tasks */
+  Global *global_p;    /* stats to be printed for a single task */
+  Global *sptr;        /* realloc intermediate */
+  float delta;         /* from Chan, et. al. */
+  float sigma;         /* st. dev. */
+  unsigned int tsksum; /* part of Chan, et. al. equation */
+  static const int tag = 98789;                    /* tag for MPI message */
+  static const char *outfile = "timing.summary";   /* output file to write to */
+  static const int nbytes = sizeof (Global);       /* number of bytes to be sent/recvd */
+  static const char *thisfunc = "GPTLpr_summary";  /* this function */
+  FILE *fp = 0;                                    /* output file */
+#ifdef HAVE_PAPI
+  int e;              /* event index */
+#endif
 
   if (((int) comm) == 0)
     comm = MPI_COMM_WORLD;
@@ -2243,112 +2129,246 @@ int GPTLpr_summary (MPI_Comm comm)
   if ((ret = MPI_Comm_rank (comm, &iam)) != MPI_SUCCESS)
     return GPTLerror ("%s: Bad return from MPI_Comm_rank=%d\n", thisfunc, ret);
 
-  if ((ret = MPI_Comm_size (comm, &nproc)) != MPI_SUCCESS)
+  if ((ret = MPI_Comm_size (comm, &nranks)) != MPI_SUCCESS)
     return GPTLerror ("%s rank %d: Bad return from MPI_Comm_size=%d\n", thisfunc, iam, ret);
 
+  /* Examine only thread 0 regions */
+  ret = GPTLget_nregions (0, &nregions);
+  global = (Global *) GPTLallocate (nregions * sizeof (Global));
+
   /*
-  ** Master loops over thread 0 timers. Each process gathers stats for its threads,
-  ** master gathers these results.
-  ** End of requests signaled by requesting the null string.
+  ** Gather per-thread stats based on thread 0 list.
+  ** Also discover length of longest region name for formatting
   */
+  n = 0;
+  mnl = 0;
+  for (ptr = timers[0]->next; ptr; ptr = ptr->next) {
+    get_threadstats (iam, ptr->name, &global[n]);
+    mnl = MAX (strlen (ptr->name), mnl);
+
+    /* Initialize for calculating mean, st. dev. */
+    global[n].mean   = global[n].wallmax;
+    global[n].m2     = 0.;
+    global[n].tottsk = 1;
+    ++n;
+  }
+  if (n != nregions)
+    return GPTLerror ("%s rank %d: Bad logic caused n=%d and nregions=%d\n", thisfunc, iam, n, nregions);
+  
+  multithread = (nthreads > 1);
+
+  /*
+  ** If all ranks participate in a region, could use MPI_Reduce to get mean and variance.
+  ** But we can't assume that, so instead code the parallel algorithm by hand. 
+  ** Log(ntask) algorithm to gather results to a single task is Jim Rosinski's concoction.
+  ** One-pass algorithm for gathering mean and standard deviation comes from Chan et. al.
+  ** (1979) described in: http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
+  ** Discovered by googling for "one pass standard deviation" which found the Wikipedia
+  ** page pointing to the Chan et. al. work. I'm not enough of a statistical whiz to
+  ** be able to map the simple 3-line algorithm in the Wikipedia page (see "Parallel 
+  ** algorithm") to anything in the Chan et. al. work, but it does work.
+  */
+  for (incr = 1; incr < nranks; incr = twoincr) {
+    twoincr = 2*incr;
+    sendto = iam - incr;
+    p = iam + incr;      /* could rename p as recvfm */
+
+    /* 
+    ** The && part of the next 2 stmts prevents sending to or receiving from
+    ** outside communicator bounds when nranks is not a power of 2
+    */
+    dorecv = ((iam + twoincr) % twoincr == 0) && (p < nranks);
+    dosend = ((iam + incr) % twoincr == 0) && (sendto > -1);
+    if (dosend) {
+      if (dorecv)
+        printf ("WARNING: iam=%d: dosend and dorecv both true: possible hang?\n", iam);
+
+      if ((ret = MPI_Send (&nregions, 1, MPI_INT, sendto, tag, comm)) != MPI_SUCCESS)
+        return GPTLerror ("%s rank %d: Bad return from MPI_Send=%d\n", thisfunc, iam, ret);
+      if ((ret = MPI_Send (&multithread, 1, MPI_INT, sendto, tag, comm)) != MPI_SUCCESS)
+        return GPTLerror ("%s rank %d: Bad return from MPI_Send=%d\n", thisfunc, iam, ret);
+      if ((ret = MPI_Send (global, nbytes*nregions, MPI_BYTE, sendto, tag, comm)) != MPI_SUCCESS)
+        return GPTLerror ("%s rank %d: Bad return from MPI_Send=%d\n", thisfunc, iam, ret);
+    }
+
+    if (dorecv) {
+      if (dosend)
+        printf ("WARNING: iam=%d: dosend and dorecv both true: possible hang?\n", iam);
+
+      if ((ret = MPI_Recv (&nregions_p, 1, MPI_INT, p, tag, comm, &status)) != MPI_SUCCESS)
+        return GPTLerror ("%s rank %d: Bad return from MPI_Recv=%d\n", thisfunc, iam, ret);
+      if ((ret = MPI_Recv (&multithread_p, 1, MPI_INT, p, tag, comm, &status)) != MPI_SUCCESS)
+        return GPTLerror ("%s rank %d: Bad return from MPI_Recv=%d\n", thisfunc, iam, ret);
+      if (multithread_p)
+        multithread = true;
+
+      global_p = (Global *) GPTLallocate (nregions_p * sizeof (Global));
+      ret = MPI_Recv (global_p, nbytes*nregions_p, MPI_BYTE, p, tag, comm, &status);
+      if (ret != MPI_SUCCESS)
+        return GPTLerror ("%s rank %d: Bad return from MPI_Recv=%d\n", thisfunc, iam, ret);
+      
+      /* Merge stats for task p with our current stats */
+      for (n = 0; n < nregions_p; ++n) {
+        for (nn = 0; nn < nregions; ++nn) {
+          if (STRMATCH (global_p[n].name, global[nn].name)) {
+            break;
+          }
+        }
+
+        if (nn == nregions) {  /* new region: reallocate and copy stats */
+          ++nregions;
+          sptr = realloc (global, nregions * sizeof (Global));
+          if ( ! sptr)
+            return GPTLerror ("%s: realloc error", thisfunc);
+          global = sptr;
+          /* IMPORTANT: structure copy only works because it contains NO pointers (only arrays) */
+          global[nn] = global_p[n];
+          mnl = MAX (strlen (global[nn].name), mnl);
+
+        } else {               /* adjust stats for region */
+
+          global[nn].totcalls += global_p[n].totcalls; /* count is cumulative */
+          if (global_p[n].wallmax > global[nn].wallmax) {
+            global[nn].wallmax   = global_p[n].wallmax;
+            global[nn].wallmax_p = global_p[n].wallmax_p;
+            global[nn].wallmax_t = global_p[n].wallmax_t;
+          }
+          if (global_p[n].wallmin < global[nn].wallmin) {
+            global[nn].wallmin   = global_p[n].wallmin;
+            global[nn].wallmin_p = global_p[n].wallmin_p;
+            global[nn].wallmin_t = global_p[n].wallmin_t;
+          }
+
+          /* Mean, variance calcs. Cast to float avoids possible integer overflow */
+          tsksum = global_p[n].tottsk + global[nn].tottsk;
+          delta  = global_p[n].mean   - global[nn].mean;
+          global[nn].mean += (delta * global_p[n].tottsk) / tsksum;
+          global[nn].m2   += global_p[n].m2 + 
+            delta * delta * ((float) global_p[n].tottsk * global[nn].tottsk) / tsksum;
+          global[nn].tottsk = tsksum;
+
+#ifdef HAVE_PAPI
+          for (e = 0; e < nevents; ++e) {
+            if (global_p[n].papimax[e] > global[nn].papimax[e]) {
+              global[nn].papimax[e]   = global_p[n].papimax[e];
+              global[nn].papimax_p[e] = p;
+              global[nn].papimax_t[e] = global_p[n].papimax_t[e];
+            }
+            if (global_p[n].papimin[e] < global[nn].papimin[e]) {
+              global[nn].papimin[e]   = global_p[n].papimin[e];
+              global[nn].papimin_p[e] = p;
+              global[nn].papimin_t[e] = global_p[n].papimin_t[e];
+            }
+          }
+#endif
+        }
+      }
+      free (global_p); /* done with received data this iteration */
+    }
+  }
 
   if (iam == 0) {
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
-    fprintf (fp, "$Id: gptl.c,v 1.157 2011-03-28 20:55:18 rosinski Exp $\n");
-    fprintf (fp, "'count' is cumulative. All other stats are max/min\n");
-
     /* Print heading */
+    fprintf (fp, "Total ranks in communicator=%d\n", nranks);
+    fprintf (fp, "nthreads on rank 0=%d\n", nthreads);
+    fprintf (fp, "'N' used for mean, std. dev. calcs.: 'ncalls'/'nthreads'\n");
+    fprintf (fp, "'ncalls': number of times the region was invoked across tasks and threads.\n");
+    fprintf (fp, "'nranks': number of ranks which invoked the region.\n");
+    fprintf (fp, "mean, std. dev: computed using per-rank max time across all threads on each rank\n");
+    fprintf (fp, "wallmax and wallmin: max, min time across tasks and threads.\n");
 
-    fprintf (fp, "name");
-    extraspace = max_name_len[0] - strlen ("name");
+    fprintf (fp, "\nname");
+    extraspace = mnl - strlen ("name");
     for (n = 0; n < extraspace; ++n)
       fprintf (fp, " ");
-    fprintf (fp, " count      wallmax (proc   thrd  )   wallmin (proc   thrd  )");
+    fprintf (fp, "   ncalls nranks mean_time   std_dev   wallmax (rank  ");
+    if (multithread)
+      fprintf (fp, "thread");
+    fprintf (fp, ")   wallmin (rank  ");
+    if (multithread)
+      fprintf (fp, "thread");
+    fprintf (fp, ")");
 
-    for (n = 0; n < nevents; ++n) {
-      fprintf (fp, " %8.8smax (proc   thrd  )", eventlist[n].str8);
-      fprintf (fp, " %8.8smin (proc   thrd  )", eventlist[n].str8);
+#ifdef HAVE_PAPI
+    for (e = 0; e < nevents; ++e) {
+      fprintf (fp, " %8.8smax (rank  ", eventlist[e].str8);
+      if (multithread)
+        fprintf (fp, "thread");
+      fprintf (fp, ")");
+
+      fprintf (fp, " %8.8smin (rank  ", eventlist[e].str8);
+      if (multithread)
+        fprintf (fp, "thread");
+      fprintf (fp, ")");
     }
-
+#endif
     fprintf (fp, "\n");
 
-    /*
-    ** Gather and print stats based on list of thread 0 timers
-    */
+    /* Loop over regions and print summarized timing stats */
+    for (n = 0; n < nregions; ++n) {
+      fprintf (fp, "%s", global[n].name);
+      extraspace = mnl - strlen (global[n].name);
 
-    for (ptr = timers[0]->next; ptr; ptr = ptr->next) {
+      for (i = 0; i < extraspace; ++i)
+        fprintf (fp, " ");
 
-      /* First, master gathers his own stats */
+      if (global[n].tottsk > 1)
+        sigma = sqrt ((double) global[n].m2 / (global[n].tottsk - 1));
+      else
+        sigma = 0.;
 
-      get_threadstats (ptr->name, &summarystats);
-
-      /* Broadcast a message to slaves asking for their results for this timer */
-
-      if ((ret = MPI_Bcast (ptr->name, MAX_CHARS+1, MPI_CHAR, 0, comm)) != MPI_SUCCESS)
-	return GPTLerror ("%s rank %d: Bad return from MPI_Bcast=%d\n", thisfunc, iam, ret);
-
-      /* Loop over slaves, receiving and processing the results */
-
-      for (p = 1; p < nproc; ++p) {
-	if ((ret = MPI_Recv (&summarystats_slave, nbytes, MPI_BYTE, p, tag, comm, &status)) != MPI_SUCCESS)
-	  return GPTLerror ("%s rank %d: Bad return from MPI_Recv=%d\n", thisfunc, iam, ret);
-
-	if (summarystats_slave.count > 0)   /* timer found in slave */
-	  get_summarystats (&summarystats, &summarystats_slave, p);
+      if (multithread) {  /* Threads and tasks */
+        if (global[n].totcalls < PRTHRESH) {
+          fprintf (fp, " %8u %6u %9.3f %9.3f %9.3f (%6d %5d) %9.3f (%6d %5d)", 
+                   global[n].totcalls, global[n].tottsk, global[n].mean, sigma, 
+                   global[n].wallmax, global[n].wallmax_p, global[n].wallmax_t, 
+                   global[n].wallmin, global[n].wallmin_p, global[n].wallmin_t);
+        } else {
+          fprintf (fp, " %8.1e %6u %9.3f %9.3f %9.3f (%6d %5d) %9.3f (%6d %5d)", 
+                   (float) global[n].totcalls, global[n].tottsk, global[n].mean, sigma, 
+                   global[n].wallmax, global[n].wallmax_p, global[n].wallmax_t, 
+                   global[n].wallmin, global[n].wallmin_p, global[n].wallmin_t);
+        }
+      } else {  /* No threads */
+        if (global[n].totcalls < PRTHRESH) {
+          fprintf (fp, " %8u %6u %9.3f %9.3f %9.3f (%6d) %9.3f (%6d)", 
+                   global[n].totcalls, global[n].tottsk, global[n].mean, sigma, 
+                   global[n].wallmax, global[n].wallmax_p, 
+                   global[n].wallmin, global[n].wallmin_p);
+        } else {
+          fprintf (fp, " %8.1e %6u %9.3f %9.3f %9.3f (%6d) %9.3f (%6d)", 
+                   (float) global[n].totcalls, global[n].tottsk, global[n].mean, sigma, 
+                   global[n].wallmax, global[n].wallmax_p, 
+                   global[n].wallmin, global[n].wallmin_p);
+        }
       }
 
-      /* Print the results for this timer */
-
-      fprintf (fp, "%s", ptr->name);
-      extraspace = max_name_len[0] - strlen (ptr->name);
-      for (n = 0; n < extraspace; ++n)
-	fprintf (fp, " ");
-      fprintf (fp, " %8lu %9.3f (%6d %6d) %9.3f (%6d %6d)", 
-	       summarystats.count, 
-	       summarystats.wallmax, summarystats.wallmax_p, summarystats.wallmax_t, 
-	       summarystats.wallmin, summarystats.wallmin_p, summarystats.wallmin_t);
 #ifdef HAVE_PAPI
-      for (n = 0; n < nevents; ++n) {
-	fprintf (fp, " %8.2e    (%6d %6d)", 
-		 summarystats.papimax[n], summarystats.papimax_p[n], 
-		 summarystats.papimax_t[n]);
+      for (e = 0; e < nevents; ++e) {
+        if (multithread)
+          fprintf (fp, " %8.2e    (%6d %5d)", 
+                   global[n].papimax[e], global[n].papimax_p[e], 
+                   global[n].papimax_t[e]);
+        else
+          fprintf (fp, " %8.2e    (%6d)", 
+                   global[n].papimax[e], global[n].papimax_p[e]);
 
-	fprintf (fp, " %8.2e    (%6d %6d)", 
-		 summarystats.papimin[n], summarystats.papimin_p[n], 
-		 summarystats.papimin_t[n]);
+        if (multithread)
+          fprintf (fp, " %8.2e    (%6d %5d)", 
+                   global[n].papimin[e], global[n].papimin_p[e], 
+                   global[n].papimin_t[e]);
+        else
+          fprintf (fp, " %8.2e    (%6d)", 
+                   global[n].papimin[e], global[n].papimin_p[e]);
       }
 #endif
       fprintf (fp, "\n");
     }
-
-    /* Signal that we're done */
-
-    if ((ret = MPI_Bcast (emptystring, MAX_CHARS+1, MPI_CHAR, 0, comm)) != MPI_SUCCESS)
-      return GPTLerror ("%s rank %d: Bad return from MPI_Bcast=%d\n", thisfunc, iam, ret);
-
-  } else {   /* iam != 0 (slave) */
-
-    /* Loop until null message received from master */
-
-    while (1) {
-      if ((ret = MPI_Bcast (name, MAX_CHARS+1, MPI_CHAR, 0, comm)) != MPI_SUCCESS)
-	return GPTLerror ("%s rank %d: Bad return from MPI_Bcast=%d\n", thisfunc, iam, ret);
-
-      if (strcmp (name, "") == 0)
-	break;
-
-      get_threadstats (name, &summarystats_slave);
-
-      if ((ret = MPI_Send (&summarystats_slave, nbytes, MPI_BYTE, 0, tag, comm)) != MPI_SUCCESS)
-	return GPTLerror ("%s rank %d: Bad return from MPI_Send=%d\n", thisfunc, iam, ret);
-    }
   }
-
-  if (iam == 0 && fclose (fp) != 0)
-    fprintf (stderr, "%s: Attempt to close %s failed\n", thisfunc, outfile);
-
+  free (global);
   return 0;
 }
 
@@ -2356,111 +2376,62 @@ int GPTLpr_summary (MPI_Comm comm)
 ** get_threadstats: gather stats for timer "name" over all threads
 **
 ** Input arguments:
+**   iam: my rank
 **   name:  timer name
+**   global: pointer to struct containing stats
 ** Output arguments:
-**   summarystats: max/min stats over all threads
+**   global: max/min stats over all threads
 */
-
-void get_threadstats (const char *name, 
-		      Summarystats *summarystats)
+void get_threadstats (int iam,
+                      const char *name, 
+                      Global *global)
 {
-#ifdef HAVE_PAPI
-  int n;                /* event index */
-#endif
   int t;                /* thread index */
   unsigned int indx;    /* returned from getentry() */
   Timer *ptr;           /* timer */
 
-  /*
-  ** This memset fortuitiously initializes the process values (_p) to master (0)
-  */
-
-  memset (summarystats, 0, sizeof (Summarystats));
+  /* This memset fortuitiously initializes the process values to master (0) */
+  memset (global, 0, sizeof (Global));
+  strcpy (global->name, name);
 
   for (t = 0; t < nthreads; ++t) {
     if ((ptr = getentry (hashtable[t], name, &indx))) {
+      global->totcalls += ptr->count;
 
-      summarystats->count += ptr->count;
-
-      if (ptr->wall.accum > summarystats->wallmax) {
-	summarystats->wallmax   = ptr->wall.accum;
-	summarystats->wallmax_t = t;
+      if (ptr->wall.accum > global->wallmax) {
+        global->wallmax   = ptr->wall.accum;
+        global->wallmax_p = iam;
+        global->wallmax_t = t;
       }
 
-      if (ptr->wall.accum < summarystats->wallmin || summarystats->wallmin == 0.) {
-	summarystats->wallmin   = ptr->wall.accum;
-	summarystats->wallmin_t = t;
+      if (ptr->wall.accum < global->wallmin || global->wallmin == 0.) {
+        global->wallmin   = ptr->wall.accum;
+        global->wallmin_p = iam;
+        global->wallmin_t = t;
       }
 #ifdef HAVE_PAPI
-      for (n = 0; n < nevents; ++n) {
-	double value;
-	if (GPTL_PAPIget_eventvalue (eventlist[n].namestr, &ptr->aux, &value) != 0) {
-	  fprintf (stderr, "Bad return from GPTL_PAPIget_eventvalue\n");
-	  return;
-	}
-	if (value > summarystats->papimax[n]) {
-	  summarystats->papimax[n]   = value;
-	  summarystats->papimax_t[n] = t;
-	}
-	
-	if (value < summarystats->papimin[n] || summarystats->papimin[n] == 0.) {
-	  summarystats->papimin[n]   = value;
-	  summarystats->papimin_t[n] = t;
-	}
+      int e;
+      for (e = 0; e < nevents; ++e) {
+        double value;
+        if (GPTL_PAPIget_eventvalue (eventlist[e].namestr, &ptr->aux, &value) != 0) {
+          fprintf (stderr, "Bad return from GPTL_PAPIget_eventvalue\n");
+          return;
+        }
+        if (value > global->papimax[e]) {
+          global->papimax[e]   = value;
+          global->papimax_p[e] = iam;
+          global->papimax_t[e] = t;
+        }
+        
+        if (value < global->papimin[e] || global->papimin[e] == 0.) {
+          global->papimin[e]   = value;
+          global->papimin_p[e] = iam;
+          global->papimin_t[e] = t;
+        }
       }
 #endif
     }
   }
-}
-
-/* 
-** get_summarystats: write max/min stats into mpistats based on comparison
-**                   with  summarystats_slave
-**
-** Input arguments:
-**   p:              rank of summarystats_slave
-**   summarystats_slave: stats from a slave process
-** Input/Output arguments:
-**   summarystats:       stats (starts out as master stats)
-*/
-
-void get_summarystats (Summarystats *summarystats, 
-		       const Summarystats *summarystats_slave,
-		       const int p)
-{
-  summarystats->count += summarystats_slave->count;
-
-  if (summarystats_slave->wallmax > summarystats->wallmax) {
-    summarystats->wallmax   = summarystats_slave->wallmax;
-    summarystats->wallmax_p = p;
-    summarystats->wallmax_t = summarystats_slave->wallmax_t;
-  }
-    
-  if (summarystats_slave->wallmin < summarystats->wallmin || summarystats->wallmin == 0.) {
-    summarystats->wallmin   = summarystats_slave->wallmin;
-    summarystats->wallmin_p = p;
-    summarystats->wallmin_t = summarystats_slave->wallmin_t;
-  }
-  
-#ifdef HAVE_PAPI
-  {
-    int n;
-    for (n = 0; n < nevents; ++n) {
-      if (summarystats_slave->papimax[n] > summarystats->papimax[n]) {
-	summarystats->papimax[n]   = summarystats_slave->papimax[n];
-	summarystats->papimax_p[n] = p;
-	summarystats->papimax_t[n] = summarystats_slave->papimax_t[n];
-      }
-
-      if (summarystats_slave->papimin[n] < summarystats->papimin[n] || 
-	  summarystats->papimin[n] == 0.) {
-	summarystats->papimin[n]   = summarystats_slave->papimin[n];
-	summarystats->papimin_p[n] = p;
-	summarystats->papimin_t[n] = summarystats_slave->papimin_t[n];
-      }
-    }
-  }
-#endif
 }
 
 /* 
@@ -2472,7 +2443,6 @@ void get_summarystats (Summarystats *summarystats,
 **
 ** Return value: 0 (success)
 */
-
 int GPTLbarrier (MPI_Comm comm, const char *name)
 {
   int ret;
@@ -2483,6 +2453,15 @@ int GPTLbarrier (MPI_Comm comm, const char *name)
     return GPTLerror ("%s: Bad return from MPI_Barrier=%d", thisfunc, ret);
   ret = GPTLstop (name);
   return 0;
+}
+
+#else
+
+/* No MPI. Provide do-nothing routine that prints that its doing nothing */
+int GPTLpr_summary ()
+{
+  printf ("GPTLpr_summary: Need to build GPTL with #define HAVE_MPI to enable this routine\n");
+  return 1;
 }
 #endif
 
@@ -2495,7 +2474,6 @@ int GPTLbarrier (MPI_Comm comm, const char *name)
 **
 ** Return value: 0 (success)
 */
-
 static inline int get_cpustamp (long *usr, long *sys)
 {
 #ifdef HAVE_TIMES
@@ -2528,16 +2506,15 @@ static inline int get_cpustamp (long *usr, long *sys)
 **   sys:              accumulated system CPU time
 **   papicounters_out: accumulated PAPI counters
 */
-
 int GPTLquery (const char *name, 
-	       int t,
-	       int *count,
-	       int *onflg,
-	       double *wallclock,
-	       double *dusr,
-	       double *dsys,
-	       long long *papicounters_out,
-	       const int maxcounters)
+               int t,
+               int *count,
+               int *onflg,
+               double *wallclock,
+               double *dusr,
+               double *dsys,
+               long long *papicounters_out,
+               const int maxcounters)
 {
   Timer *ptr;                /* linked list pointer */
   unsigned int indx;         /* linked list index returned from getentry (unused) */
@@ -2546,10 +2523,7 @@ int GPTLquery (const char *name,
   if ( ! initialized)
     return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
   
-  /*
-  ** If t is < 0, assume the request is for the current thread
-  */
-  
+  /* If t is < 0, assume the request is for the current thread */
   if (t < 0) {
     if ((t = get_thread_num ()) < 0)
       return GPTLerror ("%s: get_thread_num failure\n", thisfunc);
@@ -2584,10 +2558,9 @@ int GPTLquery (const char *name,
 ** Output args:
 **   papicounters_out: accumulated PAPI counters
 */
-
 int GPTLquerycounters (const char *name, 
-		       int t,
-		       long long *papicounters_out)
+                       int t,
+                       long long *papicounters_out)
 {
   Timer *ptr;            /* linked list pointer */
   unsigned int indx;     /* hash index returned from getentry */
@@ -2629,10 +2602,9 @@ int GPTLquerycounters (const char *name,
 ** Output args:
 **   value: current wallclock accumulation for the timer
 */
-
 int GPTLget_wallclock (const char *timername,
-		      int t,
-		      double *value)
+                      int t,
+                      double *value)
 {
   void *self;          /* timer address when hash entry generated with *_instr */
   Timer *ptr;          /* linked list pointer */
@@ -2645,10 +2617,7 @@ int GPTLget_wallclock (const char *timername,
   if ( ! wallstats.enabled)
     return GPTLerror ("%s: wallstats not enabled\n", thisfunc);
   
-  /*
-  ** If t is < 0, assume the request is for the current thread
-  */
-  
+  /* If t is < 0, assume the request is for the current thread */
   if (t < 0) {
     if ((t = get_thread_num ()) < 0)
       return GPTLerror ("%s: bad return from get_thread_num\n", thisfunc);
@@ -2661,7 +2630,6 @@ int GPTLget_wallclock (const char *timername,
   ** Don't know whether hashtable entry for timername was generated with 
   ** *_instr() or not, so try both possibilities
   */
-
   ptr = getentry (hashtable[t], timername, &indx);
   if ( !ptr) {
     if (sscanf (timername, "%lx", (unsigned long *) &self) < 1)
@@ -2686,11 +2654,10 @@ int GPTLget_wallclock (const char *timername,
 ** Output args:
 **   value: current value of the event for this timer
 */
-
 int GPTLget_eventvalue (const char *timername,
-			const char *eventname,
-			int t,
-			double *value)
+                        const char *eventname,
+                        int t,
+                        double *value)
 {
   void *self;          /* timer address when hash entry generated with *_instr */
   Timer *ptr;          /* linked list pointer */
@@ -2700,10 +2667,7 @@ int GPTLget_eventvalue (const char *timername,
   if ( ! initialized)
     return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
   
-  /*
-  ** If t is < 0, assume the request is for the current thread
-  */
-  
+  /* If t is < 0, assume the request is for the current thread */
   if (t < 0) {
     if ((t = get_thread_num ()) < 0)
       return GPTLerror ("%s: get_thread_num failure\n", thisfunc);
@@ -2716,7 +2680,6 @@ int GPTLget_eventvalue (const char *timername,
   ** Don't know whether hashtable entry for timername was generated with 
   ** *_instr() or not, so try both possibilities
   */
-
   ptr = getentry (hashtable[t], timername, &indx);
   if ( !ptr) {
     if (sscanf (timername, "%lx", (unsigned long *) &self) < 1)
@@ -2742,9 +2705,8 @@ int GPTLget_eventvalue (const char *timername,
 ** Output args:
 **   nregions: number of regions
 */
-
 int GPTLget_nregions (int t, 
-		      int *nregions)
+                      int *nregions)
 {
   Timer *ptr;     /* walk through linked list */
   static const char *thisfunc = "GPTLget_nregions";
@@ -2782,11 +2744,10 @@ int GPTLget_nregions (int t,
 ** Output args:
 **   name    region name
 */
-
 int GPTLget_regionname (int t,      /* thread number */
-			int region, /* region number (0-based) */
-			char *name, /* output region name */
-			int nc)     /* number of chars in name (free form Fortran) */
+                        int region, /* region number (0-based) */
+                        char *name, /* output region name */
+                        int nc)     /* number of chars in name (free form Fortran) */
 {
   int ncpy;    /* number of characters to copy */
   int i;       /* index */
@@ -2819,10 +2780,7 @@ int GPTLget_regionname (int t,      /* thread number */
     ncpy = MIN (nc, strlen (ptr->name));
     strncpy (name, ptr->name, ncpy);
     
-    /*
-    ** Adding the \0 is only important when called from C
-    */
-
+    /* Adding the \0 is only important when called from C */
     if (ncpy < nc)
       name[ncpy] = '\0';
   } else {
@@ -2834,7 +2792,6 @@ int GPTLget_regionname (int t,      /* thread number */
 /*
 ** GPTLis_initialized: Return whether GPTL has been initialized
 */
-
 int GPTLis_initialized (void)
 {
   return (int) initialized;
@@ -2851,10 +2808,9 @@ int GPTLis_initialized (void)
 **
 ** Return value: pointer to the entry, or NULL if not found
 */
-
 static inline Timer *getentry_instr (const Hashentry *hashtable, /* hash table */
-				     void *self,                 /* address */
-				     unsigned int *indx)         /* hash index */
+                                     void *self,                 /* address */
+                                     unsigned int *indx)         /* hash index */
 {
   int i;
   Timer *ptr = 0;  /* return value when entry not found */
@@ -2864,7 +2820,6 @@ static inline Timer *getentry_instr (const Hashentry *hashtable, /* hash table *
   ** On most machines, right-shifting the address helps because linkers often
   ** align functions on even boundaries
   */
-
   *indx = (((unsigned long) self) >> 4) % tablesize;
   for (i = 0; i < hashtable[*indx].nument; ++i) {
     if (hashtable[*indx].entries[i]->address == self) {
@@ -2886,19 +2841,15 @@ static inline Timer *getentry_instr (const Hashentry *hashtable, /* hash table *
 **
 ** Return value: pointer to the entry, or NULL if not found
 */
-
 static inline Timer *getentry (const Hashentry *hashtable, /* hash table */
-			       const char *name,           /* name to hash */
-			       unsigned int *indx)         /* hash index */
+                               const char *name,           /* name to hash */
+                               unsigned int *indx)         /* hash index */
 {
   int i;                      /* multiplier for hashing; loop index */
   const unsigned char *c;     /* pointer to elements of "name" */
   Timer *ptr = 0;             /* return value when entry not found */
 
-  /* 
-  ** Hash value is sum of: chars times their 1-based position index, modulo tablesize
-  */
-
+  /* Hash value is sum of: chars times their 1-based position index, modulo tablesize */
   *indx = 0;
   c = (unsigned char *) name;
   for (i = 1; *c && i < MAX_CHARS+1; ++c, ++i) {
@@ -2911,7 +2862,6 @@ static inline Timer *getentry (const Hashentry *hashtable, /* hash table */
   ** If nument exceeds 1 there was a hash collision and we must search
   ** linearly through an array for a match
   */
-
   for (i = 0; i < hashtable[*indx].nument; i++) {
     if (STRMATCH (name, hashtable[*indx].entries[i]->name)) {
       ptr = hashtable[*indx].entries[i];
@@ -2929,24 +2879,23 @@ static inline Timer *getentry (const Hashentry *hashtable, /* hash table */
 ** pgcc:             -Minstrument:functions
 ** xlc:              -qdebug=function_trace
 */
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #ifdef _AIX
 void __func_trace_enter (const char *function_name,
-			 const char *file_name,
-			 int line_number,
-			 void **const user_data)
+                         const char *file_name,
+                         int line_number,
+                         void **const user_data)
 {
   (void) GPTLstart (function_name);
 }
 
 void __func_trace_exit (const char *function_name,
-			const char *file_name,
-			int line_number,
-			void **const user_data)
+                        const char *file_name,
+                        int line_number,
+                        void **const user_data)
 {
   (void) GPTLstop (function_name);
 }
@@ -3005,7 +2954,7 @@ static float get_clockfreq ()
     if (fgets (buf, LEN, fd)) {
       freq = 0.001 * (float) atof (buf);  /* Convert from KHz to MHz */
       if (verbose)
-	printf ("GPTL: %s: Using max clock freq = %f for timing\n", thisfunc, freq);
+        printf ("GPTL: %s: Using max clock freq = %f for timing\n", thisfunc, freq);
       (void) fclose (fd);
       clock_source = max_freq_fn;
       return freq;
@@ -3018,10 +2967,9 @@ static float get_clockfreq ()
   ** Next try /proc/cpuinfo. That has the disadvantage that it may give wrong info
   ** for processors that have either idle or turbo mode
   */
-
   if (verbose && freq < 0.)
     printf ("GPTL: %s: CAUTION: Can't find max clock freq. Trying %s instead\n",
-	    thisfunc, cpuinfo_fn);
+            thisfunc, cpuinfo_fn);
 
   if ( ! (fd = fopen (cpuinfo_fn, "r"))) {
     fprintf (stderr, "get_clockfreq: can't open %s\n", cpuinfo_fn);
@@ -3032,10 +2980,10 @@ static float get_clockfreq ()
     if (strncmp (buf, "cpu MHz", 7) == 0) {
       for (is = 7; buf[is] != '\0' && !isdigit (buf[is]); is++);
       if (isdigit (buf[is])) {
-	freq = (float) atof (&buf[is]);
-	(void) fclose (fd);
-	clock_source = cpuinfo_fn;
-	return freq;
+        freq = (float) atof (&buf[is]);
+        (void) fclose (fd);
+        clock_source = cpuinfo_fn;
+        return freq;
       }
     }
   }
@@ -3050,7 +2998,6 @@ static float get_clockfreq ()
 ** not be available. And their accompanying init routines.
 ** NANOTIME is currently only available on x86.
 */
-
 static int init_nanotime ()
 {
   static const char *thisfunc = "init_nanotime";
@@ -3082,9 +3029,8 @@ static inline double utr_nanotime ()
 }
 
 /*
-** MPI_Wtime requires the MPI lib.
+** MPI_Wtime requires MPI lib.
 */
-
 static int init_mpiwtime ()
 {
 #ifdef HAVE_MPI
@@ -3107,9 +3053,8 @@ static inline double utr_mpiwtime ()
 }
 
 /*
-** PAPI_get_real_usec requires the PAPI lib.
+** PAPI_get_real_usec requires PAPI lib.
 */
-
 static int init_papitime ()
 {
   static const char *thisfunc = "init_papitime";
@@ -3137,7 +3082,6 @@ static inline double utr_papitime ()
 /* 
 ** Probably need to link with -lrt for this one to work 
 */
-
 static int init_clock_gettime ()
 {
   static const char *thisfunc = "init_clock_gettime";
@@ -3169,7 +3113,6 @@ static inline double utr_clock_gettime ()
 /*
 ** High-res timer on AIX: read_real_time
 */
-
 static int init_read_real_time ()
 {
   static const char *thisfunc = "init_read_real_time";
@@ -3202,7 +3145,6 @@ static inline double utr_read_real_time ()
 /*
 ** Default available most places: gettimeofday
 */
-
 static int init_gettimeofday ()
 {
   static const char *thisfunc = "init_gettimeofday";
@@ -3233,7 +3175,6 @@ static inline double utr_gettimeofday ()
 /*
 ** placebo: does nothing and returns zero always. Useful for estimating overhead costs
 */
-
 static int init_placebo ()
 {
   return 0;
@@ -3248,7 +3189,6 @@ static inline double utr_placebo ()
 /* 
 ** Determine underlying timing routine overhead: call it 100 times.
 */
-
 static double utr_getoverhead ()
 {
   double val1;
@@ -3274,12 +3214,11 @@ static double utr_getoverhead ()
 /*
 ** printself_andchildren: Recurse through call tree, printing stats for self, then children
 */
-
 static void printself_andchildren (const Timer *ptr,
-				   FILE *fp, 
-				   const int t,
-				   const int depth,
-				   const double tot_overhead)
+                                   FILE *fp, 
+                                   const int t,
+                                   const int depth,
+                                   const double tot_overhead)
 {
   int n;
 
@@ -3297,7 +3236,6 @@ static void printself_andchildren (const Timer *ptr,
 ** 
 ** Return value: 0 (NULL) or the return value of getentry()
 */
-
 Timer *GPTLgetentry (const char *name)
 {
   int t;                /* thread number */
@@ -3322,7 +3260,6 @@ Timer *GPTLgetentry (const char *name)
 **                              whether GPTLpr_file has been called. MPI_Finalize wrapper needs
 **                              to know whether it needs to call GPTLpr.
 */
-
 int GPTLpr_has_been_called (void)
 {
   return (int) pr_has_been_called;
@@ -3338,15 +3275,11 @@ int GPTLpr_has_been_called (void)
 */
 
 /*
-** $Id: gptl.c,v 1.157 2011-03-28 20:55:18 rosinski Exp $
 **
 ** Author: Jim Rosinski
 ** 
 ** Utility functions handle thread-based GPTL needs.
 */
-
-/* Max allowable number of threads (used only when THREADED_PTHREADS is true) */
-#define MAX_THREADS 256
 
 /**********************************************************************************/
 /* 
@@ -3366,7 +3299,6 @@ int GPTLpr_has_been_called (void)
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-
 static int threadinit (void)
 {
   int t;  /* loop index */
@@ -3379,12 +3311,17 @@ static int threadinit (void)
   ** Allocate the threadid array which maps physical thread IDs to logical IDs 
   ** For OpenMP this will be just threadid_omp[iam] = iam;
   */
-
   if (threadid_omp) 
     return GPTLerror ("OMP %s: has already been called.\nMaybe mistakenly called by multiple threads?", 
-		      thisfunc);
+                      thisfunc);
 
-  maxthreads = MAX ((1), (omp_get_max_threads ()));
+  /*
+  ** maxthreads may have been set by the user, in which case use that. But if as 
+  ** yet uninitialized, set to the current value of OMP_NUM_THREADS. 
+  */
+  if (maxthreads == -1)
+    maxthreads = MAX ((1), (omp_get_max_threads ()));
+
   if ( ! (threadid_omp = (int *) GPTLallocate (maxthreads * sizeof (int))))
     return GPTLerror ("OMP %s: malloc failure for %d elements of threadid_omp\n", thisfunc, maxthreads);
 
@@ -3392,7 +3329,6 @@ static int threadinit (void)
   ** Initialize threadid array to flag values for use by get_thread_num().
   ** get_thread_num() will fill in the values on first use.
   */
-
   for (t = 0; t < maxthreads; ++t)
     threadid_omp[t] = -1;
 
@@ -3409,7 +3345,6 @@ static int threadinit (void)
 ** Output results:
 **   threadid_omp array is freed and array pointer nullified
 */
-
 static void threadfinalize ()
 {
   free ((void *) threadid_omp);
@@ -3421,12 +3356,11 @@ static void threadfinalize ()
 **                 Start PAPI counters if enabled and first call for this thread.
 **
 ** Output results:
-**   nthreads:     Number of threads (=maxthreads)
+**   nthreads:     Number of threads
 **   threadid_omp: Our thread id added to list on 1st call
 **
 ** Return value: thread number (success) or GPTLerror (failure)
 */
-
 static inline int get_thread_num (void)
 {
   int t;        /* thread number */
@@ -3435,10 +3369,7 @@ static inline int get_thread_num (void)
   if ((t = omp_get_thread_num ()) >= maxthreads)
     return GPTLerror ("OMP %s: returned id=%d exceeds maxthreads=%d\n", thisfunc, t, maxthreads);
 
-  /*
-  ** If our thread number has already been set in the list, we are done
-  */
-
+  /* If our thread number has already been set in the list, we are done */
   if (t == threadid_omp[t])
     return t;
 
@@ -3446,7 +3377,6 @@ static inline int get_thread_num (void)
   ** Thread id not found. Modify threadid_omp with our ID, then start PAPI events if required.
   ** Due to the setting of threadid_omp, everything below here will only execute once per thread.
   */
-
   threadid_omp[t] = t;
 
 #ifdef VERBOSE
@@ -3459,21 +3389,18 @@ static inline int get_thread_num (void)
   ** When HAVE_PAPI is true, if 1 or more PAPI events are enabled,
   ** create and start an event set for the new thread.
   */
-
   if (GPTLget_npapievents () > 0) {
 #ifdef VERBOSE
     printf ("OMP %s: Starting EventSet t=%d\n", thisfunc, t);
 #endif
 
     if (GPTLcreate_and_start_events (t) < 0)
-      return GPTLerror ("GPTL: OMP %s: error from GPTLcreate_and_start_events for thread %d\n", thisfunc, t);
+      return GPTLerror ("GPTL: OMP %s: error from GPTLcreate_and_start_events for thread %d\n", 
+			thisfunc, t);
   }
 #endif
 
-  /*
-  ** nthreads = maxthreads based on setting in threadinit
-  */
-  
+  /* nthreads = maxthreads based on setting in threadinit or user call to GPTLsetoption() */
   nthreads = maxthreads;
 #ifdef VERBOSE
   printf ("GPTL: OMP %s: nthreads=%d\n", thisfunc, nthreads);
@@ -3512,7 +3439,6 @@ static void print_threadmapping (FILE *fp)
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-
 static int threadinit (void)
 {
   int t;        /* thread number */
@@ -3524,12 +3450,11 @@ static int threadinit (void)
   ** threadinit gets called by only 1 thread. Problem is, mutex hasn't yet been initialized
   ** so we can't use it.
   */
-
   if (nthreads == -1)
     nthreads = 0;
   else
     return GPTLerror ("GPTL: PTHREADS %s: has already been called.\n"
-		      "Maybe mistakenly called by multiple threads?\n", thisfunc);
+                      "Maybe mistakenly called by multiple threads?\n", thisfunc);
 
   /*
   ** Initialize the mutex required for critical regions.
@@ -3540,29 +3465,25 @@ static int threadinit (void)
   ** pthread_mutex_init() should appropriately initialize the mutex, assuming it was
   ** properly destroyed by a previous call to pthread_mutex_destroy();
   */
-
 #ifdef MUTEX_API
   if ((ret = pthread_mutex_init ((pthread_mutex_t *) &t_mutex, NULL)) != 0)
     return GPTLerror ("GPTL: PTHREADS %s: mutex init failure: ret=%d\n", thisfunc, ret);
 #endif
   
-  /* 
-  ** Allocate the threadid array which maps physical thread IDs to logical IDs 
+  /* maxthreads is either its default initialization value, or set by a user
+  ** call to GPTLsetoption().
+  ** Allocate the threadid array which maps physical thread IDs to logical IDs
   */
-
   if (threadid) 
     return GPTLerror ("GPTL: PTHREADS %s: threadid not null\n", thisfunc);
-  else if ( ! (threadid = (pthread_t *) GPTLallocate (MAX_THREADS * sizeof (pthread_t))))
+  else if ( ! (threadid = (pthread_t *) GPTLallocate (maxthreads * sizeof (pthread_t))))
     return GPTLerror ("GPTL: PTHREADS %s: malloc failure for %d elements of threadid\n", 
-		      thisfunc, MAX_THREADS);
-  
-  maxthreads = MAX_THREADS;
+                      thisfunc, maxthreads);
 
   /*
   ** Initialize threadid array to flag values for use by get_thread_num().
   ** get_thread_num() will fill in the values on first use.
   */
-
   for (t = 0; t < maxthreads; ++t)
     threadid[t] = (pthread_t) -1;
 
@@ -3580,7 +3501,6 @@ static int threadinit (void)
 **   threadid array is freed and array pointer nullified
 **   mutex is destroyed
 */
-
 static void threadfinalize ()
 {
   int ret;
@@ -3604,12 +3524,11 @@ static void threadfinalize ()
 **
 ** Return value: thread number (success) or GPTLerror (failure)
 */
-
 static inline int get_thread_num (void)
 {
   int t;                   /* logical thread number, defined by array index of found threadid */
   pthread_t mythreadid;    /* thread id from pthreads library */
-  int retval;              /* value to return to caller */
+  int retval = -1;         /* value to return to caller: init to bad value to please compiler */
   bool foundit = false;    /* thread id found in list */
   static const char *thisfunc = "get_thread_num";
 
@@ -3639,7 +3558,6 @@ static inline int get_thread_num (void)
   ** Thread id not found. Define a critical region, then start PAPI counters if
   ** necessary and modify threadid[] with our id.
   */
-
   if (lock_mutex () < 0)
     return GPTLerror ("GPTL: PTHREADS %s: mutex lock failure\n", thisfunc);
 
@@ -3647,20 +3565,20 @@ static inline int get_thread_num (void)
   ** If our thread id is not in the known list, add to it after checking that
   ** we do not have too many threads.
   */
-
-  if (nthreads >= MAX_THREADS) {
+  if (nthreads >= maxthreads) {
     if (unlock_mutex () < 0)
       fprintf (stderr, "GPTL: PTHREADS %s: mutex unlock failure\n", thisfunc);
 
-    return GPTLerror ("PTHREADS %s: nthreads=%d is too big. Recompile "
-		      "with larger value of MAX_THREADS\n", thisfunc, nthreads);
+    return GPTLerror ("THREADED_PTHREADS %s: thread index=%d is too big. Need to invoke \n"
+		      "GPTLsetoption(GPTLmaxthreads,value) or recompile GPTL with a\n"
+		      "larger value of MAX_THREADS\n", thisfunc, nthreads);
   }
 
   threadid[nthreads] = mythreadid;
 
 #ifdef VERBOSE
   printf ("PTHREADS %s: 1st call threadid=%lu maps to location %d\n", 
-	  thisfunc, (unsigned long) mythreadid, nthreads);
+          thisfunc, (unsigned long) mythreadid, nthreads);
 #endif
 
 #ifdef HAVE_PAPI
@@ -3669,18 +3587,17 @@ static inline int get_thread_num (void)
   ** When HAVE_PAPI is true, if 1 or more PAPI events are enabled,
   ** create and start an event set for the new thread.
   */
-
   if (GPTLget_npapievents () > 0) {
 #ifdef VERBOSE
     printf ("PTHREADS get_thread_num: Starting EventSet threadid=%lu location=%d\n", 
-	    (unsigned long) mythreadid, nthreads);
+            (unsigned long) mythreadid, nthreads);
 #endif
     if (GPTLcreate_and_start_events (nthreads) < 0) {
       if (unlock_mutex () < 0)
-	fprintf (stderr, "GPTL: PTHREADS %s: mutex unlock failure\n", thisfunc);
+        fprintf (stderr, "GPTL: PTHREADS %s: mutex unlock failure\n", thisfunc);
 
       return GPTLerror ("GPTL: PTHREADS %s: error from GPTLcreate_and_start_events for thread %d\n", 
-			thisfunc, nthreads);
+                        thisfunc, nthreads);
     }
   }
 #endif
@@ -3690,7 +3607,6 @@ static inline int get_thread_num (void)
   ** "return nthreads-1" fails occasionally when another thread modifies
   ** nthreads after it gets the mutex!
   */
-
   retval = nthreads++;
 
 #ifdef VERBOSE
@@ -3706,7 +3622,6 @@ static inline int get_thread_num (void)
 /*
 ** lock_mutex: lock a mutex for private access
 */
-
 static int lock_mutex ()
 {
   static const char *thisfunc = "lock_mutex";
@@ -3720,7 +3635,6 @@ static int lock_mutex ()
 /*
 ** unlock_mutex: unlock a mutex from private access
 */
-
 static int unlock_mutex ()
 {
   static const char *thisfunc = "unlock_mutex";
@@ -3772,10 +3686,10 @@ static inline int get_thread_num ()
   ** When HAVE_PAPI is true, if 1 or more PAPI events are enabled,
   ** create and start an event set for the new thread.
   */
-
   if (threadid == -1 && GPTLget_npapievents () > 0) {
     if (GPTLcreate_and_start_events (0) < 0)
-      return GPTLerror ("GPTL: Unthreaded %s: error from GPTLcreate_and_start_events for thread %0\n", thisfunc);
+      return GPTLerror ("GPTL: Unthreaded %s: error from GPTLcreate_and_start_events for thread %0\n",
+                        thisfunc);
 
     threadid = 0;
   }

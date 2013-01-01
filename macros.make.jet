@@ -7,7 +7,7 @@
 ##########################################################################
 
 # Where to install GPTL library and include files
-INSTALLDIR = $(HOME)/jet/gptl-3.7/intel
+INSTALLDIR = $(HOME)/jet/gptl-4.3/intel
 
 # Where to install man pages (if blank, defaults to $INSTALLDIR)
 MANDIR = 
@@ -82,8 +82,8 @@ AR = ar
 # info as appropriate. 
 HAVE_PAPI = yes
 ifeq ($(HAVE_PAPI),yes)
-  PAPI_INCFLAGS = -I/opt/papi/4.1.0/include
-  PAPI_LIBFLAGS = -L/opt/papi/4.1.0/lib -lpapi
+  PAPI_INCFLAGS = -I/contrib/papi/5.0.1/include
+  PAPI_LIBFLAGS = -L/contrib/papi/5.0.1/lib -lpapi
 endif
 
 # Whether to build GPTL with MPI support. Set inc and lib info if needed. 

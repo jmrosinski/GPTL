@@ -24,7 +24,6 @@ program main
 
 #ifdef HAVE_PAPI
 ! Turn abort_on_error off just long enough to check PAPI-based options
-
   ret = gptlsetoption (gptlabort_on_error, 0)
   if (gptlevent_name_to_code ('PAPI_FP_OPS', code) == 0) then
     ret = gptlsetoption (code, 1)
@@ -57,7 +56,7 @@ program main
   nthreads = omp_get_max_threads ()
 #endif
 
-!$OMP PARALLEL DO PRIVATE (ITER, RESULT)
+!$OMP PARALLEL DO PRIVATE (RESULT)
   do iter=1,nthreads
     result = sub (iter, iam)
   end do
@@ -68,7 +67,7 @@ program main
 #endif
   ret = gptlpr_summary (comm)
 
-  call mpi_finalize ()
+  call mpi_finalize (ret)
 
   if (gptlfinalize () < 0) stop 6
   stop 0

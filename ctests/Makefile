@@ -11,7 +11,7 @@ CFLAGS = -g -O0
 
 TESTS =
 ifeq ($(HAVE_MPI),yes)
-  TESTS += summary pmpi
+  TESTS += summary pmpi global
 endif
 
 ifeq ($(HAVE_PAPI),yes)
@@ -28,7 +28,7 @@ else
   LIBNAME = gptl
 endif
 
-LDFLAGS = -g -L.. -l$(LIBNAME) $(ABIFLAGS)
+LDFLAGS = -g -L.. -l$(LIBNAME) $(ABIFLAGS) -lm
 
 ifeq ($(OPENMP),yes)
   CFLAGS  += -DTHREADED_OMP $(COMPFLAG)
@@ -109,6 +109,9 @@ testpapi: testpapi.o
 pmpi: pmpi.o
 	$(CC) -o $@ $< $(LDFLAGS)
 
+global: global.o
+	$(CC) -o $@ $< $(LDFLAGS)
+
 # Built-in tests to ensure that GPTL is behaving as expected
 # Invoke as "make test" from one dir above
 
@@ -138,10 +141,10 @@ endif
 ifeq ($(TEST_AUTOPROFILE),yes)
 	@echo
 	@echo "Testing auto-profiling..."
-	@./cygprofile || (echo "Failure to run" && exit 1)
+	./cygprofile || (echo "Failure to run" && exit 1)
 	@echo Success at running
 	@echo "Running hex2name.pl | grep callutil100times..."
-	@(../hex2name.pl ./cygprofile timing.0 | grep -q callutil100times) && echo "Success" || (echo "Failure" && exit 1)
+	(../hex2name.pl ./cygprofile timing.0 | grep -q callutil100times) && echo "Success" || (echo "Failure" && exit 1)
 endif
 	@echo
 	@echo "All C and C++ tests passed"

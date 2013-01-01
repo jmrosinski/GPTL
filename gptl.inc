@@ -24,6 +24,7 @@
       integer GPTLdopr_collision
       integer GPTLprint_method
       integer GPTLtablesize
+      integer GPTLmaxthreads
 
       integer GPTL_IPC
       integer GPTL_CI
@@ -66,6 +67,7 @@
       parameter (GPTLdopr_collision = 15)
       parameter (GPTLprint_method   = 16)
       parameter (GPTLtablesize      = 50)
+      parameter (GPTLmaxthreads     = 51)
 
       parameter (GPTL_IPC           = 17)
       parameter (GPTL_CI            = 18)

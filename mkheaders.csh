@@ -23,6 +23,7 @@ set GPTLdopr_multparent = 14
 set GPTLdopr_collision  = 15
 set GPTLprint_method    = 16
 set GPTLtablesize       = 50
+set GPTLmaxthreads      = 51
 
 set GPTL_IPC           = 17
 set GPTL_CI            = 18
@@ -69,6 +70,7 @@ s/#GPTLdopr_multparent/$GPTLdopr_multparent/1
 s/#GPTLdopr_collision/$GPTLdopr_collision/1
 s/#GPTLprint_method/$GPTLprint_method/1
 s/#GPTLtablesize/$GPTLtablesize/1
+s/#GPTLmaxthreads/$GPTLmaxthreads/1
 s/#GPTL_IPC/$GPTL_IPC/1
 s/#GPTL_CI/$GPTL_CI/1
 s/#GPTL_FPC/$GPTL_FPC/1

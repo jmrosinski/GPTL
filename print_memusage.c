@@ -1,5 +1,5 @@
 /*
-** $Id: print_memusage.c,v 1.13 2010-11-09 19:08:54 rosinski Exp $
+** print_memusage.c
 **
 ** Author: Jim Rosinski
 **
@@ -19,13 +19,13 @@
 
 int GPTLprint_memusage (const char *str)
 {
-  int size;                               /* process size (returned from OS) */
-  int rss;                                /* resident set size (returned from OS) */
-  int share;                              /* shared data segment size (returned from OS) */
-  int text;                               /* text segment size (returned from OS) */
-  int datastack;                          /* data/stack size (returned from OS) */
-  static int pagesize = -1;               /* convert to bytes (init to invalid) */
-  static double pagestomb = -1;           /* convert pages to MB */
+  int size;                       /* process size (returned from OS) */
+  int rss;                        /* resident set size (returned from OS) */
+  int share;                      /* shared data segment size (returned from OS) */
+  int text;                       /* text segment size (returned from OS) */
+  int datastack;                  /* data/stack size (returned from OS) */
+  static int pagesize = -1;       /* convert to bytes (init to invalid) */
+  static double pagestomb = -1;   /* convert pages to MB */
   
   if (GPTLget_memusage (&size, &rss, &share, &text, &datastack) < 0)
     return -1;
@@ -52,7 +52,6 @@ int GPTLprint_memusage (const char *str)
   ** Use max rss as returned by getrusage. If someone knows how to 
   ** get the process size under AIX please tell me.
   */
-
   pagesize = 1024;
   pagestomb = pagesize / (1024.*1024.);
   if (1) /* change to 0 if cannot convert to MB */

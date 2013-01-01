@@ -33,10 +33,10 @@ ifeq ($(HAVE_SLASHPROC),yes)
 endif
 
 ifeq ($(OPENMP),yes)
-  CFLAGS  += -DTHREADED_OMP $(COMPFLAG)
+  CFLAGS += -DTHREADED_OMP $(COMPFLAG)
 else
   ifeq ($(PTHREADS),yes)
-    CFLAGS  += -DTHREADED_PTHREADS
+    CFLAGS += -DTHREADED_PTHREADS
   endif
 endif
 
@@ -62,9 +62,7 @@ ifeq ($(HAVE_MPI),yes)
   ifeq ($(HAVE_COMM_F2C),yes)
     CFLAGS     += -DHAVE_COMM_F2C
   endif
-  CFLAGS_TESTS += -DHAVE_MPI
   CFLAGS       += $(MPI_INCFLAGS)
-  CFLAGS_TESTS += $(MPI_INCFLAGS)
   LDFLAGS      += $(MPI_LIBFLAGS)
 endif
 

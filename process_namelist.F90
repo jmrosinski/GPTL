@@ -1,6 +1,6 @@
 subroutine gptlprocess_namelist (filename, unitno, outret)
 !
-! $Id: process_namelist.F90,v 1.4 2010-12-29 18:46:42 rosinski Exp $
+! process_namelist.F90
 !
 ! Author: Jim Rosinski
 !
@@ -27,13 +27,13 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
   integer, parameter :: maxevents = 99 ! space to hold more than enough events
 
 ! Default values for namelist variables
-
   logical, parameter :: def_sync_mpi        = .false.
   logical, parameter :: def_wall            = .true.
   logical, parameter :: def_cpu             = .false.
   logical, parameter :: def_abort_on_error  = .false.
   logical, parameter :: def_overhead        = .true.
   integer, parameter :: def_depthlimit      = 99999    ! Effectively unlimited
+  integer, parameter :: def_maxthreads      = -1
   logical, parameter :: def_verbose         = .false.
   logical, parameter :: def_narrowprint     = .true.
   logical, parameter :: def_percent         = .false.
@@ -43,17 +43,17 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
   logical, parameter :: def_dopr_threadsort = .true.
   logical, parameter :: def_dopr_multparent = .true.
   logical, parameter :: def_dopr_collision  = .true.
-  character(len=16), parameter :: def_print_method = 'most_frequent   '
+  character(len=16), parameter :: def_print_method = 'full_tree       '
   character(len=16), parameter :: def_utr          = 'gettimeofday    '
 
 ! Namelist values: initialize to defaults
-
   logical :: sync_mpi        = def_sync_mpi
   logical :: wall            = def_wall
   logical :: cpu             = def_cpu
   logical :: abort_on_error  = def_abort_on_error
   logical :: overhead        = def_overhead
   integer :: depthlimit      = def_depthlimit
+  integer :: maxthreads      = def_maxthreads
   logical :: verbose         = def_verbose
   logical :: narrowprint     = def_narrowprint
   logical :: percent         = def_percent
@@ -69,7 +69,7 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
  (/('                                                                ',j=1,maxevents)/)
   
   namelist /gptlnl/ sync_mpi, wall, cpu, abort_on_error, overhead, depthlimit, &
-                    verbose, narrowprint, percent, persec, multiplex, &
+                    maxthreads, verbose, narrowprint, percent, persec, multiplex, &
                     dopr_preamble, dopr_threadsort, dopr_multparent, dopr_collision, &
                     print_method, eventlist, utr
 
@@ -90,7 +90,6 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
 
 ! Set options for user-defined values which are not default.
 ! Do verbose and abort_on_error first because of their immediate effects on behavior.
-
   if (verbose .neqv. def_verbose) then
     if (verbose) then
       write(6,*)'gptlprocess_namelist: setting verbose to ', verbose
@@ -160,6 +159,13 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
       write(6,*)'gptlprocess_namelist: setting depthlimit to ', depthlimit
     end if
     ret = gptlsetoption (gptldepthlimit, depthlimit)
+  end if
+
+  if (maxthreads /= def_maxthreads) then
+    if (verbose) then
+      write(6,*)'gptlprocess_namelist: setting maxthreads to ', maxthreads
+    end if
+    ret = gptlsetoption (gptlmaxthreads, maxthreads)
   end if
 
   if (narrowprint .neqv. def_narrowprint) then
@@ -249,9 +255,8 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
       ret = gptlsetoption (gptldopr_collision, 0)
     end if
   end if
-!
+
 ! Character-based variables
-!
   if (utr /= def_utr) then
     if (verbose) then
       write(6,*)'gptlprocess_namelist: setting utr to ', trim(utr)
@@ -273,10 +278,8 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
                 trim (utr)
     end if
   end if
-!
-! Print method: use characters for namelist variables to avoid magic numbers
-! in namelist
-!
+
+! Print method: use characters for namelist variables to avoid magic numbers in namelist
   if (print_method /= def_print_method) then
     if (verbose) then
       write(6,*)'gptlprocess_namelist: setting print_method to ', trim (print_method)
@@ -293,10 +296,8 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
       write(6,*)'gptlprocess_namelist: print_method not available: ', print_method
     end if
   end if
+
 #ifdef HAVE_PAPI
-!
-! PAPI-based events
-!
   do j=1,maxevents
     if (eventlist(j)(1:16) /= '                ') then
       ret = gptlevent_name_to_code (trim (eventlist(j)), code)

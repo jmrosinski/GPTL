@@ -111,7 +111,6 @@ void mpi_finalize (MPI_Fint *ierr);
 ** Wart needed for MPI_Waitall. fpmpi configure figures this out--I just hardwired
 ** the most common value. It currently fails on NCAR bluefire machine.
 */
-
 #ifndef MPI_STATUS_SIZE
 #ifdef _AIX
 #define MPI_STATUS_SIZE 10
@@ -120,10 +119,7 @@ void mpi_finalize (MPI_Fint *ierr);
 #endif
 #endif
 
-/*
-** Local prototypes
-*/
-
+/* Local prototypes */
 void mpi_send (void *buf, MPI_Fint *count, MPI_Fint *datatype, MPI_Fint *dest,
 	       MPI_Fint *tag, MPI_Fint *comm, MPI_Fint *__ierr);
 void mpi_recv (void *buf, MPI_Fint *count, MPI_Fint *datatype, 
@@ -198,7 +194,6 @@ void mpi_test (MPI_Fint *request, MPI_Fint *flag, MPI_Fint *status,
 ** mpi_init requires iargc and getarg. If these exist, define mpi_init and mpi_finalize
 ** wrappers so that GPTLinitialize and GPTLpr will be called.
 */
-
 #ifdef HAVE_IARGCGETARG
 extern int iargc (void);
 extern void getarg (int *, char *, int);
@@ -212,7 +207,7 @@ void mpi_init (MPI_Fint *ierr)
   char **ArgvSave;         /* Save the pointer to the argument vector */
   char **ArgvValSave;      /* Save entries in the argument vector */
 
-/* Recover the args with the Fortran routines iargc and getarg */
+  /* Recover the args with the Fortran routines iargc and getarg */
   ArgcSave    = Argc = iargc() + 1; 
   ArgvSave    = Argv = (char **) malloc (Argc * sizeof(char *));
   ArgvValSave = (char**) malloc (Argc * sizeof(char *));
@@ -261,7 +256,7 @@ void mpi_init_thread (MPI_Fint *required, MPI_Fint *provided, MPI_Fint *ierr)
   char **ArgvSave;         /* Save the pointer to the argument vector */
   char **ArgvValSave;      /* Save entries in the argument vector */
 
-/* Recover the args with the Fortran routines iargc and getarg */
+  /* Recover the args with the Fortran routines iargc and getarg */
   ArgcSave    = Argc = iargc() + 1; 
   ArgvSave    = Argv = (char **) malloc (Argc * sizeof(char *));
   ArgvValSave = (char**) malloc (Argc * sizeof(char *));
@@ -379,7 +374,6 @@ void mpi_wait (MPI_Fint *request, MPI_Fint *status, MPI_Fint *__ierr)
 ** If this limit is exceeded, MPI_Abort is called. There is probably
 ** a better solution.
 */
-
 void mpi_waitall (MPI_Fint *count, MPI_Fint array_of_requests[], 
                   MPI_Fint array_of_statuses[][MPI_STATUS_SIZE], 
                   MPI_Fint *__ierr)
@@ -399,10 +393,7 @@ void mpi_waitall (MPI_Fint *count, MPI_Fint array_of_requests[],
     (void) MPI_Abort (MPI_COMM_WORLD, -1);
   }
 
-  /*
-  ** fpmpi does mallocs. Instead used fixed array sizes and Abort if too many
-  */
-
+  /* fpmpi does mallocs. Instead used fixed array sizes and Abort if too many */
   if ((int) *count > LOCAL_ARRAY_SIZE) {
     fprintf (stderr, "mpi_waitall: %d is too many requests: recompile f_wrappers_pmpi.c "
 	     "with LOCAL_ARRAY_SIZE > %d\n", (int)*count, LOCAL_ARRAY_SIZE);
@@ -522,7 +513,6 @@ void mpi_iprobe (MPI_Fint *source, MPI_Fint *tag, MPI_Fint *comm,
   ** maps properly to a Fortran logical. Have tested gfortran, Cray, Intel, PGI,
   ** Pathscale and found this to be valid in all cases.
   */
-
   *flag = (MPI_Fint) l_flag;
   if (l_flag) {
     MPI_Status_c2f (&c_status, status);
@@ -581,14 +571,10 @@ void mpi_test (MPI_Fint *request, MPI_Fint *flag, MPI_Fint *status,
   ** maps properly to a Fortran logical. Have tested gfortran, Cray, Intel, PGI,
   ** Pathscale and found this to be valid in all cases.
   */
-
   *flag = (MPI_Fint) l_flag;
   if (l_flag) {
     MPI_Status_c2f (&c_status, status);
   }
 }
-
-/* ENABLE_PMPI */
-#endif
-/* HAVE_MPI */
-#endif
+#endif   /* ENABLE_PMPI */
+#endif   /* HAVE_MPI */

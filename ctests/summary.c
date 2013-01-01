@@ -26,9 +26,8 @@ int main (int argc, char **argv)
   int c;
   int tnum = 0;
   int resultlen;
-
-  double ret;
-
+  int ret;
+  double value;
   extern char *optarg;
 
   while ((c = getopt (argc, argv, "p:")) != -1) {
@@ -50,9 +49,9 @@ int main (int argc, char **argv)
     }
   }
   
-  (void) GPTLsetoption (GPTLabort_on_error, 1);
-  (void) GPTLsetoption (GPTLoverhead, 1);
-  (void) GPTLsetoption (GPTLnarrowprint, 1);
+  ret = GPTLsetoption (GPTLabort_on_error, 1);
+  ret = GPTLsetoption (GPTLoverhead, 1);
+  ret = GPTLsetoption (GPTLnarrowprint, 1);
 
   if (MPI_Init (&argc, &argv) != MPI_SUCCESS) {
     printf ("Failure from MPI_Init\n");
@@ -64,8 +63,8 @@ int main (int argc, char **argv)
   */
 
 #ifndef ENABLE_PMPI
-  (void) GPTLinitialize ();
-  (void) GPTLstart ("total");
+  ret = GPTLinitialize ();
+  ret = GPTLstart ("total");
 #endif
 	 
   ret = MPI_Comm_rank (MPI_COMM_WORLD, &iam);
@@ -84,12 +83,12 @@ int main (int argc, char **argv)
     tnum = omp_get_thread_num ();
 #endif
     printf ("Thread %d of rank %d on processor %s\n", tnum, iam, pname);
-    ret = sub (iter);
+    value = sub (iter);
   }
 
 #ifndef ENABLE_PMPI
-  (void) GPTLstop ("total");
-  (void) GPTLpr (iam);
+  ret = GPTLstop ("total");
+  ret = GPTLpr (iam);
 #endif
 
   if (iam == 0) {
@@ -102,7 +101,7 @@ int main (int argc, char **argv)
     return 1;
   }
 
-  MPI_Finalize ();
+  ret = MPI_Finalize ();
 
   if (GPTLfinalize () != 0)
     return 1;
@@ -116,35 +115,36 @@ double sub (int iter)
   unsigned long looplen = iam*iter*100000;
   unsigned long i;
   double sum;
+  int ret;
 
-  (void) GPTLstart ("sub");
+  ret = GPTLstart ("sub");
   /* Sleep msec is mpi rank + thread number */
   usec = 1000 * (iam * iter);
 
-  (void) GPTLstart ("sleep");
+  ret = GPTLstart ("sleep");
   usleep (usec);
-  (void) GPTLstop ("sleep");
+  ret = GPTLstop ("sleep");
 
-  (void) GPTLstart ("work");
+  ret = GPTLstart ("work");
   sum = 0.;
-  (void) GPTLstart ("add");
+  ret = GPTLstart ("add");
   for (i = 0; i < looplen; ++i) {
     sum += i;
   }
-  (void) GPTLstop ("add");
+  ret = GPTLstop ("add");
 
-  (void) GPTLstart ("madd");
+  ret = GPTLstart ("madd");
   for (i = 0; i < looplen; ++i) {
     sum += i*1.1;
   }
-  (void) GPTLstop ("madd");
+  ret = GPTLstop ("madd");
 
-  (void) GPTLstart ("div");
+  ret = GPTLstart ("div");
   for (i = 0; i < looplen; ++i) {
     sum /= 1.1;
   }
-  (void) GPTLstop ("div");
-  (void) GPTLstop ("work");
-  (void) GPTLstop ("sub");
+  ret = GPTLstop ("div");
+  ret = GPTLstop ("work");
+  ret = GPTLstop ("sub");
   return sum;
 }

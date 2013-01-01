@@ -1,5 +1,5 @@
-.\" $Id: GPTL.3,v 1.3 2009-12-31 01:09:24 rosinski Exp $
-.TH GPTL 3 "July, 2009" "GPTL"
+.\" $Id$
+.TH GPTL 3 "December, 2012" "GPTL"
 
 .SH NAME
 GPTL \- General Purpose Timing Library
@@ -47,13 +47,12 @@ There is an optional namelist parsing routine for Fortran codes,
 gptlprocess_namelist(), that can optionally be used to set GPTL options from
 Fortran via a namelist.
 
-If the PAPI library is installed, GPTL provides and easy to use
-interface to all the functionality provided by that library. GPTL also
+If the PAPI library is installed, GPTL provides an easy to use
+interface to most of the functionality provided by that library. GPTL also
 defines a set of derived events based on PAPI, such as computational
-intensity and L1 miss rate. If the target application is built with the GNU
-compilers (gcc or gfortran), 
+intensity and L1 miss rate.
 
-See www.burningserver.net/rosinski/gptl for a set of usage
+See http://jmrosinski.github.com/GPTL/ for a set of usage
 examples and further details on using the library. The file README which
 comes with the GPTL distribution also outlines simple usage examples.
 
@@ -74,7 +73,9 @@ to its name"
 .BR gptlprocess_namelist(3) " - (Fortran only) set GPTL options by reading a Fortran namelist"
 .BR GPTLinitialize(3) " - initialize the GPTL library. Must be called after all calls to GPTLsetoption/GPTLsetutr/gptlprocess_namelist, and before all calls to GPTLstart, GPTLstop, and GPTLpr"
 .BR GPTLstart(3) " - start a region timer"
+.BR GPTLstart_handle(3) " - start a region timer with a handle (for efficiency)"
 .BR GPTLstop(3) " - stop a region timer"
+.BR GPTLstop_handle(3) " - stop a region timer with a handle (for efficiency)"
 .BR GPTLbarrier(3) " - if MPI is enabled, set and time an MPI_Barrier"
 .BR GPTLreset(3) " - reset all existing GPTL regions to zero"
 .BR GPTLdisable(3) " - disable subsequent calls to GPTLstart/GPTLstop"

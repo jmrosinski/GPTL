@@ -18,9 +18,9 @@ MANDIR =
 # Whether to build debug lib or optimized lib, and associated flags
 DEBUG = no
 ifeq ($(DEBUG),yes)
-  CFLAGS = -g -O0 -qfullpath
+  CFLAGS = -g -O0 -qfullpath -qstrict
 else
-  CFLAGS = -O4 -qfullpath
+  CFLAGS = -O4 -qfullpath -qstrict
 endif
 
 # Set compiler flags for non-default ABIs (e.g. 64-bit addressing). 

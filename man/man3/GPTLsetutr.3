@@ -1,5 +1,5 @@
-.\" $Id: GPTLsetutr.3,v 1.3 2008-11-21 15:59:44 rosinski Exp $
-.TH GPTLsetutr 3 "February, 2007" "GPTL"
+.\" $Id$
+.TH GPTLsetutr 3 "December, 2012" "GPTL"
 
 .SH NAME
 GPTLsetutr \- Choose a different underlying timing routine than the default.
@@ -19,16 +19,14 @@ integer gptlsetutr (integer routine)
 
 .SH DESCRIPTION
 Sets the underlying timing routine to one of the supported
-values. On SiCortex systems, 
-.B PAPI_get_real_usec()
-(via GPTLpapitime) is used by default. On other machines, 
+values.
 .B gettimeofday() 
 is the default. See
 .B gptl.h
 (or
 .B gptl.inc
 for Fortran) for the list of supported underlying timing
-routines. gettimeofday() is generally by far the slowest option. But it is
+routines. gettimeofday() is generally the slowest option. But it is
 available almost everywhere.
 
 .SH ARGUMENTS
