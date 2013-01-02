@@ -26,7 +26,7 @@ to the compile and link flags of the source files to be profiled.
 Automatic instrumentation of a number of MPI routines is also possible. In this
 case no special compiler flags are necessary, and profiles are obtained
 with zero changes to application source files. See 
-<a href="http://jmrosinski.github.com/GPTL/example6.html">Example 6</a> for further details.  
+<a href="example6.html">Example 6</a> for further details.  
 </p><p>
 Here is a portion of <b>GPTL</b> printout after running the HPCC benchmark
 with compiler-based automatic instrumentation enabled: 
@@ -74,7 +74,7 @@ Stats for thread 0:
 </pre>
     Function names on the left of the output are indented to indicate their
     parent, and depth in the call tree. An asterisk next to an entry means it
-    has more than one parent (see <a href="http://jmrosinski.github.com/GPTL/example2.html">Example 2</a> for
+    has more than one parent (see <a href="example2.html">Example 2</a> for
     further details). Other entries in this output show the number of
     invocations, number of recursive invocations, wallclock timing
     statistics, and PAPI-based information. In this example, HPL_daxpy
@@ -181,31 +181,31 @@ Comments in the sample <b><em>macros.make</em></b> files describe
   These pages contain simple codes which illustrate the use of some features of
   <b>GPTL</b>. All examples were run on a Linux x86 using GNU compilers. 
   <p>
-  <a href="http://jmrosinski.github.com/GPTL/example1.html">Example 1</a> is a manually-instrumented
+  <a href="example1.html">Example 1</a> is a manually-instrumented
   Fortran code which uses <b>PAPI</b> to count floating point
   operations. 
   </p><p>
-  <a href="http://jmrosinski.github.com/GPTL/example2.html">Example 2</a> is a C code compiled
+  <a href="example2.html">Example 2</a> is a C code compiled
   with gcc's auto-instrumentation hooks to print a dynamic call tree. Perl
   script <b><em>hex2name.pl</em></b> is used to convert addresses to 
   human-readable names.
   </p><p>
-  <a href="http://jmrosinski.github.com/GPTL/example3.html">Example 3</a> demonstrates the use of
+  <a href="example3.html">Example 3</a> demonstrates the use of
   <b>GPTLpr_summary()</b> to obtain a statistical summary of timing statistics across OpenMP 
   threads and MPI tasks.
   </p><p>
-  <a href="http://jmrosinski.github.com/GPTL/example4.html">Example 4</a> is an auto-instrumented C++ code.
+  <a href="example4.html">Example 4</a> is an auto-instrumented C++ code.
   Issues related to in-line constructors are illustrated.
   </p><p>
-  <a href="http://jmrosinski.github.com/GPTL/example5.html">Example 5</a> is a Fortran code which uses
+  <a href="example5.html">Example 5</a> is a Fortran code which uses
   <b>gptlprocess_namelist()</b> and an associated namelist file to
   set <b>GPTL</b> options.
   </p><p>
-  <a href="http://jmrosinski.github.com/GPTL/example6.html">Example 6</a> is a Fortran code which utilizes the
+  <a href="example6.html">Example 6</a> is a Fortran code which utilizes the
   <b>ENABLE_PMPI</b> option to automatically time various MPI calls and print the
   average number of bytes transferred.
   </p><p>
-  <a href="http://jmrosinski.github.com/GPTL/example7.html">Example 7</a> is a Fortran code which utilizes the
+  <a href="example7.html">Example 7</a> is a Fortran code which utilizes the
   functions <b>GPTLstart_handle()</b> and <b>GPTLstop_handle()</b>, which
   avoid much of the table lookup overhead of their siblings
   <b>GPTLstart()</b> and <b>GPTLstop()</b>.
@@ -237,7 +237,9 @@ the software, and that you don't embed <b>GPTL</b> library source in software th
 intend to sell.
 
 <hr>
-<a href="http://jmrosinski.github.com/GPTL/example1.html"><img src="gptl_homepage_files/btn_next.gif" alt="Example 1" border="0" height="20" width="100"></a>
+<a href="example1.html"><img border="0" src="btn_next.gif"
+			     width="100" height="20" alt="Example 1"
+			     /></a>
 
-<br>
+<br />
 </body></html>
