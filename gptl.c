@@ -108,6 +108,7 @@ typedef struct {
 
 /* MPI summary stats */
 typedef struct {
+  unsigned long totcalls;  /* number of calls to the region across threads and tasks */
 #ifdef HAVE_PAPI
   double papimax[MAX_AUX]; /* max counter value across threads, tasks */
   double papimin[MAX_AUX]; /* max counter value across threads, tasks */
@@ -116,7 +117,6 @@ typedef struct {
   int papimin_p[MAX_AUX];  /* task producing papimin */
   int papimin_t[MAX_AUX];  /* thread producing papimin */
 #endif
-  unsigned int totcalls;   /* number of calls to the region across threads and tasks */
   unsigned int tottsk;     /* number of tasks which invoked this region */
   float wallmax;           /* max time across threads, tasks */
   float wallmin;           /* min time across threads, tasks */
@@ -2322,7 +2322,7 @@ int GPTLpr_summary (MPI_Comm comm)
 
       if (multithread) {  /* Threads and tasks */
         if (global[n].totcalls < PRTHRESH) {
-          fprintf (fp, " %8u %6u %9.3f %9.3f %9.3f (%6d %5d) %9.3f (%6d %5d)", 
+          fprintf (fp, " %8lu %6u %9.3f %9.3f %9.3f (%6d %5d) %9.3f (%6d %5d)", 
                    global[n].totcalls, global[n].tottsk, global[n].mean, sigma, 
                    global[n].wallmax, global[n].wallmax_p, global[n].wallmax_t, 
                    global[n].wallmin, global[n].wallmin_p, global[n].wallmin_t);
@@ -2334,7 +2334,7 @@ int GPTLpr_summary (MPI_Comm comm)
         }
       } else {  /* No threads */
         if (global[n].totcalls < PRTHRESH) {
-          fprintf (fp, " %8u %6u %9.3f %9.3f %9.3f (%6d) %9.3f (%6d)", 
+          fprintf (fp, " %8lu %6u %9.3f %9.3f %9.3f (%6d) %9.3f (%6d)", 
                    global[n].totcalls, global[n].tottsk, global[n].mean, sigma, 
                    global[n].wallmax, global[n].wallmax_p, 
                    global[n].wallmin, global[n].wallmin_p);

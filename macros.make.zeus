@@ -7,7 +7,7 @@
 ##########################################################################
 
 # Where to install GPTL library and include files
-INSTALLDIR = /home/hpc/GPTL/gptl-4.3.1/mvapich
+INSTALLDIR = /scratch1/portfolios/BMC/fim/GPTL/gptl-4.3.1
 
 # Where to install man pages (if blank, defaults to $INSTALLDIR)
 MANDIR = 
@@ -80,10 +80,10 @@ AR = ar
 
 # PAPI: If the PAPI library is already installed, set HAVE_PAPI=yes and set inc and lib 
 # info as appropriate. 
-HAVE_PAPI = yes
+HAVE_PAPI = no
 ifeq ($(HAVE_PAPI),yes)
-  PAPI_INCFLAGS = -I/contrib/papi/5.0.1/include
-  PAPI_LIBFLAGS = -L/contrib/papi/5.0.1/lib -lpapi
+  PAPI_INCFLAGS = -I$(PAPI_ROOT)/include
+  PAPI_LIBFLAGS = -L$(PAPI_ROOT)/lib -lpapi
 endif
 
 # Whether to build GPTL with MPI support. Set inc and lib info if needed. 
@@ -95,7 +95,7 @@ ifeq ($(HAVE_MPI),yes)
   MPI_INCFLAGS = 
   MPI_LIBFLAGS = 
 # Want 2 MPI tasks
-  MPICMD = mpiexec -n 2
+  MPICMD = mpiexec_mpt -n 2
 endif
 
 # clock_gettime() in librt.a is an option for gathering wallclock time stats
@@ -132,7 +132,7 @@ endif
 # Whether to enable PMPI wrappers. Turning this on will result in automatic 
 # start/stop entries for a number of MPI calls.
 ifeq ($(HAVE_MPI),yes)
-  ENABLE_PMPI = yes
+  ENABLE_PMPI = no
 # If Fortran is enabled, the ability to automatically initialize GPTL from
 # mpi_init can be enabled if iargc() and getarg() are available.
   ifeq ($(FORTRAN),yes)
