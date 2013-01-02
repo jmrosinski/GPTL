@@ -1,17 +1,16 @@
-<html>
-<head>
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
 <title>GPTL timing library Home Page</title>
 <meta name="description" content="Profile multi-threaded and multi-tasked 
 C, C++, and Fortran codes. Optional PAPI interface. Automatically generate a
 dynamic call tree">
-<meta name="Keywords" content="gptl","papi","profile","call tree","timing","performance analysis">
+<meta name="Keywords" content="gptl" ,"papi","profile","call="" tree","timing","performance="" analysis"="">
 <meta name="Author" content="Jim Rosinski">
-<h1>GPTL - General Purpose Timing Library</h1>
+</head><body bgcolor="peachpuff"><h1>GPTL - General Purpose Timing Library</h1>
 <h2>(with optional PAPI interface)</h2>
-</head>
-<body bgcolor="peachpuff">
+<h2>Download the latest source code <a href="https://github.com/jmrosinski/GPTL">here</a></h2>
 
-<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
+<hr noshade="noshade" size="2" width="100%" align="LEFT">
 <h2>Description</h2>
 <b>GPTL</b> is a library to instrument C, C++, and Fortran codes for
 performance analysis and profiling. The instrumentation can be inserted
@@ -27,12 +26,11 @@ to the compile and link flags of the source files to be profiled.
 Automatic instrumentation of a number of MPI routines is also possible. In this
 case no special compiler flags are necessary, and profiles are obtained
 with zero changes to application source files. See 
-<A HREF="example6.html">Example 6</A> for further details.  
-<p>
+<a href="http://jmrosinski.github.com/GPTL/example6.html">Example 6</a> for further details.  
+</p><p>
 Here is a portion of <b>GPTL</b> printout after running the HPCC benchmark
 with compiler-based automatic instrumentation enabled: 
-<pre>
-<div style="background-color:white;">
+</p><pre><div style="background-color:white;">
 Stats for thread 0:
                                              Called  Recurse Wallclock max       min       FP_OPS   e6_/_sec CI       
   total                                            1     -      64.021    64.021    64.021 3.50e+08     5.47 7.20e-02 
@@ -76,7 +74,7 @@ Stats for thread 0:
 </pre>
     Function names on the left of the output are indented to indicate their
     parent, and depth in the call tree. An asterisk next to an entry means it
-    has more than one parent (see <A HREF="example2.html">Example 2</A> for
+    has more than one parent (see <a href="http://jmrosinski.github.com/GPTL/example2.html">Example 2</a> for
     further details). Other entries in this output show the number of
     invocations, number of recursive invocations, wallclock timing
     statistics, and PAPI-based information. In this example, HPL_daxpy
@@ -84,14 +82,13 @@ Stats for thread 0:
     computational intensity (floating point ops per memory reference) of
     0.415. 
 <p>
-    If the <a HREF="http://icl.cs.utk.edu/papi">PAPI</a> library is
+    If the <a href="http://icl.cs.utk.edu/papi">PAPI</a> library is
     installed on the target platform, <b>GPTL</b> can be used to
     access all available <b>PAPI</b> events.
     To count floating point operations for example, one need only add
     a call that looks like: 
 
-    <pre>
-    ret = GPTLsetoption (PAPI_FP_OPS, 1);
+    </p><pre>    ret = GPTLsetoption (PAPI_FP_OPS, 1);
     </pre>
 
     The second argument "1" in the above call means "enable". Any non-zero
@@ -110,245 +107,137 @@ Stats for thread 0:
     the application being profiled, where region names correspond to function
 	entry and exit points.
 
-<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
-<h2>What's new in the latest release (gptl-4.2)</h2>
-<li> Enable <b>GPTLget_wallclock()</b> and <b>GPTLget_eventvalue()</b> to work when passed either
-  auto-instrumented or manually instrumented regions.
-<li> Modify print_memusage to ensure size2 always exceeds size
-<li> Add tests of <b>GPTLget_nregions()</b>, <b>GPTLget_regionname()</b>, and <b>GPTLget_wallclock()</b> to 
-  cygprofile
-<li> Add MPI_Ssend test to pmpi.c, and checks that MPI wrappers are working for
-      all expected regions.
-
-<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
-<h2>What was new in previous releases</h2>
-<h3>GPTL4.0</h3>
+</p><hr noshade="noshade" size="2" width="100%" align="LEFT">
+<h2>What's new in the latest release (gptl-4.3)</h2>
 <ul>
-<li>Speedups for PTHREADS implementation eliminate
-  critical sections except on 1st invocation of each timer. Library overhead
-  is significantly reduced on many machines, especially when applications
-  are profiled with high thread counts.
-<li>New entries <b>GPTLstart_handle()</b> and <b>GPTLstop_handle()</b>. These
-  routines work just like <b>GPTLstart()</b> and <b>GPTLstop()</b>, except
-  they take a 2nd argument, a "handle" to the region being
-  timed. The space for this argument is provided by the user, but is managed
-  by GPTL. It contains the address of the region being timed, and allows GPTL
-  to bypass determing the hash value and performing an address lookup on each
-  call. See "man GPTLstart_handle", and <A HREF="example7.html">Example 7</A>.
-<li>New underlying timer option for AIX "read_real_time", provides
-  significantly better granularity than gettimeofday, with somewhat lower
-  overhead.
-<li>Now safe to call <b>GPTLinitialize()</b> after <b>GPTLfinalize()</b>.
-<li>Works with craycc/crayftn (see macros.make.xt5).
+<li> Complete rewrite of <b>GPTLpr_summary()</b> for accuracy and scalability to many thousands 
+  of cores. Mean and standard deviation timing statistics across MPI tasks are calculated using 
+  the algorithm of Chan et. al. described
+  <a href="http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance">here</a>.
+  It is a one-pass algorithm well-suited to parallel computation. Additional statistics
+  from <b>GPTLpr_summary()</b> include max and min times across MPI tasks, MPI rank responsible
+  for max and min times, threading information, and PAPI statistics (if applicable). Thanks to
+  Pat Worley for suggesting the addition of this scalable function to GPTL.
+</li><li> Added option <b>GPTLmaxthreads</b> to the list of settable options in
+      <b>GPTLsetoption()</b>. This setting indicates the maximum number of threads (OMP 
+      or pthreads) that can have timers enabled. Especially useful when building
+      with <b>THREADED_PTHREADS</b> because the internal thread array used in this mode 
+      defaults to a fixed size. If this size is much larger than needed it
+      will result in large memory wastage. If too small it limits the number of threads which
+      can enable timers. Also useful when GPTL is built with <b>OPENMP=yes</b>, in cases where the 
+      invoking application sets the number of threads <em>after</em> <b>GPTLinitialize()</b> 
+      is called.
+</li><li> Changed default value of MAX_THREADS from 256 to 64. This value is only relevant 
+      when GPTL is built with <b>PTHREADS=yes</b>).
+</li><li> Bugfix for Fortran namelist parsing which indicated the incorrect print method to
+      be applied in <b>GPTLpr()</b>.
+</li><li> Bugfix for incorrect estimate of memory overhead caused by the timing library itself.
+</li>
 </ul>
 
-<h3>GPTL3.7</h3>
-<ul>
-<li>Added Fortran module enabling "use gptl" instead of "include gptl.inc". 
-Adds interface block for argument checking.
-<li>Enable auto-profiling under AIX.
-<li>Enable <b>GPTLprint_memusage()</b> under MacOS (thanks to Chuck Bardeen).
-<li>Bugfix for Fortran entry <b>gptlget_regionname()</b> to remove null terminator put 
-there by underlying <b>GPTLget_regionname()</b>.
-<li>Bugfix for "make install" creates directories if they don't already exist.
-<li>Added auto-profiling entry for MPI_Init_thread.
-<li>Changed default print method from most_frequent to full_tree.
-</ul>
+<hr noshade="noshade" size="2" width="100%" align="LEFT">
+<h2>Description of what was new in earlier releases is <a href="earlier.html">here</a>.</h2>
 
-<h3>GPTL3.6.3</h3>
-<ul>
-<li><b>GPTLprint_memusage()</b> converts memory usage units to MB by default (if possible).
-<li>Added support for bluegene (see macros.make.bluegene).
-<li>Bugfix for gptl_papilibraryinit (Fortran): needed to return an int.
-<li>Bugfix for GPTLpr_summary: slave tried to receive too much data.
-<li>Changed LINUX ifdef to HAVE_SLASHPROC. Not all Linux systems have /proc/pid/statm.
-<li>Makefile uses "findstring xlf" to decide how Fortran defines are set.
-</ul>
-
-<h3>GPTL3.6.1</h3>
-<ul>
-<li>Bugfix for auto-profiling MPI_Recv wrapper (when ENABLE_PMPI is set in macros.make): 
- previous version could cause hangs in some cases.
-<li>Added auto-profiling entries for more MPI routines: MPI_Iprobe, MPI_Probe, MPI_Ssend, 
- MPI_Alltoallv, MPI_Scatterv, MPI_Test.
-<li>Better estimates of bytes transferred for auto-profiled MPI routines.
-</ul>
-
-<h3>GPTL3.6</h3>
-<ul>
-<li>Makefile simplification. Can now run "make" from ctests/ and ftests/.
-<li>Initial set of PMPI wrappers. Automatically generates MPI times and
-  statistics for the most common MPI calls.
-<li>Option to synchronize and time certain collectives (see ENABLE_PMPI in
-  macros.make.linux). Note that the set of MPI routines profiled is not yet
-  complete. This option has not yet been fully tested.
-</ul>
-
-<h3>GPTL3.5.2</h3>
-<ul>
-<li> Bugfix for when omp_get_max_threads() returns zero.
-<li> <b>GPTLallocate()</b> returns error when asked for zero bytes.
-</ul>
-
-<h3>GPTL3.5.1</h3>
-<ul>
-<li> OpenMP applications now work when GPTL is built with PTHREADS
-<li> Fortran bugfix enables longer event names. This allows one to enable the
-  PAPI native event names which can be long.
-<li> Remove some of the relatively unuseful entries from ctests/ and ftests/.
-<li> Tested on AIX.
-</ul>
-
-<h3>GPTL3.5</h3>
-<ul>
-<li> Easier linking with C++ applications.
-<li> Options for call-tree generation based on number of invocations per
-parent: most_frequent (default), first_parent, last_parent, full_tree. 
-Previous versions always used first_parent. New option <em>full_tree</em> can
-produce <b>tons</b> of output depending the nature of the call tree. But it
-can also be very useful because it shows all parent-child relationships.
-<li> Derived events based on PAPI:
-  <ul>
-  <li> L2 miss rate (GPTL_L2MRT)
-  <li> Load-stores per L2 miss (GPTL_LSTPL2M)
-  <li> L3 miss rate (GPTL_L3MRT)
-  </ul>
-<li> Function <b>GPTLpr_summary()</b> now takes an MPI communicator as its
-argument. Passing an "int" doesn't work with some MPI implementations (e.g. OpenMPI).
-<li> New subroutine <b>gptlprocess_namelist()</b> enables Fortran codes to
-use a namelist to set <b>GPTL</b> options. This allows changing settings
-without having to recompile or relink application
-codes. See <A HREF="example5.html">Example 5</A> for example usage.
-<li> New function <b>GPTLget_eventvalue()</b> allows an application to query
-the current value of any PAPI-based event, including derived events.
-<li> New function <b>GPTLget_wallclock()</b> allows an application to query
-the current wallclock accumulation for any region.
-<li> New function <b>GPTLbarrier()</b> calls <b>MPI_Barrier()</b> and times it.
-<li> <em><b>parsegptlout.pl</b></em> now takes header name as an argument rather
-than an integer index.
-<li> <em><b>hex2name.pl</b></em> converts auto-instrumented entries for thread summary regions.
-</ul>
-
-<h3>GPTL3.4.7</h3>
-<ul>
-<li> Derived events based on PAPI:
-  <ul>
-  <li> Computational intensity (GPTL_CI)
-  <li> Instructions per cycle (GPTL_IPC)
-  <li> FP ops per cycle (GPTL_FPC)
-  <li> FP ops per instruction (GPTL_FPI)
-  <li> Load-store instruction fraction (GPTL_LSTPI)
-  <li> L1 miss rate (GPTL_DCMRT)
-  <li> Load-stores per L1 miss (GPTL_LSTPDCM)
-  </ul>
-<li> New entry points <b>GPTLevent_code_to name()</b> and <b>GPTLevent_name_to_code()</b>
-<li> Ability to disable portions of printed output (e.g. GPTLdopr_preamble)
-<li> Better description of enabled events
-</ul>
-
-<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
+<hr noshade="noshade" size="2" width="100%" align="LEFT">
 <h2>Features</h2>
 <ul>
 <li> Low overhead.
-<li> No external dependencies (<b>PAPI</b> interface is optional).
-<li> Automatically multiplexes requested <b>PAPI</b> counters when required.
-<li> Thread-safe, and reports per-thread statistics for multi-threaded
+</li><li> No external dependencies (<b>PAPI</b> interface is optional).
+</li><li> Automatically multiplexes requested <b>PAPI</b> counters when required.
+</li><li> Thread-safe, and reports per-thread statistics for multi-threaded
 	codes.
-<li> Includes utility functions to print memory usage
+</li><li> Includes utility functions to print memory usage
 	(<b>GPTLprint_memusage()</b>) and get timestamps (<b>GPTLstamp()</b>).
-<li> Includes utility scripts to post-process multi-threaded and
+</li><li> Includes utility scripts to post-process multi-threaded and
 	multi-tasked output for easy assessment of load balance
 	characteristics.
-<li> Support for derived (<b>PAPI</b>-based) events such as computational
+</li><li> Support for derived (<b>PAPI</b>-based) events such as computational
 	intensity and instructions per cycle. Run ctests/avail to list
 	available events.
-</ul>
+</li></ul>
 
-<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
+<hr noshade="noshade" size="2" width="100%" align="LEFT">
 <h2>Download and Installation</h2>
 <ul> 
-<li> Download the most recent release <a href=https://github.com/jmrosinski/GPTL>here</a>.
-<li> To build and install <b>GPTL</b>, see the file named INSTALL after downloading.
+<li> Download the most recent release <a href="https://github.com/jmrosinski/GPTL">here</a>.
+</li><li> To build and install <b>GPTL</b>, see the file named INSTALL after downloading.
   You'll need to create a <b><em>macros.make</em></b> file appropriate for your target
   platform. Example files for various architectures are
   included in the tar file (e.g. <b><em>macros.make.linux</em></b>). An autoconf-based 
   script named <b><em>suggestions</em></b> is included to help in editing this
   file. Example usage might be:
-<pre>
-./suggestions FC=gfortran CC=gcc
+<pre>./suggestions FC=gfortran CC=gcc
 </pre>
 Comments in the sample <b><em>macros.make</em></b> files describe 
   each required setting.
-<li> For information on using <b>GPTL</b>, refer to 
-  <A HREF="#EXAMPLES">EXAMPLES</A> below, and the man pages provided with the
+</li><li> For information on using <b>GPTL</b>, refer to 
+  <a href="#EXAMPLES">EXAMPLES</a> below, and the man pages provided with the
   distribution. 
-</ul>
+</li></ul>
 
-<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
-<A name=EXAMPLES></A>
+<hr noshade="noshade" size="2" width="100%" align="LEFT">
+<a name="EXAMPLES"></a>
 <h2>Examples</h2>
   These pages contain simple codes which illustrate the use of some features of
   <b>GPTL</b>. All examples were run on a Linux x86 using GNU compilers. 
   <p>
-  <A HREF="example1.html">Example 1</A> is a manually-instrumented
+  <a href="http://jmrosinski.github.com/GPTL/example1.html">Example 1</a> is a manually-instrumented
   Fortran code which uses <b>PAPI</b> to count floating point
   operations. 
-  <p>
-  <A HREF="example2.html">Example 2</A> is a C code compiled
+  </p><p>
+  <a href="http://jmrosinski.github.com/GPTL/example2.html">Example 2</a> is a C code compiled
   with gcc's auto-instrumentation hooks to print a dynamic call tree. Perl
   script <b><em>hex2name.pl</em></b> is used to convert addresses to 
   human-readable names.
-  <p>
-  <A HREF="example3.html">Example 3</A> is a simple MPI code, the
-  output of which is post-processed using Perl script
-  <em><b>parsegpltout.pl</b></em> to examine load imbalance.
-  <p>
-  <A HREF="example4.html">Example 4</A> is an auto-instrumented C++ code.
+  </p><p>
+  <a href="http://jmrosinski.github.com/GPTL/example3.html">Example 3</a> demonstrates the use of
+  <b>GPTLpr_summary()</b> to obtain a statistical summary of timing statistics across OpenMP 
+  threads and MPI tasks.
+  </p><p>
+  <a href="http://jmrosinski.github.com/GPTL/example4.html">Example 4</a> is an auto-instrumented C++ code.
   Issues related to in-line constructors are illustrated.
-  <p>
-  <A HREF="example5.html">Example 5</A> is a Fortran code which uses
+  </p><p>
+  <a href="http://jmrosinski.github.com/GPTL/example5.html">Example 5</a> is a Fortran code which uses
   <b>gptlprocess_namelist()</b> and an associated namelist file to
   set <b>GPTL</b> options.
-  <p>
-  <A HREF="example6.html">Example 6</A> is a Fortran code which utilizes the
+  </p><p>
+  <a href="http://jmrosinski.github.com/GPTL/example6.html">Example 6</a> is a Fortran code which utilizes the
   <b>ENABLE_PMPI</b> option to automatically time various MPI calls and print the
   average number of bytes transferred.
-  <p>
-  <A HREF="example7.html">Example 7</A> is a Fortran code which utilizes the
+  </p><p>
+  <a href="http://jmrosinski.github.com/GPTL/example7.html">Example 7</a> is a Fortran code which utilizes the
   functions <b>GPTLstart_handle()</b> and <b>GPTLstop_handle()</b>, which
   avoid much of the table lookup overhead of their siblings
   <b>GPTLstart()</b> and <b>GPTLstop()</b>.
 
-<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
+</p><hr noshade="noshade" size="2" width="100%" align="LEFT">
 
 <h2>Bugs</h2>
 <ul>
-<li> PMPI interface doesn't work on AIX
-<li> Increasing the thread count after <b>GPTLinitialize()</b> has been
-  called does not work when <b>GPTL</b> threading is via OMP. This should
-  work OK with PTHREADS, but is untested.
-<li> The PAPI library warns about using <b>omp_get_thread_num()</b> as the
-  underlying routine to get the thread number. Therefore it's better to
-  build <b>GPTL</b> with PTHREADS than OPENMP (see macros.make.linux).
-</ul>
+<li> PMPI interface doesn't work on AIX. The problem has to do with the MPI definition
+  of MPI_STATUS_SIZE.
+</li><li> PAPI developers have warned about using <b>omp_get_thread_num()</b> as the
+  underlying routine to get the thread number. Therefore for threaded codes it's probably 
+  better to build <b>GPTL</b> with PTHREADS than OPENMP (see macros.make.linux).
+</li></ul>
 
-<HR SIZE=2 WIDTH="100%" ALIGN="LEFT" NOSHADE>
+<hr noshade="noshade" size="2" width="100%" align="LEFT">
 
 <h2>Bug Reports</h2>
 Please email me bug reports and/or feature requests (jmrosinski AT gmail DOT com).
 
 <h2>Author</h2>
 <b>GPTL</b> was written
-by Jim Rosinski, currently at <a HREF="http://www.esrl.noaa.gov">NOAA/ESRL</a>, formerly
-  at <a HREF="http://www.ornl.gov">ORNL</a>, <a HREF="http://www.sicortex.com">SiCortex</a>,
-and <a HREF="http://www.ucar.edu">NCAR</a>. 
+by Jim Rosinski, currently at <a href="http://www.esrl.noaa.gov/">NOAA/ESRL</a>, formerly
+  at <a href="http://www.ornl.gov/">ORNL</a>, <a href="http://www.sicortex.com/">SiCortex</a>,
+and <a href="http://www.ucar.edu/">NCAR</a>. 
 <h2>Copyright</h2>
-This software is <b>Open Source</b>. My only requests are proper attribution when you use the software, and
-that you don't embed <b>GPTL</b> library source in software that you intend to sell.
+This software is <b>Open Source</b>. My only requests are proper attribution when you use 
+the software, and that you don't embed <b>GPTL</b> library source in software that you 
+intend to sell.
 
-<hr />
-<a href="example1.html"><img border="0" src="btn_next.gif"
-			     width="100" height="20" alt="Example 1" /></a>
+<hr>
+<a href="http://jmrosinski.github.com/GPTL/example1.html"><img src="gptl_homepage_files/btn_next.gif" alt="Example 1" border="0" height="20" width="100"></a>
 
-<br />
-</html>
+<br>
+</body></html>
