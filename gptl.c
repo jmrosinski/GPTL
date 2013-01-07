@@ -149,11 +149,7 @@ static Method method = GPTLfull_tree;  /* default parent/child printing mechanis
 /* Local function prototypes */
 static void printstats (const Timer *, FILE *, const int, const int, const bool, double);
 static void add (Timer *, const Timer *);
-
-#ifdef HAVE_MPI
 static void get_threadstats (int, const char *, Global *);
-#endif
-
 static void print_multparentinfo (FILE *, Timer *);
 static inline int get_cpustamp (long *, long *);
 static int newchild (Timer *, Timer *);
@@ -1729,7 +1725,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   print_threadmapping (fp);
   free (sum);
 
-  if (fclose (fp) != 0)
+  if (fp != stderr && fclose (fp) != 0)
     fprintf (stderr, "Attempt to close %s failed\n", outfile);
 
   pr_has_been_called = true;
@@ -2367,10 +2363,125 @@ int GPTLpr_summary (MPI_Comm comm)
 #endif
       fprintf (fp, "\n");
     }
+    if (fp != stderr && fclose (fp) != 0)
+      fprintf (stderr, "Attempt to close %s failed\n", outfile);
   }
   free (global);
   return 0;
 }
+
+/* 
+** GPTLbarrier: When MPI enabled, set and time an MPI barrier
+**
+** Input arguments:
+**   comm: commuicator (e.g. MPI_COMM_WORLD). If zero, use MPI_COMM_WORLD
+**   name: region name
+**
+** Return value: 0 (success)
+*/
+int GPTLbarrier (MPI_Comm comm, const char *name)
+{
+  int ret;
+  static const char *thisfunc = "GPTLbarrier";
+
+  ret = GPTLstart (name);
+  if ((ret = MPI_Barrier (comm)) != MPI_SUCCESS)
+    return GPTLerror ("%s: Bad return from MPI_Barrier=%d", thisfunc, ret);
+  ret = GPTLstop (name);
+  return 0;
+}
+
+#else
+
+/* No MPI. Mimic MPI version but for only one rank */
+int GPTLpr_summary ()
+{
+  static const char *outfile = "timing.summary";   /* output file to write to */
+  FILE *fp = 0;                                    /* output file */
+  int ret;
+  int multithread;     /* flag indicates multithreaded or not */
+  int extraspace;      /* for padding to length of longest name */
+  int n;
+#ifdef HAVE_PAPI
+  int e;               /* event index */
+#endif
+  Global global;       /* stats to be printed */
+  Timer *ptr;
+  static const char *thisfunc = "GPTLpr_summary";  /* this function */
+
+  multithread = (nthreads > 1);
+
+  if ( ! (fp = fopen (outfile, "w")))
+    fp = stderr;
+
+  /* Print heading */
+  fprintf (fp, "GPTLpr_summary: GPTL was built W/O MPI\n");
+  fprintf (fp, "CAUTION: Calling with multiple MPI tasks will not produce the behavior you want.\n");
+  fprintf (fp, "This is because all invoking tasks will write to the same file in a race condition.\n");
+  fprintf (fp, "nthreads=%d\n", nthreads);
+  fprintf (fp, "'ncalls': number of times the region was invoked across threads.\n");
+
+  fprintf (fp, "\nname");
+  extraspace = max_name_len[0] - strlen ("name");
+  for (n = 0; n < extraspace; ++n)
+    fprintf (fp, " ");
+
+  if (multithread)
+    fprintf (fp, "   ncalls   wallmax (thred)   wallmin (thred)");
+  else
+    fprintf (fp, "   ncalls   walltim");
+
+#ifdef HAVE_PAPI
+  for (e = 0; e < nevents; ++e) {
+    if (multithread)
+      fprintf (fp, " %8.8smax (thred) %8.8smin (thred)", eventlist[e].str8, eventlist[e].str8);
+    else
+      fprintf (fp, " %8.8s", eventlist[e].str8);
+  }
+#endif
+  fprintf (fp, "\n");
+
+  for (ptr = timers[0]->next; ptr; ptr = ptr->next) {
+    get_threadstats (0, ptr->name, &global);
+    extraspace = max_name_len[0] - strlen (global.name);
+
+    fprintf (fp, "%s", global.name);
+    for (n = 0; n < extraspace; ++n)
+      fprintf (fp, " ");
+    if (multithread) {
+      if (global.totcalls < PRTHRESH) {
+	fprintf (fp, " %8lu %9.3f (%5d) %9.3f (%5d)", 
+		 global.totcalls, global.wallmax, global.wallmax_t, global.wallmin, global.wallmin_t);
+      } else {
+	fprintf (fp, " %8.1e %9.3f (%5d) %9.3f (%5d)", 
+		 (float) global.totcalls, global.wallmax, global.wallmax_t, global.wallmin, global.wallmin_t);
+      }
+    } else {  /* No threads */
+      if (global.totcalls < PRTHRESH) {
+	fprintf (fp, " %8lu %9.3f",          global.totcalls, global.wallmax);
+      } else {
+	fprintf (fp, " %8.1e %9.3f", (float) global.totcalls, global.wallmax);
+      }
+    }
+#ifdef HAVE_PAPI
+    for (e = 0; e < nevents; ++e) {
+      if (multithread)
+	fprintf (fp, " %8.2e    (%5d)", global.papimax[e], global.papimax_t[e]);
+      else
+	fprintf (fp, " %8.2e",          global.papimax[e]);
+
+      if (multithread)
+	fprintf (fp, " %8.2e    (%5d)", global.papimin[e], global.papimin_t[e]);
+    }
+#endif
+    fprintf (fp, "\n");
+  }
+  if (fp != stderr && fclose (fp) != 0)
+    fprintf (stderr, "Attempt to close %s failed\n", outfile);
+
+  return 0;
+}
+#endif    /* false branch of ifdef HAVE_MPI */
 
 /* 
 ** get_threadstats: gather stats for timer "name" over all threads
@@ -2404,6 +2515,7 @@ void get_threadstats (int iam,
         global->wallmax_t = t;
       }
 
+      /* global->wallmin = 0 for first thread */
       if (ptr->wall.accum < global->wallmin || global->wallmin == 0.) {
         global->wallmin   = ptr->wall.accum;
         global->wallmin_p = iam;
@@ -2423,6 +2535,7 @@ void get_threadstats (int iam,
           global->papimax_t[e] = t;
         }
         
+	/* First thread value in global is zero */
         if (value < global->papimin[e] || global->papimin[e] == 0.) {
           global->papimin[e]   = value;
           global->papimin_p[e] = iam;
@@ -2433,37 +2546,6 @@ void get_threadstats (int iam,
     }
   }
 }
-
-/* 
-** GPTLbarrier: When MPI enabled, set and time an MPI barrier
-**
-** Input arguments:
-**   comm: commuicator (e.g. MPI_COMM_WORLD). If zero, use MPI_COMM_WORLD
-**   name: region name
-**
-** Return value: 0 (success)
-*/
-int GPTLbarrier (MPI_Comm comm, const char *name)
-{
-  int ret;
-  static const char *thisfunc = "GPTLbarrier";
-
-  ret = GPTLstart (name);
-  if ((ret = MPI_Barrier (comm)) != MPI_SUCCESS)
-    return GPTLerror ("%s: Bad return from MPI_Barrier=%d", thisfunc, ret);
-  ret = GPTLstop (name);
-  return 0;
-}
-
-#else
-
-/* No MPI. Provide do-nothing routine that prints that its doing nothing */
-int GPTLpr_summary ()
-{
-  printf ("GPTLpr_summary: Need to build GPTL with #define HAVE_MPI to enable this routine\n");
-  return 1;
-}
-#endif
 
 /*
 ** get_cpustamp: Invoke the proper system timer and return stats.
@@ -2586,8 +2668,8 @@ int GPTLquerycounters (const char *name,
     return GPTLerror ("%s: requested timer %s does not have a name hash\n", thisfunc, name);
 
 #ifdef HAVE_PAPI
-  /* The 999 is a hack to say "give me all the counters" */
-  GPTL_PAPIquery (&ptr->aux, papicounters_out, 999);
+  /* MAX_AUX is the max possible number of PAPI-based events */
+  GPTL_PAPIquery (&ptr->aux, papicounters_out, MAX_AUX);
 #endif
   return 0;
 }

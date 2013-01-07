@@ -1,7 +1,10 @@
-#include <mpi.h>
 #include <stdio.h>
 #include <unistd.h>  /* sleep, usleep */
 #include "../gptl.h"
+
+#ifdef HAVE_MPI
+#include <mpi.h>
+#endif
 
 #ifdef THREADED_OMP
 #include <omp.h>
@@ -16,7 +19,7 @@ int main (int argc, char **argv)
   int tnum = 0;
   int code;
   int ret;
-  int nsec;           /* number of seconds to sleep */
+  unsigned int nsec;           /* number of seconds to sleep */
 
 #ifdef HAVE_PAPI
   int sub (int, int);
@@ -33,17 +36,18 @@ int main (int argc, char **argv)
   }
 #endif
 
+#ifdef HAVE_MPI
   if (MPI_Init (&argc, &argv) != MPI_SUCCESS) {
     printf ("Failure from MPI_Init\n");
     return 1;
   }
+  ret = MPI_Comm_rank (MPI_COMM_WORLD, &iam);
+  ret = MPI_Comm_size (MPI_COMM_WORLD, &nranks);
+#endif
 
   ret = GPTLinitialize ();
   ret = GPTLstart ("total");
 	 
-  ret = MPI_Comm_rank (MPI_COMM_WORLD, &iam);
-  ret = MPI_Comm_size (MPI_COMM_WORLD, &nranks);
-
 #ifdef THREADED_OMP
   nthreads = omp_get_max_threads ();
 #pragma omp parallel for private (ret, tnum, nsec)
@@ -54,7 +58,7 @@ int main (int argc, char **argv)
 #endif
     /* Test 1: threaded sleep */
     ret = GPTLstart ("nranks-iam+mythread");
-    nsec = nranks-iam+tnum;
+    nsec = (unsigned int) nranks-iam+tnum;
     ret = sleep (nsec);
     ret = GPTLstop ("nranks-iam+mythread");
   }
@@ -78,13 +82,16 @@ int main (int argc, char **argv)
   ret = GPTLpr (iam);
 
   if (iam == 0)
-    printf ("summary: testing GPTLpr_summary...\n");
+    printf ("global: testing GPTLpr_summary...\n");
 
-  if (GPTLpr_summary (MPI_COMM_WORLD) != 0) {
+#ifdef HAVE_MPI
+  if (GPTLpr_summary (MPI_COMM_WORLD) != 0)
     return 1;
-  }
-
   ret = MPI_Finalize ();
+#else
+  if (GPTLpr_summary () != 0)
+    return 1;
+#endif
 
   if (GPTLfinalize () != 0)
     return 1;

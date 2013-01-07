@@ -7,17 +7,20 @@ GPTLpr_summary \- Print a statistical summary of region times across all threads
 .SH SYNOPSIS
 .B C Interface:
 .nf
-int GPTLpr_summary (MPI_Comm comm);
+int GPTLpr_summary (MPI_Comm comm);  /* when built with HAVE_MPI */
+int GPTLpr_summary ();               /* when built without HAVE_MPI */
 .fi
 
 .B Fortran Interface:
 .nf
-integer gptlpr_summary (integer comm)
+integer gptlpr_summary (integer comm) ! when built with HAVE_MPI
+integer gptlpr_summary ()             ! when built without HAVE_MPI
 .fi
 
 .SH DESCRIPTION
-GPTLpr_summary() provides max, min, mean, and standard deviation stats for all timed regions
-across all threads and tasks. The data are written to a file named 
+When built with HAVE_MPI=yes, GPTLpr_summary() provides max, min, mean, and standard 
+deviation stats for all timed regions across all threads and tasks. The data are 
+written to a file named
 .B timing.summary. 
 If PAPI counters were enabled, they are included in the summary.
 .P
@@ -28,7 +31,11 @@ Mean and standard deviation are across
 .B ranks,
 where each data point is represented by the maximum time across threads owned by the rank.
 .P
-This routine is only available if GPTL was built with MPI enabled. 
+If GPTL was built with HAVE_MPI=no, GPTLpr_summary() does everything mentioned above, except
+for aggration across MPI tasks. Of course mean and standard deviation stats are not printed
+because they have no meaning on only one task. Users should note that calling this routine
+with mulitple MPI tasks when GPTL was built with HAVE_MPI=no will not produce the desired
+behavior.
 
 .SH ARGUMENTS
 .I comm

@@ -9,9 +9,9 @@ null =
 # Override CFLAGS settings in macros.make: Use -O0 to avoid confusing optimizations
 CFLAGS = -g -O0
 
-TESTS =
+TESTS = global
 ifeq ($(HAVE_MPI),yes)
-  TESTS += summary pmpi global
+  TESTS += summary pmpi
 endif
 
 ifeq ($(HAVE_PAPI),yes)

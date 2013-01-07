@@ -7,20 +7,20 @@
 ##########################################################################
 
 # Where to install GPTL library and include files
-INSTALLDIR = /scratch1/portfolios/BMC/fim/GPTL/gptl-4.3.2/intel_mpi
+INSTALLDIR = /home/hpc/GPTL/gptl-4.3.2/pgi_nompi
 
 # Where to install man pages (if blank, defaults to $INSTALLDIR)
 MANDIR = 
 
 # C compiler
-CC = mpicc
+CC = pgcc
 
 # Whether to build debug lib or optimized lib, and associated flags
 DEBUG = no
 ifeq ($(DEBUG),yes)
-  CFLAGS = -g -O0 -Wall -fno-inline
+  CFLAGS = -g -O0
 else
-  CFLAGS = -g -O3 -finline-functions -Winline -Wall
+  CFLAGS = -g -fast
 endif
 
 # Set compiler flags for non-default ABIs (e.g. 64-bit addressing). 
@@ -38,7 +38,7 @@ HAVE_SLASHPROC = yes
 # if either OPENMP=yes, or PTHREADS=yes. If OPENMP=no and PTHREADS=no, GPTL 
 # will not be thread-safe.
 OPENMP = no
-COMPFLAG = -openmp
+COMPFLAG = -mp
 # Set PTHREADS if available and OPENMP=no
 ifeq ($(OPENMP),no)
   PTHREADS = yes
@@ -70,9 +70,9 @@ ifeq ($(FORTRAN),yes)
 # Set Fortran compiler, flags, and OpenMP compiler flag. Note that Fortran
 # OpenMP tests are possible with OPENMP=no as long as PTHREADS=yes
 # These settings are only used by the Fortran test applications in ftests/.
-  FC     = mpif90
+  FC     = pgf90
   FFLAGS = -g -O2
-  FOMPFLAG = -openmp
+  FOMPFLAG = -mp
 endif
 
 # Archiver: normally it's just ar
@@ -82,20 +82,20 @@ AR = ar
 # info as appropriate. 
 HAVE_PAPI = no
 ifeq ($(HAVE_PAPI),yes)
-  PAPI_INCFLAGS = -I$(PAPI_ROOT)/include
-  PAPI_LIBFLAGS = -L$(PAPI_ROOT)/lib -lpapi
+  PAPI_INCFLAGS = -I/contrib/papi/5.0.1/include
+  PAPI_LIBFLAGS = -L/contrib/papi/5.0.1/lib -lpapi
 endif
 
 # Whether to build GPTL with MPI support. Set inc and lib info if needed. 
 # If CC=mpicc, MPI_INCFLAGS and MPI_LIBFLAGS can be blank.
-HAVE_MPI = yes
+HAVE_MPI = no
 ifeq ($(HAVE_MPI),yes)
 # Hopefully MPI_Comm_f2c() exists, but if not, set HAVE_COMM_F2C = no
   HAVE_COMM_F2C = yes
   MPI_INCFLAGS = 
   MPI_LIBFLAGS = 
 # Want 2 MPI tasks
-  MPICMD = mpiexec_mpt -n 2
+  MPICMD = mpiexec -n 2
 endif
 
 # clock_gettime() in librt.a is an option for gathering wallclock time stats
@@ -121,12 +121,12 @@ HAVE_TIMES = yes
 HAVE_GETTIMEOFDAY = yes
 
 # Whether to test auto-profiling (adds 2 tests to "make test"). If compiler is gcc or 
-# pathscale, set INSTRFLAG to -finstrument-functions. PGI 8.0.2 and later provide 
-# -Minstrument:functions.
+# pathscale, set INSTRFLAG to -finstrument-functions. PGI 12 and later provide 
+# -Minstrument=functions.
 TEST_AUTOPROFILE = yes
 ifeq ($(TEST_AUTOPROFILE),yes)
-  INSTRFLAG = -finstrument-functions
-  CXX = mpicxx
+  INSTRFLAG = -Minstrument=functions
+  CXX = pgCC
 endif
 
 # Whether to enable PMPI wrappers. Turning this on will result in automatic 

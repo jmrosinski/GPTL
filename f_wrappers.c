@@ -213,7 +213,7 @@ int gptlbarrier (int *fcomm, char *name, int nc1)
 
 int gptlpr_summary (void)
 {
-  return GPTLerror ("gptlpr_summary: Need to build GPTL with #define HAVE_MPI to enable this routine\n");
+  return GPTLpr_summary ();
 }
 
 int gptlbarrier (void)
