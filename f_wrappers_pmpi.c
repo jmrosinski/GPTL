@@ -16,6 +16,7 @@
 #define mpi_recv MPI_RECV
 #define mpi_sendrecv MPI_SENDRECV
 #define mpi_isend MPI_ISEND
+#define mpi_issend MPI_ISSEND
 #define mpi_irecv MPI_IRECV
 #define mpi_wait MPI_WAIT
 #define mpi_waitall MPI_WAITALL
@@ -47,6 +48,7 @@
 #define mpi_recv mpi_recv_
 #define mpi_sendrecv mpi_sendrecv_
 #define mpi_isend mpi_isend_
+#define mpi_issend mpi_issend_
 #define mpi_irecv mpi_irecv_
 #define mpi_wait mpi_wait_
 #define mpi_waitall mpi_waitall_
@@ -78,6 +80,7 @@
 #define mpi_recv mpi_recv__
 #define mpi_sendrecv mpi_sendrecv__
 #define mpi_isend mpi_isend__
+#define mpi_issend mpi_issend__
 #define mpi_irecv mpi_irecv__
 #define mpi_wait mpi_wait__
 #define mpi_waitall mpi_waitall__
@@ -137,6 +140,9 @@ void mpi_sendrecv (void *sendbuf, MPI_Fint *sendcount, MPI_Fint *sendtype,
 void mpi_isend (void *buf, MPI_Fint *count, MPI_Fint *datatype, 
 		MPI_Fint *dest, MPI_Fint *tag, MPI_Fint *comm, 
 		MPI_Fint *request, MPI_Fint *__ierr);
+void mpi_issend (void *buf, MPI_Fint *count, MPI_Fint *datatype, 
+		 MPI_Fint *dest, MPI_Fint *tag, MPI_Fint *comm, 
+		 MPI_Fint *request, MPI_Fint *__ierr);
 void mpi_irecv (void *buf, MPI_Fint *count, MPI_Fint *datatype, 
 		MPI_Fint *source, MPI_Fint *tag, MPI_Fint *comm, 
 		MPI_Fint *request, MPI_Fint *__ierr);
@@ -347,6 +353,17 @@ void mpi_isend (void *buf, MPI_Fint *count, MPI_Fint *datatype,
   *__ierr = MPI_Isend (buf, (int) *count, MPI_Type_f2c (*datatype),
 		       (int) *dest, (int) *tag, MPI_Comm_f2c (*comm),
 		       &lrequest);
+  *request = MPI_Request_c2f (lrequest);
+}
+
+void mpi_issend (void *buf, MPI_Fint *count, MPI_Fint *datatype, 
+		 MPI_Fint *dest, MPI_Fint *tag, MPI_Fint *comm, 
+		 MPI_Fint *request, MPI_Fint *__ierr)
+{
+  MPI_Request lrequest;
+  *__ierr = MPI_Issend (buf, (int) *count, MPI_Type_f2c (*datatype),
+			(int) *dest, (int) *tag, MPI_Comm_f2c (*comm),
+			&lrequest);
   *request = MPI_Request_c2f (lrequest);
 }
 

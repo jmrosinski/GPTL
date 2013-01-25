@@ -147,6 +147,24 @@ int MPI_Isend (void *buf, int count, MPI_Datatype datatype, int dest, int tag,
   return ret;
 }
 
+int MPI_Issend (void *buf, int count, MPI_Datatype datatype, int dest, int tag, 
+		MPI_Comm comm, MPI_Request *request)
+{
+  int ret;
+  int ignoreret;
+  int size;
+  Timer *timer;
+
+  ignoreret = GPTLstart ("MPI_Issend");
+  ret = PMPI_Issend (buf, count, datatype, dest, tag, comm, request);
+  ignoreret = GPTLstop ("MPI_Issend");
+  if ((timer = GPTLgetentry ("MPI_Issend"))) {
+    ignoreret = PMPI_Type_size (datatype, &size);
+    timer->nbytes += ((double) count) * size;
+  }
+  return ret;
+}
+
 int MPI_Irecv (void *buf, int count, MPI_Datatype datatype, int source, int tag, 
 	      MPI_Comm comm, MPI_Request *request)
 {

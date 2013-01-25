@@ -27,7 +27,7 @@ int main (int argc, char **argv)
   char string[MPI_MAX_ERROR_STRING];  /* character string returned from MPI routine */
   const char *mpiroutine[] = {"MPI_Ssend", "MPI_Send", "MPI_Recv", "MPI_Sendrecv", "MPI_Irecv",
 			      "MPI_Isend", "MPI_Waitall", "MPI_Barrier", "MPI_Bcast", "MPI_Allreduce",
-			      "MPI_Gather", "MPI_Scatter", "MPI_Alltoall", "MPI_Reduce"};
+			      "MPI_Gather", "MPI_Scatter", "MPI_Alltoall", "MPI_Reduce", "MPI_Issend"};
   const int nroutines = sizeof (mpiroutine) / sizeof (char *);
   double wallclock;
 
@@ -97,17 +97,31 @@ int main (int argc, char **argv)
   if (commsize % 2 == 0) {
     if (iam % 2 == 0) {
       ret = MPI_Send (sendbuf, count, MPI_INT, dest, tag, comm);
-      ret = MPI_Ssend (sendbuf, count, MPI_INT, dest, tag, comm);
-      ret = MPI_Recv (recvbuf, count, MPI_INT, source, tag, comm, &status);
       ret = MPI_Recv (recvbuf, count, MPI_INT, source, tag, comm, &status);
     } else {
       ret = MPI_Recv (recvbuf, count, MPI_INT, source, tag, comm, &status);
-      ret = MPI_Recv (recvbuf, count, MPI_INT, source, tag, comm, &status);
       ret = MPI_Send (sendbuf, count, MPI_INT, dest, tag, comm);
+    }
+    chkbuf ("MPI_Send + MPI_Recv", recvbuf, count, source);
+
+    if (iam % 2 == 0) {
+      ret = MPI_Ssend (sendbuf, count, MPI_INT, dest, tag, comm);
+      ret = MPI_Recv (recvbuf, count, MPI_INT, source, tag, comm, &status);
+    } else {
+      ret = MPI_Recv (recvbuf, count, MPI_INT, source, tag, comm, &status);
       ret = MPI_Ssend (sendbuf, count, MPI_INT, dest, tag, comm);
     }
+    chkbuf ("MPI_Ssend + MPI_Recv", recvbuf, count, source);
+
+    if (iam % 2 == 0) {
+      ret = MPI_Issend (sendbuf, count, MPI_INT, dest, tag, comm, &sendreq);
+      ret = MPI_Recv (recvbuf, count, MPI_INT, source, tag, comm, &status);
+    } else {
+      ret = MPI_Recv (recvbuf, count, MPI_INT, source, tag, comm, &status);
+      ret = MPI_Issend (sendbuf, count, MPI_INT, dest, tag, comm, &sendreq);
+    }
+    chkbuf ("MPI_Issend + MPI_Recv", recvbuf, count, source);
   }
-  chkbuf ("mpi_send + mpi_recv", recvbuf, count, source);
 
   ret = MPI_Sendrecv (sendbuf, count, MPI_INT, dest, tag, 
 		      recvbuf, count, MPI_INT, source, tag, 
@@ -120,7 +134,7 @@ int main (int argc, char **argv)
 		   comm, &sendreq);
   ret = MPI_Wait (&recvreq, &status);
   ret = MPI_Wait (&sendreq, &status);
-  chkbuf ("MPI_Wait", recvbuf, count, source);
+  chkbuf ("MPI_Isend + MPI_Irecv + MPI_Wait", recvbuf, count, source);
 
   ret = MPI_Irecv (recvbuf, count, MPI_INT, source, tag, 
 		   comm, &recvreq);
