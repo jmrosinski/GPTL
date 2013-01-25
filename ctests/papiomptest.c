@@ -2,6 +2,9 @@
 #include <stdlib.h>  /* atoi,exit */
 #include <unistd.h>  /* getopt */
 #include <string.h>  /* memset */
+#ifdef THREADED_OMP
+#include <omp.h>
+#endif
 
 #include "../gptl.h"
 
@@ -18,9 +21,8 @@ int main (int argc, char **argv)
   int iter;
   int papiopt;
   int c;
-
-  double ret;
-
+  int ret;
+  double value;
   extern char *optarg;
 
   printf ("Purpose: test known-length loops with various floating point ops\n");
@@ -29,58 +31,57 @@ int main (int argc, char **argv)
 
   while ((c = getopt (argc, argv, "l:n:p:")) != -1) {
     switch (c) {
-	case 'l':
-	  looplen = atoi (optarg);
-	  printf ("Set looplen=%d\n", looplen);
-	  break;
-	case 'n':
-	  nompiter = atoi (optarg);
-	  printf ("Set nompiter=%d\n", nompiter);
-	  break;
-	case 'p':
-	  if ((ret = GPTLevent_name_to_code (optarg, &papiopt)) != 0) {
-	    printf ("Failure from GPTLevent_name_to_code(%s)\n", optarg);
-	    exit (1);
-	  }
-	  
-	  if (GPTLsetoption (papiopt, 1) < 0) {
-	    printf ("Failure from GPTLsetoption (%s,1)\n", optarg);
-	    exit (1);
-	  }
-	  break;
-	default:
-	  printf ("unknown option %c\n", c);
-	  exit (2);
+    case 'l':
+      looplen = atoi (optarg);
+      printf ("Set looplen=%d\n", looplen);
+      break;
+    case 'n':
+      nompiter = atoi (optarg);
+      printf ("Set nompiter=%d\n", nompiter);
+      break;
+    case 'p':
+      if ((ret = GPTLevent_name_to_code (optarg, &papiopt)) != 0) {
+	printf ("Failure from GPTLevent_name_to_code(%s)\n", optarg);
+	exit (1);
+      }
+      
+      if (GPTLsetoption (papiopt, 1) < 0) {
+	printf ("Failure from GPTLsetoption (%s,1)\n", optarg);
+	exit (1);
+      }
+      break;
+    default:
+      printf ("unknown option %c\n", c);
+      exit (2);
     }
   }
   
   printf ("Outer loop length (OMP)=%d\n", nompiter);
   printf ("Inner loop length=%d\n", looplen);
 
-  (void) GPTLsetoption (GPTLverbose, 1);
-  (void) GPTLsetoption (GPTLabort_on_error, 1);
-  (void) GPTLsetoption (GPTLoverhead, 1);
-  (void) GPTLsetoption (GPTLnarrowprint, 1);
+  ret = GPTLsetoption (GPTLverbose, 1);
+  ret = GPTLsetoption (GPTLabort_on_error, 1);
+  ret = GPTLsetoption (GPTLoverhead, 1);
+  ret = GPTLsetoption (GPTLnarrowprint, 1);
 
   if ((GPTLinitialize ()) != 0) {
     printf ("papiomptest: GPTLinitialize failure\n");
     return -1;
   }
 
-  GPTLstart ("total");
-	 
-#pragma omp parallel for private (iter, ret)
-      
+  ret = GPTLstart ("total");
+#ifdef THREADED_OMP
+#pragma omp parallel for private (iter, value)
+#endif
   for (iter = 1; iter <= nompiter; iter++) {
-    ret = add (looplen, 0.);
-    ret = multiply (looplen, iter, 0.);
-    ret = multadd (looplen, 0.);
-    ret = divide (looplen, 1.);
-    ret = compare (looplen, iter);
+    value = add (looplen, 0.);
+    value = multiply (looplen, iter, 0.);
+    value = multadd (looplen, 0.);
+    value = divide (looplen, 1.);
+    value = compare (looplen, iter);
   }
-
-  GPTLstop ("total");
-  GPTLpr (0);
+  ret = GPTLstop ("total");
+  ret = GPTLpr (0);
   if (GPTLfinalize () < 0)
     exit (6);
 

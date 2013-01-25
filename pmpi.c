@@ -1,5 +1,5 @@
 /*
-** $Id: pmpi.c,v 1.9 2010-11-09 19:08:54 rosinski Exp $
+** pmpi.c
 **
 ** Author: Jim Rosinski
 **
@@ -35,7 +35,6 @@ int GPTLpmpi_setoption (const int option,
 ** Additions to MPI_Init: Initialize GPTL if this hasn't already been done.
 ** Start a timer which will be stopped in MPI_Finalize.
 */
-
 int MPI_Init (int *argc, char ***argv)
 {
   int ret;
@@ -434,7 +433,6 @@ int MPI_Reduce (void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype,
 ** Additions to MPI_Finalize: Stop the timer started in MPI_Init, and
 ** call GPTLpr() if it hasn't already been called.
 */
-
 int MPI_Finalize (void)
 {
   int ret, ignoreret;
@@ -650,9 +648,7 @@ int MPI_Test (MPI_Request *request, int *flag, MPI_Status *status)
   return ret;
 }
 
-#else
-
-/* ENABLE_PMPI not set */
+#else   /* ENABLE_PMPI not set */
 
 int GPTLpmpi_setoption (const int option,
 			const int val)

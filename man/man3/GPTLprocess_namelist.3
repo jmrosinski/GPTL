@@ -1,5 +1,5 @@
-.\" $Id: GPTLprocess_namelist.3,v 1.6 2009-12-26 01:24:28 rosinski Exp $
-.TH gptlprocess_namelist 3 "January, 2009" "GPTL"
+.\" $Id$
+.TH gptlprocess_namelist 3 "December, 2012" "GPTL"
 
 .SH NAME
 gptlprocess_namelist \- Parse an input Fortran namelist and call
@@ -99,10 +99,10 @@ thing is accomplished with the GPTL API by invoking
 ! "magic number" settings in the namelist
 
  utr             = 'nanotime'
- print_method    = 'full_tree'
+ print_method    = 'full_tree'      ! default
 !print_method    = 'first_parent'
 !print_method    = 'last_parent'
-!print_method    = 'most_frequent'  ! default
+!print_method    = 'most_frequent'
  eventlist       = 'PAPI_FP_OPS','GPTL_CI' ! enable 2 events
 /
 

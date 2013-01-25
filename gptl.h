@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.h,v 1.59 2011-03-28 20:55:19 rosinski Exp $
+** $Id: gptl.h.template,v 1.3 2011-03-28 20:55:19 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -35,7 +35,8 @@ typedef enum {
   GPTLdopr_collision  = 15, /* Print hastable collision info (true) */
   GPTLprint_method    = 16, /* Tree print method: first parent, last parent
 			       most frequent, or full tree (most frequent) */
-  GPTLtablesize       = 50, /* per-thread size of hash table (1024) */
+  GPTLtablesize       = 50, /* per-thread size of hash table */
+  GPTLmaxthreads      = 51, /* maximum number of threads */
   /*
   ** These are derived counters based on PAPI counters. All default to false
   */
@@ -63,6 +64,7 @@ typedef enum {
   GPTLmpiwtime       = 4, /* MPI_Wtime */
   GPTLclockgettime   = 5, /* clock_gettime */
   GPTLpapitime       = 6,  /* only if PAPI is available */
+  GPTLplacebo        = 7,  /* do-nothing */
   GPTLread_real_time = 3  /* AIX only */
 } Funcoption;
 

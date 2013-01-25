@@ -27,11 +27,12 @@ are available on the target architecture.
 Using GPTL 
 ----------
 
-C codes making GPTL library calls should #include <gptl.h>. Fortran codes
-should #include or Fortran include 'gptl.inc'. The C and Fortran interfaces
-are identical, except that the C interface uses mixed case. All
+C codes making GPTL library calls should #include <gptl.h>. Fortran codes can
+"use gptl" or #include or Fortran include 'gptl.inc'. The C and Fortran
+interfaces are identical, except that the C interface uses mixed case. All
 user-accessible functions return either 0 (success) or -1 (failure). Example
-codes that use the library can be found in subdirectories ctests/ and ftests/.
+codes that use the library can be found in subdirectories ctests/ and
+ftests/.
 
 Code instrumentation to utilize GPTL involves zero or more calls to
 GPTLsetoption(), then a single call to GPTLinitialize(), then an arbitrary
@@ -140,13 +141,11 @@ MPI_finalize, respectively.
 Multi-processor instrumented codes 
 ----------------------------------
 
-For instrumented codes which make use of threading and/or MPI, a
-post-processing script is provided to analyze GPTL output files and gather
-max/min/average stats on a per-region basis. The script is parsegptlout.pl. It
-might be invoked as, for example:
-
-parsegptlout.pl sub1
-
-The script will look through all files in the current directory named timing.*
-for regions named "sub1", then gather and print various statistics. Numerous
-options are available. See "man parsegptlout" for more in-depth information.
+With rev. 4.3 of GPTL, function GPTLpr_summary(mpi_communicator) was
+rewritten from scratch for scalability and the presentation of additional
+statistical information.  Max, min, mean, and standard deviation of region
+timings, along with the process and thread index responsible for max and min,
+are presented in a single output file named timing.summary. With this
+rewrite, this is now the preferred method (over parsegptlout.pl) for
+gathering summary statistics across threads and tasks.  See example3 in the
+web documentation for further information.

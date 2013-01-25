@@ -1,5 +1,5 @@
 !
-! $Id: gptl.inc,v 1.44 2011-03-28 20:55:19 rosinski Exp $
+! $Id: gptl.inc.template,v 1.3 2011-03-28 20:55:19 rosinski Exp $
 !
 ! Author: Jim Rosinski
 !
@@ -24,6 +24,7 @@
       integer GPTLdopr_collision
       integer GPTLprint_method
       integer GPTLtablesize
+      integer GPTLmaxthreads
 
       integer GPTL_IPC
       integer GPTL_CI
@@ -41,6 +42,7 @@
       integer GPTLclockgettime
       integer GPTLgettimeofday
       integer GPTLpapitime
+      integer GPTLplacebo
       integer GPTLread_real_time
 
       integer GPTLfirst_parent
@@ -65,6 +67,7 @@
       parameter (GPTLdopr_collision = 15)
       parameter (GPTLprint_method   = 16)
       parameter (GPTLtablesize      = 50)
+      parameter (GPTLmaxthreads     = 51)
 
       parameter (GPTL_IPC           = 17)
       parameter (GPTL_CI            = 18)
@@ -82,6 +85,7 @@
       parameter (GPTLmpiwtime       = 4)
       parameter (GPTLclockgettime   = 5)
       parameter (GPTLpapitime       = 6)
+      parameter (GPTLplacebo        = 7)
       parameter (GPTLread_real_time = 3)
 
       parameter (GPTLfirst_parent   = 1)

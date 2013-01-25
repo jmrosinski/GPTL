@@ -73,16 +73,14 @@ typedef struct {
 } Pr_event;
 
 typedef struct TIMER {
-  char name[MAX_CHARS+1];   /* timer name (user input) */
-  bool onflg;               /* timer currently on or off */
 #ifdef ENABLE_PMPI
   double nbytes;            /* number of bytes for MPI call */
 #endif
 #ifdef HAVE_PAPI
   Papistats aux;            /* PAPI stats  */
 #endif 
-  Wallstats wall;           /* wallclock stats */
   Cpustats cpu;             /* cpu stats */
+  Wallstats wall;           /* wallclock stats */
   unsigned long count;      /* number of start/stop calls */
   unsigned long nrecurse;   /* number of recursive start/stop calls */
   void *address;            /* address of timer: used only by _instr routines */
@@ -95,6 +93,8 @@ typedef struct TIMER {
   unsigned int nparent;     /* number of parents */
   unsigned int norphan;     /* number of times this timer was an orphan */
   int num_desc;             /* number of descendants */
+  bool onflg;               /* timer currently on or off */
+  char name[MAX_CHARS+1];   /* timer name (user input) */
 } Timer;
 
 typedef struct {
@@ -123,10 +123,7 @@ extern void __cyg_profile_func_exit (void *, void *);
 };
 #endif
 
-/* 
-** These are needed for communication between gptl.c and gptl_papi.c
-*/
-
+/* These are needed for communication between gptl.c and gptl_papi.c */
 #ifdef HAVE_PAPI
 extern int GPTL_PAPIsetoption (const int, const int);
 extern int GPTL_PAPIinitialize (const int, const bool, int *, Entry *);

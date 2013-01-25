@@ -33,10 +33,10 @@ ifeq ($(HAVE_SLASHPROC),yes)
 endif
 
 ifeq ($(OPENMP),yes)
-  CFLAGS  += -DTHREADED_OMP $(COMPFLAG)
+  CFLAGS += -DTHREADED_OMP $(COMPFLAG)
 else
   ifeq ($(PTHREADS),yes)
-    CFLAGS  += -DTHREADED_PTHREADS
+    CFLAGS += -DTHREADED_PTHREADS
   endif
 endif
 
@@ -62,9 +62,7 @@ ifeq ($(HAVE_MPI),yes)
   ifeq ($(HAVE_COMM_F2C),yes)
     CFLAGS     += -DHAVE_COMM_F2C
   endif
-  CFLAGS_TESTS += -DHAVE_MPI
   CFLAGS       += $(MPI_INCFLAGS)
-  CFLAGS_TESTS += $(MPI_INCFLAGS)
   LDFLAGS      += $(MPI_LIBFLAGS)
 endif
 
@@ -100,17 +98,17 @@ test: $(RUNTESTS)
 
 # MAKETESTS is ctests/all and maybe ftests/all
 ctests/all:
-	(cd ctests && $(MAKE) all)
+	$(MAKE) -C ctests all
 
 ftests/all:
-	(cd ftests && $(MAKE) all)
+	$(MAKE) -C ftests all
 
 # RUNTESTS is ctests and maybe ftests
 ctests/test:
-	(cd ctests && $(MAKE) test)
+	$(MAKE) -C ctests test
 
 ftests/test:
-	(cd ftests && $(MAKE) test)
+	$(MAKE) -C ftests test
 
 lib$(LIBNAME).a: $(OBJS) $(FOBJS)
 	$(AR) ruv $@ $(OBJS) $(FOBJS)
@@ -129,7 +127,7 @@ ifeq ($(FORTRAN),yes)
 endif
 	install -m 0644 man/man3/*.3 $(MANDIR)/man/man3
 	install -m 0755 *pl $(INSTALLDIR)/bin
-	(cd ctests/ && make install INSTALLDIR=$(INSTALLDIR))
+	$(MAKE) -C ctests/ install INSTALLDIR=$(INSTALLDIR)
 
 # Some Fortran compilers name modules in upper case, so account for both possibilities
 uninstall:
@@ -139,8 +137,8 @@ uninstall:
 
 clean:
 	$(RM) -f $(OBJS) $(FOBJS) lib$(LIBNAME).a *.mod
-	(cd ctests && $(MAKE) clean)
-	(cd ftests && $(MAKE) clean)
+	$(MAKE) -C ctests clean
+	$(MAKE) -C ftests clean
 
 f_wrappers.o: gptl.h private.h
 f_wrappers_pmpi.o: gptl.h private.h

@@ -1,5 +1,5 @@
 /*
-** $Id: f_wrappers.c,v 1.56 2010-12-29 18:46:42 rosinski Exp $
+** f_wrappers.c
 **
 ** Author: Jim Rosinski
 ** 
@@ -107,10 +107,7 @@
 
 #endif
 
-/*
-** Local function prototypes
-*/
-
+/* Local function prototypes */
 int gptlinitialize (void);
 int gptlfinalize (void);
 int gptlpr (int *procid);
@@ -149,10 +146,7 @@ int gptlevent_name_to_code (const char *str, int *code, int nc);
 int gptlevent_code_to_name (int *code, char *str, int nc);
 #endif
 
-/*
-** Fortran wrapper functions start here
-*/
-
+/* Fortran wrapper functions start here */
 int gptlinitialize (void)
 {
   return GPTLinitialize ();
@@ -219,12 +213,12 @@ int gptlbarrier (int *fcomm, char *name, int nc1)
 
 int gptlpr_summary (void)
 {
-  return GPTLerror ("gptlpr_summary: Need to build GPTL with #define HAVE_MPI to call this routine\n");
+  return GPTLpr_summary ();
 }
 
 int gptlbarrier (void)
 {
-  return GPTLerror ("gptlbarrier: Need to build GPTL with #define HAVE_MPI to call this routine\n");
+  return GPTLerror ("gptlbarrier: Need to build GPTL with #define HAVE_MPI to enable this routine\n");
 }
 
 #endif
@@ -416,7 +410,6 @@ int gptlevent_name_to_code (const char *str, int *code, int nc)
   cname[numchars] = '\0';
 
   /* "code" is an int* and is an output variable */
-
   return GPTLevent_name_to_code (cname, code);
 }
 

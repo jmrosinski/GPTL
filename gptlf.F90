@@ -24,6 +24,7 @@ module gptl
   integer, parameter :: GPTLdopr_collision = 15
   integer, parameter :: GPTLprint_method   = 16
   integer, parameter :: GPTLtablesize      = 50
+  integer, parameter :: GPTLmaxthreads     = 51
 
   integer, parameter :: GPTL_IPC           = 17
   integer, parameter :: GPTL_CI            = 18
@@ -41,6 +42,7 @@ module gptl
   integer, parameter :: GPTLmpiwtime       = 4
   integer, parameter :: GPTLclockgettime   = 5
   integer, parameter :: GPTLpapitime       = 6
+  integer, parameter :: GPTLplacebo        = 7
   integer, parameter :: GPTLread_real_time = 3
 					                
   integer, parameter :: GPTLfirst_parent   = 1

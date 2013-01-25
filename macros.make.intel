@@ -7,7 +7,9 @@
 ##########################################################################
 
 # Where to install GPTL library and include files
-INSTALLDIR = /usr/local
+INSTALLDIR = /home/hpc/GPTL/gptl-4.3.2/intel_nompi
+# For zeus:
+#INSTALLDIR = /scratch1/portfolios/BMC/fim/GPTL/gptl-4.3.2/intel_nompi
 
 # Where to install man pages (if blank, defaults to $INSTALLDIR)
 MANDIR = 
@@ -82,8 +84,8 @@ AR = ar
 # info as appropriate. 
 HAVE_PAPI = no
 ifeq ($(HAVE_PAPI),yes)
-  PAPI_INCFLAGS = -I/opt/papi/4.1.0/include
-  PAPI_LIBFLAGS = -L/opt/papi/4.1.0/lib -lpapi
+  PAPI_INCFLAGS = -I/contrib/papi/5.0.1/include
+  PAPI_LIBFLAGS = -L/contrib/papi/5.0.1/lib -lpapi
 endif
 
 # Whether to build GPTL with MPI support. Set inc and lib info if needed. 
@@ -126,7 +128,7 @@ HAVE_GETTIMEOFDAY = yes
 TEST_AUTOPROFILE = yes
 ifeq ($(TEST_AUTOPROFILE),yes)
   INSTRFLAG = -finstrument-functions
-  CXX = mpicxx
+  CXX = icpc
 endif
 
 # Whether to enable PMPI wrappers. Turning this on will result in automatic 

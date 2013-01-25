@@ -1,5 +1,5 @@
 /*
-** $Id: get_memusage.c,v 1.10 2010-11-09 19:08:53 rosinski Exp $
+** get_memusage.c
 **
 ** Author: Jim Rosinski
 **   Credit to Chuck Bardeen for MACOS section (__APPLE__ ifdef)
@@ -54,10 +54,7 @@ int GPTLget_memusage (int *size, int *rss, int *share, int *text, int *datastack
   int dum;                        /* placeholder for unused return arguments */
   int ret;                        /* function return value */
 
-  /*
-  ** The file we want to open is /proc/<pid>/statm
-  */
-
+  /* The file we want to open is /proc/<pid>/statm */
   pid = (int) getpid ();
   if (pid > 999999) {
     fprintf (stderr, "get_memusage: pid %d is too large\n", pid);
@@ -74,7 +71,6 @@ int GPTLget_memusage (int *size, int *rss, int *share, int *text, int *datastack
   ** Read the desired data from the /proc filesystem directly into the output
   ** arguments, close the file and return.
   */
-
   ret = fscanf (fd, "%d %d %d %d %d %d %d", 
 		size, rss, share, text, datastack, &dum, &dum);
   ret = fclose (fd);

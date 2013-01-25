@@ -1,5 +1,5 @@
-.\" $Id: GPTLprint_memusage.3,v 1.2 2007-04-17 20:09:03 rosinski Exp $
-.TH GPTLprint_memusage 3 "February, 2007" "GPTL"
+.\" $Id$
+.TH GPTLprint_memusage 3 "December, 2012" "GPTL"
 
 .SH NAME
 GPTLprint_memusage \- Print current memory usage info
@@ -35,9 +35,9 @@ On error, -1 is returned.
 .nf         
 .if t .ft CW
 ...
-(void) GPTLprint_memusage ("start");  // print memory usage info at program start
-(void) do_work();
-(void) GPTLprint_memusage ("end");    // print memory usage info at program end
+ret = GPTLprint_memusage ("start");  // print memory usage info at program start
+ret = do_work();
+ret = GPTLprint_memusage ("end");    // print memory usage info at program end
 
 .if t .ft P
 .fi

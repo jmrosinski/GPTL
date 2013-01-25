@@ -9,7 +9,7 @@ null =
 # Override CFLAGS settings in macros.make: Use -O0 to avoid confusing optimizations
 CFLAGS = -g -O0
 
-TESTS =
+TESTS = global
 ifeq ($(HAVE_MPI),yes)
   TESTS += summary pmpi
 endif
@@ -28,7 +28,7 @@ else
   LIBNAME = gptl
 endif
 
-LDFLAGS = -g -L.. -l$(LIBNAME) $(ABIFLAGS)
+LDFLAGS = -g -L.. -l$(LIBNAME) $(ABIFLAGS) -lm
 
 ifeq ($(OPENMP),yes)
   CFLAGS  += -DTHREADED_OMP $(COMPFLAG)
@@ -109,6 +109,9 @@ testpapi: testpapi.o
 pmpi: pmpi.o
 	$(CC) -o $@ $< $(LDFLAGS)
 
+global: global.o
+	$(CC) -o $@ $< $(LDFLAGS)
+
 # Built-in tests to ensure that GPTL is behaving as expected
 # Invoke as "make test" from one dir above
 
@@ -126,8 +129,8 @@ ifeq ($(HAVE_MPI),yes)
 	@echo Success
 	@echo "Shell is checking contents of timing.summary produced by ./summary for a specific region name..."
 	@grep -q sleep timing.summary || (echo "Failure" && exit 1)
-ifeq ($(ENABLE_PMPI),yes)
 	@echo Success
+ifeq ($(ENABLE_PMPI),yes)
 	@echo
 	@echo Running $(MPICMD) ./pmpi...
 	@env $(MPICMD) ./pmpi || (echo "Failure" && exit 1)
@@ -138,10 +141,10 @@ endif
 ifeq ($(TEST_AUTOPROFILE),yes)
 	@echo
 	@echo "Testing auto-profiling..."
-	@./cygprofile || (echo "Failure to run" && exit 1)
+	./cygprofile || (echo "Failure to run" && exit 1)
 	@echo Success at running
 	@echo "Running hex2name.pl | grep callutil100times..."
-	@(../hex2name.pl ./cygprofile timing.0 | grep -q callutil100times) && echo "Success" || (echo "Failure" && exit 1)
+	(../hex2name.pl ./cygprofile timing.0 | grep -q callutil100times) && echo "Success" || (echo "Failure" && exit 1)
 endif
 	@echo
 	@echo "All C and C++ tests passed"

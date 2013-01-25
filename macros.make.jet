@@ -7,7 +7,9 @@
 ##########################################################################
 
 # Where to install GPTL library and include files
-INSTALLDIR = $(HOME)/jet/gptl-3.7/intel
+INSTALLDIR = /home/hpc/GPTL/gptl-4.3.2/mvapich
+# For zeus:
+#INSTALLDIR = /scratch1/portfolios/BMC/fim/GPTL/gptl-4.3.2/intel_mpi
 
 # Where to install man pages (if blank, defaults to $INSTALLDIR)
 MANDIR = 
@@ -80,10 +82,10 @@ AR = ar
 
 # PAPI: If the PAPI library is already installed, set HAVE_PAPI=yes and set inc and lib 
 # info as appropriate. 
-HAVE_PAPI = yes
+HAVE_PAPI = no
 ifeq ($(HAVE_PAPI),yes)
-  PAPI_INCFLAGS = -I/opt/papi/4.1.0/include
-  PAPI_LIBFLAGS = -L/opt/papi/4.1.0/lib -lpapi
+  PAPI_INCFLAGS = -I/contrib/papi/5.0.1/include
+  PAPI_LIBFLAGS = -L/contrib/papi/5.0.1/lib -lpapi
 endif
 
 # Whether to build GPTL with MPI support. Set inc and lib info if needed. 
@@ -132,7 +134,7 @@ endif
 # Whether to enable PMPI wrappers. Turning this on will result in automatic 
 # start/stop entries for a number of MPI calls.
 ifeq ($(HAVE_MPI),yes)
-  ENABLE_PMPI = yes
+  ENABLE_PMPI = no
 # If Fortran is enabled, the ability to automatically initialize GPTL from
 # mpi_init can be enabled if iargc() and getarg() are available.
   ifeq ($(FORTRAN),yes)
