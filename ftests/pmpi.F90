@@ -134,11 +134,12 @@ program pmpi
   call chkbuf ('mpi_sendrecv', recvbuf(:), count, source)
   if (iam == 0) then
     write(6,*)'Success'
-    write(6,*)'Testing irecv, isend, iprobe, itest, wait, waitall...'
+    write(6,*)'Testing irecv, isend, issend, iprobe, itest, wait, waitall...'
   end if
 !
 ! mpi_irecv
 ! mpi_isend
+! mpi_issend
 ! mpi_iprobe
 ! mpi_test
 ! mpi_wait
@@ -151,6 +152,17 @@ program pmpi
   call mpi_test (recvreq, flag, status, ret)
   call mpi_isend (sendbuf, count, MPI_INTEGER, dest, tag, &
                   comm, sendreq, ret)
+  call mpi_wait (recvreq, status, ret)
+  call mpi_wait (sendreq, status, ret)
+  call chkbuf ("mpi_wait", recvbuf(:), count, source)
+
+  recvbuf(:) = -1
+  call mpi_irecv (recvbuf, count, MPI_INTEGER, source, tag, &
+                  comm, recvreq, ret)
+  call mpi_iprobe (source, tag, comm, flag, status, ret)
+  call mpi_test (recvreq, flag, status, ret)
+  call mpi_issend (sendbuf, count, MPI_INTEGER, dest, tag, &
+                   comm, sendreq, ret)
   call mpi_wait (recvreq, status, ret)
   call mpi_wait (sendreq, status, ret)
   call chkbuf ("mpi_wait", recvbuf(:), count, source)

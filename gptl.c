@@ -1984,7 +1984,21 @@ static void printstats (const Timer *timer,
     elapse = timer->wall.accum;
     wallmax = timer->wall.max;
     wallmin = timer->wall.min;
-    fprintf (fp, "%9.3f %9.3f %9.3f ", elapse, wallmax, wallmin);
+
+    if (elapse < 0.01)
+      fprintf (fp, "%9.2e ", elapse);
+    else
+      fprintf (fp, "%9.3f ", elapse);
+
+    if (wallmax < 0.01)
+      fprintf (fp, "%9.2e ", wallmax);
+    else
+      fprintf (fp, "%9.3f ", wallmax);
+
+    if (wallmin < 0.01)
+      fprintf (fp, "%9.2e ", wallmin);
+    else
+      fprintf (fp, "%9.3f ", wallmin);
 
     if (percent && timers[0]->next) {
       ratio = 0.;
@@ -2074,6 +2088,7 @@ static void add (Timer *tout,
 }
 
 #ifdef HAVE_MPI
+
 /* 
 ** GPTLpr_summary: When MPI enabled, gather and print summary stats across threads
 **                 and MPI tasks. The communication algorithm is O(log nranks) so
@@ -2081,9 +2096,9 @@ static void add (Timer *tout,
 **                 is 2*(number_of_regions)*sizeof(Global) on each rank.
 **
 ** Input arguments:
-**   comm: commuicator (e.g. MPI_COMM_WORLD). If zero, use MPI_COMM_WORLD
+**   comm: communicator (e.g. MPI_COMM_WORLD). If zero, use MPI_COMM_WORLD
 */
-int GPTLpr_summary (MPI_Comm comm)
+int GPTLpr_summary (MPI_Comm comm)       /* communicator */
 {
   int ret;             /* return code */
   int iam;             /* my rank */
@@ -2111,13 +2126,16 @@ int GPTLpr_summary (MPI_Comm comm)
   float sigma;         /* st. dev. */
   unsigned int tsksum; /* part of Chan, et. al. equation */
   static const int tag = 98789;                    /* tag for MPI message */
-  static const char *outfile = "timing.summary";   /* output file to write to */
+  static const char *outfile = "timing.summary";   /* file to write to */
   static const int nbytes = sizeof (Global);       /* number of bytes to be sent/recvd */
   static const char *thisfunc = "GPTLpr_summary";  /* this function */
-  FILE *fp = 0;                                    /* output file */
+  FILE *fp = 0;        /* file handle to write to */
 #ifdef HAVE_PAPI
-  int e;              /* event index */
+  int e;               /* event index */
 #endif
+
+  if ( ! initialized)
+    return GPTLerror ("%s: GPTLinitialize() has not been called\n", thisfunc);
 
   if (((int) comm) == 0)
     comm = MPI_COMM_WORLD;
@@ -2394,10 +2412,11 @@ int GPTLbarrier (MPI_Comm comm, const char *name)
 #else
 
 /* No MPI. Mimic MPI version but for only one rank */
+
 int GPTLpr_summary ()
 {
-  static const char *outfile = "timing.summary";   /* output file to write to */
-  FILE *fp = 0;                                    /* output file */
+  static const char *outfile = "timing.summary";   /* file to write to */
+  FILE *fp = 0;        /* file handle */
   int ret;
   int multithread;     /* flag indicates multithreaded or not */
   int extraspace;      /* for padding to length of longest name */
@@ -2408,6 +2427,9 @@ int GPTLpr_summary ()
   Global global;       /* stats to be printed */
   Timer *ptr;
   static const char *thisfunc = "GPTLpr_summary";  /* this function */
+
+  if ( ! initialized)
+    return GPTLerror ("%s: GPTLinitialize() has not been called\n", thisfunc);
 
   multithread = (nthreads > 1);
 
@@ -2481,6 +2503,7 @@ int GPTLpr_summary ()
 
   return 0;
 }
+
 #endif    /* false branch of ifdef HAVE_MPI */
 
 /* 

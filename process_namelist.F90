@@ -312,8 +312,9 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
     end if
   end do
 #else
-  write(6,*)'gptlprocess_namelist: skipping check for PAPI-based events because ', &
-            'GPTL was built without PAPI support'
+! Comment out this print because it can be very annoying when the MPI task count is large
+!  write(6,*)'gptlprocess_namelist: skipping check for PAPI-based events because ', &
+!            'GPTL was built without PAPI support'
 #endif
   close (unit=unitno)
   outret = 0
