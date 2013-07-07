@@ -9,13 +9,13 @@
 # Where to install GPTL library and include files.
 # if "git" is not available, set REVNO by hand
 REVNO = $(shell git describe)
-INSTALLDIR = $(HOME)/gptl-$(REVNO)/macos
+INSTALLDIR = $(HOME)/gptl-$(REVNO)/xeon
 
 # Where to install man pages (if blank, defaults to $INSTALLDIR)
 MANDIR = 
 
 # C compiler
-CC = mpicc
+CC = icc
 
 # Whether to build debug lib or optimized lib, and associated flags
 DEBUG = no
@@ -31,7 +31,7 @@ ABIFLAGS =
 
 # Is the /proc filesystem available? On most Linux systems it is. If available, get_memusage() 
 # reads from it to find memory usage info. Otherwise get_memusage() will use get_rusage()
-HAVE_SLASHPROC = no
+HAVE_SLASHPROC = yes
 
 # GPTL can enable threading either via OPENMP=yes, or PTHREADS=yes. Since
 # most OpenMP implementations are built on top of pthreads, OpenMP
@@ -40,10 +40,10 @@ HAVE_SLASHPROC = no
 # if either OPENMP=yes, or PTHREADS=yes. If OPENMP=no and PTHREADS=no, GPTL 
 # will not be thread-safe.
 OPENMP = no
-COMPFLAG = 
+COMPFLAG = -openmp
 # Set PTHREADS if available and OPENMP=no
 ifeq ($(OPENMP),no)
-  PTHREADS = no
+  PTHREADS = yes
 endif
 
 # For gcc, -Dinline=inline is a no-op. For other C compilers, things like 
@@ -72,9 +72,9 @@ ifeq ($(FORTRAN),yes)
 # Set Fortran compiler, flags, and OpenMP compiler flag. Note that Fortran
 # OpenMP tests are possible with OPENMP=no as long as PTHREADS=yes
 # These settings are only used by the Fortran test applications in ftests/.
-  FC     = mpif90
+  FC     = ifort
   FFLAGS = -g -O2
-  FOMPFLAG = 
+  FOMPFLAG = -openmp
 endif
 
 # Archiver: normally it's just ar
@@ -84,19 +84,18 @@ AR = ar
 # info as appropriate. 
 HAVE_PAPI = no
 ifeq ($(HAVE_PAPI),yes)
-  PAPI_INCFLAGS = -I/usr/local/include
-  PAPI_LIBFLAGS = -L/usr/local/lib -lpapi
+  PAPI_INCFLAGS = -I/contrib/papi/5.0.1/include
+  PAPI_LIBFLAGS = -L/contrib/papi/5.0.1/lib -lpapi
 endif
 
 # Whether to build GPTL with MPI support. Set inc and lib info if needed. 
 # If CC=mpicc, MPI_INCFLAGS and MPI_LIBFLAGS can be blank.
-HAVE_MPI = yes
+HAVE_MPI = no
 ifeq ($(HAVE_MPI),yes)
 # Hopefully MPI_Comm_f2c() exists, but if not, set HAVE_COMM_F2C = no
   HAVE_COMM_F2C = yes
   MPI_INCFLAGS = 
   MPI_LIBFLAGS = 
-  MPICMD = mpiexec
 # Want 2 MPI tasks
   MPICMD = mpiexec -n 2
 endif
@@ -109,9 +108,9 @@ HAVE_LIBRT = no
 # Only define HAVE_NANOTIME if this is a x86. It provides by far the finest grained,
 # lowest overhead wallclock timer on that architecture.
 # If HAVE_NANOTIME=yes, set BIT64=yes if this is an x86_64
-HAVE_NANOTIME = no
+HAVE_NANOTIME = yes
 ifeq ($(HAVE_NANOTIME),yes)
-  BIT64 = no
+  BIT64 = yes
 endif
 
 # Some old compilers don't support vprintf. Set to "no" in this case
@@ -129,13 +128,13 @@ HAVE_GETTIMEOFDAY = yes
 TEST_AUTOPROFILE = yes
 ifeq ($(TEST_AUTOPROFILE),yes)
   INSTRFLAG = -finstrument-functions
-  CXX = mpicxx
+  CXX = icpc
 endif
 
 # Whether to enable PMPI wrappers. Turning this on will result in automatic 
 # start/stop entries for a number of MPI calls.
 ifeq ($(HAVE_MPI),yes)
-  ENABLE_PMPI = yes
+  ENABLE_PMPI = no
 # If Fortran is enabled, the ability to automatically initialize GPTL from
 # mpi_init can be enabled if iargc() and getarg() are available.
   ifeq ($(FORTRAN),yes)

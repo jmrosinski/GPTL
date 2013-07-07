@@ -6,8 +6,10 @@
 
 ##########################################################################
 
-# Where to install GPTL library and include files
-INSTALLDIR = /usr/local
+# Where to install GPTL library and include files.
+# if "git" is not available, set REVNO by hand
+REVNO = $(shell git describe)
+INSTALLDIR = $(HOME)/gptl-$(REVNO)/sicortex
 
 # Where to install man pages (if blank, defaults to $INSTALLDIR)
 MANDIR = 

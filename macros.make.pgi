@@ -6,8 +6,10 @@
 
 ##########################################################################
 
-# Where to install GPTL library and include files
-INSTALLDIR = /home/hpc/GPTL/gptl-4.3.2/pgi_nompi
+# Where to install GPTL library and include files.
+# if "git" is not available, set REVNO by hand
+REVNO = $(shell git describe)
+INSTALLDIR = $(HOME)/gptl-$(REVNO)/pgi_nompi
 
 # Where to install man pages (if blank, defaults to $INSTALLDIR)
 MANDIR = 

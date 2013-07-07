@@ -6,8 +6,10 @@
 
 ##########################################################################
 
-# Where to install GPTL library and include files
-INSTALLDIR = $(HOME)/frost/intel
+# Where to install GPTL library and include files.
+# if "git" is not available, set REVNO by hand
+REVNO = $(shell git describe)
+INSTALLDIR = $(HOME)/gptl-$(REVNO)/intel_nompi
 
 # Where to install man pages (if blank, defaults to $INSTALLDIR)
 MANDIR = 
@@ -80,22 +82,21 @@ AR = ar
 
 # PAPI: If the PAPI library is already installed, set HAVE_PAPI=yes and set inc and lib 
 # info as appropriate. 
-HAVE_PAPI = no
+HAVE_PAPI = yes
 ifeq ($(HAVE_PAPI),yes)
-  PAPI_INCFLAGS = 
-  PAPI_LIBFLAGS = 
+  PAPI_INCFLAGS = -I/opt/papi/4.1.0/include
+  PAPI_LIBFLAGS = -L/opt/papi/4.1.0/lib -lpapi
 endif
 
 # Whether to build GPTL with MPI support. Set inc and lib info if needed. 
 # If CC=mpicc, MPI_INCFLAGS and MPI_LIBFLAGS can be blank.
-HAVE_MPI = yes
+HAVE_MPI = no
 ifeq ($(HAVE_MPI),yes)
 # Hopefully MPI_Comm_f2c() exists, but if not, set HAVE_COMM_F2C = no
   HAVE_COMM_F2C = yes
   MPI_INCFLAGS = 
-  MPI_LIBFLAGS = -lmpi
-# Want 2 MPI tasks
-  MPICMD = mpiexec_mpt -n 2
+  MPI_LIBFLAGS = 
+  MPICMD = 
 endif
 
 # clock_gettime() in librt.a is an option for gathering wallclock time stats
@@ -132,7 +133,7 @@ endif
 # Whether to enable PMPI wrappers. Turning this on will result in automatic 
 # start/stop entries for a number of MPI calls.
 ifeq ($(HAVE_MPI),yes)
-  ENABLE_PMPI = no
+  ENABLE_PMPI = yes
 # If Fortran is enabled, the ability to automatically initialize GPTL from
 # mpi_init can be enabled if iargc() and getarg() are available.
   ifeq ($(FORTRAN),yes)

@@ -7,7 +7,9 @@
 ##########################################################################
 
 # Where to install GPTL library and include files
-INSTALLDIR = /usr/local
+# if "git" is not available, set REVNO by hand
+REVNO = $(shell git describe)
+INSTALLDIR = /usr/local/gptl-$(REVNO)
 
 # Where to install man pages (if blank, defaults to $INSTALLDIR)
 MANDIR = 

@@ -6,8 +6,10 @@
 
 ##########################################################################
 
-# Where to install GPTL library and include files
-INSTALLDIR = $(HOME)/jet/gptl-3.7single/lahey
+# Where to install GPTL library and include files.
+# if "git" is not available, set REVNO by hand
+REVNO = $(shell git describe)
+INSTALLDIR = $(HOME)/gptl-$(REVNO)/lahey_nompi
 
 # Where to install man pages (if blank, defaults to $INSTALLDIR)
 MANDIR = 

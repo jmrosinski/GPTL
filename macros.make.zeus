@@ -6,8 +6,10 @@
 
 ##########################################################################
 
-# Where to install GPTL library and include files
-INSTALLDIR = /scratch1/portfolios/BMC/fim/GPTL/gptl-4.3.2/intel_mpi
+# Where to install GPTL library and include files.
+# if "git" is not available, set REVNO by hand
+REVNO = $(shell git describe)
+INSTALLDIR = /scratch1/portfolios/BMC/fim/GPTL/gptl-$(REVNO)/intel_mpi
 
 # Where to install man pages (if blank, defaults to $INSTALLDIR)
 MANDIR = 

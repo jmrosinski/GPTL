@@ -9,9 +9,8 @@ endif
 # May be reset below
 THREADED = no
 
-# For some reason, -g seems to disable -h omp with crayftn
-# Override FFLAGS settings in macros.make: Use -O1 to avoid confusing optimizations
-FFLAGS = -g -O1
+# Ensure that FFLAGS are set for low optimization
+FFLAGS += -g -O1
 
 # TESTS defines which of EXES have a built-in testing procedure.
 TESTS = testbasics nlreader

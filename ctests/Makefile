@@ -5,9 +5,8 @@ include ../macros.make
 
 null =
 
-# For some reason, -g seems to disable -h omp with craycc
-# Override CFLAGS settings in macros.make: Use -O0 to avoid confusing optimizations
-CFLAGS = -g -O0
+# Ensure that CFLAGS are set for no optimization
+CFLAGS += -g -O0
 
 TESTS = global
 ifeq ($(HAVE_MPI),yes)
@@ -28,7 +27,7 @@ else
   LIBNAME = gptl
 endif
 
-LDFLAGS = -g -L.. -l$(LIBNAME) $(ABIFLAGS) -lm
+LDFLAGS = $(CFLAGS) -L.. -l$(LIBNAME) $(ABIFLAGS) -lm
 
 ifeq ($(OPENMP),yes)
   CFLAGS  += -DTHREADED_OMP $(COMPFLAG)
