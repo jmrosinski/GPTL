@@ -22,6 +22,7 @@ module gptl
   integer, parameter :: GPTLdopr_threadsort= #GPTLdopr_threadsort
   integer, parameter :: GPTLdopr_multparent= #GPTLdopr_multparent
   integer, parameter :: GPTLdopr_collision = #GPTLdopr_collision
+  integer, parameter :: GPTLdopr_memusage  = #GPTLdopr_memusage
   integer, parameter :: GPTLprint_method   = #GPTLprint_method
   integer, parameter :: GPTLtablesize      = #GPTLtablesize
   integer, parameter :: GPTLmaxthreads     = #GPTLmaxthreads

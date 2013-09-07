@@ -24,6 +24,9 @@ dnl AC_FUNC_VPRINTF
 AC_CHECK_LIB(papi,PAPI_library_init,[echo "PAPI library found: OK to set HAVE_PAPI=yes"],
                                     [echo "PAPI library not found: HAVE_PAPI=no"])
 
+AC_CHECK_FUNC(backtrace_symbols,[echo "backtrace_symbols found: OK to set HAVE_BACKTRACE=yes"],
+				[echo "backtrace_symbols NOT found: HAVE_BACKTRACE=no"])
+
 unset usempich;
 unset usempi;
 AC_CHECK_LIB(mpich,MPI_Init,[echo "libmpich.a found: OK to set HAVE_MPI=yes";usempich=yes],

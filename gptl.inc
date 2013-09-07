@@ -22,6 +22,7 @@
       integer GPTLdopr_threadsort
       integer GPTLdopr_multparent
       integer GPTLdopr_collision
+      integer GPTLdopr_memusage
       integer GPTLprint_method
       integer GPTLtablesize
       integer GPTLmaxthreads
@@ -65,6 +66,7 @@
       parameter (GPTLdopr_threadsort= 13)
       parameter (GPTLdopr_multparent= 14)
       parameter (GPTLdopr_collision = 15)
+      parameter (GPTLdopr_memusage  = 27)
       parameter (GPTLprint_method   = 16)
       parameter (GPTLtablesize      = 50)
       parameter (GPTLmaxthreads     = 51)

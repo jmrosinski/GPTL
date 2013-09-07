@@ -123,7 +123,7 @@ HAVE_TIMES = yes
 HAVE_GETTIMEOFDAY = yes
 
 # Whether to test auto-profiling (adds 2 tests to "make test"). If compiler is gcc or 
-# pathscale, set INSTRFLAG to -finstrument-functions. PGI 8.0.2 and later provide 
+# pathscale or intel, set INSTRFLAG to -finstrument-functions. PGI 8.0.2 and later provide 
 # -Minstrument:functions.
 TEST_AUTOPROFILE = yes
 ifeq ($(TEST_AUTOPROFILE),yes)
@@ -140,4 +140,14 @@ ifeq ($(HAVE_MPI),yes)
   ifeq ($(FORTRAN),yes)
     HAVE_IARGCGETARG = no
   endif
+endif
+
+# Whether system functions backtrace() and backtrace_symbols() exist. Setting HAVE_BACKTRACE=yes
+# will enable auto-generation of function name when auto-profiling and GPTLdopr_memusage has been
+# enabled at run-time. If HAVE_BACKTRACE=no, function address will be printed instead.
+# GNU compilers: compile application code with -finstrument-functions -rdynamic
+# Intel compilers: compile application code with -finstrument-functions -rdynamic -g
+HAVE_BACKTRACE = yes
+ifeq ($(HAVE_BACKTRACE),yes)
+  CFLAGS += -DHAVE_BACKTRACE
 endif

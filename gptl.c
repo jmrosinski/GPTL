@@ -32,6 +32,10 @@
 #include <sys/systemcfg.h>
 #endif
 
+#ifdef HAVE_BACKTRACE
+#include <execinfo.h>
+#endif
+
 #include "private.h"
 #include "gptl.h"
 
@@ -66,6 +70,7 @@ static bool dopr_preamble = true;      /* whether to print preamble info */
 static bool dopr_threadsort = true;    /* whether to print sorted thread stats */
 static bool dopr_multparent = true;    /* whether to print multiple parent info */
 static bool dopr_collision = true;     /* whether to print hash collision info */
+static bool dopr_memusage = false;     /* whether to include memusage print when auto-profiling */
 
 static time_t ref_gettimeofday = -1;   /* ref start point for gettimeofday */
 static time_t ref_clock_gettime = -1;  /* ref start point for clock_gettime */
@@ -224,6 +229,8 @@ static char *clock_source = "UNKNOWN";            /* where clock found */
 static int tablesize = DEFAULT_TABLE_SIZE;  /* per-thread size of hash table (settable parameter) */
 static char *outdir = 0;                    /* dir to write output files to (currently unused) */
 
+#define MSGSIZ 64                           /* max size of msg printed when dopr_memusage=true */
+
 /* VERBOSE is a debugging ifdef local to the rest of this file */
 #undef VERBOSE
 
@@ -309,6 +316,11 @@ int GPTLsetoption (const int option,  /* option */
     dopr_collision = (bool) val; 
     if (verbose)
       printf ("%s: boolean dopr_collision = %d\n", thisfunc, val);
+    return 0;
+  case GPTLdopr_memusage: 
+    dopr_memusage = (bool) val; 
+    if (verbose)
+      printf ("%s: boolean dopr_memusage = %d\n", thisfunc, val);
     return 0;
   case GPTLprint_method:
     method = (Method) val; 
@@ -2994,6 +3006,12 @@ void __func_trace_enter (const char *function_name,
                          int line_number,
                          void **const user_data)
 {
+  char msg[MSGSIZ];
+
+  if (dopr_memusage) {
+    snprintf (msg, MSGSIZ, "begin %s", function_name);
+    (void) GPTLprint_memusage (msg);
+  }
   (void) GPTLstart (function_name);
 }
 
@@ -3003,6 +3021,10 @@ void __func_trace_exit (const char *function_name,
                         void **const user_data)
 {
   (void) GPTLstop (function_name);
+  if (dopr_memusage) {
+    snprintf (msg, MSGSIZ, "end %s", function_name);
+    (void) GPTLprint_memusage (msg);
+  }
 }
 
 #else
@@ -3010,13 +3032,50 @@ void __func_trace_exit (const char *function_name,
 void __cyg_profile_func_enter (void *this_fn,
                                void *call_site)
 {
+#ifdef HAVE_BACKTRACE
+  void *buffer[2];
+  int nptrs;
+  char **strings;
+#endif
+  char msg[MSGSIZ];
+
+  if (dopr_memusage) {
+#ifdef HAVE_BACKTRACE
+    nptrs = backtrace (buffer, 2);
+    strings = backtrace_symbols (buffer, nptrs);
+    snprintf (msg, MSGSIZ, "begin %s", strings[1]);
+    free (strings);
+#else
+    snprintf (msg, MSGSIZ, "begin %lx", (unsigned long) this_fn);
+#endif
+    (void) GPTLprint_memusage (msg);
+  }
   (void) GPTLstart_instr (this_fn);
 }
 
 void __cyg_profile_func_exit (void *this_fn,
                               void *call_site)
 {
+#ifdef HAVE_BACKTRACE
+  void *buffer[2];
+  int nptrs;
+  char **strings;
+#endif
+  char msg[MSGSIZ];
+
   (void) GPTLstop_instr (this_fn);
+
+  if (dopr_memusage) {
+#ifdef HAVE_BACKTRACE
+    nptrs = backtrace (buffer, 2);
+    strings = backtrace_symbols (buffer, nptrs);
+    snprintf (msg, MSGSIZ, "end %s", (char *) strings[1]);
+    free (strings);
+#else
+    snprintf (msg, MSGSIZ, "end %lx", (unsigned long) this_fn);
+#endif
+    (void) GPTLprint_memusage (msg);
+  }
 }
 #endif
 

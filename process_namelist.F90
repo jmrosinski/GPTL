@@ -43,6 +43,7 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
   logical, parameter :: def_dopr_threadsort = .true.
   logical, parameter :: def_dopr_multparent = .true.
   logical, parameter :: def_dopr_collision  = .true.
+  logical, parameter :: def_dopr_memusage   = .false.
   character(len=16), parameter :: def_print_method = 'full_tree       '
   character(len=16), parameter :: def_utr          = 'gettimeofday    '
 
@@ -63,6 +64,7 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
   logical :: dopr_threadsort = def_dopr_threadsort
   logical :: dopr_multparent = def_dopr_multparent
   logical :: dopr_collision  = def_dopr_collision
+  logical :: dopr_memusage   = def_dopr_memusage
   character(len=16) :: print_method    = def_print_method
   character(len=16) :: utr             = def_utr
   character(len=64) :: eventlist(maxevents) = &
@@ -71,7 +73,7 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
   namelist /gptlnl/ sync_mpi, wall, cpu, abort_on_error, overhead, depthlimit, &
                     maxthreads, verbose, narrowprint, percent, persec, multiplex, &
                     dopr_preamble, dopr_threadsort, dopr_multparent, dopr_collision, &
-                    print_method, eventlist, utr
+                    dopr_memusage, print_method, eventlist, utr
 
   open (unit=unitno, file=filename, status='old', iostat=ios)
   if (ios /= 0) then
@@ -253,6 +255,17 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
       ret = gptlsetoption (gptldopr_collision, 1)
     else
       ret = gptlsetoption (gptldopr_collision, 0)
+    end if
+  end if
+
+  if (dopr_memusage .neqv. def_dopr_memusage) then
+    if (verbose) then
+      write(6,*)'gptlprocess_namelist: setting dopr_memusage to ', dopr_memusage
+    end if
+    if (dopr_memusage) then
+      ret = gptlsetoption (gptldopr_memusage, 1)
+    else
+      ret = gptlsetoption (gptldopr_memusage, 0)
     end if
   end if
 

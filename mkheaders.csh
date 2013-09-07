@@ -22,6 +22,7 @@ set GPTLdopr_threadsort = 13
 set GPTLdopr_multparent = 14
 set GPTLdopr_collision  = 15
 set GPTLprint_method    = 16
+set GPTLdopr_memusage   = 27
 set GPTLtablesize       = 50
 set GPTLmaxthreads      = 51
 
@@ -68,6 +69,7 @@ s/#GPTLdopr_preamble/$GPTLdopr_preamble/1
 s/#GPTLdopr_threadsort/$GPTLdopr_threadsort/1
 s/#GPTLdopr_multparent/$GPTLdopr_multparent/1
 s/#GPTLdopr_collision/$GPTLdopr_collision/1
+s/#GPTLdopr_memusage/$GPTLdopr_memusage/1
 s/#GPTLprint_method/$GPTLprint_method/1
 s/#GPTLtablesize/$GPTLtablesize/1
 s/#GPTLmaxthreads/$GPTLmaxthreads/1

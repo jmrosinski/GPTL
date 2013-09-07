@@ -103,6 +103,10 @@ overhead: overhead.F90 ../lib$(LIBNAME).a
 toomanythreads: toomanythreads.F90
 	$(FC) $(FFLAGS) -o $@ $< $(LDFLAGS)
 
+# Hidden executable testbacktrace requires some strange flags so don't build it unless asked
+testbacktrace: testbacktrace.F90
+	$(FC) $(FFLAGS) $(INSTRFLAG) -g -rdynamic -o $@ $< $(LDFLAGS)
+
 # Built-in tests to ensure that GPTL is behaving as expected
 # Invoke as "make test" from one dir above
 
