@@ -39,12 +39,11 @@ int GPTLprint_memusage (const char *str)
     }
   
   if (pagestomb > 0)
-    printf ("%s size=%.1f MB rss=%.1f MB share=%.1f MB text=%.1f MB datastack=%.1f MB\n", 
-	    str, size*pagestomb, rss*pagestomb, share*pagestomb, 
-	    text*pagestomb, datastack*pagestomb);
+    printf ("%s size=%.1f MB rss=%.1f MB datastack=%.1f MB\n", 
+	    str, size*pagestomb, rss*pagestomb, datastack*pagestomb);
   else
-    printf ("%s size=%d rss=%d share=%d text=%d datastack=%d\n", 
-	    str, size, rss, share, text, datastack);
+    printf ("%s size=%d rss=%d datastack=%d\n", 
+	    str, size, rss, datastack);
 
 #else
 

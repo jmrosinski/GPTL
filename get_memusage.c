@@ -47,21 +47,10 @@ int GPTLget_memusage (int *size, int *rss, int *share, int *text, int *datastack
 {
 #ifdef HAVE_SLASHPROC
   FILE *fd;                       /* file descriptor for fopen */
-  int pid;                        /* process id */
-  static char *head = "/proc/";   /* part of path */
-  static char *tail = "/statm";   /* part of path */
-  char file[19];                  /* full path to file in /proc */
+  static char *file = "/proc/self/statm";
   int dum;                        /* placeholder for unused return arguments */
   int ret;                        /* function return value */
 
-  /* The file we want to open is /proc/<pid>/statm */
-  pid = (int) getpid ();
-  if (pid > 999999) {
-    fprintf (stderr, "get_memusage: pid %d is too large\n", pid);
-    return -1;
-  }
-
-  sprintf (file, "%s%d%s", head, pid, tail);
   if ((fd = fopen (file, "r")) < 0) {
     fprintf (stderr, "get_memusage: bad attempt to open %s\n", file);
     return -1;
@@ -72,7 +61,7 @@ int GPTLget_memusage (int *size, int *rss, int *share, int *text, int *datastack
   ** arguments, close the file and return.
   */
   ret = fscanf (fd, "%d %d %d %d %d %d %d", 
-		size, rss, share, text, datastack, &dum, &dum);
+		size, rss, share, text, &dum, datastack, &dum);
   ret = fclose (fd);
   return 0;
 

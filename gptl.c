@@ -229,7 +229,8 @@ static char *clock_source = "UNKNOWN";            /* where clock found */
 static int tablesize = DEFAULT_TABLE_SIZE;  /* per-thread size of hash table (settable parameter) */
 static char *outdir = 0;                    /* dir to write output files to (currently unused) */
 
-#define MSGSIZ 64                           /* max size of msg printed when dopr_memusage=true */
+#define MSGSIZ 256                          /* max size of msg printed when dopr_memusage=true */
+static int rssmax = 0;                      /* max rss of the process */
 
 /* VERBOSE is a debugging ifdef local to the rest of this file */
 #undef VERBOSE
@@ -3007,10 +3008,24 @@ void __func_trace_enter (const char *function_name,
                          void **const user_data)
 {
   char msg[MSGSIZ];
+  int size, rss, share, text, datastack;
+  int world_iam;
+  int flag = 0;
+  int ret;
 
-  if (dopr_memusage) {
-    snprintf (msg, MSGSIZ, "begin %s", function_name);
-    (void) GPTLprint_memusage (msg);
+  if (dopr_memusage && get_thread_num() == 0) {
+    (void) GPTLget_memusage (&size, &rss, &share, &text, &datastack);
+    if (rss > rssmax) {
+      rssmax = rss;
+      world_iam = 0;
+#ifdef HAVE_MPI
+      ret = MPI_Initialized (&flag);
+      if (ret == MPI_SUCCESS && flag) 
+	ret = MPI_Comm_rank (MPI_COMM_WORLD, &world_iam);
+#endif
+      snprintf (msg, MSGSIZ, "world_iam=%d begin %s rss grew", world_iam, function_name);
+      (void) GPTLprint_memusage (msg);
+    }
   }
   (void) GPTLstart (function_name);
 }
@@ -3020,10 +3035,27 @@ void __func_trace_exit (const char *function_name,
                         int line_number,
                         void **const user_data)
 {
+  char msg[MSGSIZ];
+  int size, rss, share, text, datastack;
+  int world_iam;
+  int flag = 0;
+  int ret;
+
   (void) GPTLstop (function_name);
-  if (dopr_memusage) {
-    snprintf (msg, MSGSIZ, "end %s", function_name);
-    (void) GPTLprint_memusage (msg);
+
+  if (dopr_memusage && get_thread_num() == 0) {
+    (void) GPTLget_memusage (&size, &rss, &share, &text, &datastack);
+    if (rss > rssmax) {
+      rssmax = rss;
+      world_iam = 0;
+#ifdef HAVE_MPI
+      ret = MPI_Initialized (&flag);
+      if (ret == MPI_SUCCESS && flag) 
+	ret = MPI_Comm_rank (MPI_COMM_WORLD, &world_iam);
+#endif
+      snprintf (msg, MSGSIZ, "world_iam=%d end %s rss grew", world_iam, function_name);
+      (void) GPTLprint_memusage (msg);
+    }
   }
 }
 
@@ -3038,17 +3070,32 @@ void __cyg_profile_func_enter (void *this_fn,
   char **strings;
 #endif
   char msg[MSGSIZ];
+  int size, rss, share, text, datastack;
+  int world_iam;
+  int flag = 0;
+  int ret;
 
-  if (dopr_memusage) {
-#ifdef HAVE_BACKTRACE
-    nptrs = backtrace (buffer, 2);
-    strings = backtrace_symbols (buffer, nptrs);
-    snprintf (msg, MSGSIZ, "begin %s", strings[1]);
-    free (strings);
-#else
-    snprintf (msg, MSGSIZ, "begin %lx", (unsigned long) this_fn);
+  if (dopr_memusage && get_thread_num() == 0) {
+    (void) GPTLget_memusage (&size, &rss, &share, &text, &datastack);
+    if (rss > rssmax) {
+      rssmax = rss;
+      world_iam = 0;
+#ifdef HAVE_MPI
+      ret = MPI_Initialized (&flag);
+      if (ret == MPI_SUCCESS && flag) 
+	ret = MPI_Comm_rank (MPI_COMM_WORLD, &world_iam);
 #endif
-    (void) GPTLprint_memusage (msg);
+
+#ifdef HAVE_BACKTRACE
+      nptrs = backtrace (buffer, 2);
+      strings = backtrace_symbols (buffer, nptrs);
+      snprintf (msg, MSGSIZ, "world_iam=%d begin %s rss grew", world_iam, strings[1]);
+      free (strings);  /* needed because backtrace_symbols allocated the space */
+#else
+      snprintf (msg, MSGSIZ, "world_iam=%d begin %lx rss grew", world_iam, (unsigned long) this_fn);
+#endif
+      (void) GPTLprint_memusage (msg);
+    }
   }
   (void) GPTLstart_instr (this_fn);
 }
@@ -3062,19 +3109,33 @@ void __cyg_profile_func_exit (void *this_fn,
   char **strings;
 #endif
   char msg[MSGSIZ];
+  int size, rss, share, text, datastack;
+  int world_iam;
+  int flag = 0;
+  int ret;
 
   (void) GPTLstop_instr (this_fn);
 
-  if (dopr_memusage) {
-#ifdef HAVE_BACKTRACE
-    nptrs = backtrace (buffer, 2);
-    strings = backtrace_symbols (buffer, nptrs);
-    snprintf (msg, MSGSIZ, "end %s", (char *) strings[1]);
-    free (strings);
-#else
-    snprintf (msg, MSGSIZ, "end %lx", (unsigned long) this_fn);
+  if (dopr_memusage && get_thread_num() == 0) {
+    (void) GPTLget_memusage (&size, &rss, &share, &text, &datastack);
+    if (rss > rssmax) {
+      rssmax = rss;
+      world_iam = 0;
+#ifdef HAVE_MPI
+      ret = MPI_Initialized (&flag);
+      if (ret == MPI_SUCCESS && flag) 
+	ret = MPI_Comm_rank (MPI_COMM_WORLD, &world_iam);
 #endif
-    (void) GPTLprint_memusage (msg);
+#ifdef HAVE_BACKTRACE
+      nptrs = backtrace (buffer, 2);
+      strings = backtrace_symbols (buffer, nptrs);
+      snprintf (msg, MSGSIZ, "world_iam=%d end %s rss grew", world_iam, (char *) strings[1]);
+      free (strings);  /* needed because backtrace_symbols allocated the space */
+#else
+      snprintf (msg, MSGSIZ, "world_iam=%d end %lx rss grew", world_iam, (unsigned long) this_fn);
+#endif
+      (void) GPTLprint_memusage (msg);
+    }
   }
 }
 #endif
