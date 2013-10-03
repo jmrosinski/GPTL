@@ -7,7 +7,7 @@
 # try to run a PAPI test where HAVE_PAPI is permuted from "no" to "yes", and
 # the test will fail.
 
-set basescript = macros.make.xt5.pgi  # This is the base script to start from
+set basescript = jrmacros/macros.make.xt5.pgi  # This is the base script to start from
 set make = make                     # Name of gnu make program
 
 # jaguarpf: Normally would load xt-papi module here, but that doesn'twork

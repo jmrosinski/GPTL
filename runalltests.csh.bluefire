@@ -7,7 +7,7 @@
 # try to run a PAPI test where HAVE_PAPI is permuted from "no" to "yes", and
 # the test will fail.
 
-set basescript = macros.make.bluefire  # This is the base script to start from
+set basescript = jrmacros/macros.make.bluefire  # This is the base script to start from
 set make = gmake                       # Name of gnu make program
 
 # bluefire: set env. vars. for 2 MPI process 
