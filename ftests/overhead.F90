@@ -8,7 +8,7 @@ program overhead
   real*8 :: wall2, usr2, sys2
   integer :: cycles1, cycles2, cps
   character(len=16) :: msg
-  integer(8) :: handle
+  integer :: handle
 #ifdef THREADED_OMP
   integer, parameter :: maxthreads = 8
 #else
@@ -155,7 +155,7 @@ subroutine do_nothing1 (string, handle)
   implicit none
 
   character(len=*), intent(in) :: string
-  integer(8), intent(in) :: handle
+  integer, intent(in) :: handle
 
   if (string(1:1) == 'x') then
     write(6,*)'Bad string value'
@@ -166,7 +166,7 @@ subroutine do_nothing2 (string, handle)
   implicit none
 
   character(len=*), intent(in) :: string
-  integer(8), intent(in) :: handle
+  integer, intent(in) :: handle
 
   if (string(1:1) == 'x') then
     write(6,*)'Bad string value'

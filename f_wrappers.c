@@ -122,9 +122,9 @@ int gptlbarrier (void);
 int gptlreset (void);
 int gptlstamp (double *wall, double *usr, double *sys);
 int gptlstart (char *name, int nc1);
-int gptlstart_handle (char *name, void **, int nc1);
+int gptlstart_handle (char *name, int *, int nc1);
 int gptlstop (char *name, int nc1);
-int gptlstop_handle (char *name, void **, int nc1);
+int gptlstop_handle (char *name, int *, int nc1);
 int gptlsetoption (int *option, int *val);
 int gptlenable (void);
 int gptldisable (void);
@@ -245,18 +245,14 @@ int gptlstart (char *name, int nc1)
   return GPTLstart (cname);
 }
 
-int gptlstart_handle (char *name, void **handle, int nc1)
+int gptlstart_handle (char *name, int *handle, int nc1)
 {
   char cname[MAX_CHARS+1];
   int numchars;
 
-  if (*handle) {
-    cname[0] = '\0';
-  } else {
-    numchars = MIN (nc1, MAX_CHARS);
-    strncpy (cname, name, numchars);
-    cname[numchars] = '\0';
-  }
+  numchars = MIN (nc1, MAX_CHARS);
+  strncpy (cname, name, numchars);
+  cname[numchars] = '\0';
   return GPTLstart_handle (cname, handle);
 }
 
@@ -271,18 +267,14 @@ int gptlstop (char *name, int nc1)
   return GPTLstop (cname);
 }
 
-int gptlstop_handle (char *name, void **handle, int nc1)
+int gptlstop_handle (char *name, int *handle, int nc1)
 {
   char cname[MAX_CHARS+1];
   int numchars;
 
-  if (*handle) {
-    cname[0] = '\0';
-  } else {
-    numchars = MIN (nc1, MAX_CHARS);
-    strncpy (cname, name, numchars);
-    cname[numchars] = '\0';
-  }
+  numchars = MIN (nc1, MAX_CHARS);
+  strncpy (cname, name, numchars);
+  cname[numchars] = '\0';
   return GPTLstop_handle (cname, handle);
 }
 

@@ -7,8 +7,8 @@ else
 endif
 
 null =
-OBJS = gptl.o util.o get_memusage.o print_memusage.o \
-       gptl_papi.o pmpi.o
+OBJS = gptl.o util.o get_memusage.o print_memusage.o gptl_papi.o pmpi.o getoverhead.o \
+       hashstats.o memstats.o pr_summary.o
 
 ifeq ($(ENABLE_PMPI),yes)
   CFLAGS += -DENABLE_PMPI
@@ -150,3 +150,7 @@ process_namelist.o: process_namelist.F90 gptl.inc
 gptlf.o: gptlf.F90
 	$(FC) -c $(FFLAGS) $<
 pmpi.o: gptl.h private.h
+getoverhead.o: private.h
+hashstats.o: private.h
+memstats.o: private.h
+pr_summary.o: private.h

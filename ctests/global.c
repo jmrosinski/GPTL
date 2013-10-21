@@ -17,7 +17,9 @@ int main (int argc, char **argv)
   int nthreads = 1;  /* number of threads (default 1) */
   int iter;
   int tnum = 0;
+#ifdef HAVE_PAPI
   int code;
+#endif
   int ret;
   unsigned int nsec;           /* number of seconds to sleep */
 

@@ -1,5 +1,5 @@
 .\" $Id$
-.TH GPTL 3 "December, 2012" "GPTL"
+.TH GPTL 3 "October, 2013" "GPTL"
 
 .SH NAME
 GPTL \- General Purpose Timing Library
@@ -73,9 +73,9 @@ to its name"
 .BR gptlprocess_namelist(3) " - (Fortran only) set GPTL options by reading a Fortran namelist"
 .BR GPTLinitialize(3) " - initialize the GPTL library. Must be called after all calls to GPTLsetoption/GPTLsetutr/gptlprocess_namelist, and before all calls to GPTLstart, GPTLstop, and GPTLpr"
 .BR GPTLstart(3) " - start a region timer"
-.BR GPTLstart_handle(3) " - start a region timer with a handle (for efficiency)"
+.BR GPTLstart_handle(3) " - start a region timer with a handle (more efficient than GPTLstart)"
 .BR GPTLstop(3) " - stop a region timer"
-.BR GPTLstop_handle(3) " - stop a region timer with a handle (for efficiency)"
+.BR GPTLstop_handle(3) " - stop a region timer with a handle (more efficient than GPTLstop)"
 .BR GPTLbarrier(3) " - if MPI is enabled, set and time an MPI_Barrier"
 .BR GPTLreset(3) " - reset all existing GPTL regions to zero"
 .BR GPTLdisable(3) " - disable subsequent calls to GPTLstart/GPTLstop"

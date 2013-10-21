@@ -91,9 +91,9 @@ extern "C" {
 extern int GPTLsetoption (const int, const int);
 extern int GPTLinitialize (void);
 extern int GPTLstart (const char *);
-extern int GPTLstart_handle (const char *, void **);
+extern int GPTLstart_handle (const char *, int *);
 extern int GPTLstop (const char *);
-extern int GPTLstop_handle (const char *, void **);
+extern int GPTLstop_handle (const char *, int *);
 extern int GPTLstamp (double *, double *, double *);
 extern int GPTLpr (const int);
 extern int GPTLpr_file (const char *);

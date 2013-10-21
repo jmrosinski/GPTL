@@ -5,6 +5,33 @@
 </head><body bgcolor="peachpuff"><h1>Earlier changes to GPTL</h1>
 
 <hr noshade="noshade" size="2" width="100%" align="LEFT">
+<h3>gptl-4.3</h3>
+<ul>
+<li> Complete rewrite of <b>GPTLpr_summary()</b> for accuracy and scalability to many thousands 
+  of cores. Mean and standard deviation timing statistics across MPI tasks are calculated using 
+  the algorithm of Chan et. al. described
+  <a href="http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance">here</a>.
+  It is a one-pass algorithm well-suited to parallel computation. Additional statistics
+  from <b>GPTLpr_summary()</b> include max and min times across MPI tasks, MPI rank responsible
+  for max and min times, threading information, and PAPI statistics (if applicable). Thanks to
+  Pat Worley for suggesting the addition of this scalable function to GPTL.
+</li><li> Added option <b>GPTLmaxthreads</b> to the list of settable options in
+      <b>GPTLsetoption()</b>. This setting indicates the maximum number of threads (OMP 
+      or pthreads) that can have timers enabled. Especially useful when building
+      with <b>THREADED_PTHREADS</b> because the internal thread array used in this mode 
+      defaults to a fixed size. If this size is much larger than needed it
+      will result in large memory wastage. If too small it limits the number of threads which
+      can enable timers. Also useful when GPTL is built with <b>OPENMP=yes</b>, in cases where the 
+      invoking application sets the number of threads <em>after</em> <b>GPTLinitialize()</b> 
+      is called.
+</li><li> Changed default value of MAX_THREADS from 256 to 64. This value is only relevant 
+      when GPTL is built with <b>PTHREADS=yes</b>).
+</li><li> Bugfix for Fortran namelist parsing which indicated the incorrect print method to
+      be applied in <b>GPTLpr()</b>.
+</li><li> Bugfix for incorrect estimate of memory overhead caused by the timing library itself.
+</li>
+</ul>
+
 <h3>gptl-4.2</h3>
 <li> Enable <b>GPTLget_wallclock()</b> and <b>GPTLget_eventvalue()</b> to work when passed either
   auto-instrumented or manually instrumented regions.

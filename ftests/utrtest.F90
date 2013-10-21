@@ -13,26 +13,27 @@ program utrtest
 #endif
   double precision :: sum
   integer :: ret
-  integer(8) :: handle1 = 0
-  integer(8) :: handle2 = 0
-  integer(8) :: handle3 = 0
-  integer(8) :: handle4 = 0
-  integer(8) :: handle5 = 0
-  integer(8) :: handle6 = 0
-  integer(8) :: handle7 = 0
-  integer(8) :: handle8 = 0
+  integer :: handle1 = 0
+  integer :: handle2 = 0
+  integer :: handle3 = 0
+  integer :: handle4 = 0
+  integer :: handle5 = 0
+  integer :: handle6 = 0
+  integer :: handle7 = 0
+  integer :: handle8 = 0
 
   sum = 0.
 
 #ifdef HAVE_MPI
-!      call mpi_init (ret)
+!  call mpi_init (ret)
 #endif
 
   write(6,*) 'Purpose: estimate overhead of GPTL timing (UTR)'
-  ret = gptlsetoption (gptlabort_on_error, 0)
-  ret = gptlsetoption (gptlverbose, 0)
+  ret = gptlsetoption (gptlabort_on_error, 1)
+  ret = gptlsetoption (gptlverbose, 1)
+!  ret = gptlsetoption (gptltablesize, 111)
   
-  !      ret = gptlsetutr (gptlmpiwtime)
+!  ret = gptlsetutr (gptlmpiwtime)
   ret = gptlsetutr (gptlread_real_time)
   ret = gptlsetutr (gptlclockgettime)
   ret = gptlsetutr (gptlgettimeofday)
@@ -67,7 +68,7 @@ subroutine sub (outer, inner, name, sum, handle)
   integer, intent(in) :: inner
   character(len=*), intent(in) :: name
   double precision, intent(inout) :: sum
-  integer(8), intent(inout) :: handle
+  integer, intent(inout) :: handle
   
   integer :: i, j, ret
 

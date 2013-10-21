@@ -98,8 +98,7 @@ module gptl
 
      integer function gptlstart_handle (name, handle)
        character(len=*) :: name
-! ASSUME pointers are max 8 bytes.
-       integer(8) :: handle
+       integer :: handle
      end function gptlstart_handle
 
      integer function gptlstop (name)
@@ -108,8 +107,7 @@ module gptl
 
      integer function gptlstop_handle (name, handle)
        character(len=*) :: name
-! ASSUME pointers are max 8 bytes.
-       integer(8) :: handle
+       integer :: handle
      end function gptlstop_handle
 
      integer function gptlsetoption (option, val)

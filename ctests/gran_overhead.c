@@ -4,7 +4,7 @@
 #endif
 #include <stdio.h>
 
-void *handle; /* for _handle routines--used by both granularity and overhead */
+int handle; /* for _handle routines--used by both granularity and overhead */
 
 int main (int argc, char **argv)
 {
@@ -64,7 +64,7 @@ int main (int argc, char **argv)
       ** which adds the entry point.
       */
 
-      handle = (void *) 0;
+      handle = 0;
       ret = GPTLstart_handle ("zzz", &handle);
       ret = GPTLstop_handle ("zzz", &handle);
       ret = GPTLreset ();

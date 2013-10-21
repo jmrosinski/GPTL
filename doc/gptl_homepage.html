@@ -108,31 +108,47 @@ Stats for thread 0:
 	entry and exit points.
 
 </p><hr noshade="noshade" size="2" width="100%" align="LEFT">
-<h2>What's new in the latest release (gptl-4.3)</h2>
+<h2>What's new in the latest release (gptl-5.0)</h2>
 <ul>
-<li> Complete rewrite of <b>GPTLpr_summary()</b> for accuracy and scalability to many thousands 
-  of cores. Mean and standard deviation timing statistics across MPI tasks are calculated using 
-  the algorithm of Chan et. al. described
-  <a href="http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance">here</a>.
-  It is a one-pass algorithm well-suited to parallel computation. Additional statistics
-  from <b>GPTLpr_summary()</b> include max and min times across MPI tasks, MPI rank responsible
-  for max and min times, threading information, and PAPI statistics (if applicable). Thanks to
-  Pat Worley for suggesting the addition of this scalable function to GPTL.
-</li><li> Added option <b>GPTLmaxthreads</b> to the list of settable options in
-      <b>GPTLsetoption()</b>. This setting indicates the maximum number of threads (OMP 
-      or pthreads) that can have timers enabled. Especially useful when building
-      with <b>THREADED_PTHREADS</b> because the internal thread array used in this mode 
-      defaults to a fixed size. If this size is much larger than needed it
-      will result in large memory wastage. If too small it limits the number of threads which
-      can enable timers. Also useful when GPTL is built with <b>OPENMP=yes</b>, in cases where the 
-      invoking application sets the number of threads <em>after</em> <b>GPTLinitialize()</b> 
-      is called.
-</li><li> Changed default value of MAX_THREADS from 256 to 64. This value is only relevant 
-      when GPTL is built with <b>PTHREADS=yes</b>).
-</li><li> Bugfix for Fortran namelist parsing which indicated the incorrect print method to
-      be applied in <b>GPTLpr()</b>.
-</li><li> Bugfix for incorrect estimate of memory overhead caused by the timing library itself.
-</li>
+<li> Lower overhead incurred by the GPTL library itself: New hash algorithm results in fewer 
+  collisions by employing better randomization.
+<li> Improved user interface to <b>GPTLstart_handle()</b> and <b>GPTLstop_handle()</b> by changing
+  the second argument (the <em>handle</em>) to be the hash index instead of a
+  pointer to the timer itself. This has the <em>huge</em> advantage that inside of
+  threaded loops, thread-local storage for the <em>handle</em> variable is no longer
+  required in user code. The previous severe restriction of thread-local storage for these
+  variables effectively rendered <b>GPTLstart_handle()</b> and <b>GPTLstop_handle()</b>
+  unusable inside of threaded regions. And threaded regions are exactly where these more
+  efficient equivalents of <b>GPTLstart()</b> and <b>GPTLstop()</b> are most likely to be
+  useful! 
+
+  <p><b>IMPORTANT NOTE:</b> Slight API changes to <b>GPTLstart_handle()</b>
+  and <b>GPTLstop_handle()</b> were required. In C/C++ the type of the <em>handle</em>
+  argument was changed from <em>void **</em> to <em>int *</em>. In Fortran the type
+  changed from <em>integer(8)</em> to <em>integer</em>. Tests of the new library with the
+  GNU compilers using the old types produced compiler warnings but still worked
+  properly.
+<li> Produce a much more accurate estimate of the overhead incurred by the GPTL
+  library itself. Previously, the overhead estimate printed was only for the underlying
+  timing utility employed by GPTL (e.g. gettimeofday()). Now the printed overhead estimate
+  is for the <em>entire</em> GPTL library, not just the underlying timing utility.
+
+  <p>Also, a breakdown of overhead components by GPTL function is presented
+  when <b>gptlpr()</b> or <b>gptlpr_file()</b> are called. Examples include the Fortran
+  wrapper layer, generating the hash index, and calling the underlying timing
+  routine. More importantly, also printed is a per-region estimate of total overhead
+  incurred, and total overhead incurred in the parent of the region as a 
+  result of timing the region.
+
+  <p><b>IMPORTANT NOTE</b>: Currently GPTL doesn't know if the user API was Fortran or
+  C/C++. Also, calls to the start/stop routines can be intermixed with their
+  start_handle and stop_handle counterparts at will. Therefore GPTL produces a
+  "worst-case" estimate of induced overhead. Specifically, Fortran user-level code and
+  exclusive use of <b>GPTLstart()/GPTLstop()</b> instead of the more efficient
+  <b>GPTLstart_handle()</b> and <b>GPTLstop_handle()</b> is assumed. Users can refine the
+  overhead estimate by hand by subtracting the components which do not apply. For example,
+  if the Fortran API is not used and GPTL reports that the relative cost of the Fortran
+  API is 10% of the total overhead, the total overhead estimate can be reduced by 10%.
 </ul>
 
 <hr noshade="noshade" size="2" width="100%" align="LEFT">
@@ -148,11 +164,8 @@ Stats for thread 0:
 	codes.
 </li><li> Includes utility functions to print memory usage
 	(<b>GPTLprint_memusage()</b>) and get timestamps (<b>GPTLstamp()</b>).
-</li><li> Includes utility scripts to post-process multi-threaded and
-	multi-tasked output for easy assessment of load balance
-	characteristics.
 </li><li> Support for derived (<b>PAPI</b>-based) events such as computational
-	intensity and instructions per cycle. Run ctests/avail to list
+	intensity and instructions per cycle. Run ctests/gptl_avail to list
 	available events.
 </li></ul>
 

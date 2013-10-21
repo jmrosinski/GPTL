@@ -6,16 +6,16 @@
 
 ##########################################################################
 
-# Where to install GPTL library and include files
+# Where to install GPTL library and include files.
 # if "git" is not available, set REVNO by hand
 REVNO = $(shell git describe)
-INSTALLDIR = /usr/local/gptl-$(REVNO)
+INSTALLDIR = $(HOME)/gptl-$(REVNO)/xeon_mpi
 
 # Where to install man pages (if blank, defaults to $INSTALLDIR)
 MANDIR = 
 
-# C compiler
-CC = mpicc
+# C compiler. If HAVE_MPI=yes (see below), this should probably be set to the wrapper script.
+CC = mpiicc
 
 # Whether to build debug lib or optimized lib, and associated flags
 DEBUG = no
@@ -39,8 +39,8 @@ HAVE_SLASHPROC = yes
 # Thus COMPFLAG should be set to the compiler flag that enables OpenMP directives
 # if either OPENMP=yes, or PTHREADS=yes. If OPENMP=no and PTHREADS=no, GPTL 
 # will not be thread-safe.
-OPENMP = no
-COMPFLAG = -fopenmp
+OPENMP = yes
+COMPFLAG = -openmp
 # Set PTHREADS if available and OPENMP=no
 ifeq ($(OPENMP),no)
   PTHREADS = yes
@@ -72,9 +72,9 @@ ifeq ($(FORTRAN),yes)
 # Set Fortran compiler, flags, and OpenMP compiler flag. Note that Fortran
 # OpenMP tests are possible with OPENMP=no as long as PTHREADS=yes
 # These settings are only used by the Fortran test applications in ftests/.
-  FC     = mpif90
+  FC     = mpiifort
   FFLAGS = -g -O2
-  FOMPFLAG = -fopenmp
+  FOMPFLAG = -openmp
 endif
 
 # Archiver: normally it's just ar
@@ -84,12 +84,12 @@ AR = ar
 # info as appropriate. 
 HAVE_PAPI = no
 ifeq ($(HAVE_PAPI),yes)
-  PAPI_INCFLAGS = -I/usr/local/include
-  PAPI_LIBFLAGS = -L/usr/local/lib -lpapi
+  PAPI_INCFLAGS = -I/opt/apps/papi/5.2RC/include
+  PAPI_LIBFLAGS = -L/opt/apps/papi/5.2RC/lib -lpapi -lpfm
 endif
 
 # Whether to build GPTL with MPI support. Set inc and lib info if needed. 
-# If CC=mpicc, MPI_INCFLAGS and MPI_LIBFLAGS can be blank.
+# If CC=mpicc or equivalent MPI driver, MPI_INCFLAGS and MPI_LIBFLAGS can be blank.
 HAVE_MPI = yes
 ifeq ($(HAVE_MPI),yes)
 # Hopefully MPI_Comm_f2c() exists, but if not, set HAVE_COMM_F2C = no
@@ -123,18 +123,18 @@ HAVE_TIMES = yes
 HAVE_GETTIMEOFDAY = yes
 
 # Whether to test auto-profiling (adds 2 tests to "make test"). If compiler is gcc or 
-# pathscale or intel, set INSTRFLAG to -finstrument-functions. PGI 8.0.2 and later provide 
+# pathscale, set INSTRFLAG to -finstrument-functions. PGI 8.0.2 and later provide 
 # -Minstrument:functions.
 TEST_AUTOPROFILE = yes
 ifeq ($(TEST_AUTOPROFILE),yes)
   INSTRFLAG = -finstrument-functions
-  CXX = mpicxx
+  CXX = mpiicpc
 endif
 
 # Whether to enable PMPI wrappers. Turning this on will result in automatic 
 # start/stop entries for a number of MPI calls.
 ifeq ($(HAVE_MPI),yes)
-  ENABLE_PMPI = yes
+  ENABLE_PMPI = no
 # If Fortran is enabled, the ability to automatically initialize GPTL from
 # mpi_init can be enabled if iargc() and getarg() are available.
   ifeq ($(FORTRAN),yes)

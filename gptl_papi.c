@@ -1189,22 +1189,14 @@ bool GPTL_PAPIis_multiplexed ()
 ** The following functions are publicly available
 */
 
-void read_counters100 ()
+void read_counters1000 ()
 {
   int i;
   int ret;
   long_long counters[MAX_AUX];
 
-  for (i = 0; i < 10; ++i) {
-    ret = PAPI_read (EventSet[0], counters);
-    ret = PAPI_read (EventSet[0], counters);
-    ret = PAPI_read (EventSet[0], counters);
-    ret = PAPI_read (EventSet[0], counters);
-    ret = PAPI_read (EventSet[0], counters);
-    ret = PAPI_read (EventSet[0], counters);
-    ret = PAPI_read (EventSet[0], counters);
-    ret = PAPI_read (EventSet[0], counters);
-    ret = PAPI_read (EventSet[0], counters);
+#pragma unroll(10)
+  for (i = 0; i < 1000; ++i) {
     ret = PAPI_read (EventSet[0], counters);
   }
   return;

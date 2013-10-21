@@ -1,5 +1,5 @@
 .\" $Id$
-.TH GPTLstart 3 "December, 2012" "GPTL"
+.TH GPTLstart 3 "October, 2013" "GPTL"
 
 .SH NAME
 GPTLstart \- Start a timer
@@ -16,8 +16,8 @@ GPTLstop_handle \- Stop a timer with a given handle
 int GPTLstart (const char *name);
 int GPTLstop (const char *name);
 .P
-int GPTLstart_handle (const char *name, void **handle);
-int GPTLstop_handle (const char *name, void **handle);
+int GPTLstart_handle (const char *name, int *handle);
+int GPTLstop_handle (const char *name, int *handle);
 .fi
 
 .B Fortran Interface:
@@ -25,8 +25,8 @@ int GPTLstop_handle (const char *name, void **handle);
 integer gptlstart (character(len=*) name)
 integer gptlstop (character(len=*) name)
 .P
-integer gptlstart_handle (character(len=*) name, integer*8 handle)
-integer gptlstop_handle (character(len=*) name, integer*8 handle)
+integer gptlstart_handle (character(len=*) name, integer handle)
+integer gptlstop_handle (character(len=*) name, integer handle)
 .fi
 
 .SH DESCRIPTION
@@ -49,29 +49,27 @@ the value of MAX_CHARS in private.h.
 .P
 The
 .B _handle
-versions of these routines take a second argument, which must be initialized
-by the user to NULL (C,C++) or zero (Fortran). A different 
+versions of these routines are designed to be more efficient. They take a second argument 
+(integer), which must be initialized by the user to zero. A different 
 .I handle
 is required for each region to be timed. On first invocation for each region, 
-GPTL writes an internal hash table address into 
+GPTL writes an internal hash index into 
 .I handle.
-On subsequent invocations, GPTL uses this address directly, rather than going through
+On subsequent invocations, GPTL uses this index directly, rather than going through
 the hash-table lookup procedure required by GPTLstart() and GPTLstop(). This can save
 substantial overhead when timing fine grained regions that are invoked many times
 over the course of the run being timed.
 .P
-The use of the
+The 
 .B _handle
-versions is more complicatetd within threaded code portions. This is due to the
-fact that GPTL maintains separate storage for timers which are invoked from multiple
-threads. For OpenMP codes, the use of a 
-.I handle
-array, dimensioned (omp_get_max_threads()), can be used in conjunction with 
-omp_get_thread_num() to make effective use of GPTLstart_handle() and GPTLstop_handle().
-It is easier to simply use GPTLstart() and GPTLstop() within threaded code portions.
+versions work correctly within threaded code. For OpenMP codes, the handle should have
+scope
+.B shared.
+This is because for a given region name, all threads will use the same value for the handle 
+variable.
 .P
 It is possible to mix use of GPTLstart()/GPTLstop() with use of 
-GPTLstart_handle()/GPTLstop_handle().
+GPTLstart_handle()/GPTLstop_handle(), even for the same region.
 
 .SH RESTRICTIONS
 .B GPTLinitialize()
@@ -96,23 +94,23 @@ something like the following:
 .nf         
 .if t .ft CW
 
-void **handle = 0;                        /* for calling _handle GPTL routines */
-ret = GPTLsetoption (GPTLcpu, 1);         /* enable cpu timings: default false */
-ret = GPTLsetoption (GPTLwall, 0);        /* disable wallclock timings: default true */
-ret = GPTLsetoption (PAPI_TOT_CYC, 1);    /* use PAPI to count total cycles */
+int handle = 0;                            /* for calling _handle GPTL routines */
+ret = GPTLsetoption (GPTLcpu, 1);          /* enable cpu timings: default false */
+ret = GPTLsetoption (GPTLwall, 0);         /* disable wallclock timings: default true */
+ret = GPTLsetoption (PAPI_TOT_CYC, 1);     /* use PAPI to count total cycles */
 ...
-ret = GPTLinitialize();                   /* initialize the GPTL library */
-ret = GPTLstart ("total");                /* start a timer */
+ret = GPTLinitialize();                    /* initialize the GPTL library */
+ret = GPTLstart ("total");                 /* start a timer */
 ...
-ret = GPTLstart ("do_work");              /* start another timer */
-do_work();                                /* do some work */
-ret = GPTLstop ("do_work");               /* stop a timer */
-ret = GPTLstart_handle ("work2", handle); /* start a timer and give it a handle */
+ret = GPTLstart ("do_work");               /* start another timer */
+do_work();                                 /* do some work */
+ret = GPTLstop ("do_work");                /* stop a timer */
+ret = GPTLstart_handle ("work2", &handle); /* start a timer and give it a handle */
 do_work2();
-ret = GPTLstop_handle ("work2", handle);  /* stop a timer with a handle */
-ret = GPTLstop ("total");                 /* stop a timer */
+ret = GPTLstop_handle ("work2", &handle);  /* stop a timer with a handle */
+ret = GPTLstop ("total");                  /* stop a timer */
 ...
-ret = GPTLpr (mympitaskid);               /* print results to timing.<mympitaskid> */
+ret = GPTLpr (mympitaskid);                /* print results to timing.<mympitaskid> */
 
 .if t .ft P
 .fi

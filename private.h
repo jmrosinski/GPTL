@@ -102,8 +102,18 @@ typedef struct {
   unsigned int nument;      /* number of entries hashed to the same value */
 } Hashentry;
 
-/* Function prototypes */
+/* Require external data items */
+/* array of thread ids */
+#if ( defined THREADED_OMP )
+extern volatile int *GPTLthreadid_omp;
+#elif ( defined THREADED_PTHREADS )
+#include <pthread.h>
+extern volatile pthread_t *GPTLthreadid;
+#else
+extern int GPTLthreadid;
+#endif
 
+/* Function prototypes */
 extern int GPTLerror (const char *, ...);      /* print error msg and return */
 extern void GPTLset_abort_on_error (bool val); /* set flag to abort on error */
 extern void *GPTLallocate (const int);         /* malloc wrapper */
@@ -111,6 +121,20 @@ extern void *GPTLallocate (const int);         /* malloc wrapper */
 extern int GPTLstart_instr (void *);           /* auto-instrumented start */
 extern int GPTLstop_instr (void *);            /* auto-instrumented stop */
 extern int GPTLis_initialized (void);          /* needed by MPI_Init wrapper */
+extern int GPTLget_overhead (FILE *,                       /* file descriptor */
+			     double (*)(),                 /* UTR() */
+			     Timer *(),                    /* getentry() */
+			     unsigned int (const char *),  /* genhashidx() */
+			     int (void),                   /* get_thread_num() */
+			     const Hashentry *,            /* hashtable */
+			     const int,                    /* tablesize */
+			     bool,                         /* dousepapi */
+			     double *,                     /* self_ohd */
+			     double *);                    /* parent_ohd */
+extern void GPTLprint_hashstats (FILE *, int, Hashentry **, int);
+extern void GPTLprint_memstats (FILE *, Timer **, int, int, int);
+extern int GPTLget_nthreads (void);
+extern Timer **GPTLget_timersaddr (void);
 
 #ifdef __cplusplus
 extern "C" {
@@ -123,8 +147,11 @@ extern void __cyg_profile_func_exit (void *, void *);
 };
 #endif
 
-/* These are needed for communication between gptl.c and gptl_papi.c */
+/* These are needed for communication between gptl.c and other files (mainly gptl_papi.c) */
 #ifdef HAVE_PAPI
+extern Entry GPTLeventlist[];          /* list of PAPI-based events to be counted */
+extern int GPTLnevents;                /* number of PAPI events (init to 0) */
+
 extern int GPTL_PAPIsetoption (const int, const int);
 extern int GPTL_PAPIinitialize (const int, const bool, int *, Entry *);
 extern int GPTL_PAPIstart (const int, Papistats *);
@@ -137,7 +164,7 @@ extern void GPTL_PAPIquery (const Papistats *, long long *, int);
 extern int GPTL_PAPIget_eventvalue (const char *, const Papistats *, double *);
 extern bool GPTL_PAPIis_multiplexed (void);
 extern void GPTL_PAPIprintenabled (FILE *);
-extern void read_counters100 (void);
+extern void read_counters1000 (void);
 extern int GPTLget_npapievents (void);
 extern int GPTLcreate_and_start_events (const int);
 #endif
