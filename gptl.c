@@ -1116,7 +1116,7 @@ int GPTLstop_handle (const char *name,     /* timer name */
   
   if ( ! (ptr = getentry (hashtable[t], name, indx)))
     return GPTLerror ("%s: handle=%u has not been set for timer %s.\n", 
-		      thisfunc, indx, ptr->name);
+		      thisfunc, indx, name);
 
   if ( ! ptr->onflg )
     return GPTLerror ("%s: timer %s was already off.\n", thisfunc, ptr->name);
