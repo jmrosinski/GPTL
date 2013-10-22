@@ -96,6 +96,11 @@ module gptl
        character(len=*) :: name
      end function gptlstart
 
+     integer function gptlinit_handle (name, handle)
+       character(len=*) :: name
+       integer :: handle
+     end function gptlinit_handle
+
      integer function gptlstart_handle (name, handle)
        character(len=*) :: name
        integer :: handle

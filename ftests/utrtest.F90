@@ -5,31 +5,21 @@ program utrtest
 
   external :: sub
 
-! Skip MPI_Wtime test--if autoprofiling is enabled, can get lots of warnings from
-! GPTL about "GPTLsetutr must be cvalled BEFORE GPTLinitialize"
-
-#ifdef HAVE_MPI
-!#include <mpif.h>
-#endif
   double precision :: sum
   integer :: ret
-  integer :: handle1 = 0
-  integer :: handle2 = 0
-  integer :: handle3 = 0
-  integer :: handle4 = 0
-  integer :: handle5 = 0
-  integer :: handle6 = 0
-  integer :: handle7 = 0
-  integer :: handle8 = 0
+  integer :: handle1
+  integer :: handle2
+  integer :: handle3
+  integer :: handle4
+  integer :: handle5
+  integer :: handle6
+  integer :: handle7
+  integer :: handle8
 
   sum = 0.
 
-#ifdef HAVE_MPI
-!  call mpi_init (ret)
-#endif
-
   write(6,*) 'Purpose: estimate overhead of GPTL timing (UTR)'
-  ret = gptlsetoption (gptlabort_on_error, 1)
+  ret = gptlsetoption (gptlabort_on_error, 0)
   ret = gptlsetoption (gptlverbose, 1)
 !  ret = gptlsetoption (gptltablesize, 111)
   
@@ -41,6 +31,15 @@ program utrtest
   ret = gptlsetutr (gptlnanotime)
   
   ret = gptlinitialize ()
+
+  ret = gptlinit_handle ('1x1e7', handle1)
+  ret = gptlinit_handle ('10x1e6', handle2)
+  ret = gptlinit_handle ('100x1e5', handle3)
+  ret = gptlinit_handle ('1000x1e4', handle4)
+  ret = gptlinit_handle ('1e4x1000', handle5)
+  ret = gptlinit_handle ('1e5x100', handle6)
+  ret = gptlinit_handle ('1e6x10', handle7)
+  ret = gptlinit_handle ('1e7x1', handle8)
   
   ret = gptlstart ('total')
   !      ret = GPTLdisable ()

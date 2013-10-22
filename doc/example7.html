@@ -46,6 +46,10 @@ program handle
 
   ret = gptlstart ('total') ! Time the entire code
 ! IMPORTANT: Start with a zero handle value so GPTLstart_handle knows to initialize
+! Instead of setting handle1=0 here we could also do:
+! ret=gptlinit_handle('loop', handle1)
+! This latter approach is actually preferable to avoid one-time multiple threads
+! computing the handle value inside the threaded loop.
   handle1 = 0
 
 !$OMP PARALLEL DO SHARED (handle1)

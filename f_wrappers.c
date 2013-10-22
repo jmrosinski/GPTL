@@ -26,6 +26,7 @@
 #define gptlreset GPTLRESET
 #define gptlstamp GPTLSTAMP
 #define gptlstart GPTLSTART
+#define gptlinit_handle GPTLINIT_HANDLE
 #define gptlstart_handle GPTLSTART_HANDLE
 #define gptlstop GPTLSTOP
 #define gptlstop_handle GPTLSTOP_HANDLE
@@ -56,6 +57,7 @@
 #define gptlreset gptlreset_
 #define gptlstamp gptlstamp_
 #define gptlstart gptlstart_
+#define gptlinit_handle gptlinit_handle_
 #define gptlstart_handle gptlstart_handle_
 #define gptlstop gptlstop_
 #define gptlstop_handle gptlstop_handle_
@@ -86,6 +88,7 @@
 #define gptlreset gptlreset_
 #define gptlstamp gptlstamp_
 #define gptlstart gptlstart_
+#define gptlinit_handle gptlinit_handle__
 #define gptlstart_handle gptlstart_handle__
 #define gptlstop gptlstop_
 #define gptlstop_handle gptlstop_handle__
@@ -122,6 +125,7 @@ int gptlbarrier (void);
 int gptlreset (void);
 int gptlstamp (double *wall, double *usr, double *sys);
 int gptlstart (char *name, int nc1);
+int gptlinit_handle (char *name, int *, int nc1);
 int gptlstart_handle (char *name, int *, int nc1);
 int gptlstop (char *name, int nc1);
 int gptlstop_handle (char *name, int *, int nc1);
@@ -130,8 +134,8 @@ int gptlenable (void);
 int gptldisable (void);
 int gptlsetutr (int *option);
 int gptlquery (const char *name, int *t, int *count, int *onflg, double *wallclock, 
-		      double *usr, double *sys, long long *papicounters_out, int *maxcounters, 
-		      int nc);
+	       double *usr, double *sys, long long *papicounters_out, int *maxcounters, 
+	       int nc);
 int gptlquerycounters (const char *name, int *t, long long *papicounters_out, int nc);
 int gptlget_wallclock (const char *name, int *t, double *value, int nc);
 int gptlget_eventvalue (const char *timername, const char *eventname, int *t, double *value, 
@@ -243,6 +247,17 @@ int gptlstart (char *name, int nc1)
   strncpy (cname, name, numchars);
   cname[numchars] = '\0';
   return GPTLstart (cname);
+}
+
+int gptlinit_handle (char *name, int *handle, int nc1)
+{
+  char cname[MAX_CHARS+1];
+  int numchars;
+
+  numchars = MIN (nc1, MAX_CHARS);
+  strncpy (cname, name, numchars);
+  cname[numchars] = '\0';
+  return GPTLinit_handle (cname, handle);
 }
 
 int gptlstart_handle (char *name, int *handle, int nc1)

@@ -711,6 +711,27 @@ int GPTLstart (const char *name)               /* timer name */
 }
 
 /*
+** GPTLinit_handle: Initialize a handle for further use by GPTLstart_handle() and GPTLstop_handle()
+**
+** Input arguments:
+**   name: timer name
+**
+** Output arguments:
+**   handle: hash value corresponding to "name"
+**
+** Return value: 0 (success) or GPTLerror (failure)
+*/
+int GPTLinit_handle (const char *name,     /* timer name */
+		     int *handle)          /* handle (output if input value is zero) */
+{
+  if (disabled)
+    return 0;
+
+  *handle = (int) genhashidx (name);
+  return 0;
+}
+
+/*
 ** GPTLstart_handle: start a timer based on a handle
 **
 ** Input arguments:
@@ -2390,12 +2411,13 @@ static inline unsigned int genhashidx (const char *name)
 {
   const unsigned char *c;       /* pointer to elements of "name" */
   unsigned int indx;            /* return value of function */
-  int i;                        /* iterator (OLDWAY only) */
 #ifdef NEWWAY
   unsigned int mididx, lastidx; /* mid and final index of name */
 
   lastidx = strlen (name) - 1;
   mididx = lastidx / 2;
+#else
+  int i;                        /* iterator (OLDWAY only) */
 #endif
   /* 
   ** Disallow a hash index of zero (by adding 1 at the end) since user input of an uninitialized 
