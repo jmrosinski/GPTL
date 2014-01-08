@@ -34,6 +34,7 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
   logical, parameter :: def_overhead        = .true.
   integer, parameter :: def_depthlimit      = 99999    ! Effectively unlimited
   integer, parameter :: def_maxthreads      = -1
+  integer, parameter :: def_tablesize       = 1023     ! Needs to match DEFAULT_TABLE_SIZE in gptl.c
   logical, parameter :: def_verbose         = .false.
   logical, parameter :: def_narrowprint     = .true.
   logical, parameter :: def_percent         = .false.
@@ -55,6 +56,7 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
   logical :: overhead        = def_overhead
   integer :: depthlimit      = def_depthlimit
   integer :: maxthreads      = def_maxthreads
+  integer :: tablesize       = def_tablesize
   logical :: verbose         = def_verbose
   logical :: narrowprint     = def_narrowprint
   logical :: percent         = def_percent
@@ -71,7 +73,7 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
  (/('                                                                ',j=1,maxevents)/)
   
   namelist /gptlnl/ sync_mpi, wall, cpu, abort_on_error, overhead, depthlimit, &
-                    maxthreads, verbose, narrowprint, percent, persec, multiplex, &
+                    maxthreads, tablesize, verbose, narrowprint, percent, persec, multiplex, &
                     dopr_preamble, dopr_threadsort, dopr_multparent, dopr_collision, &
                     dopr_memusage, print_method, eventlist, utr
 
@@ -168,6 +170,13 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
       write(6,*)'gptlprocess_namelist: setting maxthreads to ', maxthreads
     end if
     ret = gptlsetoption (gptlmaxthreads, maxthreads)
+  end if
+
+  if (tablesize /= def_tablesize) then
+    if (verbose) then
+      write(6,*)'gptlprocess_namelist: setting tablesize to ', tablesize
+    end if
+    ret = gptlsetoption (gptltablesize, tablesize)
   end if
 
   if (narrowprint .neqv. def_narrowprint) then

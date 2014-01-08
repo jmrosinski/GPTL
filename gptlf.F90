@@ -54,6 +54,12 @@ module gptl
 ! Function prototypes
 
   interface
+     subroutine gptlprocess_namelist (filename, unitno, outret)
+       character(len=*) :: filename
+       integer :: unitno
+       integer :: outret
+     end subroutine gptlprocess_namelist
+
      integer function gptlinitialize ()
      end function gptlinitialize
 

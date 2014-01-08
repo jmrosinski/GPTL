@@ -9,11 +9,13 @@ void GPTLprint_memstats (FILE *fp, Timer **timers, int nthreads, int tablesize, 
   float regionmem = 0.;     /* timer memory usage */
   float papimem = 0.;       /* PAPI stats memory usage */
   float hashmem;            /* hash table memory usage */
+  float callstackmem;       /* callstack memory usage */
   float totmem;             /* total GPTL memory usage */
   int numtimers;            /* number of timers */
   int t;
 
   hashmem = (float) sizeof (Hashentry) * tablesize * maxthreads;  /* fixed size of table */
+  callstackmem = (float) sizeof (Timer *) * MAX_STACK * maxthreads;
   for (t = 0; t < nthreads; t++) {
     numtimers = 0;
     for (ptr = timers[t]->next; ptr; ptr = ptr->next) {
@@ -27,14 +29,15 @@ void GPTLprint_memstats (FILE *fp, Timer **timers, int nthreads, int tablesize, 
 #endif
   }
 
-  totmem = hashmem + regionmem + pchmem;
+  totmem = hashmem + regionmem + pchmem + callstackmem;
   fprintf (fp, "\n");
   fprintf (fp, "Total GPTL memory usage = %g KB\n", totmem*.001);
   fprintf (fp, "Components:\n");
   fprintf (fp, "Hashmem                 = %g KB\n" 
                "Regionmem               = %g KB (papimem portion = %g KB)\n"
-               "Parent/child arrays     = %g KB\n",
-           hashmem*.001, regionmem*.001, papimem*.001, pchmem*.001);
+               "Parent/child arrays     = %g KB\n"
+               "Callstackmem            = %g KB\n",
+           hashmem*.001, regionmem*.001, papimem*.001, pchmem*.001, callstackmem*.001);
 
   print_threadmapping (fp, nthreads);
 }

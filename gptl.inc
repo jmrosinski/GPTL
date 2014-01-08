@@ -101,6 +101,7 @@
       integer gptlinitialize
       integer gptlstart
       integer gptlstart_handle
+      integer gptlinit_handle
       integer gptlstop
       integer gptlstop_handle
       integer gptlstamp 
@@ -129,6 +130,7 @@
       external gptlinitialize
       external gptlstart
       external gptlstart_handle
+      external gptlinit_handle
       external gptlstop
       external gptlstop_handle
       external gptlstamp 
