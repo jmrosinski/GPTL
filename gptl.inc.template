@@ -125,6 +125,7 @@
       integer gptl_papilibraryinit
       integer gptlevent_name_to_code
       integer gptlevent_code_to_name
+      integer gptlnum_errors
 
       external gptlsetoption
       external gptlinitialize
@@ -154,3 +155,4 @@
       external gptl_papilibraryinit
       external gptlevent_name_to_code
       external gptlevent_code_to_name
+      external gptlnum_errors

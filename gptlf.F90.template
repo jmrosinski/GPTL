@@ -54,6 +54,12 @@ module gptl
 ! Function prototypes
 
   interface
+     subroutine gptlprocess_namelist (filename, unitno, outret)
+       character(len=*) :: filename
+       integer :: unitno
+       integer :: outret
+     end subroutine gptlprocess_namelist
+
      integer function gptlinitialize ()
      end function gptlinitialize
 
@@ -176,6 +182,9 @@ module gptl
      integer function gptlprint_memusage (str)
        character(len=*) :: str
      end function gptlprint_memusage
+
+     integer function gptlnum_errors ()
+     end function gptlnum_errors
 
 #ifdef HAVE_PAPI
      integer function gptl_papilibraryinit ()

@@ -236,6 +236,12 @@ int GPTLpr_summary (MPI_Comm comm)       /* communicator */
     if ( ! (fp = fopen (outfile, "w")))
       fp = stderr;
 
+    /* Print a warning if GPTLerror() was ever called */
+    if (GPTLnum_errors () > 0) {
+      fprintf (fp, "WARNING: GPTLerror was called at least once during the run.\n");
+      fprintf (fp, "Please examine your output for error messages beginning with GPTL...\n");
+    }
+
     /* Print heading */
     fprintf (fp, "Total ranks in communicator=%d\n", nranks);
     fprintf (fp, "nthreads on rank 0=%d\n", nthreads);

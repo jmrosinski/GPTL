@@ -8,8 +8,9 @@
 
 #include "private.h"
 
-static bool abort_on_error = false; /* flag says to abort on any error */
-static int max_error = 500;         /* max number of error print msgs */
+static bool abort_on_error = false;  /* flag says to abort on any error */
+static int max_errors = 10;          /* max number of error print msgs */
+static int num_errors = 0;           /* number of times GPTLerror was called */
 
 /*
 ** GPTLerror: error return routine to print a message and return a failure
@@ -27,25 +28,25 @@ int GPTLerror (const char *fmt, ...)
   va_list args;
   
   va_start (args, fmt);
-  static int num_error = 0;
   
-  if (fmt != NULL && num_error < max_error) {
+  if (fmt != NULL && num_errors < max_errors) {
 #ifdef HAVE_VPRINTF
+    (void) fprintf (stderr, "GPTL error:");
     (void) vfprintf (stderr, fmt, args);
 #else
     (void) fprintf (stderr, "GPTLerror: no vfprintf: fmt is %s\n", fmt);
 #endif
-    if (num_error == max_error)
+    if (num_errors == max_errors)
       (void) fprintf (stderr, "Truncating further error print now after %d msgs",
-		      num_error);
-    ++num_error;
-  }    
+		      num_errors);
+  }
   
   va_end (args);
   
   if (abort_on_error)
     exit (-1);
 
+  ++num_errors;
   return (-1);
 }
 
@@ -55,10 +56,27 @@ int GPTLerror (const char *fmt, ...)
 ** Input arguments:
 **   val: true (abort on error) or false (don't)
 */
-
 void GPTLset_abort_on_error (bool val)
 {
   abort_on_error = val;
+}
+
+/*
+** GPTLreset_errors: reset error state to no errors
+**
+*/
+void GPTLreset_errors (void)
+{
+  num_errors = 0;
+}
+
+/*
+** GPTLnum_errors: User-visible routine returns number of times GPTLerror() called
+**
+*/
+int GPTLnum_errors (void)
+{
+  return num_errors;
 }
 
 /*
@@ -69,7 +87,6 @@ void GPTLset_abort_on_error (bool val)
 **
 ** Return value: pointer to the new space (or NULL)
 */
-
 void *GPTLallocate (const int nbytes)
 {
   void *ptr;
@@ -79,4 +96,3 @@ void *GPTLallocate (const int nbytes)
 
   return ptr;
 }
-

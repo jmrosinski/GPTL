@@ -4,6 +4,9 @@
 
 static int gptlstart_sim (char *, int);
 static Timer *getentry_instr_sim (const Hashentry *,void *, unsigned int *, const int);
+static void misc_sim (Nofalse *, Timer ***, int);
+static bool initialized = true;
+static bool disabled = false;
 
 /*
 ** All routines in this file are non-public
@@ -25,13 +28,15 @@ static Timer *getentry_instr_sim (const Hashentry *,void *, unsigned int *, cons
 **
 ** Output args:
 **   self_ohd:      Estimate of GPTL-induced overhead in the timer itself (included in "Wallclock")
-**   parent_ohd:    Estimate of GPTL-induced overhead for the timer which appears in its parent
+**   parent_ohd:    Estimate of GPTL-induced overhead for the timer which appears in its parents
 */
 int GPTLget_overhead (FILE *fp,
 		      double (*ptr2wtimefunc)(void), 
 		      Timer *getentry (const Hashentry *, const char *, unsigned int),
 		      unsigned int genhashidx (const char *),
 		      int get_thread_num (void),
+		      Nofalse *stackidx,
+		      Timer ***callstack,
 		      const Hashentry *hashtable, 
 		      const int tablesize,
 		      bool dousepapi,
@@ -47,6 +52,7 @@ int GPTLget_overhead (FILE *fp,
   double papi_ohd;           /* Reading PAPI counters */
   double total_ohd;          /* Sum of overheads */
   double getentry_instr_ohd; /* Finding entry in hash tabe for auto-instrumented calls */
+  double misc_ohd;           /* misc. calcs within start/stop */
   int i, n;
   int ret;
   int mythread;              /* which thread are we */
@@ -56,6 +62,7 @@ int GPTLget_overhead (FILE *fp,
 
   /*
   ** Gather timings by running kernels 1000 times each.
+  ** First: Fortran wrapper overhead
   */
   t1 = (*ptr2wtimefunc)();
 #pragma unroll(10)
@@ -65,6 +72,7 @@ int GPTLget_overhead (FILE *fp,
   t2 = (*ptr2wtimefunc)();
   ftn_ohd = 0.001 * (t2 - t1);
 
+  /* get_thread_num() overhead */
   t1 = (*ptr2wtimefunc)();
 #pragma unroll(10)
   for (i = 0; i < 1000; ++i) {
@@ -73,6 +81,7 @@ int GPTLget_overhead (FILE *fp,
   t2 = (*ptr2wtimefunc)();
   get_thread_num_ohd = 0.001 * (t2 - t1);
 
+  /* genhashidx overhead */
   t1 = (*ptr2wtimefunc)();
 #pragma unroll(10)
   for (i = 0; i < 1000; ++i) {
@@ -81,7 +90,10 @@ int GPTLget_overhead (FILE *fp,
   t2 = (*ptr2wtimefunc)();
   genhashidx_ohd = 0.001 * (t2 - t1);
 
-  /* Find the first hashtable entry with a valid name. Start at 1 because 0 is not a valid hash */
+  /* 
+  ** getentry overhead
+  ** Find the first hashtable entry with a valid name. Start at 1 because 0 is not a valid hash
+  */
   for (n = 1; n < tablesize; ++n) {
     if (hashtable[n].nument > 0 && strlen (hashtable[n].entries[0]->name) > 0) {
       hashidx = genhashidx (hashtable[n].entries[0]->name);
@@ -103,6 +115,7 @@ int GPTLget_overhead (FILE *fp,
   }
   getentry_ohd = 0.001 * (t2 - t1);
 
+  /* utr overhead */
   t1 = (*ptr2wtimefunc)();
 #pragma unroll(10)
   for (i = 0; i < 1000; ++i) {
@@ -110,6 +123,7 @@ int GPTLget_overhead (FILE *fp,
   }
   utr_ohd = 0.001 * (t2 - t1);
 
+  /* PAPI overhead */
 #ifdef HAVE_PAPI
   if (dousepapi) {
     t1 = (*ptr2wtimefunc)();
@@ -124,6 +138,7 @@ int GPTLget_overhead (FILE *fp,
   papi_ohd = 0.;
 #endif
 
+  /* getentry_instr overhead */
   t1 = (*ptr2wtimefunc)();
 #pragma unroll(10)
   for (i = 0; i < 1000; ++i) {
@@ -132,7 +147,17 @@ int GPTLget_overhead (FILE *fp,
   t2 = (*ptr2wtimefunc)();
   getentry_instr_ohd = 0.001 * (t2 - t1);
 
-  total_ohd = ftn_ohd + get_thread_num_ohd + genhashidx_ohd + getentry_ohd + utr_ohd + papi_ohd;
+  /* misc start/stop overhead */
+  t1 = (*ptr2wtimefunc)();
+#pragma unroll(10)
+  for (i = 0; i < 1000; ++i) {
+    misc_sim (stackidx, callstack, 0);
+  }
+  t2 = (*ptr2wtimefunc)();
+  misc_ohd = 0.001 * (t2 - t1);
+
+  total_ohd = ftn_ohd + get_thread_num_ohd + genhashidx_ohd + getentry_ohd + 
+              utr_ohd + misc_ohd + papi_ohd;
   fprintf (fp, "Total overhead of 1 GPTL start or GPTLstop call=%g seconds\n", total_ohd);
   fprintf (fp, "Components are as follows:\n");
   fprintf (fp, "Fortran layer:             %7.1e = %5.1f%% of total\n", 
@@ -145,12 +170,15 @@ int GPTLget_overhead (FILE *fp,
 	  getentry_ohd, getentry_ohd / total_ohd * 100.);
   fprintf (fp, "Underlying timing routine: %7.1e = %5.1f%% of total\n", 
 	  utr_ohd, utr_ohd / total_ohd * 100.);
+  fprintf (fp, "Misc start/stop functions: %7.1e = %5.1f%% of total\n", 
+	  misc_ohd, misc_ohd / total_ohd * 100.);
 #ifdef HAVE_PAPI
   if (dousepapi) {
     fprintf (fp, "Read PAPI counters:        %7.1e = %5.1f%% of total\n", 
 	    papi_ohd, papi_ohd / total_ohd * 100.);
   }
 #endif
+  fprintf (fp, "\n");
   fprintf (fp, "NOTE: If GPTL is called from C not Fortran, the 'Fortran layer' overhead is zero\n");
   fprintf (fp, "NOTE: For calls to GPTLstart_handle()/GPTLstop_handle(), the 'Generate hash index' overhead is zero\n");
   fprintf (fp, "NOTE: For auto-instrumented calls, the cost of generating the hash index plus finding\n"
@@ -158,7 +186,8 @@ int GPTLget_overhead (FILE *fp,
 	  getentry_instr_ohd, genhashidx_ohd + getentry_ohd);
   fprintf (fp, "NOTE: Each hash collision roughly doubles the 'Find hashtable entry' cost of that timer\n");
   *self_ohd   = ftn_ohd + utr_ohd; /* In GPTLstop() ftn wrapper is called before utr */
-  *parent_ohd = ftn_ohd + utr_ohd + 2.*(get_thread_num_ohd + genhashidx_ohd + getentry_ohd + papi_ohd);
+  *parent_ohd = ftn_ohd + utr_ohd + misc_ohd +
+                2.*(get_thread_num_ohd + genhashidx_ohd + getentry_ohd + papi_ohd);
   return 0;
 }
 
@@ -166,7 +195,7 @@ int GPTLget_overhead (FILE *fp,
 ** GPTLstart_sim: Simulate the cost of Fortran wrapper layer "gptlstart()"
 ** 
 ** Input args:
-**   name: timer nae
+**   name: timer name
 **   nc1:  number of characters in "name"
 */
 static int gptlstart_sim (char *name, int nc1)
@@ -202,4 +231,39 @@ static Timer *getentry_instr_sim (const Hashentry *hashtable,
     ptr = hashtable[*indx].entries[0];
   }
   return ptr;
+}
+
+/*
+** misc_sim: Simulate the cost of miscellaneous computations in start/stop
+** 
+** Input args:
+**   stackidx:  stack index
+**   callstack: call stack
+**   t:         thread index
+*/
+static void misc_sim (Nofalse *stackidx, Timer ***callstack, int t)
+{
+  int bidx;
+  Timer *bptr;
+  static Timer *ptr = 0;
+
+  if (disabled)
+    printf ("misc_sim: should never print disabled\n");
+
+  if (! initialized)
+    printf ("misc_sim: should never print ! initialized\n");
+
+  bidx = stackidx[t].val;
+  bptr = callstack[t][bidx];
+  if (ptr == bptr)
+    printf ("misc_sim: should never print ptr=bptr\n");
+
+  --stackidx[t].val;
+  if (stackidx[t].val < -2)
+    printf ("misc_sim: should never print stackidxt < -2\n");
+
+  if (++stackidx[t].val > MAX_STACK-1)
+    printf ("misc_sim: should never print stackidxt > MAX_STACK-1\n");
+
+  return;
 }

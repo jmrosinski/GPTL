@@ -40,6 +40,11 @@ typedef enum {false = 0, true = 1} bool;  /* mimic C++ */
 #endif
 
 typedef struct {
+  int val;                  /* depth in calling tree */
+  int padding[31];          /* padding is to mitigate false cache sharing */
+} Nofalse; 
+
+typedef struct {
   long last_utime;          /* saved usr time from "start" */
   long last_stime;          /* saved sys time from "start" */
   long accum_utime;         /* accumulator for usr time */
@@ -92,7 +97,6 @@ typedef struct TIMER {
   unsigned int nchildren;   /* number of children */
   unsigned int nparent;     /* number of parents */
   unsigned int norphan;     /* number of times this timer was an orphan */
-  int num_desc;             /* number of descendants */
   bool onflg;               /* timer currently on or off */
   char name[MAX_CHARS+1];   /* timer name (user input) */
 } Timer;
@@ -116,6 +120,7 @@ extern int GPTLthreadid;
 /* Function prototypes */
 extern int GPTLerror (const char *, ...);      /* print error msg and return */
 extern void GPTLset_abort_on_error (bool val); /* set flag to abort on error */
+extern void GPTLreset_errors (void);           /* num_errors to zero */
 extern void *GPTLallocate (const int);         /* malloc wrapper */
 
 extern int GPTLstart_instr (void *);           /* auto-instrumented start */
@@ -126,6 +131,8 @@ extern int GPTLget_overhead (FILE *,                       /* file descriptor */
 			     Timer *(),                    /* getentry() */
 			     unsigned int (const char *),  /* genhashidx() */
 			     int (void),                   /* get_thread_num() */
+			     Nofalse *,                    /* stackidx */
+			     Timer ***,                    /* callstack */
 			     const Hashentry *,            /* hashtable */
 			     const int,                    /* tablesize */
 			     bool,                         /* dousepapi */

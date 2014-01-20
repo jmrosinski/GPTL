@@ -94,8 +94,8 @@ static volatile pthread_mutex_t t_mutex;
 static volatile pthread_mutex_t t_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 volatile pthread_t *GPTLthreadid = 0;  /* array of thread ids */
-static int lock_mutex (void);      /* lock a mutex for entry into a critical region */
-static int unlock_mutex (void);    /* unlock a mutex for exit from a critical region */
+static int lock_mutex (void);          /* lock a mutex for entry into a critical region */
+static int unlock_mutex (void);        /* unlock a mutex for exit from a critical region */
 
 #else
 
@@ -117,11 +117,6 @@ static Settings overheadstats = {GPTLoverhead, "self_OH  parent_OH "           ,
 
 static Hashentry **hashtable;    /* table of entries */
 static long ticks_per_sec;       /* clock ticks per second */
-
-typedef struct {
-  int val;                       /* depth in calling tree */
-  int padding[31];               /* padding is to mitigate false cache sharing */
-} Nofalse; 
 static Timer ***callstack;       /* call stack */
 static Nofalse *stackidx;        /* index into callstack: */
 
@@ -135,6 +130,7 @@ static inline int get_cpustamp (long *, long *);
 static int newchild (Timer *, Timer *);
 static int get_max_depth (const Timer *, const int);
 static int is_descendant (const Timer *, const Timer *);
+static int is_onlist (const Timer *, const Timer *);
 static char *methodstr (Method);
 
 /* Prototypes from previously separate file threadutil.c */
@@ -202,10 +198,10 @@ static char *clock_source = "UNKNOWN";            /* where clock found */
 #define DEFAULT_TABLE_SIZE 1023
 static int tablesize = DEFAULT_TABLE_SIZE;  /* per-thread size of hash table (settable parameter) */
 static int tablesizem1 = DEFAULT_TABLE_SIZE - 1;
-static char *outdir = 0;                    /* dir to write output files to (currently unused) */
 
 #define MSGSIZ 256                          /* max size of msg printed when dopr_memusage=true */
 static int rssmax = 0;                      /* max rss of the process */
+static bool imperfect_nest;                 /* e.g. start(A),start(B),stop(A) */
 
 /* VERBOSE is a debugging ifdef local to the rest of this file */
 #undef VERBOSE
@@ -466,6 +462,7 @@ int GPTLinitialize (void)
     printf ("Underlying wallclock timing routine is %s\n", funclist[funcidx].name);
   }
 
+  imperfect_nest = false;
   initialized = true;
   return 0;
 }
@@ -515,6 +512,7 @@ int GPTLfinalize (void)
   free (hashtable);
 
   threadfinalize ();
+  GPTLreset_errors ();
 
 #ifdef HAVE_PAPI
   GPTL_PAPIfinalize (maxthreads);
@@ -553,7 +551,6 @@ int GPTLfinalize (void)
   cpumhz= 0;
   cyc2sec = -1;
 #endif
-  outdir = 0;
   tablesize = DEFAULT_TABLE_SIZE;
   tablesizem1 = tablesize - 1;
 
@@ -662,7 +659,6 @@ int GPTLstart (const char *name)               /* timer name */
   ** If current depth exceeds a user-specified limit for print, just
   ** increment and return
   */
-
   if (stackidx[t].val >= depthlimit) {
     ++stackidx[t].val;
     return 0;
@@ -821,7 +817,7 @@ int GPTLstart_handle (const char *name,  /* timer name */
 
 /*
 ** update_ll_hash: Update linked list and hash table.
-**                 Called by GPTLstart, GPTLstart_instr and GPTLstart_handle
+**                 Called by all GPTLstart* routines when there is a new entry
 **
 ** Input arguments:
 **   ptr:  pointer to timer
@@ -856,7 +852,7 @@ static int update_ll_hash (Timer *ptr, int t, unsigned int indx)
 }
 
 /*
-** update_ptr: Update timer contents. Called by GPTLstart and GPTLstart_instr and GPTLstart_handle
+** update_ptr: Update timer contents. Called by GPTLstart, GPTLstart_instr and GPTLstart_handle
 **
 ** Input arguments:
 **   ptr:  pointer to timer
@@ -887,6 +883,7 @@ static inline int update_ptr (Timer *ptr, const int t)
 
 /*
 ** update_parent_info: update info about parent, and in the parent about this child
+**                     Called by all GPTLstart* routines
 **
 ** Arguments:
 **   ptr:  pointer to timer
@@ -914,7 +911,7 @@ static inline int update_parent_info (Timer *ptr,
 
   callstackt[stackidxt] = ptr;
 
-  /* If the region has no parent, bump its orphan count (should never happen since "GPTL_ROOT" added) */
+  /* Bump orphan count if the region has no parent (should never happen since "GPTL_ROOT" added) */
   if (stackidxt == 0) {
     ++ptr->norphan;
     return 0;
@@ -1114,7 +1111,6 @@ int GPTLstop_handle (const char *name,     /* timer name */
     return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
 
   /* Get the timestamp */
-    
   if (wallstats.enabled) {
     tp1 = (*ptr2wtimefunc) ();
   }
@@ -1180,15 +1176,12 @@ static inline int update_stats (Timer *ptr,
                                 const long sys,
                                 const int t)
 {
-  double delta;       /* difference */
+  double delta;      /* difference */
+  int bidx;          /* bottom of call stack */
+  Timer *bptr;       /* pointer to last entry in call stack */
   static const char *thisfunc = "update_stats";
 
   ptr->onflg = false;
-  --stackidx[t].val;
-  if (stackidx[t].val < -1) {
-    stackidx[t].val = -1;
-    return GPTLerror ("%s: tree depth has become negative.\n", thisfunc);
-  }
 
 #ifdef HAVE_PAPI
   if (dousepapi && GPTL_PAPIstop (t, &ptr->aux) < 0)
@@ -1220,6 +1213,22 @@ static inline int update_stats (Timer *ptr,
     ptr->cpu.last_utime   = usr;
     ptr->cpu.last_stime   = sys;
   }
+
+  /* Verify that the timer being stopped is at the bottom of the call stack */
+  bidx = stackidx[t].val;
+  bptr = callstack[t][bidx];
+  if (ptr != bptr) {
+    imperfect_nest = true;
+    return GPTLerror ("%s: Got timer=%s expected btm of call stack=%s\n",
+		      thisfunc, ptr->name, bptr->name);
+  }
+
+  --stackidx[t].val;           /* Pop the callstack */
+  if (stackidx[t].val < -1) {
+    stackidx[t].val = -1;
+    return GPTLerror ("%s: tree depth has become negative.\n", thisfunc);
+  }
+
   return 0;
 }
 
@@ -1347,42 +1356,35 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   Timer *tptr;              /* walk through slave threads linked lists */
   Timer sumstats;           /* sum of same timer stats over threads */
   int n, t;                 /* indices */
-  int totlen;               /* length for malloc */
   unsigned long totcount;   /* total timer invocations */
-  char *outpath;            /* path to output file: outdir/timing.xxxxxx */
   float *sum;               /* sum of overhead values (per thread) */
   float osum;               /* sum of overhead over threads */
   bool found;               /* jump out of loop when name found */
   bool foundany;            /* whether summation print necessary */
   bool first;               /* flag 1st time entry found */
-  double self_ohd;
-  double parent_ohd;
+  double self_ohd;          /* estimated library overhead in self timer */
+  double parent_ohd;        /* estimated library overhead due to self in parent timer */
 
   static const char *thisfunc = "GPTLpr_file";
 
   if ( ! initialized)
     return GPTLerror ("%s: GPTLinitialize() has not been called\n", thisfunc);
 
-  /* 2 is for "/" plus null */
-  if (outdir)
-    totlen = strlen (outdir) + strlen (outfile) + 2; 
-  else
-    totlen = strlen (outfile) + 2; 
-
-  outpath = (char *) GPTLallocate (totlen);
-
-  if (outdir) {
-     strcpy (outpath, outdir);
-     strcat (outpath, "/");
-     strcat (outpath, outfile);
-  } else {
-     strcpy (outpath, outfile);
-  }
-
-  if ( ! (fp = fopen (outpath, "w")))
+  if ( ! (fp = fopen (outfile, "w")))
     fp = stderr;
 
-  free (outpath);
+  /* Print a warning if GPTLerror() was ever called */
+  if (GPTLnum_errors () > 0) {
+    fprintf (fp, "WARNING: GPTLerror was called at least once during the run.\n");
+    fprintf (fp, "Please examine your output for error messages beginning with GPTL...\n");
+  }
+
+  /* Print a warning if imperfect nesting was encountered */
+  if (imperfect_nest) {
+    fprintf (fp, "WARNING: SOME TIMER CALLS WERE DETECTED TO HAVE IMPERFECT NESTING.\n");
+    fprintf (fp, "NESTING OF TIMERS PRINTED BELOW LIKELY WILL CONTAIN ERRORS.\n");
+    fprintf (fp, "AND SOME TIMINGS MAY BE INACCURATE\n");
+  }
 
   /* A set of nasty ifdefs to tell important aspects of how GPTL was built */
 #ifdef HAVE_NANOTIME
@@ -1443,7 +1445,8 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   fprintf (fp, "Underlying timing routine was %s.\n", funclist[funcidx].name);
   (void) GPTLget_overhead (fp, ptr2wtimefunc, getentry, genhashidx, get_thread_num, 
-			  hashtable[0], tablesize, dousepapi, &self_ohd, &parent_ohd);
+			   stackidx, callstack, hashtable[0], tablesize, dousepapi, 
+			   &self_ohd, &parent_ohd);
   if (dopr_preamble) {
     fprintf (fp, "\nIf overhead stats are printed, they are the columns labeled self_OH and parent_OH\n"
 	     "self_OH is estimated as 2X the Fortran layer cost (start+stop) plust the cost of \n"
@@ -1655,8 +1658,10 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 **                 parent list for each child.
 **
 ** Input arguments:
-**   timerst: Linked list of timers
 **   method:  method to be used to define the links
+**
+** Input/Output arguments:
+**   timerst: Linked list of timers. "children" array for each timer will be constructed
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
@@ -1738,8 +1743,10 @@ static char *methodstr (Method method)
 **   is_descendant() to prevent infinite loops. 
 **
 ** Input arguments:
-**   parent: parent node
 **   child:  child to be added
+**
+** Input/output arguments:
+**   parent: parent node which will have "child" added to its "children" array
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
@@ -1762,14 +1769,19 @@ static int newchild (Timer *parent, Timer *child)
                       thisfunc, child->name, parent->name);
   }
 
-  /* Safe to add the child to the parent's list of children */
-  ++parent->nchildren;
-  nchildren = parent->nchildren;
-  chptr = (Timer **) realloc (parent->children, nchildren * sizeof (Timer *));
-  if ( ! chptr)
-    return GPTLerror ("%s: realloc error\n", thisfunc);
-  parent->children = chptr;
-  parent->children[nchildren-1] = child;
+  /* 
+  ** Add child to parent's array of children if it isn't already there (e.g. by an earlier call
+  ** to GPTLpr*)
+  */
+  if ( ! is_onlist (child, parent)) {
+    ++parent->nchildren;
+    nchildren = parent->nchildren;
+    chptr = (Timer **) realloc (parent->children, nchildren * sizeof (Timer *));
+    if ( ! chptr)
+      return GPTLerror ("%s: realloc error\n", thisfunc);
+    parent->children = chptr;
+    parent->children[nchildren-1] = child;
+  }
 
   return 0;
 }
@@ -1819,6 +1831,27 @@ static int is_descendant (const Timer *node1, const Timer *node2)
   for (n = 0; n < node1->nchildren; ++n)
     if (is_descendant (node1->children[n], node2))
       return 1;
+
+  return 0;
+}
+
+/* 
+** is_onlist: Determine whether child is in parent's list of children
+**
+** Input arguments:
+**   child: who to search for
+**   parent: search through his list of children
+**
+** Return value: true or false
+*/
+static int is_onlist (const Timer *child, const Timer *parent)
+{
+  int n;
+
+  for (n = 0; n < parent->nchildren; ++n) {
+    if (child == parent->children[n])
+      return 1;
+  }
 
   return 0;
 }

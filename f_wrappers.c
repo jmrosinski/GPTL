@@ -42,6 +42,7 @@
 #define gptlget_regionname GPTLGET_REGIONNAME
 #define gptlget_memusage GPTLGET_MEMUSAGE
 #define gptlprint_memusage GPTLPRINT_MEMUSAGE
+#define gptlnum_errors GPTLNUM_ERRORS
 #define gptl_papilibraryinit GPTL_PAPILIBRARYINIT
 #define gptlevent_name_to_code GPTLEVENT_NAME_TO_CODE
 #define gptlevent_code_to_name GPTLEVENT_CODE_TO_NAME
@@ -73,6 +74,7 @@
 #define gptlget_regionname gptlget_regionname_
 #define gptlget_memusage gptlget_memusage_
 #define gptlprint_memusage gptlprint_memusage_
+#define gptlnum_errors gptlnum_errors_
 #define gptl_papilibraryinit gptl_papilibraryinit_
 #define gptlevent_name_to_code gptlevent_name_to_code_
 #define gptlevent_code_to_name gptlevent_code_to_name_
@@ -104,6 +106,7 @@
 #define gptlget_regionname gptlget_regionname__
 #define gptlget_memusage gptlget_memusage__
 #define gptlprint_memusage gptlprint_memusage__
+#define gptlnum_errors gptlnum_errors__
 #define gptl_papilibraryinit gptl_papilibraryinit__
 #define gptlevent_name_to_code gptlevent_name_to_code__
 #define gptlevent_code_to_name gptlevent_code_to_name__
@@ -144,6 +147,7 @@ int gptlget_nregions (int *t, int *nregions);
 int gptlget_regionname (int *t, int *region, char *name, int nc);
 int gptlget_memusage (int *size, int *rss, int *share, int *text, int *datastack);
 int gptlprint_memusage (const char *str, int nc);
+int gptlnum_errors (void);
 #ifdef HAVE_PAPI
 int gptl_papilibraryinit (void);
 int gptlevent_name_to_code (const char *str, int *code, int nc);
@@ -400,6 +404,11 @@ int gptlprint_memusage (const char *str, int nc)
   return GPTLprint_memusage (cname);
 }
 
+int gptlnum_errors (void)
+{
+  return GPTLnum_errors ();
+}
+
 #ifdef HAVE_PAPI
 #include <papi.h>
 
@@ -437,4 +446,3 @@ int gptlevent_code_to_name (int *code, char *str, int nc)
   return 0;
 }
 #endif
-

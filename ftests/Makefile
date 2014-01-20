@@ -113,7 +113,7 @@ testbacktrace: testbacktrace.F90
 test: $(TESTS)
 	@$(RM) timing.0
 	@echo Running ./testbasics...
-	./testbasics || (echo "Failed" && exit 1)
+	./testbasics
 	@echo Success
 	@echo
 	@echo Checking contents of timing.0 for a specific region name...
@@ -121,24 +121,24 @@ test: $(TESTS)
 	@echo Success
 	@echo
 	@echo Running ./nlreader...
-	./nlreader || (echo "Failed" && exit 1)
+	./nlreader
 	@echo Success
 ifeq ($(THREADED),yes)
 	@echo Running ./toomanythreads...
-	./toomanythreads || (echo "Failed" && exit 1)
+	./toomanythreads
 endif
 ifeq ($(HAVE_PAPI),yes)
 	@echo
 	@echo Running ./testinit...
-	./testinit || (echo "Failed" && exit 1)
+	./testinit
 	@echo
 	@echo Running ./testpapi...
-	./testpapi || (echo "Failed" && exit 1)
+	./testpapi
 endif
 ifeq ($(ENABLE_PMPI),yes)
 	@echo
 	@echo Running $(MPICMD) ./pmpi
-	env $(MPICMD) ./pmpi || (echo "Failed" && exit 1)
+	env $(MPICMD) ./pmpi
 	@echo Checking contents of timing.0 for region name MPI_Send...
 	@grep -q MPI_Send timing.0 || (echo "Failed" && exit 1)
 	@echo Success

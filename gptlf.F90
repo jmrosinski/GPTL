@@ -183,6 +183,9 @@ module gptl
        character(len=*) :: str
      end function gptlprint_memusage
 
+     integer function gptlnum_errors ()
+     end function gptlnum_errors
+
 #ifdef HAVE_PAPI
      integer function gptl_papilibraryinit ()
      end function gptl_papilibraryinit

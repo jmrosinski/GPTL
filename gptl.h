@@ -122,6 +122,7 @@ extern int GPTLget_regionname (int, int, char *, int);
 extern int GPTL_PAPIlibraryinit (void);
 extern int GPTLevent_name_to_code (const char *, int *);
 extern int GPTLevent_code_to_name (const int, char *);
+extern int GPTLnum_errors (void);
 
 #ifdef __cplusplus
 };
