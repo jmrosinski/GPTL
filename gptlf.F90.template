@@ -186,6 +186,15 @@ module gptl
      integer function gptlnum_errors ()
      end function gptlnum_errors
 
+     integer function gptlnum_warn ()
+     end function gptlnum_warn
+
+     integer function gptlget_count (name, t, count)
+       character(len=*) :: name
+       integer :: t
+       integer :: count
+     end function gptlget_count
+
 #ifdef HAVE_PAPI
      integer function gptl_papilibraryinit ()
      end function gptl_papilibraryinit

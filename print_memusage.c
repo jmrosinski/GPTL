@@ -26,6 +26,7 @@ int GPTLprint_memusage (const char *str)
   int datastack;                  /* data/stack size (returned from OS) */
   static int pagesize = -1;       /* convert to bytes (init to invalid) */
   static double pagestomb = -1;   /* convert pages to MB */
+  static const char *thisfunc = "GPTLprint_memusage";
   
   if (GPTLget_memusage (&size, &rss, &share, &text, &datastack) < 0)
     return -1;
@@ -35,15 +36,15 @@ int GPTLprint_memusage (const char *str)
   if (pagesize == -1)
     if ((pagesize = sysconf (_SC_PAGESIZE)) > 0) {
       pagestomb = pagesize / (1024.*1024.);
-      printf ("GPTLprint_memusage: Using pagesize=%d\n", pagesize);
+      printf ("%s: Using pagesize=%d\n", thisfunc, pagesize);
     }
   
   if (pagestomb > 0)
-    printf ("%s size=%.1f MB rss=%.1f MB datastack=%.1f MB\n", 
-	    str, size*pagestomb, rss*pagestomb, datastack*pagestomb);
+    printf ("%s: %s size=%.1f MB rss=%.1f MB datastack=%.1f MB\n", 
+	    thisfunc, str, size*pagestomb, rss*pagestomb, datastack*pagestomb);
   else
-    printf ("%s size=%d rss=%d datastack=%d\n", 
-	    str, size, rss, datastack);
+    printf ("%s: %s size=%d rss=%d datastack=%d\n", 
+	    thisfunc, str, size, rss, datastack);
 
 #else
 
@@ -54,9 +55,9 @@ int GPTLprint_memusage (const char *str)
   pagesize = 1024;
   pagestomb = pagesize / (1024.*1024.);
   if (1) /* change to 0 if cannot convert to MB */
-    printf ("%s max rss=%.1f MB\n", str, rss*pagestomb);
+    printf ("%s: %s max rss=%.1f MB\n", thisfunc, str, rss*pagestomb);
   else
-    printf ("%s max rss=%d\n", str, rss);
+    printf ("%s: %s max rss=%d\n", thisfunc, str, rss);
 #endif
 
   return 0;

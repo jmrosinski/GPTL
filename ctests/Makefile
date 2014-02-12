@@ -6,7 +6,7 @@ include ../macros.make
 # Ensure that CFLAGS are set for no optimization
 CFLAGS += -g -O0
 
-TESTS = global outoforder
+TESTS = global
 ifeq ($(HAVE_MPI),yes)
   TESTS += summary pmpi
 endif
@@ -109,17 +109,12 @@ pmpi: pmpi.o
 global: global.o
 	$(CC) -o $@ $< $(LDFLAGS)
 
-outoforder: outoforder.o
-	$(CC) -o $@ $< $(LDFLAGS)
-
 # Built-in tests to ensure that GPTL is behaving as expected
 # Invoke as "make test" from one dir above
 
 test: $(TESTS)
 	@echo
 
-	@echo Running ./outoforder
-	@./outoforder
 ifeq ($(HAVE_PAPI),yes)
 	@./testpapi
 	@echo

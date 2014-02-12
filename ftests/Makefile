@@ -13,7 +13,7 @@ THREADED = no
 FFLAGS += -g -O1
 
 # TESTS defines which of EXES have a built-in testing procedure.
-TESTS = testbasics nlreader
+TESTS = testbasics nlreader outoforder
 
 ifeq ($(HAVE_PAPI),yes)
   TESTS += testinit testpapi
@@ -92,6 +92,9 @@ testbasics: testbasics.o
 nlreader: nlreader.o
 	$(FC) $(FFLAGS) -o $@ $< $(LDFLAGS)
 
+outoforder: outoforder.o
+	$(FC) $(FFLAGS) -o $@ $< $(LDFLAGS)
+
 pmpi: pmpi.o
 	$(FC) $(FFLAGS) -o $@ $< $(LDFLAGS)
 pmpi.o: pmpi.F90
@@ -122,6 +125,9 @@ test: $(TESTS)
 	@echo
 	@echo Running ./nlreader...
 	./nlreader
+	@echo Success
+	@echo Running ./outoforder...
+	./outoforder
 	@echo Success
 ifeq ($(THREADED),yes)
 	@echo Running ./toomanythreads...

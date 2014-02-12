@@ -118,14 +118,15 @@ extern int GPTLthreadid;
 #endif
 
 /* Function prototypes */
-extern int GPTLerror (const char *, ...);      /* print error msg and return */
-extern void GPTLset_abort_on_error (bool val); /* set flag to abort on error */
-extern void GPTLreset_errors (void);           /* num_errors to zero */
-extern void *GPTLallocate (const int);         /* malloc wrapper */
+extern int GPTLerror (const char *, ...);                  /* print error msg and return */
+extern void GPTLwarn (const char *, ...);                  /* print warning msg and return */
+extern void GPTLset_abort_on_error (bool val);             /* set flag to abort on error */
+extern void GPTLreset_errors (void);                       /* num_errors to zero */
+extern void *GPTLallocate (const int, const char *);       /* malloc wrapper */
 
-extern int GPTLstart_instr (void *);           /* auto-instrumented start */
-extern int GPTLstop_instr (void *);            /* auto-instrumented stop */
-extern int GPTLis_initialized (void);          /* needed by MPI_Init wrapper */
+extern int GPTLstart_instr (void *);                       /* auto-instrumented start */
+extern int GPTLstop_instr (void *);                        /* auto-instrumented stop */
+extern int GPTLis_initialized (void);                      /* needed by MPI_Init wrapper */
 extern int GPTLget_overhead (FILE *,                       /* file descriptor */
 			     double (*)(),                 /* UTR() */
 			     Timer *(),                    /* getentry() */
@@ -136,6 +137,7 @@ extern int GPTLget_overhead (FILE *,                       /* file descriptor */
 			     const Hashentry *,            /* hashtable */
 			     const int,                    /* tablesize */
 			     bool,                         /* dousepapi */
+			     int,                          /* imperfect_nest */
 			     double *,                     /* self_ohd */
 			     double *);                    /* parent_ohd */
 extern void GPTLprint_hashstats (FILE *, int, Hashentry **, int);

@@ -123,6 +123,8 @@ extern int GPTL_PAPIlibraryinit (void);
 extern int GPTLevent_name_to_code (const char *, int *);
 extern int GPTLevent_code_to_name (const int, char *);
 extern int GPTLnum_errors (void);
+extern int GPTLnum_warn (void);
+extern int GPTLget_count (const char *, int, int *);
 
 #ifdef __cplusplus
 };
