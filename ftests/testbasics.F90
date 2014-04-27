@@ -71,6 +71,11 @@ program testbasics
     call exit(1)
   end if
   
+  if (gptlprint_rusage (trim(str)) /= 0) then
+    write(6,*)'Failure in gptlprint_rusage'
+    call exit(1)
+  end if
+  
   write(6,*)'Success'
   
   write(6,*)'Testing gptldisable/gptlenable...'

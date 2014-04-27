@@ -80,7 +80,7 @@ endif
 # Archiver: normally it's just ar
 AR = ar
 
-# PAPI: If the PAPI library is already installed, set HAVE_PAPI=yes and set inc and lib 
+# PAPI: If a recent version of PAPI is installed, set HAVE_PAPI=yes and set inc and lib 
 # info as appropriate. 
 HAVE_PAPI = no
 ifeq ($(HAVE_PAPI),yes)
@@ -136,6 +136,16 @@ endif
 # start/stop entries for a number of MPI calls.
 ifeq ($(HAVE_MPI),yes)
   ENABLE_PMPI = yes
+  ifeq ($(ENABLE_PMPI),yes)
+# Some newer MPI releases change the prototype of some input arguments from "void *" 
+# to "const void *". The prototype for these functions inside GPTL must match the
+# MPI library in use. For ENABLE_PMPI=yes, set MPI_CONST to yes or no appropriately.
+    MPI_CONST = no
+# Yet another (Fortran-only) wart: the value of MPI_STATUS_SIZE varies among MPI distributions. 
+# Normal values are 5 or 10. AIX and very new MPICH versions it is 10. Set it here--if you get it
+# wrong your instrumented code will tell you at run time the proper value. Or run ftests/pmpi
+   MPI_STATUS_SIZE_IN_INTS = 10
+  endif
 # If Fortran is enabled, the ability to automatically initialize GPTL from
 # mpi_init can be enabled if iargc() and getarg() are available.
   ifeq ($(FORTRAN),yes)

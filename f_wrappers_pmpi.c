@@ -5,39 +5,7 @@
 #include <mpi.h>
 #endif
 
-#if ( defined FORTRANCAPS )
-
-#define iargc IARGC
-#define getarg GETARG
-#define mpi_init MPI_INIT
-#define mpi_init_thread MPI_INIT_THREAD
-#define mpi_finalize MPI_FINALIZE
-#define mpi_send MPI_SEND
-#define mpi_recv MPI_RECV
-#define mpi_sendrecv MPI_SENDRECV
-#define mpi_isend MPI_ISEND
-#define mpi_issend MPI_ISSEND
-#define mpi_irecv MPI_IRECV
-#define mpi_wait MPI_WAIT
-#define mpi_waitall MPI_WAITALL
-#define mpi_barrier MPI_BARRIER
-#define mpi_bcast MPI_BCAST
-#define mpi_allreduce MPI_ALLREDUCE
-#define mpi_gather MPI_GATHER
-#define mpi_gatherv MPI_GATHERV
-#define mpi_scatter MPI_SCATTER
-#define mpi_alltoall MPI_ALLTOALL
-#define mpi_reduce MPI_REDUCE
-#define mpi_allgather MPI_ALLGATHER
-#define mpi_allgatherv MPI_ALLGATHERV
-#define mpi_iprobe MPI_IPROBE
-#define mpi_probe MPI_PROBE
-#define mpi_ssend MPI_SSEND
-#define mpi_alltoallv MPI_ALLTOALLV
-#define mpi_scatterv MPI_SCATTERV
-#define mpi_test MPI_TEST
-
-#elif ( defined FORTRANUNDERSCORE )
+#if ( defined FORTRANUNDERSCORE )
 
 #define iargc iargc_
 #define getarg getarg_
@@ -109,17 +77,14 @@ void mpi_finalize (MPI_Fint *ierr);
 #endif
 
 #ifdef HAVE_MPI
+#ifdef ENABLE_PMPI
 
 /*
 ** Wart needed for MPI_Waitall. fpmpi configure figures this out--I just hardwired
 ** the most common value. It currently fails on NCAR bluefire machine.
 */
 #ifndef MPI_STATUS_SIZE
-#ifdef _AIX
-#define MPI_STATUS_SIZE 10
-#else
-#define MPI_STATUS_SIZE 5
-#endif
+#define MPI_STATUS_SIZE MPI_STATUS_SIZE_IN_INTS
 #endif
 
 /* Local prototypes */
@@ -190,7 +155,6 @@ void mpi_scatterv (void *sendbuf, MPI_Fint *sendcnts, MPI_Fint *displs,
 void mpi_test (MPI_Fint *request, MPI_Fint *flag, MPI_Fint *status, 
 	       MPI_Fint *__ierr );
 
-#ifdef ENABLE_PMPI
 /*
 ** These routines were adapted from the FPMPI distribution. They ensure profiling of 
 ** Fortran codes, using the routines defined in pmpi.c
@@ -399,12 +363,13 @@ void mpi_waitall (MPI_Fint *count, MPI_Fint array_of_requests[],
   int i;
   MPI_Request lrequest[LOCAL_ARRAY_SIZE];
   MPI_Status c_status[LOCAL_ARRAY_SIZE];
+  static const char *thisfunc = "GPTL's mpi_waitall";
 
   if (MPI_STATUS_SIZE != sizeof(MPI_Status)/sizeof(int)) {
     /* Warning - */
-    fprintf (stderr, "ERROR from GPTL: mpi_waitall expected sizeof MPI_Status\n"
-	          "to be %d integers but it is %d. Rebuild GPTL after ensuring that the\n"
-	          "correct value is found and set in f_wrappers_pmpi.c\n", MPI_STATUS_SIZE,
+    fprintf (stderr, "%s ERROR: mpi_waitall expected sizeof MPI_Status\n"
+	     "to be %d integers but it is %d. Rebuild GPTL after ensuring that the\n"
+	     "correct value is found and set in macros.make\n", thisfunc, MPI_STATUS_SIZE,
 	     (int) (sizeof(MPI_Status)/sizeof(int)) );
     fprintf (stderr, "Aborting...\n");
     (void) MPI_Abort (MPI_COMM_WORLD, -1);

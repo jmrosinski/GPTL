@@ -52,11 +52,7 @@ int main (int argc, char **argv)
   ret = GPTLstart ("total");                   /* Time the whole program */
 #endif
 
-
-  /*
-  ** Initialize MPI by using MPI_Init_thread: report back level of MPI support
-  */
-
+  /* Initialize MPI by using MPI_Init_thread: report back level of MPI support */
   if ((ret = MPI_Init_thread (&argc, &argv, MPI_THREAD_SINGLE, &provided)) != 0) {
     MPI_Error_string (ret, string, &resultlen);
     printf ("%s: error from MPI_Init_thread: %s\n", argv[0], string);
@@ -93,7 +89,6 @@ int main (int argc, char **argv)
     source = commsize - 1;
 
   /* Send, Ssend */
-
   if (commsize % 2 == 0) {
     if (iam % 2 == 0) {
       ret = MPI_Send (sendbuf, count, MPI_INT, dest, tag, comm);
@@ -211,7 +206,6 @@ int main (int argc, char **argv)
 #endif
 
   /* Check that PMPI entries were generated for all expected routines */
-
   if (iam == 0) {
     for (i = 0; i < nroutines; ++i) {
       printf ("%s: checking that there is a GPTL entry for MPI routine %s...\n", argv[0], mpiroutine[i]);

@@ -1,4 +1,5 @@
 #include "../gptl.h"
+#include <papi.h>
 #include "myclasses.h"
 
 int main ()
@@ -7,9 +8,14 @@ int main ()
   Y *y;
   int ret;
 
+
+  GPTLsetoption(GPTLmultiplex,1);
+  GPTLsetoption(PAPI_L2_DCH, 1);
+  GPTLsetoption(PAPI_L1_TCM, 1);
+  GPTLsetoption(PAPI_L3_TCM, 1);
+
   ret = GPTLinitialize ();
   ret = GPTLstart ("total");
-
   x = new (X);
   x->func (1.2);
   x->func (1);

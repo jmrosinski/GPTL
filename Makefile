@@ -8,10 +8,13 @@ endif
 
 null =
 OBJS = gptl.o util.o get_memusage.o print_memusage.o gptl_papi.o pmpi.o getoverhead.o \
-       hashstats.o memstats.o pr_summary.o
+       hashstats.o memstats.o pr_summary.o print_rusage.o
 
 ifeq ($(ENABLE_PMPI),yes)
-  CFLAGS += -DENABLE_PMPI
+  CFLAGS += -DENABLE_PMPI -DMPI_STATUS_SIZE_IN_INTS=$(MPI_STATUS_SIZE_IN_INTS)
+  ifeq ($(MPI_CONST),yes)
+    CFLAGS += -DMPI_CONST
+  endif
   ifeq ($(HAVE_IARGCGETARG),yes)
     CFLAGS += -DHAVE_IARGCGETARG
   endif
@@ -154,3 +157,6 @@ getoverhead.o: private.h
 hashstats.o: private.h
 memstats.o: private.h
 pr_summary.o: private.h
+get_memusage.o: 
+print_memusage.o: gptl.h
+print_rusage.o: private.h

@@ -8,8 +8,6 @@
 #endif
 #include "../gptl.h"
 
-#define ADDBUG
-
 int main (int argc, char **argv)
 {
   int nthreads = 1;  /* Value is 1 if no threading */
@@ -18,10 +16,11 @@ int main (int argc, char **argv)
   int provided = -1; /* level of threading support in this MPI lib */
   int n;
   int ret;
+
+#ifdef HAVE_MPI
   int resultlen;                      /* returned length of string from MPI routine */
   char string[MPI_MAX_ERROR_STRING];  /* character string returned from MPI routine */
 
-#ifdef HAVE_MPI
   /* Initialize MPI by using MPI_Init_thread: report back level of MPI support */
   if ((ret = MPI_Init_thread (&argc, &argv, MPI_THREAD_SINGLE, &provided)) != 0) {
     MPI_Error_string (ret, string, &resultlen);
@@ -61,10 +60,8 @@ int main (int argc, char **argv)
   ret = GPTLstart ("total");
   /* Everyone starts "sub", but 1st and last ranks erroneously start it twice */
   ret = GPTLstart ("sub");
-#ifdef ADDBUG
   if (iam == 0 || iam == commsize-1)
     ret = GPTLstart ("sub");
-#endif
 
 #ifdef THREADED_OMP
   nthreads = omp_get_max_threads ();
@@ -82,10 +79,8 @@ int main (int argc, char **argv)
     ret = sleep (iam+n);
 
     /* Everyone starts "threaded_region_sub", but 1st and last threads erroneously start it twice */
-#ifdef ADDBUG
     if (n == 0 || n == nthreads-1)
       ret = GPTLstart ("threaded_region_sub");
-#endif
 
     ret = GPTLstop ("threaded_region_sub");
     ret = GPTLstop ("threaded_region");
@@ -94,7 +89,11 @@ int main (int argc, char **argv)
   ret = GPTLstop ("sub");
   ret = GPTLstop ("total");
   ret = GPTLpr (iam);
+#ifdef HAVE_MPI
   ret = GPTLpr_summary (MPI_COMM_WORLD);
+#else
+  ret = GPTLpr_summary ();
+#endif
   ret = MPI_Finalize ();
   return 0;
 }
