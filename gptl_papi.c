@@ -195,10 +195,9 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
   /*
   ** First, check for option which is not an actual counter
   */
-
   switch (counter) {
   case GPTLverbose:
-  /* don't printf here--that'd duplicate what's in gptl.c */
+    /* don't printf here--that'd duplicate what's in gptl.c */
     verbose = (bool) val;
     return 0;
   case GPTLmultiplex:
@@ -225,7 +224,6 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
   ** Otherwise just warn that attempting to disable a PAPI-based event
   ** that has already been enabled doesn't work--for now it's just a no-op
   */
-
   if (! val) {
     if (already_enabled (counter))
       return GPTLerror ("%s: already enabled counter %d cannot be disabled\n", thisfunc, counter);
@@ -236,7 +234,6 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
   }
 
   /* If the event has already been enabled for printing, exit */
-
   if (already_enabled (counter))
     return GPTLerror ("%s: counter %d has already been enabled\n", thisfunc, counter);
 
@@ -244,17 +241,14 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
   ** Initialize PAPI if it hasn't already been done.
   ** From here on down we can assume the intent is to enable (not disable) an option
   */
-
   if (GPTL_PAPIlibraryinit () < 0)
     return GPTLerror ("%s: PAPI library init error\n", thisfunc);
 
   /* Ensure max nevents won't be exceeded */
-
   if (nevents+1 > MAX_AUX)
     return GPTLerror ("%s: %d is too many events. Value defined in private.h\n", thisfunc, nevents+1);
 
   /* Check derived events */
-
   switch (counter) {
   case GPTL_IPC:
     if ( ! canenable2 (PAPI_TOT_INS, PAPI_TOT_CYC))
@@ -430,7 +424,6 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
   }
 
   /* Check PAPI presets */
-
   for (n = 0; n < npapientries; n++) {
     if (counter == papitable[n].counter) {
       if ((numidx = papievent_is_enabled (counter)) >= 0) {
@@ -454,7 +447,6 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
   /*
   ** Check native events last: If PAPI_event_code_to_name fails, give up
   */
-  
   if ((ret = PAPI_event_code_to_name (counter, eventname)) != PAPI_OK)
     return GPTLerror ("%s: name not found for counter %d: PAPI_strerror: %s\n", 
 		      thisfunc, counter, PAPI_strerror (ret));
@@ -463,7 +455,6 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
   ** A table with predefined names of various lengths does not exist for
   ** native events. Just truncate eventname.
   */
-
   if ((numidx = papievent_is_enabled (counter)) >= 0) {
     pr_event[nevents].event.counter = counter;
 
@@ -515,7 +506,6 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
 **
 ** Return value: 0 (success) or non-zero (failure)
 */
- 
 int canenable (int counter)
 {
   char eventname[PAPI_MAX_STR_LEN]; /* returned from PAPI_event_code_to_name */
@@ -541,7 +531,6 @@ int canenable (int counter)
 **
 ** Return value: 0 (success) or non-zero (failure)
 */
- 
 int canenable2 (int counter1, int counter2)
 {
   char eventname[PAPI_MAX_STR_LEN]; /* returned from PAPI_event_code_to_name */
@@ -574,7 +563,6 @@ int canenable2 (int counter1, int counter2)
 **
 ** Return value: index into papieventlist (success) or negative (not found)
 */
- 
 int papievent_is_enabled (int counter)
 {
   int n;
@@ -594,7 +582,6 @@ int papievent_is_enabled (int counter)
 **
 ** Return value: 1 (true) or 0 (false)
 */
- 
 int already_enabled (int counter)
 {
   int n;
@@ -614,13 +601,11 @@ int already_enabled (int counter)
 **
 ** Return value: index into papieventlist
 */
- 
 int enable (int counter)
 {
   int n;
 
   /* If the event is already enabled, return its index */
-
   for (n = 0; n < npapievents; ++n) {
     if (papieventlist[n] == counter) {
 #ifdef DEBUG
@@ -643,7 +628,6 @@ int enable (int counter)
 **
 ** Return value: index into derivedtable (success) or GPTLerror (failure)
 */
-
 int getderivedidx (int dcounter)
 {
   int n;
@@ -660,7 +644,6 @@ int getderivedidx (int dcounter)
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-
 int GPTL_PAPIlibraryinit ()
 {
   int ret;
@@ -686,7 +669,6 @@ int GPTL_PAPIlibraryinit ()
 **
 ** Return value: 0 (success) or GPTLerror or -1 (failure)
 */
- 
 int GPTL_PAPIinitialize (const int maxthreads,     /* number of threads */
 			 const bool verbose_flag,  /* output verbosity */
 			 int *nevents_out,         /* nevents needed by gptl.c */
@@ -703,7 +685,6 @@ int GPTL_PAPIinitialize (const int maxthreads,     /* number of threads */
     return GPTLerror ("%s: maxthreads = %d\n", thisfunc, maxthreads);
 
   /* Ensure that PAPI_library_init has already been called */
-
   if ((ret = GPTL_PAPIlibraryinit ()) < 0)
     return GPTLerror ("%s: GPTL_PAPIlibraryinit failure\n", thisfunc);
 
@@ -718,7 +699,6 @@ int GPTL_PAPIinitialize (const int maxthreads,     /* number of threads */
 #endif
 
   /* allocate and initialize static local space */
-
   EventSet     = (int *)        GPTLallocate (maxthreads * sizeof (int), thisfunc);
   papicounters = (long_long **) GPTLallocate (maxthreads * sizeof (long_long *), thisfunc);
 
@@ -749,7 +729,6 @@ int GPTL_PAPIinitialize (const int maxthreads,     /* number of threads */
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-
 int GPTLcreate_and_start_events (const int t)  /* thread number */
 {
   int ret; /* return code */
@@ -757,8 +736,14 @@ int GPTLcreate_and_start_events (const int t)  /* thread number */
   char eventname[PAPI_MAX_STR_LEN]; /* returned from PAPI_event_code_to_name */
   static const char *thisfunc = "GPTLcreate_and_start_events";
 
+  /* 
+  ** Set the domain to count all contexts. Only needs to be set once for all threads
+  */
+  if ((ret = PAPI_set_domain (PAPI_DOM_ALL)) != PAPI_OK)
+    return GPTLerror ("%s: thread %d failure setting PAPI domain: %s\n", 
+		      thisfunc, t, PAPI_strerror (ret));
+  
   /* Create the event set */
-
   if ((ret = PAPI_create_eventset (&EventSet[t])) != PAPI_OK)
     return GPTLerror ("%s: thread %d failure creating eventset: %s\n", 
 		      thisfunc, t, PAPI_strerror (ret));
@@ -767,7 +752,6 @@ int GPTLcreate_and_start_events (const int t)  /* thread number */
     printf ("%s: successfully created eventset for thread %d\n", thisfunc, t);
 
   /* Add requested events to the event set */
-
   for (n = 0; n < npapievents; n++) {
     if ((ret = PAPI_add_event (EventSet[t], papieventlist[n])) != PAPI_OK) {
       if (verbose) {
@@ -787,6 +771,7 @@ int GPTLcreate_and_start_events (const int t)  /* thread number */
   }
 
   if (is_multiplexed) {
+
     /* Cleanup the eventset for multiplexing */
     if ((ret = PAPI_cleanup_eventset (EventSet[t])) != PAPI_OK)
       return GPTLerror ("%s: %s\n", thisfunc, PAPI_strerror (ret));
@@ -797,6 +782,14 @@ int GPTLcreate_and_start_events (const int t)  /* thread number */
     if ((ret = PAPI_create_eventset (&EventSet[t])) != PAPI_OK)
       return GPTLerror ("%s: failure creating eventset: %s\n", thisfunc, PAPI_strerror (ret));
 			
+    /* 
+    ** Assign EventSet to component 0 (cpu). This step is MANDATORY in recent PAPI releases
+    ** in order to enable event multiplexing
+    */
+    if ((ret = PAPI_assign_eventset_component (EventSet[t], 0)) != PAPI_OK)
+      return GPTLerror ("%s: thread %d failure in PAPI_assign_eventset_component: %s\n", 
+			thisfunc, t, PAPI_strerror (ret));
+
     if ((ret = PAPI_multiplex_init ()) != PAPI_OK)
       return GPTLerror ("%s: failure from PAPI_multiplex_init%s\n", thisfunc, PAPI_strerror (ret));
 
@@ -813,7 +806,6 @@ int GPTLcreate_and_start_events (const int t)  /* thread number */
   }
 
   /* Start the event set.  It will only be read from now on--never stopped */
-
   if ((ret = PAPI_start (EventSet[t])) != PAPI_OK)
     return GPTLerror ("%s: failed to start event set: %s\n", thisfunc, PAPI_strerror (ret));
 
@@ -832,7 +824,6 @@ int GPTLcreate_and_start_events (const int t)  /* thread number */
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-
 int GPTL_PAPIstart (const int t,          /* thread number */
 		    Papistats *aux)       /* struct containing PAPI stats */
 {
@@ -841,12 +832,10 @@ int GPTL_PAPIstart (const int t,          /* thread number */
   static const char *thisfunc = "GPTL_PAPIstart";
   
   /* If no events are to be counted just return */
-
   if (npapievents == 0)
     return 0;
 
   /* Read the counters */
-
   if ((ret = PAPI_read (EventSet[t], papicounters[t])) != PAPI_OK)
     return GPTLerror ("%s: %s\n", thisfunc, PAPI_strerror (ret));
 
@@ -854,7 +843,6 @@ int GPTL_PAPIstart (const int t,          /* thread number */
   ** Store the counter values.  When GPTL_PAPIstop is called, the counters
   ** will again be read, and differenced with the values saved here.
   */
-
   for (n = 0; n < npapievents; n++)
     aux->last[n] = papicounters[t][n];
   
@@ -873,7 +861,6 @@ int GPTL_PAPIstart (const int t,          /* thread number */
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-
 int GPTL_PAPIstop (const int t,         /* thread number */
 		   Papistats *aux)      /* struct containing PAPI stats */
 {
@@ -883,12 +870,10 @@ int GPTL_PAPIstop (const int t,         /* thread number */
   static const char *thisfunc = "GPTL_PAPIstop";
 
   /* If no events are to be counted just return */
-
   if (npapievents == 0)
     return 0;
 
   /* Read the counters */
-
   if ((ret = PAPI_read (EventSet[t], papicounters[t])) != PAPI_OK)
     return GPTLerror ("%s: %s\n", thisfunc, PAPI_strerror (ret));
   
@@ -897,7 +882,6 @@ int GPTL_PAPIstop (const int t,         /* thread number */
   ** Negative accumulation can happen when multiplexing is enabled, so don't
   ** set count to BADCOUNT in that case.
   */
-
   for (n = 0; n < npapievents; n++) {
 #ifdef DEBUG
     printf ("%s: event %d counter value is %ld\n", thisfunc, n, (long) papicounters[t][n]);
@@ -918,7 +902,6 @@ int GPTL_PAPIstop (const int t,         /* thread number */
 ** Input args: 
 **   fp: file descriptor
 */
-
 void GPTL_PAPIprstr (FILE *fp)
 {
   int n;
@@ -950,7 +933,6 @@ void GPTL_PAPIprstr (FILE *fp)
 **   fp: file descriptor
 **   aux: struct containing the counters
 */
-
 void GPTL_PAPIpr (FILE *fp,                          /* file descriptor to write to */
 		  const Papistats *aux,              /* stats to write */
 		  const int t,                       /* thread number */
@@ -983,7 +965,6 @@ void GPTL_PAPIpr (FILE *fp,                          /* file descriptor to write
 	      thisfunc, numidx, denomidx, (long) aux->accum[numidx], (long) aux->accum[denomidx]);
 #endif
       /* Protect against divide by zero */
-
       if (aux->accum[denomidx] > 0)
 	val = (double) aux->accum[numidx] / (double) aux->accum[denomidx];
       else
@@ -1017,7 +998,6 @@ void GPTL_PAPIpr (FILE *fp,                          /* file descriptor to write
 ** Input args:
 **   fp: file descriptor
 */
-
 void GPTL_PAPIprintenabled (FILE *fp)
 {
   int n, nn;
@@ -1056,7 +1036,6 @@ void GPTL_PAPIprintenabled (FILE *fp)
 ** Input args:
 **   auxin: counters to be summed into auxout
 */
-
 void GPTL_PAPIadd (Papistats *auxout,      /* output struct */
 		   const Papistats *auxin) /* input struct */
 {
@@ -1073,7 +1052,6 @@ void GPTL_PAPIadd (Papistats *auxout,      /* output struct */
 ** GPTL_PAPIfinalize: finalization routine must be called from single-threaded
 **   region. Free all malloc'd space
 */
-
 void GPTL_PAPIfinalize (int maxthreads)
 {
   int t;   /* thread index */
@@ -1090,7 +1068,6 @@ void GPTL_PAPIfinalize (int maxthreads)
   free (papicounters);
 
   /* Reset initial values */
-
   npapievents = 0;
   nevents = 0;
   is_multiplexed = false;
@@ -1111,7 +1088,6 @@ void GPTL_PAPIfinalize (int maxthreads)
 ** Output args:
 **   papicounters_out: current value of PAPI counters
 */
-
 void GPTL_PAPIquery (const Papistats *aux,
 		     long long *papicounters_out,
 		     int ncounters)
@@ -1137,7 +1113,6 @@ void GPTL_PAPIquery (const Papistats *aux,
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-
 int GPTL_PAPIget_eventvalue (const char *eventname,
 			     const Papistats *aux,
 			     double *value)
@@ -1170,7 +1145,6 @@ int GPTL_PAPIget_eventvalue (const char *eventname,
 /*
 ** GPTL_PAPIis_multiplexed: return status of whether events are being multiplexed
 */
-
 bool GPTL_PAPIis_multiplexed ()
 {
   return is_multiplexed;
@@ -1179,7 +1153,6 @@ bool GPTL_PAPIis_multiplexed ()
 /*
 ** The following functions are publicly available
 */
-
 void read_counters1000 ()
 {
   int i;
@@ -1205,7 +1178,6 @@ void read_counters1000 ()
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-
 int GPTLevent_name_to_code (const char *name, int *code)
 {
   int ret;   /* return code */
@@ -1245,7 +1217,6 @@ int GPTLevent_name_to_code (const char *name, int *code)
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-
 int GPTLevent_code_to_name (const int code, char *name)
 {
   int ret;   /* return code */
@@ -1283,7 +1254,6 @@ int GPTLget_npapievents (void)
 /*
 ** HAVE_PAPI not defined branch: "Should not be called" entry points for public routines
 */
-
 int GPTLevent_name_to_code (const char *name, int *code)
 {
   return GPTLerror ("GPTLevent_name_to_code: PAPI not enabled\n");

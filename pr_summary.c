@@ -17,6 +17,7 @@ typedef struct {
   int papimin_p[MAX_AUX];  /* task producing papimin */
   int papimin_t[MAX_AUX];  /* thread producing papimin */
 #endif
+  unsigned int notstopped; /* number of ranks+threads for whom the timer is ON */
   unsigned int tottsk;     /* number of tasks which invoked this region */
   float wallmax;           /* max time across threads, tasks */
   float wallmin;           /* min time across threads, tasks */
@@ -194,7 +195,9 @@ int GPTLpr_summary (MPI_Comm comm)       /* communicator */
 
         } else {               /* adjust stats for region */
 
-          global[nn].totcalls += global_p[n].totcalls; /* count is cumulative */
+	  /* Won't print this entry if it was on for any rank or thread */
+	  global[nn].notstopped += global_p[n].notstopped;
+          global[nn].totcalls   += global_p[n].totcalls; /* count is cumulative */
           if (global_p[n].wallmax > global[nn].wallmax) {
             global[nn].wallmax   = global_p[n].wallmax;
             global[nn].wallmax_p = global_p[n].wallmax_p;
@@ -288,6 +291,16 @@ int GPTLpr_summary (MPI_Comm comm)       /* communicator */
       for (i = 0; i < extraspace; ++i)
         fprintf (fp, " ");
 
+      /* 
+      ** Don't print stats if the timer is currently on for any thread or task: too dangerous 
+      ** since the timer needs to be stopped to have currently accurate timings
+      */
+      if (global[n].notstopped > 0) {
+	fprintf (fp, " NOT PRINTED: timer is currently ON for %d threads\n", 
+		 global[n].notstopped);
+	continue;
+      }
+
       if (global[n].tottsk > 1)
         sigma = sqrt ((double) global[n].m2 / (global[n].tottsk - 1));
       else
@@ -354,7 +367,6 @@ int GPTLpr_summary ()
 {
   static const char *outfile = "timing.summary";   /* file to write to */
   FILE *fp = 0;        /* file handle */
-  int ret;
   Timer **timers;
   int multithread;     /* flag indicates multithreaded or not */
   int mnl;             /* max name length across all threads */
@@ -416,6 +428,16 @@ int GPTLpr_summary ()
     fprintf (fp, "%s", global.name);
     for (n = 0; n < extraspace; ++n)
       fprintf (fp, " ");
+
+    /* 
+    ** Don't print stats if the timer is currently on for any thread or task: too dangerous 
+    ** since the timer needs to be stopped to have currently accurate timings
+    */
+    if (global.notstopped > 0) {
+      fprintf (fp, " NOT PRINTED: timer is currently ON for %d threads\n", global.notstopped);
+      continue;
+    }
+
     if (multithread) {
       if (global.totcalls < PRTHRESH) {
 	fprintf (fp, " %8lu %9.3f (%5d) %9.3f (%5d)", 
@@ -478,6 +500,10 @@ static void get_threadstats (int iam,
 
   for (t = 0; t < nthreads; ++t) {
     if ((ptr = getentry_slowway (timers[t]->next, name))) {
+      /* Won't print this entry if it was on for any rank or thread */
+      if (ptr->onflg)
+	++global->notstopped;
+
       global->totcalls += ptr->count;
 
       if (ptr->wall.accum > global->wallmax) {

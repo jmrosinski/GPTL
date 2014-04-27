@@ -60,7 +60,7 @@ endif
 # Items in EXES but not TESTS are built by "make all" but
 # not run by "make test"
 
-EXES = $(TESTS) papiomptest gptl_gran_overhead
+EXES = $(TESTS) papiomptest gptl_gran_overhead printwhileon
 
 UTILEXES = gptl_gran_overhead
 ifeq ($(HAVE_PAPI),yes)
@@ -107,6 +107,9 @@ pmpi: pmpi.o
 	$(CC) -o $@ $< $(LDFLAGS)
 
 global: global.o
+	$(CC) -o $@ $< $(LDFLAGS)
+
+printwhileon: printwhileon.o
 	$(CC) -o $@ $< $(LDFLAGS)
 
 # Built-in tests to ensure that GPTL is behaving as expected

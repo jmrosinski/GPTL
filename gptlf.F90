@@ -183,6 +183,10 @@ module gptl
        character(len=*) :: str
      end function gptlprint_memusage
 
+     integer function gptlprint_rusage (str)
+       character(len=*) :: str
+     end function gptlprint_rusage
+
      integer function gptlnum_errors ()
      end function gptlnum_errors
 

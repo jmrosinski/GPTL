@@ -109,6 +109,7 @@ extern int GPTLreset (void);
 extern int GPTLfinalize (void);
 extern int GPTLget_memusage (int *, int *, int *, int *, int *);
 extern int GPTLprint_memusage (const char *);
+extern int GPTLprint_rusage (const char *);
 extern int GPTLenable (void);
 extern int GPTLdisable (void);
 extern int GPTLsetutr (const int);

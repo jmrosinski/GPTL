@@ -15,41 +15,7 @@
 #include "private.h" /* MAX_CHARS, bool */
 #include "gptl.h"    /* function prototypes */
 
-#if ( defined FORTRANCAPS )
-
-#define gptlinitialize GPTLINITIALIZE
-#define gptlfinalize GPTLFINALIZE
-#define gptlpr GPTLPR
-#define gptlpr_file GPTLPR_FILE
-#define gptlpr_summary GPTLPR_SUMMARY
-#define gptlbarrier GPTLBARRIER
-#define gptlreset GPTLRESET
-#define gptlstamp GPTLSTAMP
-#define gptlstart GPTLSTART
-#define gptlinit_handle GPTLINIT_HANDLE
-#define gptlstart_handle GPTLSTART_HANDLE
-#define gptlstop GPTLSTOP
-#define gptlstop_handle GPTLSTOP_HANDLE
-#define gptlsetoption GPTLSETOPTION
-#define gptlenable GPTLENABLE
-#define gptldisable GPTLDISABLE
-#define gptlsetutr GPTLSETUTR
-#define gptlquery GPTLQUERY
-#define gptlquerycounters GPTLQUERYCOUNTERS
-#define gptlget_wallclock GPTLGET_WALLCLOCK
-#define gptlget_eventvalue GPTLGET_EVENTVALUE
-#define gptlget_nregions GPTLGET_NREGIONS
-#define gptlget_regionname GPTLGET_REGIONNAME
-#define gptlget_memusage GPTLGET_MEMUSAGE
-#define gptlprint_memusage GPTLPRINT_MEMUSAGE
-#define gptlnum_errors GPTLNUM_ERRORS
-#define gptlnum_warn GPTLNUM_WARN
-#define gptlget_count GPTLGET_COUNT
-#define gptl_papilibraryinit GPTL_PAPILIBRARYINIT
-#define gptlevent_name_to_code GPTLEVENT_NAME_TO_CODE
-#define gptlevent_code_to_name GPTLEVENT_CODE_TO_NAME
-
-#elif ( defined FORTRANUNDERSCORE )
+#if ( defined FORTRANUNDERSCORE )
 
 #define gptlinitialize gptlinitialize_
 #define gptlfinalize gptlfinalize_
@@ -76,6 +42,7 @@
 #define gptlget_regionname gptlget_regionname_
 #define gptlget_memusage gptlget_memusage_
 #define gptlprint_memusage gptlprint_memusage_
+#define gptlprint_rusage gptlprint_rusage_
 #define gptlnum_errors gptlnum_errors_
 #define gptlnum_warn gptlnum_warn_
 #define gptlget_count gptlget_count_
@@ -110,6 +77,7 @@
 #define gptlget_regionname gptlget_regionname__
 #define gptlget_memusage gptlget_memusage__
 #define gptlprint_memusage gptlprint_memusage__
+#define gptlprint_rusage gptlprint_rusage__
 #define gptlnum_errors gptlnum_errors__
 #define gptlnum_warn gptlnum_warn__
 #define gptlget_count gptlget_count__
@@ -153,6 +121,7 @@ int gptlget_nregions (int *t, int *nregions);
 int gptlget_regionname (int *t, int *region, char *name, int nc);
 int gptlget_memusage (int *size, int *rss, int *share, int *text, int *datastack);
 int gptlprint_memusage (const char *str, int nc);
+int gptlprint_rusage (const char *str, int nc);
 int gptlnum_errors (void);
 int gptlnum_warn (void);
 int gptlget_count (char *, int *, int *, int);
@@ -410,6 +379,16 @@ int gptlprint_memusage (const char *str, int nc)
   strncpy (cname, str, numchars);
   cname[numchars] = '\0';
   return GPTLprint_memusage (cname);
+}
+
+int gptlprint_rusage (const char *str, int nc)
+{
+  char cname[128+1];
+  int numchars = MIN (nc, 128);
+
+  strncpy (cname, str, numchars);
+  cname[numchars] = '\0';
+  return GPTLprint_rusage (cname);
 }
 
 int gptlnum_errors (void)

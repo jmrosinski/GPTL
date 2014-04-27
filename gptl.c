@@ -1944,7 +1944,16 @@ static void printstats (const Timer *timer,
     for (indent = depth; indent < max_depth[t]; ++indent)
       fprintf (fp, "  ");
 
-  if (timer->count < PRTHRESH) {
+    /* 
+  ** Don't print stats if the timer is currently on: too dangerous since the timer needs 
+  ** to be stopped to have currently accurate timings
+  */
+  if (timer->onflg) {
+    fprintf (fp, " NOT PRINTED: timer is currently ON\n");
+    return;
+  }
+
+if (timer->count < PRTHRESH) {
     if (timer->nrecurse > 0)
       fprintf (fp, "%8lu %6lu ", timer->count, timer->nrecurse);
     else
@@ -3471,8 +3480,8 @@ void threadfinalize ()
 
 static inline int get_thread_num ()
 {
-  static const char *thisfunc = "get_thread_num";
 #ifdef HAVE_PAPI
+  static const char *thisfunc = "get_thread_num";
   /*
   ** When HAVE_PAPI is true, if 1 or more PAPI events are enabled,
   ** create and start an event set for the new thread.
