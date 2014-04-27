@@ -40,6 +40,7 @@ int GPTLget_overhead (FILE *fp,
 		      const Hashentry *hashtable, 
 		      const int tablesize,
 		      bool dousepapi,
+		      int imperfect_nest,
 		      double *self_ohd,
 		      double *parent_ohd)
 {
@@ -59,6 +60,7 @@ int GPTLget_overhead (FILE *fp,
   unsigned int hashidx;      /* Hash index */
   int randomvar;             /* placeholder for taking the address of a variable */
   Timer *entry;              /* placeholder for return from "getentry()" */
+  static const char *thisfunc = "GPTLget_overhead";
 
   /*
   ** Gather timings by running kernels 1000 times each.
@@ -101,13 +103,13 @@ int GPTLget_overhead (FILE *fp,
       for (i = 0; i < 1000; ++i)
 	entry = getentry (hashtable, hashtable[n].entries[0]->name, hashidx);
       t2 = (*ptr2wtimefunc)();
-      fprintf (fp, "getoverhead: using hash entry %d=%s for getentry estimate\n", 
-	       n, hashtable[n].entries[0]->name);
+      fprintf (fp, "%s: using hash entry %d=%s for getentry estimate\n", 
+	       thisfunc, n, hashtable[n].entries[0]->name);
       break;
     }
   }
   if (n == tablesize) {
-    fprintf (fp, "getoverhead: hash table empty: Using alternate means to find getentry time\n");
+    fprintf (fp, "%s: hash table empty: Using alternate means to find getentry time\n", thisfunc);
     t1 = (*ptr2wtimefunc)();
     for (i = 0; i < 1000; ++i)
       entry = getentry (hashtable, "timername", hashidx);
@@ -148,13 +150,18 @@ int GPTLget_overhead (FILE *fp,
   getentry_instr_ohd = 0.001 * (t2 - t1);
 
   /* misc start/stop overhead */
-  t1 = (*ptr2wtimefunc)();
+  if (imperfect_nest) {
+    fprintf (fp, "Imperfect nesting detected: setting misc_ohd=0\n");
+    misc_ohd = 0.;
+  } else {
+    t1 = (*ptr2wtimefunc)();
 #pragma unroll(10)
-  for (i = 0; i < 1000; ++i) {
-    misc_sim (stackidx, callstack, 0);
+    for (i = 0; i < 1000; ++i) {
+      misc_sim (stackidx, callstack, 0);
+    }
+    t2 = (*ptr2wtimefunc)();
+    misc_ohd = 0.001 * (t2 - t1);
   }
-  t2 = (*ptr2wtimefunc)();
-  misc_ohd = 0.001 * (t2 - t1);
 
   total_ohd = ftn_ohd + get_thread_num_ohd + genhashidx_ohd + getentry_ohd + 
               utr_ohd + misc_ohd + papi_ohd;
@@ -246,24 +253,25 @@ static void misc_sim (Nofalse *stackidx, Timer ***callstack, int t)
   int bidx;
   Timer *bptr;
   static Timer *ptr = 0;
+  static const char *thisfunc = "misc_sim";
 
   if (disabled)
-    printf ("misc_sim: should never print disabled\n");
+    printf ("GPTL: %s: should never print disabled\n", thisfunc);
 
   if (! initialized)
-    printf ("misc_sim: should never print ! initialized\n");
+    printf ("GPTL: %s: should never print ! initialized\n", thisfunc);
 
   bidx = stackidx[t].val;
   bptr = callstack[t][bidx];
   if (ptr == bptr)
-    printf ("misc_sim: should never print ptr=bptr\n");
+    printf ("GPTL: %s: should never print ptr=bptr\n", thisfunc);
 
   --stackidx[t].val;
   if (stackidx[t].val < -2)
-    printf ("misc_sim: should never print stackidxt < -2\n");
+    printf ("GPTL: %s: should never print stackidxt < -2\n", thisfunc);
 
   if (++stackidx[t].val > MAX_STACK-1)
-    printf ("misc_sim: should never print stackidxt > MAX_STACK-1\n");
+    printf ("GPTL: %s: should never print stackidxt > MAX_STACK-1\n", thisfunc);
 
   return;
 }

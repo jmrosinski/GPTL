@@ -97,7 +97,9 @@ int GPTLpr_summary (MPI_Comm comm)       /* communicator */
 
   /* Examine only thread 0 regions */
   ret = GPTLget_nregions (0, &nregions);
-  global = (Global *) GPTLallocate (nregions * sizeof (Global));
+  if (nregions < 1)
+    GPTLwarn ("%s rank %d: nregions = 0\n", thisfunc, iam);
+  global = (Global *) GPTLallocate (nregions * sizeof (Global), thisfunc);
 
   /*
   ** Gather per-thread stats based on thread 0 list.
@@ -120,7 +122,7 @@ int GPTLpr_summary (MPI_Comm comm)       /* communicator */
     ++n;
   }
   if (n != nregions)
-    return GPTLerror ("%s rank %d: Bad logic caused n=%d and nregions=%d\n", thisfunc, iam, n, nregions);
+    GPTLwarn ("%s rank %d: Bad logic caused n=%d and nregions=%d\n", thisfunc, iam, n, nregions);
 
   /*
   ** If all ranks participate in a region, could use MPI_Reduce to get mean and variance.
@@ -146,7 +148,7 @@ int GPTLpr_summary (MPI_Comm comm)       /* communicator */
     dosend = ((iam + incr) % twoincr == 0) && (sendto > -1);
     if (dosend) {
       if (dorecv)
-        printf ("WARNING: iam=%d: dosend and dorecv both true: possible hang?\n", iam);
+        printf ("%s: WARNING: iam=%d: dosend and dorecv both true: possible hang?\n", thisfunc, iam);
 
       if ((ret = MPI_Send (&nregions, 1, MPI_INT, sendto, tag, comm)) != MPI_SUCCESS)
         return GPTLerror ("%s rank %d: Bad return from MPI_Send=%d\n", thisfunc, iam, ret);
@@ -158,7 +160,7 @@ int GPTLpr_summary (MPI_Comm comm)       /* communicator */
 
     if (dorecv) {
       if (dosend)
-        printf ("WARNING: iam=%d: dosend and dorecv both true: possible hang?\n", iam);
+        printf ("%s: WARNING: iam=%d: dosend and dorecv both true: possible hang?\n", thisfunc, iam);
 
       if ((ret = MPI_Recv (&nregions_p, 1, MPI_INT, p, tag, comm, &status)) != MPI_SUCCESS)
         return GPTLerror ("%s rank %d: Bad return from MPI_Recv=%d\n", thisfunc, iam, ret);
@@ -167,7 +169,7 @@ int GPTLpr_summary (MPI_Comm comm)       /* communicator */
       if (multithread_p)
         multithread = true;
 
-      global_p = (Global *) GPTLallocate (nregions_p * sizeof (Global));
+      global_p = (Global *) GPTLallocate (nregions_p * sizeof (Global), thisfunc);
       ret = MPI_Recv (global_p, nbytes*nregions_p, MPI_BYTE, p, tag, comm, &status);
       if (ret != MPI_SUCCESS)
         return GPTLerror ("%s rank %d: Bad return from MPI_Recv=%d\n", thisfunc, iam, ret);
@@ -468,6 +470,7 @@ static void get_threadstats (int iam,
 {
   int t;                /* thread index */
   Timer *ptr;
+  static const char *thisfunc = "get_threadstats";
 
   /* This memset fortuitiously initializes the process values to master (0) */
   memset (global, 0, sizeof (Global));
@@ -494,7 +497,7 @@ static void get_threadstats (int iam,
       for (e = 0; e < GPTLnevents; ++e) {
         double value;
         if (GPTL_PAPIget_eventvalue (GPTLeventlist[e].namestr, &ptr->aux, &value) != 0) {
-          fprintf (stderr, "Bad return from GPTL_PAPIget_eventvalue\n");
+          fprintf (stderr, "GPTL: %s: Bad return from GPTL_PAPIget_eventvalue\n", thisfunc);
           return;
         }
         if (value > global->papimax[e]) {

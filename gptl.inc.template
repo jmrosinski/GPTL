@@ -126,6 +126,8 @@
       integer gptlevent_name_to_code
       integer gptlevent_code_to_name
       integer gptlnum_errors
+      integer gptlnum_warn
+      integer gptlget_count
 
       external gptlsetoption
       external gptlinitialize
@@ -156,3 +158,5 @@
       external gptlevent_name_to_code
       external gptlevent_code_to_name
       external gptlnum_errors
+      external gptlnum_warn
+      external gptlget_count

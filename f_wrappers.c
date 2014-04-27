@@ -43,6 +43,8 @@
 #define gptlget_memusage GPTLGET_MEMUSAGE
 #define gptlprint_memusage GPTLPRINT_MEMUSAGE
 #define gptlnum_errors GPTLNUM_ERRORS
+#define gptlnum_warn GPTLNUM_WARN
+#define gptlget_count GPTLGET_COUNT
 #define gptl_papilibraryinit GPTL_PAPILIBRARYINIT
 #define gptlevent_name_to_code GPTLEVENT_NAME_TO_CODE
 #define gptlevent_code_to_name GPTLEVENT_CODE_TO_NAME
@@ -75,6 +77,8 @@
 #define gptlget_memusage gptlget_memusage_
 #define gptlprint_memusage gptlprint_memusage_
 #define gptlnum_errors gptlnum_errors_
+#define gptlnum_warn gptlnum_warn_
+#define gptlget_count gptlget_count_
 #define gptl_papilibraryinit gptl_papilibraryinit_
 #define gptlevent_name_to_code gptlevent_name_to_code_
 #define gptlevent_code_to_name gptlevent_code_to_name_
@@ -107,6 +111,8 @@
 #define gptlget_memusage gptlget_memusage__
 #define gptlprint_memusage gptlprint_memusage__
 #define gptlnum_errors gptlnum_errors__
+#define gptlnum_warn gptlnum_warn__
+#define gptlget_count gptlget_count__
 #define gptl_papilibraryinit gptl_papilibraryinit__
 #define gptlevent_name_to_code gptlevent_name_to_code__
 #define gptlevent_code_to_name gptlevent_code_to_name__
@@ -148,6 +154,8 @@ int gptlget_regionname (int *t, int *region, char *name, int nc);
 int gptlget_memusage (int *size, int *rss, int *share, int *text, int *datastack);
 int gptlprint_memusage (const char *str, int nc);
 int gptlnum_errors (void);
+int gptlnum_warn (void);
+int gptlget_count (char *, int *, int *, int);
 #ifdef HAVE_PAPI
 int gptl_papilibraryinit (void);
 int gptlevent_name_to_code (const char *str, int *code, int nc);
@@ -407,6 +415,23 @@ int gptlprint_memusage (const char *str, int nc)
 int gptlnum_errors (void)
 {
   return GPTLnum_errors ();
+}
+
+int gptlnum_warn (void)
+{
+  return GPTLnum_warn ();
+}
+
+int gptlget_count (char *name, int *t, int *count, int nc)
+{
+  char cname[MAX_CHARS+1];
+  int numchars;
+
+  numchars = MIN (nc, MAX_CHARS);
+  strncpy (cname, name, numchars);
+  cname[numchars] = '\0';
+
+  return GPTLget_count (cname, *t, count);
 }
 
 #ifdef HAVE_PAPI

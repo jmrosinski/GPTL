@@ -71,6 +71,7 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
   character(len=16) :: utr             = def_utr
   character(len=64) :: eventlist(maxevents) = &
  (/('                                                                ',j=1,maxevents)/)
+  character(len=20), parameter :: thisfunc = 'gptlprocess_namelist'
   
   namelist /gptlnl/ sync_mpi, wall, cpu, abort_on_error, overhead, depthlimit, &
                     maxthreads, tablesize, verbose, narrowprint, percent, persec, multiplex, &
@@ -79,14 +80,14 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
 
   open (unit=unitno, file=filename, status='old', iostat=ios)
   if (ios /= 0) then
-    write(6,*)'gptlprocess_namelist: cannot open namelist file ', filename
+    write(6,*) thisfunc, ': cannot open namelist file ', filename
     outret = -1
     return
   end if
 
   read (unitno, gptlnl, iostat=ios)
   if (ios /= 0) then
-    write(6,*)'gptlprocess_namelist: failure reading namelist'
+    write(6,*) thisfunc, ': failure reading namelist'
     outret = -1
     close (unit=unitno)
     return
@@ -96,7 +97,7 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
 ! Do verbose and abort_on_error first because of their immediate effects on behavior.
   if (verbose .neqv. def_verbose) then
     if (verbose) then
-      write(6,*)'gptlprocess_namelist: setting verbose to ', verbose
+      write(6,*) thisfunc, ': setting verbose to ', verbose
       ret = gptlsetoption (gptlverbose, 1)
     else
       ret = gptlsetoption (gptlverbose, 0)
@@ -105,7 +106,7 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
 
   if (abort_on_error .neqv. def_abort_on_error) then
     if (verbose) then
-      write(6,*)'gptlprocess_namelist: setting abort_on_error to ', abort_on_error
+      write(6,*) thisfunc,': setting abort_on_error to ', abort_on_error
     end if
     if (abort_on_error) then
       ret = gptlsetoption (gptlabort_on_error, 1)
@@ -116,7 +117,7 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
 
   if (sync_mpi .neqv. def_sync_mpi) then
     if (verbose) then
-      write(6,*)'gptlprocess_namelist: setting sync_mpi to ', sync_mpi
+      write(6,*) thisfunc,': setting sync_mpi to ', sync_mpi
     end if
     if (sync_mpi) then
       ret = gptlsetoption (gptlsync_mpi, 1)
@@ -127,7 +128,7 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
 
   if (wall .neqv. def_wall) then
     if (verbose) then
-      write(6,*)'gptlprocess_namelist: wall to ', wall
+      write(6,*) thisfunc,': wall to ', wall
     end if
     if (wall) then
       ret = gptlsetoption (gptlwall, 1)
@@ -138,7 +139,7 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
 
   if (cpu .neqv. def_cpu) then
     if (verbose) then
-      write(6,*)'gptlprocess_namelist: setting cpu to ', cpu
+      write(6,*) thisfunc,': setting cpu to ', cpu
     end if
     if (cpu) then
       ret = gptlsetoption (gptlcpu, 1)
@@ -149,7 +150,7 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
 
   if (overhead .neqv. def_overhead) then
     if (verbose) then
-      write(6,*)'gptlprocess_namelist: setting overhead to ', overhead
+      write(6,*) thisfunc,': setting overhead to ', overhead
     end if
     if (overhead) then
       ret = gptlsetoption (gptloverhead, 1)
@@ -160,28 +161,28 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
 
   if (depthlimit /= def_depthlimit) then
     if (verbose) then
-      write(6,*)'gptlprocess_namelist: setting depthlimit to ', depthlimit
+      write(6,*) thisfunc, ': setting depthlimit to ', depthlimit
     end if
     ret = gptlsetoption (gptldepthlimit, depthlimit)
   end if
 
   if (maxthreads /= def_maxthreads) then
     if (verbose) then
-      write(6,*)'gptlprocess_namelist: setting maxthreads to ', maxthreads
+      write(6,*) thisfunc, ': setting maxthreads to ', maxthreads
     end if
     ret = gptlsetoption (gptlmaxthreads, maxthreads)
   end if
 
   if (tablesize /= def_tablesize) then
     if (verbose) then
-      write(6,*)'gptlprocess_namelist: setting tablesize to ', tablesize
+      write(6,*) thisfunc, ': setting tablesize to ', tablesize
     end if
     ret = gptlsetoption (gptltablesize, tablesize)
   end if
 
   if (narrowprint .neqv. def_narrowprint) then
     if (verbose) then
-      write(6,*)'gptlprocess_namelist: setting narrowprint to ', narrowprint
+      write(6,*) thisfunc, ': setting narrowprint to ', narrowprint
     end if
     if (narrowprint) then
       ret = gptlsetoption (gptlnarrowprint, 1)
@@ -192,7 +193,7 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
 
   if (percent .neqv. def_percent) then
     if (verbose) then
-      write(6,*)'gptlprocess_namelist: setting percent to ', percent
+      write(6,*) thisfunc, ': setting percent to ', percent
     end if
     if (percent) then
       ret = gptlsetoption (gptlpercent, 1)
@@ -203,7 +204,7 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
 
   if (persec .neqv. def_persec) then
     if (verbose) then
-      write(6,*)'gptlprocess_namelist: setting persec to ', persec
+      write(6,*) thisfunc, ': setting persec to ', persec
     end if
     if (persec) then
       ret = gptlsetoption (gptlpersec, 1)
@@ -214,7 +215,7 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
 
   if (multiplex .neqv. def_multiplex) then
     if (verbose) then
-      write(6,*)'gptlprocess_namelist: setting multiplex to ', multiplex
+      write(6,*) thisfunc, ': setting multiplex to ', multiplex
     end if
     if (multiplex) then
       ret = gptlsetoption (gptlmultiplex, 1)
@@ -225,7 +226,7 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
 
   if (dopr_preamble .neqv. def_dopr_preamble) then
     if (verbose) then
-      write(6,*)'gptlprocess_namelist: setting dopr_preamble to ', dopr_preamble
+      write(6,*) thisfunc, ': setting dopr_preamble to ', dopr_preamble
     end if
     if (dopr_preamble) then
       ret = gptlsetoption (gptldopr_preamble, 1)
@@ -236,7 +237,7 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
 
   if (dopr_threadsort .neqv. def_dopr_threadsort) then
     if (verbose) then
-      write(6,*)'gptlprocess_namelist: setting dopr_threadsort to ', dopr_threadsort
+      write(6,*) thisfunc, ': setting dopr_threadsort to ', dopr_threadsort
     end if
     if (dopr_threadsort) then
       ret = gptlsetoption (gptldopr_threadsort, 1)
@@ -247,7 +248,7 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
 
   if (dopr_multparent .neqv. def_dopr_multparent) then
     if (verbose) then
-      write(6,*)'gptlprocess_namelist: setting dopr_multparent to ', dopr_multparent
+      write(6,*) thisfunc, ': setting dopr_multparent to ', dopr_multparent
     end if
     if (dopr_multparent) then
       ret = gptlsetoption (gptldopr_multparent, 1)
@@ -258,7 +259,7 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
 
   if (dopr_collision .neqv. def_dopr_collision) then
     if (verbose) then
-      write(6,*)'gptlprocess_namelist: setting dopr_collision to ', dopr_collision
+      write(6,*) thisfunc, ': setting dopr_collision to ', dopr_collision
     end if
     if (dopr_collision) then
       ret = gptlsetoption (gptldopr_collision, 1)
@@ -269,7 +270,7 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
 
   if (dopr_memusage .neqv. def_dopr_memusage) then
     if (verbose) then
-      write(6,*)'gptlprocess_namelist: setting dopr_memusage to ', dopr_memusage
+      write(6,*) thisfunc, ': setting dopr_memusage to ', dopr_memusage
     end if
     if (dopr_memusage) then
       ret = gptlsetoption (gptldopr_memusage, 1)
@@ -281,7 +282,7 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
 ! Character-based variables
   if (utr /= def_utr) then
     if (verbose) then
-      write(6,*)'gptlprocess_namelist: setting utr to ', trim(utr)
+      write(6,*) thisfunc, ': setting utr to ', trim(utr)
     end if
     if (trim(utr) == 'gettimeofday') then
       ret = gptlsetutr (gptlgettimeofday)
@@ -296,15 +297,14 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
     else if (trim(utr) == 'papitime') then
       ret = gptlsetutr (gptlpapitime)
     else
-      write(6,*)'gptlprocess_namelist: Underlying timing routine not available: ', &
-                trim (utr)
+      write(6,*) thisfunc, ': Underlying timing routine not available: ', trim (utr)
     end if
   end if
 
 ! Print method: use characters for namelist variables to avoid magic numbers in namelist
   if (print_method /= def_print_method) then
     if (verbose) then
-      write(6,*)'gptlprocess_namelist: setting print_method to ', trim (print_method)
+      write(6,*) thisfunc, ': setting print_method to ', trim (print_method)
     end if
     if (trim(print_method) == 'first_parent') then
       ret = gptlsetoption (gptlprint_method, gptlfirst_parent)
@@ -315,7 +315,7 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
     else if (trim(print_method) == 'full_tree') then
       ret = gptlsetoption (gptlprint_method, gptlfull_tree)
     else
-      write(6,*)'gptlprocess_namelist: print_method not available: ', print_method
+      write(6,*) thisfunc, ': print_method not available: ', print_method
     end if
   end if
 
@@ -325,17 +325,17 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
       ret = gptlevent_name_to_code (trim (eventlist(j)), code)
       if (ret == 0) then
         if (verbose) then
-          write(6,*)'gptlprocess_namelist: enabling event ', trim (eventlist(j))
+          write(6,*) thisfunc, ': enabling event ', trim (eventlist(j))
         end if
         ret = gptlsetoption (code, 1)
       else
-        write(6,*)'gptlprocess_namelist: no code found for event ', trim (eventlist(j))
+        write(6,*) thisfunc, ': no code found for event ', trim (eventlist(j))
       end if
     end if
   end do
 #else
 ! Comment out this print because it can be very annoying when the MPI task count is large
-!  write(6,*)'gptlprocess_namelist: skipping check for PAPI-based events because ', &
+!  write(6,*) thisfunc, ': skipping check for PAPI-based events because ', &
 !            'GPTL was built without PAPI support'
 #endif
   close (unit=unitno)
