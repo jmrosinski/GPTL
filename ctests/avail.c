@@ -8,6 +8,11 @@ int main ()
 {
   int ret;
 
+#ifndef HAVE_PAPI
+  printf ("gptl_avail: GPTL was compiled without HAVE_PAPI so doing nothing\n");
+  return 0;
+#endif
+
   if ((ret = PAPI_library_init (PAPI_VER_CURRENT)) != PAPI_VER_CURRENT) {
     printf ("%s\n", PAPI_strerror (ret));
     return -1;

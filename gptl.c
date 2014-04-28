@@ -343,7 +343,7 @@ int GPTLsetoption (const int option,  /* option */
     return 0;
 #endif
 
-  return GPTLerror ("%s: faiure to enable option %d\n", thisfunc, option);
+  return GPTLerror ("%s: failure to enable option %d\n", thisfunc, option);
 }
 
 /*

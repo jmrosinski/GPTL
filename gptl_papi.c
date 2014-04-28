@@ -303,7 +303,7 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
     return 0;
   case GPTL_FPI:
     if ( ! canenable2 (PAPI_FP_OPS, PAPI_TOT_INS))
-      return GPTLerror ("%s: GPTL_FPI unavailable\n");
+      return GPTLerror ("%s: GPTL_FPI unavailable\n", thisfunc);
 
     idx = getderivedidx (GPTL_FPI);
     pr_event[nevents].event    = derivedtable[idx];
@@ -374,7 +374,7 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
     */
   case GPTL_L2MRT:
     if ( ! canenable2 (PAPI_L2_TCM, PAPI_L2_TCA))
-      return GPTLerror ("%s: GPTL_L2MRT unavailable\n");
+      return GPTLerror ("%s: GPTL_L2MRT unavailable\n", thisfunc);
 
     idx = getderivedidx (GPTL_L2MRT);
     pr_event[nevents].event    = derivedtable[idx];
@@ -408,7 +408,7 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
     return 0;
   case GPTL_L3MRT:
     if ( ! canenable2 (PAPI_L3_TCM, PAPI_L3_TCR))
-      return GPTLerror ("%s: GPTL_L3MRT unavailable\n");
+      return GPTLerror ("%s: GPTL_L3MRT unavailable\n", thisfunc);
 
     idx = getderivedidx (GPTL_L3MRT);
     pr_event[nevents].event    = derivedtable[idx];
