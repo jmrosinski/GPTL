@@ -13,7 +13,9 @@ OBJS = gptl.o util.o get_memusage.o print_memusage.o gptl_papi.o pmpi.o getoverh
 ifeq ($(ENABLE_PMPI),yes)
   CFLAGS += -DENABLE_PMPI -DMPI_STATUS_SIZE_IN_INTS=$(MPI_STATUS_SIZE_IN_INTS)
   ifeq ($(MPI_CONST),yes)
-    CFLAGS += -DMPI_CONST
+    CFLAGS += -DCONST=const
+  else
+    CFLAGS += -DCONST=
   endif
   ifeq ($(HAVE_IARGCGETARG),yes)
     CFLAGS += -DHAVE_IARGCGETARG

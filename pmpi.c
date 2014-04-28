@@ -10,11 +10,6 @@
 #include "gptl.h"
 
 #ifdef ENABLE_PMPI
-#ifdef MPI_CONST
-#define CONST const
-#else
-#define CONST ""
-#endif
 #include <mpi.h>
 
 static bool sync_mpi = false;
