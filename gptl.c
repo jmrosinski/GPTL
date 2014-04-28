@@ -2612,8 +2612,10 @@ void __func_trace_enter (const char *function_name,
   char msg[MSGSIZ];
   int size, rss, share, text, datastack;
   int world_iam;
+#ifdef HAVE_MPI
   int flag = 0;
   int ret;
+#endif
 
   if (dopr_memusage && get_thread_num() == 0) {
     (void) GPTLget_memusage (&size, &rss, &share, &text, &datastack);
@@ -2631,7 +2633,7 @@ void __func_trace_enter (const char *function_name,
   }
   (void) GPTLstart (function_name);
 }
-
+  
 void __func_trace_exit (const char *function_name,
                         const char *file_name,
                         int line_number,
@@ -2640,8 +2642,10 @@ void __func_trace_exit (const char *function_name,
   char msg[MSGSIZ];
   int size, rss, share, text, datastack;
   int world_iam;
+#ifdef HAVE_MPI
   int flag = 0;
   int ret;
+#endif
 
   (void) GPTLstop (function_name);
 
@@ -2660,9 +2664,10 @@ void __func_trace_exit (const char *function_name,
     }
   }
 }
-
+  
 #else
-
+//_AIX not defined
+  
 void __cyg_profile_func_enter (void *this_fn,
                                void *call_site)
 {
@@ -2674,8 +2679,10 @@ void __cyg_profile_func_enter (void *this_fn,
   char msg[MSGSIZ];
   int size, rss, share, text, datastack;
   int world_iam;
+#ifdef HAVE_MPI
   int flag = 0;
   int ret;
+#endif
 
   if (dopr_memusage && get_thread_num() == 0) {
     (void) GPTLget_memusage (&size, &rss, &share, &text, &datastack);
@@ -2713,8 +2720,10 @@ void __cyg_profile_func_exit (void *this_fn,
   char msg[MSGSIZ];
   int size, rss, share, text, datastack;
   int world_iam;
+#ifdef HAVE_MPI
   int flag = 0;
   int ret;
+#endif
 
   (void) GPTLstop_instr (this_fn);
 
@@ -2741,6 +2750,7 @@ void __cyg_profile_func_exit (void *this_fn,
   }
 }
 #endif
+// _AIX false branch
 
 #ifdef __cplusplus
 };

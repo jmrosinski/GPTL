@@ -96,8 +96,17 @@ ifeq ($(HAVE_GETTIMEOFDAY),yes)
 endif
 
 ##############################################################################
+%.o: %.F90
+	$(FC) -c $(FFLAGS) $<
 
+ifeq ($(FORTRAN),yes)
+all: lib$(LIBNAME).a $(MAKETESTS) printmpistatussize
+printmpistatussize: printmpistatussize.o
+	$(FC) -o $@ $?
+else
 all: lib$(LIBNAME).a $(MAKETESTS)
+endif
+
 libonly: lib$(LIBNAME).a 
 test: $(RUNTESTS)
 
@@ -141,7 +150,7 @@ uninstall:
 	$(RM) -f $(MANDIR)/man/man3/GPTL*.3
 
 clean:
-	$(RM) -f $(OBJS) $(FOBJS) lib$(LIBNAME).a *.mod
+	$(RM) -f $(OBJS) $(FOBJS) lib$(LIBNAME).a *.mod printmpistatussize.o printmpistatussize
 	$(MAKE) -C ctests clean
 	$(MAKE) -C ftests clean
 
@@ -151,9 +160,7 @@ gptl.o: gptl.h private.h
 util.o: gptl.h private.h
 gptl_papi.o: gptl.h private.h
 process_namelist.o: process_namelist.F90 gptl.inc
-	$(FC) -c $(FFLAGS) $<
 gptlf.o: gptlf.F90
-	$(FC) -c $(FFLAGS) $<
 pmpi.o: gptl.h private.h
 getoverhead.o: private.h
 hashstats.o: private.h
@@ -162,3 +169,5 @@ pr_summary.o: private.h
 get_memusage.o: 
 print_memusage.o: gptl.h
 print_rusage.o: private.h
+
+printmpistatussize.o: printmpistatussize.F90
