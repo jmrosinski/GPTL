@@ -135,7 +135,7 @@ endif
 # Whether to enable PMPI wrappers. Turning this on will result in automatic 
 # start/stop entries for a number of MPI calls.
 ifeq ($(HAVE_MPI),yes)
-  ENABLE_PMPI = yes
+  ENABLE_PMPI = no
   ifeq ($(ENABLE_PMPI),yes)
 # Some newer MPI releases change the prototype of some input arguments from "void *" 
 # to "const void *". The prototype for these functions inside GPTL must match the

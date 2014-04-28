@@ -448,6 +448,8 @@ int MPI_Finalize (void)
     PMPI_Comm_rank (MPI_COMM_WORLD, &iam);
     ignoreret = GPTLpr (iam);
   }
+  /* Since we're in MPI_Finalize it's safe to call GPTLpr_summary for MPI_COMM_WORLD */
+  ignoreret = GPTLpr_summary (MPI_COMM_WORLD);
 
   ret = PMPI_Finalize();
   return ret;

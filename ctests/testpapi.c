@@ -56,7 +56,7 @@ int main (int argc, char **argv)
   printf ("sum=%g\n",sum);
   printf ("%s: testing reasonableness of PAPI counters...\n", argv[0]);
   if (pc[0] < 1 || pc[0] > 1.e8) {
-    printf ("Suspicious PAPI_TOT_CYC value=%ld for 1e6 additions\n",pc[0]);
+    printf ("Suspicious PAPI_TOT_CYC value=%lld for 1e6 additions\n", pc[0]);
     return 5;
   } else {
     printf ("Success\n");
