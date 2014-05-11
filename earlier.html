@@ -5,6 +5,49 @@
 </head><body bgcolor="peachpuff"><h1>Earlier changes to GPTL</h1>
 
 <hr noshade="noshade" size="2" width="100%" align="LEFT">
+<h3>gptl-5.0</h3>
+<ul>
+<li> Lower overhead incurred by the GPTL library itself: New hash algorithm results in fewer 
+  collisions by employing better randomization.
+<li> Improved user interface to <b>GPTLstart_handle()</b> and <b>GPTLstop_handle()</b> by changing
+  the second argument (the <em>handle</em>) to be the hash index instead of a
+  pointer to the timer itself. This has the <em>huge</em> advantage that inside of
+  threaded loops, thread-local storage for the <em>handle</em> variable is no longer
+  required in user code. The previous severe restriction of thread-local storage for these
+  variables effectively rendered <b>GPTLstart_handle()</b> and <b>GPTLstop_handle()</b>
+  unusable inside of threaded regions. And threaded regions are exactly where these more
+  efficient equivalents of <b>GPTLstart()</b> and <b>GPTLstop()</b> are most likely to be
+  useful! 
+
+  <p><b>IMPORTANT NOTE:</b> Slight API changes to <b>GPTLstart_handle()</b>
+  and <b>GPTLstop_handle()</b> were required. In C/C++ the type of the <em>handle</em>
+  argument was changed from <em>void **</em> to <em>int *</em>. In Fortran the type
+  changed from <em>integer(8)</em> to <em>integer</em>. Tests of the new library with the
+  GNU compilers using the old types produced compiler warnings but still worked
+  properly.
+<li> Produce a much more accurate estimate of the overhead incurred by the GPTL
+  library itself. Previously, the overhead estimate printed was only for the underlying
+  timing utility employed by GPTL (e.g. gettimeofday()). Now the printed overhead estimate
+  is for the <em>entire</em> GPTL library, not just the underlying timing utility.
+
+  <p>Also, a breakdown of overhead components by GPTL function is presented
+  when <b>gptlpr()</b> or <b>gptlpr_file()</b> are called. Examples include the Fortran
+  wrapper layer, generating the hash index, and calling the underlying timing
+  routine. More importantly, also printed is a per-region estimate of total overhead
+  incurred, and total overhead incurred in the parent of the region as a 
+  result of timing the region.
+
+  <p><b>IMPORTANT NOTE</b>: Currently GPTL doesn't know if the user API was Fortran or
+  C/C++. Also, calls to the start/stop routines can be intermixed with their
+  start_handle and stop_handle counterparts at will. Therefore GPTL produces a
+  "worst-case" estimate of induced overhead. Specifically, Fortran user-level code and
+  exclusive use of <b>GPTLstart()/GPTLstop()</b> instead of the more efficient
+  <b>GPTLstart_handle()</b> and <b>GPTLstop_handle()</b> is assumed. Users can refine the
+  overhead estimate by hand by subtracting the components which do not apply. For example,
+  if the Fortran API is not used and GPTL reports that the relative cost of the Fortran
+  API is 10% of the total overhead, the total overhead estimate can be reduced by 10%.
+</ul>
+
 <h3>gptl-4.3</h3>
 <ul>
 <li> Complete rewrite of <b>GPTLpr_summary()</b> for accuracy and scalability to many thousands 
