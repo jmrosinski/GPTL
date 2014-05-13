@@ -8,11 +8,12 @@ int main ()
   Y *y;
   int ret;
 
-
+#ifdef HAVE_PAPI
   GPTLsetoption(GPTLmultiplex,1);
   GPTLsetoption(PAPI_L2_DCH, 1);
   GPTLsetoption(PAPI_L1_TCM, 1);
   GPTLsetoption(PAPI_L3_TCM, 1);
+#endif
 
   ret = GPTLinitialize ();
   ret = GPTLstart ("total");

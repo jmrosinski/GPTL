@@ -91,9 +91,9 @@ int main (int argc, char **argv)
   ret = GPTLpr (iam);
 #ifdef HAVE_MPI
   ret = GPTLpr_summary (MPI_COMM_WORLD);
+  ret = MPI_Finalize ();
 #else
   ret = GPTLpr_summary ();
 #endif
-  ret = MPI_Finalize ();
   return 0;
 }
