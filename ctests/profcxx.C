@@ -1,5 +1,7 @@
 #include "../gptl.h"
+#ifdef HAVE_PAPI
 #include <papi.h>
+#endif
 #include "myclasses.h"
 
 int main ()

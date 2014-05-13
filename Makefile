@@ -102,7 +102,7 @@ endif
 ifeq ($(FORTRAN),yes)
 all: lib$(LIBNAME).a $(MAKETESTS) printmpistatussize
 printmpistatussize: printmpistatussize.o
-	$(FC) -o $@ $?
+	$(FC) -o $@ $? $(FFLAGS)
 else
 all: lib$(LIBNAME).a $(MAKETESTS)
 endif
