@@ -22,6 +22,7 @@
 #define gptlpr gptlpr_
 #define gptlpr_file gptlpr_file_
 #define gptlpr_summary gptlpr_summary_
+#define gptlpr_summary_file gptlpr_summary_file_
 #define gptlbarrier gptlbarrier_
 #define gptlreset gptlreset_
 #define gptlstamp gptlstamp_
@@ -57,6 +58,7 @@
 #define gptlpr gptlpr_
 #define gptlpr_file gptlpr_file__
 #define gptlpr_summary gptlpr_summary__
+#define gptlpr_summary_file gptlpr_summary_file__
 #define gptlbarrier gptlbarrier_
 #define gptlreset gptlreset_
 #define gptlstamp gptlstamp_
@@ -94,9 +96,11 @@ int gptlpr (int *procid);
 int gptlpr_file (char *file, int nc1);
 #ifdef HAVE_MPI
 int gptlpr_summary (int *fcomm);
+int gptlpr_summary_file (int *fcomm, char *name, int nc1);
 int gptlbarrier (int *fcomm, char *name, int nc1);
 #else
 int gptlpr_summary (void);
+int gptlpr_summary_file (char *name, int nc1);
 int gptlbarrier (void);
 #endif
 int gptlreset (void);
@@ -176,6 +180,25 @@ int gptlpr_summary (int *fcomm)
   return GPTLpr_summary (ccomm);
 }
 
+int gptlpr_summary_file (int *fcomm, char *outfile, int nc1)
+{
+  MPI_Comm ccomm;
+  char cname[MAX_CHARS+1];
+  int numchars;
+
+  numchars = MIN (nc1, MAX_CHARS);
+  strncpy (cname, outfile, numchars);
+  cname[numchars] = '\0';
+
+#ifdef HAVE_COMM_F2C
+  ccomm = MPI_Comm_f2c (*fcomm);
+#else
+  /* Punt and try just casting the Fortran communicator */
+  ccomm = (MPI_Comm) *fcomm;
+#endif
+  return GPTLpr_summary_file (ccomm, cname);
+}
+
 int gptlbarrier (int *fcomm, char *name, int nc1)
 {
   MPI_Comm ccomm;
@@ -199,6 +222,18 @@ int gptlbarrier (int *fcomm, char *name, int nc1)
 int gptlpr_summary (void)
 {
   return GPTLpr_summary ();
+}
+
+int gptlpr_summary_file (char *outfile, int nc1)
+{
+  char cname[MAX_CHARS+1];
+  int numchars;
+
+  numchars = MIN (nc1, MAX_CHARS);
+  strncpy (cname, outfile, numchars);
+  cname[numchars] = '\0';
+
+  return GPTLpr_summary_file (cname);
 }
 
 int gptlbarrier (void)

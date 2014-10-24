@@ -99,12 +99,16 @@ extern int GPTLstamp (double *, double *, double *);
 extern int GPTLpr (const int);
 extern int GPTLpr_file (const char *);
 
-/*
-** Use K&R prototype for these 2 because they require MPI
-*/
-extern int GPTLpr_summary ();
-extern int GPTLbarrier ();
-
+#ifdef HAVE_MPI
+#include <mpi.h>
+  extern int GPTLpr_summary (MPI_Comm c);
+  extern int GPTLpr_summary_file (MPI_Comm c, const char *);
+  extern int GPTLbarrier (MPI_Comm c, const char *);
+#else
+  extern int GPTLpr_summary ();
+  extern int GPTLpr_summary_file (const char *);
+  extern int GPTLbarrier ();
+#endif
 extern int GPTLreset (void);
 extern int GPTLfinalize (void);
 extern int GPTLget_memusage (int *, int *, int *, int *, int *);
