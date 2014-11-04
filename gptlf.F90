@@ -79,6 +79,11 @@ module gptl
        integer :: fcomm
      end function gptlpr_summary
 
+     integer function gptlpr_summary_file (fcomm, name)
+       integer :: fcomm
+       character(len=*) :: name
+     end function gptlpr_summary_file
+
      integer function gptlbarrier (fcomm, name)
        integer :: fcomm
        character(len=*) :: name
@@ -86,6 +91,10 @@ module gptl
 #else
      integer function gptlpr_summary ()
      end function gptlpr_summary
+
+     integer function gptlpr_summary_file ( name)
+       character(len=*) :: name
+     end function gptlpr_summary_file
 
      integer function gptlbarrier ()
      end function gptlbarrier

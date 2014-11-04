@@ -45,9 +45,8 @@ static int nthreads;  /* Used by both GPTLpr_summary() and get_threadstats() */
 */
 
 #ifdef HAVE_MPI
-#include <mpi.h>
 
-int GPTLpr_summary (MPI_Comm comm)       /* communicator */
+int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)       /* communicator */
 {
   int ret;             /* return code */
   int iam;             /* my rank */
@@ -76,7 +75,6 @@ int GPTLpr_summary (MPI_Comm comm)       /* communicator */
   float sigma;         /* st. dev. */
   unsigned int tsksum; /* part of Chan, et. al. equation */
   static const int tag = 98789;                    /* tag for MPI message */
-  static const char *outfile = "timing.summary";   /* file to write to */
   static const int nbytes = sizeof (Global);       /* number of bytes to be sent/recvd */
   static const char *thisfunc = "GPTLpr_summary";  /* this function */
   FILE *fp = 0;        /* file handle to write to */
@@ -360,12 +358,18 @@ int GPTLpr_summary (MPI_Comm comm)       /* communicator */
   return 0;
 }
 
+int GPTLpr_summary (MPI_Comm comm)       /* communicator */
+{
+  static const char *outfile = "timing.summary";   /* file to write to */
+
+  return GPTLpr_summary_file(comm, outfile);
+}
+
 #else
 
 /* No MPI. Mimic MPI version but for only one rank */
-int GPTLpr_summary ()
+int GPTLpr_summary_file (const char outfile[])
 {
-  static const char *outfile = "timing.summary";   /* file to write to */
   FILE *fp = 0;        /* file handle */
   Timer **timers;
   int multithread;     /* flag indicates multithreaded or not */
@@ -472,7 +476,16 @@ int GPTLpr_summary ()
   return 0;
 }
 
+int GPTLpr_summary ()       /* communicator */
+{
+  static const char *outfile = "timing.summary";   /* file to write to */
+
+  return GPTLpr_summary_file(outfile);
+}
+
 #endif  /* False branch of HAVE_MPI */
+
+
 
 /* 
 ** get_threadstats: gather stats for timer "name" over all threads
