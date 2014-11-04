@@ -368,7 +368,7 @@ int GPTLpr_summary (MPI_Comm comm)       /* communicator */
 #else
 
 /* No MPI. Mimic MPI version but for only one rank */
-int GPTLpr_summary (const char outfile[])
+int GPTLpr_summary_file (const char outfile[])
 {
   FILE *fp = 0;        /* file handle */
   Timer **timers;
