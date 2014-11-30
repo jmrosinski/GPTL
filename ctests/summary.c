@@ -97,9 +97,11 @@ int main (int argc, char **argv)
     printf ("Number of tasks was %d\n", nproc);
   }
 
-  if (GPTLpr_summary (MPI_COMM_WORLD) != 0) {
+  if (GPTLpr_summary (MPI_COMM_WORLD) != 0)
     return 1;
-  }
+
+  if (GPTLpr_summary_file (MPI_COMM_WORLD, "timing.summary.duplicate") != 0)
+    return 1;
 
   ret = MPI_Finalize ();
 

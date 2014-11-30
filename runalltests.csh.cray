@@ -7,12 +7,21 @@
 # try to run a PAPI test where HAVE_PAPI is permuted from "no" to "yes", and
 # the test will fail.
 
-set basescript = jrmacros/macros.make.jet  # This is the base script to start from
+set basescript = jrmacros/macros.make.cray  # This is the base script to start from
 set make = make                     # Name of gnu make program
+
+# jaguarpf: Normally would load xt-papi module here, but that doesn'twork
+# It must be set in the environment
+
+if ( ! $?PAPI_INCLUDE_OPTS ) then
+  echo "$0 Need to have done module load papi from the environment"
+  exit 1
+endif
+
 echo "$0 Testing $basescript..."
 echo "$basescript settings:"
-foreach setting (DEBUG OPENMP PTHREADS FORTRAN HAVE_PAPI HAVE_MPI TEST_AUTOPROFILE \
-                 ENABLE_PMPI HAVE_IARGCGETARG )
+# ENABLE_PMPI, TEST_AUTOPROFILE HAVE_IARGCGETARG do not work on Cray
+foreach setting (DEBUG OPENMP PTHREADS FORTRAN HAVE_PAPI HAVE_MPI )
   echo `grep "^ *$setting *= " $basescript`
 end
 
@@ -22,10 +31,8 @@ $make test  || echo "Failure in $make test" && exit 1
 echo "$0 $basescript worked" >! results
 
 # Will need to delete from user settable list all items which truly aren't available
-#foreach usersettable ( DEBUG OPENMP PTHREADS FORTRAN HAVE_PAPI HAVE_MPI TEST_AUTOPROFILE \
-#                       ENABLE_PMPI HAVE_IARGCGETARG )
-foreach usersettable ( DEBUG OPENMP PTHREADS FORTRAN HAVE_PAPI HAVE_MPI TEST_AUTOPROFILE \
-                       ENABLE_PMPI )
+# ENABLE_PMPI, TEST_AUTOPROFILE HAVE_IARGCGETARG do not work on Cray
+foreach usersettable ( DEBUG OPENMP PTHREADS FORTRAN HAVE_PAPI HAVE_MPI )
 grep "^ *$usersettable *= *yes *" $basescript
 set ret = $status
 

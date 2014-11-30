@@ -16,7 +16,7 @@ foreach setting (DEBUG OPENMP PTHREADS FORTRAN HAVE_PAPI HAVE_MPI TEST_AUTOPROFI
   echo `grep "^ *$setting *= " $basescript`
 end
 
-cp $basescript macros.make || echo "Failure to cp $basescript to macros.make" && exit 1
+cp -f $basescript ./macros.make || echo "Failure to cp $basescript to macros.make" && exit 1
 $make clean; $make || echo "Failure in $make" && exit 1
 $make test  || echo "Failure in $make test" && exit 1
 echo "$0 $basescript worked" >! results

@@ -108,6 +108,7 @@
       integer gptlpr
       integer gptlpr_file
       integer gptlpr_summary
+      integer gptlpr_summary_file
       integer gptlbarrier
       integer gptlreset 
       integer gptlfinalize
@@ -141,6 +142,7 @@
       external gptlpr
       external gptlpr_file
       external gptlpr_summary
+      external gptlpr_summary_file
       external gptlbarrier
       external gptlreset 
       external gptlfinalize

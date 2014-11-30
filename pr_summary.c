@@ -35,19 +35,25 @@ static Timer *getentry_slowway (Timer *, char *);
 static int nthreads;  /* Used by both GPTLpr_summary() and get_threadstats() */
 
 /* 
-** GPTLpr_summary: When MPI enabled, gather and print summary stats across threads
-**                 and MPI tasks. The communication algorithm is O(log nranks) so
-**                 it easily scales to thousands of ranks. Added local memory usage 
-**                 is 2*(number_of_regions)*sizeof(Global) on each rank.
+** GPTLpr_summary_file: Subsumes what used to be GPTLpr_summary() into a new routine
+**                      which takes additional argument "outfile". GPTLpr_summary() is
+**                      now simply a wrapper routine which calls GPTLpr_summary_file()
+**                      with outfile="timing.summary", so NO CHANGE TO PREVIOUS API.
+**                      Thanks to Jim Edwards of NCAR for the modification.
+**
+**                      When MPI enabled, gather and print summary stats across threads
+**                      and MPI tasks. The communication algorithm is O(log nranks) so
+**                      it easily scales to thousands of ranks. Added local memory usage 
+**                      is 2*(number_of_regions)*sizeof(Global) on each rank.
 **
 ** Input arguments:
-**   comm: communicator (e.g. MPI_COMM_WORLD). If zero, use MPI_COMM_WORLD
+**   comm:    communicator (e.g. MPI_COMM_WORLD). If zero, use MPI_COMM_WORLD
+**   outfile: name of file to be written
 */
 
 #ifdef HAVE_MPI
 #include <mpi.h>
-
-int GPTLpr_summary (MPI_Comm comm)       /* communicator */
+int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)       /* communicator */
 {
   int ret;             /* return code */
   int iam;             /* my rank */
@@ -75,10 +81,9 @@ int GPTLpr_summary (MPI_Comm comm)       /* communicator */
   float delta;         /* from Chan, et. al. */
   float sigma;         /* st. dev. */
   unsigned int tsksum; /* part of Chan, et. al. equation */
-  static const int tag = 98789;                    /* tag for MPI message */
-  static const char *outfile = "timing.summary";   /* file to write to */
-  static const int nbytes = sizeof (Global);       /* number of bytes to be sent/recvd */
-  static const char *thisfunc = "GPTLpr_summary";  /* this function */
+  static const int tag = 98789;                         /* tag for MPI message */
+  static const int nbytes = sizeof (Global);            /* number of bytes to be sent/recvd */
+  static const char *thisfunc = "GPTLpr_summary_file";  /* this function */
   FILE *fp = 0;        /* file handle to write to */
 #ifdef HAVE_PAPI
   int e;               /* event index */
@@ -238,8 +243,11 @@ int GPTLpr_summary (MPI_Comm comm)       /* communicator */
   }
 
   if (iam == 0) {
-    if ( ! (fp = fopen (outfile, "w")))
+    if ( ! (fp = fopen (outfile, "w"))) {
       fp = stderr;
+      printf ("%s: WARNING: file=%s cannot be opened for writing. Using stderr instead\n",
+	      thisfunc, outfile);
+    }
 
     /* Print a warning if GPTLerror() was ever called */
     if (GPTLnum_errors () > 0) {
@@ -360,12 +368,18 @@ int GPTLpr_summary (MPI_Comm comm)       /* communicator */
   return 0;
 }
 
+int GPTLpr_summary (MPI_Comm comm)       /* communicator */
+{
+  static const char *outfile = "timing.summary";   /* file to write to */
+
+  return GPTLpr_summary_file (comm, outfile);
+}
+
 #else
 
 /* No MPI. Mimic MPI version but for only one rank */
-int GPTLpr_summary ()
+int GPTLpr_summary_file (const char *outfile)
 {
-  static const char *outfile = "timing.summary";   /* file to write to */
   FILE *fp = 0;        /* file handle */
   Timer **timers;
   int multithread;     /* flag indicates multithreaded or not */
@@ -377,7 +391,7 @@ int GPTLpr_summary ()
 #endif
   Global global;       /* stats to be printed */
   Timer *ptr;
-  static const char *thisfunc = "GPTLpr_summary";  /* this function */
+  static const char *thisfunc = "GPTLpr_summary_file";  /* this function */
 
   if ( ! GPTLis_initialized ())
     return GPTLerror ("%s: GPTLinitialize() has not been called\n", thisfunc);
@@ -385,8 +399,11 @@ int GPTLpr_summary ()
   nthreads = GPTLget_nthreads ();   /* get_threadstats() needs to know this value too */
   multithread = (nthreads > 1);
 
-  if ( ! (fp = fopen (outfile, "w")))
+  if ( ! (fp = fopen (outfile, "w"))) {
     fp = stderr;
+    printf ("%s: WARNING: file=%s cannot be opened for writing. Using stderr instead\n",
+	    thisfunc, outfile);
+  }
 
   /* Print heading */
   fprintf (fp, "GPTLpr_summary: GPTL was built W/O MPI\n");
@@ -472,7 +489,16 @@ int GPTLpr_summary ()
   return 0;
 }
 
+int GPTLpr_summary ()       /* communicator */
+{
+  static const char *outfile = "timing.summary";   /* file to write to */
+
+  return GPTLpr_summary_file (outfile);
+}
+
 #endif  /* False branch of HAVE_MPI */
+
+
 
 /* 
 ** get_threadstats: gather stats for timer "name" over all threads

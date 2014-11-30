@@ -108,36 +108,13 @@ Stats for thread 0:
 	entry and exit points.
 
 </p><hr noshade="noshade" size="2" width="100%" align="LEFT">
-<h2>What's new in the latest release (gptl-5.3)</h2>
+<h2>What's new in the latest release (gptl-5.4)</h2>
 <ul>
-<li> Bugfix to enable multiplexed use of latest PAPI library which includes
-  the <em>Component</em> interface (PAPI-C), which became available around
-  PAPI-3.9.0. The problem occurred in GPTL because the PAPI-C API changed
-  slightly vs. previous versions. Thanks to Crystal Jernigan of ORNL for
-  discovering and reporting the bug. 
-</li><li> New entry point <b>GPTLprint_rusage()</b> enables printing useful
-    information from standard C library routine <b>getrusage()</b>. This is
-    the preferred mechanism for getting memory hiwater mark from GPTL now that Linux
-    supports it (as of Linux 2.6.32). Other information printed includes
-    number of hard and soft page faults, and number of voluntary context switches.
-</li><li> Do not print values of timers which are ON. This is 
-    because a GPTLstop call is required to achieve a current accumulation.
-</li><li> Obsoleted FORTRANCAPS
-</li><li> Relevant to ENABLE_PMPI=yes only: Migrate specification of
-    MPI_STATUS_SIZE up to macros.make. A value of 10 is now more common,
-    while in older MPI libraries it was often 5.
-</li><li> Relevant to ENABLE_PMPI=yes only: Bugfix to PMPI hooks enables use
-    of recent MPI libraries which include mods to the function prototypes
-    adding "const" to appropriate MPI arguments. This was a change to the MPI
-    standard adopted around definition of the MPI 2.2 standard.
-<p> 
-  <b>Note to MPI forum:</b> Please only change existing API specs when absolutely
-  necessary! Changing the API can cause major disruption to other library
-  developers and to users of your library! The recent addition of "const" to
-  the API spec of some arguments of existing MPI functions seems totally
-  unnecessary.
+<li> Support for Cray compilers
+</li><li> New function <b>GPTLpr_summary_file()</b> allows user-specification of 
+    output file to hold summary information. Thanks to Jim Edwards of NCAR
+    for his contribution.
 </li>
-</ul>
 
 <hr noshade="noshade" size="2" width="100%" align="LEFT">
 <h2>Description of what was new in earlier releases is <a href="earlier.html">here</a>.</h2>

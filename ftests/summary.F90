@@ -66,10 +66,19 @@ program main
   ret = gptlpr (iam)
 #endif
   ret = gptlpr_summary (comm)
+  if (ret /= 0) then
+    write(6,*)'summary.F90: error from gptlpr_summary'
+    stop 1
+  end if
+  ret = gptlpr_summary_file (comm, "timing.summary.duplicate")
+  if (ret /= 0) then
+    write(6,*)'summary.F90: error from gptlpr_summary_file'
+    stop 1
+  end if
 
   call mpi_finalize (ret)
 
-  if (gptlfinalize () < 0) stop 6
+  if (gptlfinalize () < 0) stop 1
   stop 0
 end program main
 

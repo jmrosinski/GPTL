@@ -100,9 +100,11 @@ extern int GPTLpr (const int);
 extern int GPTLpr_file (const char *);
 
 /*
-** Use K&R prototype for these 2 because they require MPI
+** Use K&R prototype for these 3 because they require MPI
+** C++ compilers can encounter problems
 */
 extern int GPTLpr_summary ();
+extern int GPTLpr_summary_file ();
 extern int GPTLbarrier ();
 
 extern int GPTLreset (void);
