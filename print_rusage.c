@@ -20,7 +20,7 @@ int GPTLprint_rusage (const char *str)
 {
   struct rusage usage;
   static const char *thisfunc = "GPTLprint_rusage";
-  static const float onek = 1042.;
+  static const float onek = 1024.;
   
   if (getrusage (RUSAGE_SELF, &usage) < 0)
     return GPTLerror ("%s: failure from getrusage()\n", thisfunc);
