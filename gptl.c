@@ -1365,6 +1365,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   bool first;               /* flag 1st time entry found */
   double self_ohd;          /* estimated library overhead in self timer */
   double parent_ohd;        /* estimated library overhead due to self in parent timer */
+  int size, rss, share, text, datastack; /* returned from GPTLget_memusage */
 
   static const char *thisfunc = "GPTLpr_file";
 
@@ -1469,6 +1470,10 @@ int GPTLpr_file (const char *outfile) /* output file to write */
              "Further down the listing may be more detailed information about multiple\n"
              "parents. Look for 'Multiple parent info'\n\n");
   }
+
+  /* Print the process size at time of call to GPTLpr_file */
+  (void) GPTLget_memusage (&size, &rss, &share, &text, &datastack);
+  fprintf (fp, "Process size=%d MB rss=%d MB\n\n", size, rss);
 
   sum = (float *) GPTLallocate (nthreads * sizeof (float), thisfunc);
   

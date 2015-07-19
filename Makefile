@@ -7,7 +7,7 @@ else
 endif
 
 null =
-OBJS = gptl.o util.o get_memusage.o print_memusage.o gptl_papi.o pmpi.o getoverhead.o \
+OBJS = gptl.o util.o memusage.o gptl_papi.o pmpi.o getoverhead.o \
        hashstats.o memstats.o pr_summary.o print_rusage.o
 
 ifeq ($(ENABLE_PMPI),yes)
