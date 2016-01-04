@@ -108,6 +108,7 @@ extern int GPTLpr_summary_file ();
 extern int GPTLbarrier ();
 
 extern int GPTLreset (void);
+extern int GPTLreset_timer (char *);
 extern int GPTLfinalize (void);
 extern int GPTLget_memusage (int *, int *, int *, int *, int *);
 extern int GPTLprint_memusage (const char *);
@@ -119,6 +120,9 @@ extern int GPTLquery (const char *, int, int *, int *, double *, double *, doubl
 		      long long *, const int);
 extern int GPTLquerycounters (const char *, int, long long *);
 extern int GPTLget_wallclock (const char *, int, double *);
+extern int GPTLget_wallclock_latest (const char *, int, double *);
+extern int GPTLget_threadwork (const char *, double *, double *);
+extern int GPTLstartstop_val (const char *, double);
 extern int GPTLget_eventvalue (const char *, const char *, int, double *);
 extern int GPTLget_nregions (int, int *);
 extern int GPTLget_regionname (int, int, char *, int);

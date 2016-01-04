@@ -39,7 +39,7 @@ HAVE_SLASHPROC = yes
 # Thus COMPFLAG should be set to the compiler flag that enables OpenMP directives
 # if either OPENMP=yes, or PTHREADS=yes. If OPENMP=no and PTHREADS=no, GPTL 
 # will not be thread-safe.
-OPENMP = no
+OPENMP = yes
 COMPFLAG = -fopenmp
 # Set PTHREADS if available and OPENMP=no
 ifeq ($(OPENMP),no)
@@ -139,11 +139,11 @@ ifeq ($(HAVE_MPI),yes)
 # Some newer MPI releases change the prototype of some input arguments from "void *" 
 # to "const void *". The prototype for these functions inside GPTL must match the
 # MPI library in use. For ENABLE_PMPI=yes, set MPI_CONST to yes or no appropriately.
-    MPI_CONST = yes
+    MPI_CONST = no
 # Yet another (Fortran-only) wart: the value of MPI_STATUS_SIZE varies among MPI distributions. 
 # Normal values are 5 or 10. AIX and very new MPICH versions it is 10. Set it here--if you get it
 # wrong your instrumented code will tell you at run time the proper value. Or run ftests/pmpi
-   MPI_STATUS_SIZE_IN_INTS = 10
+   MPI_STATUS_SIZE_IN_INTS = 6
   endif
 # If Fortran is enabled, the ability to automatically initialize GPTL from
 # mpi_init can be enabled if iargc() and getarg() are available.

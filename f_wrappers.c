@@ -25,6 +25,7 @@
 #define gptlpr_summary_file gptlpr_summary_file_
 #define gptlbarrier gptlbarrier_
 #define gptlreset gptlreset_
+#define gptlreset_timer gptlreset_timer_
 #define gptlstamp gptlstamp_
 #define gptlstart gptlstart_
 #define gptlinit_handle gptlinit_handle_
@@ -38,6 +39,9 @@
 #define gptlquery gptlquery_
 #define gptlquerycounters gptlquerycounters_
 #define gptlget_wallclock gptlget_wallclock_
+#define gptlget_wallclock_latest gptlget_wallclock_latest_
+#define gptlget_threadwork gptlget_threadwork_
+#define gptlstartstop_val gptlstartstop_val_
 #define gptlget_eventvalue gptlget_eventvalue_
 #define gptlget_nregions gptlget_nregions_
 #define gptlget_regionname gptlget_regionname_
@@ -61,6 +65,7 @@
 #define gptlpr_summary_file gptlpr_summary_file__
 #define gptlbarrier gptlbarrier_
 #define gptlreset gptlreset_
+#define gptlreset_timer gptlreset_timer__
 #define gptlstamp gptlstamp_
 #define gptlstart gptlstart_
 #define gptlinit_handle gptlinit_handle__
@@ -74,6 +79,9 @@
 #define gptlquery gptlquery_
 #define gptlquerycounters gptlquerycounters_
 #define gptlget_wallclock gptlget_wallclock__
+#define gptlget_wallclock_latest gptlget_wallclock_latest__
+#define gptlget_threadwork gptlget_threadwork__
+#define gptlstartstop_val gptlstartstop_val__
 #define gptlget_eventvalue gptlget_eventvalue__
 #define gptlget_nregions gptlget_nregions__
 #define gptlget_regionname gptlget_regionname__
@@ -104,6 +112,7 @@ int gptlpr_summary_file (char *name, int nc1);
 int gptlbarrier (void);
 #endif
 int gptlreset (void);
+int gptlreset_timer (char *name, int nc1);
 int gptlstamp (double *wall, double *usr, double *sys);
 int gptlstart (char *name, int nc1);
 int gptlinit_handle (char *name, int *, int nc1);
@@ -119,6 +128,9 @@ int gptlquery (const char *name, int *t, int *count, int *onflg, double *wallclo
 	       int nc);
 int gptlquerycounters (const char *name, int *t, long long *papicounters_out, int nc);
 int gptlget_wallclock (const char *name, int *t, double *value, int nc);
+int gptlget_wallclock_last (const char *name, int *t, double *value, int nc);
+int gptlget_threadwork (const char *name, double *maxwork, double *imbal, int nc);
+int gptlstartstop_val (const char *name, double *value, int nc);
 int gptlget_eventvalue (const char *timername, const char *eventname, int *t, double *value, 
 			int nc1, int nc2);
 int gptlget_nregions (int *t, int *nregions);
@@ -254,6 +266,17 @@ int gptlreset (void)
   return GPTLreset ();
 }
 
+int gptlreset_timer (char *name, int nc1)
+{
+  char cname[MAX_CHARS+1];
+  int numchars;
+
+  numchars = MIN (nc1, MAX_CHARS);
+  strncpy (cname, name, numchars);
+  cname[numchars] = '\0';
+  return GPTLreset_timer (cname);
+}
+
 int gptlstamp (double *wall, double *usr, double *sys)
 {
   return GPTLstamp (wall, usr, sys);
@@ -368,6 +391,41 @@ int gptlget_wallclock (const char *name, int *t, double *value, int nc)
   cname[numchars] = '\0';
 
   return GPTLget_wallclock (cname, *t, value);
+}
+
+int gptlget_wallclock_latest (const char *name, int *t, double *value, int nc)
+{
+  char cname[MAX_CHARS+1];
+  int numchars;
+
+  numchars = MIN (nc, MAX_CHARS);
+  strncpy (cname, name, numchars);
+  cname[numchars] = '\0';
+
+  return GPTLget_wallclock_latest (cname, *t, value);
+}
+
+int gptlget_threadwork (const char *name, double *maxwork, double *imbal, int nc)
+{
+  char cname[MAX_CHARS+1];
+  int numchars;
+
+  numchars = MIN (nc, MAX_CHARS);
+  strncpy (cname, name, numchars);
+  cname[numchars] = '\0';
+
+  return GPTLget_threadwork (cname, maxwork, imbal);
+}
+
+int gptlstartstop_val (const char *name, double *value, int nc1)
+{
+  char cname[MAX_CHARS+1];
+  int numchars;
+
+  numchars = MIN (nc1, MAX_CHARS);
+  strncpy (cname, name, numchars);
+  cname[numchars] = '\0';
+  return GPTLstartstop_val (cname, *value);
 }
 
 int gptlget_eventvalue (const char *timername, const char *eventname, int *t, double *value, 

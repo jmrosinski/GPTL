@@ -6,8 +6,16 @@ else
   DEFINE = -D
 endif
 
-# May be reset below
-THREADED = no
+ifeq ($(OPENMP),yes)
+  THREADED = yes
+else
+  ifeq ($(PTHREADS),yes)
+# Threaded tests use OpenMP
+    THREADED = yes
+  else
+    THREADED = no
+  endif
+endif
 
 # Ensure that FFLAGS are set for low optimization
 FFLAGS += -g -O1
@@ -26,6 +34,9 @@ LDFLAGS = -g -L.. -l$(LIBNAME) $(ABIFLAGS)
 FFLAGS += -I..
 
 ifeq ($(HAVE_MPI),yes)
+  ifeq ($(THREADED),yes)
+    EXES += threadohd
+  endif
   EXES += summary pmpi
   FFLAGS  += $(DEFINE)HAVE_MPI $(MPI_INCFLAGS)
   LDFLAGS += $(MPI_LIBFLAGS)
@@ -42,14 +53,11 @@ else
 endif
 
 ifeq ($(OPENMP),yes)
-  THREADED = yes
   EXES    += toomanythreads
   FFLAGS  += $(DEFINE)THREADED_OMP $(FOMPFLAG)
   LDFLAGS += $(FOMPFLAG)
 else
   ifeq ($(PTHREADS),yes)
-# Threaded tests use OpenMP
-    THREADED = yes
     EXES    += toomanythreads
     FFLAGS  += $(DEFINE)THREADED_OMP $(FOMPFLAG)
     LDFLAGS += $(FOMPFLAG) -lpthread
@@ -106,6 +114,9 @@ overhead: overhead.F90 ../lib$(LIBNAME).a
 toomanythreads: toomanythreads.F90
 	$(FC) $(FFLAGS) -o $@ $< $(LDFLAGS)
 
+threadohd: threadohd.F90
+	$(FC) $(FFLAGS) -o $@ $< $(LDFLAGS)
+
 # Hidden executable testbacktrace requires some strange flags so don't build it unless asked
 testbacktrace: testbacktrace.F90
 	$(FC) $(FFLAGS) $(INSTRFLAG) -rdynamic -o $@ $< $(LDFLAGS)
@@ -144,7 +155,7 @@ endif
 ifeq ($(ENABLE_PMPI),yes)
 	@echo
 	@echo Running $(MPICMD) ./pmpi
-	env $(MPICMD) ./pmpi
+	$(MPICMD) ./pmpi
 	@echo Checking contents of timing.0 for region name MPI_Send...
 	@grep -q MPI_Send timing.0 || (echo "Failed" && exit 1)
 	@echo Success

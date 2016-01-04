@@ -1,6 +1,7 @@
 module gptl
 ! GPTL module file for user code. Parameter values match their counterparts
 ! in gptl.h. This file also contains an interface block for parameter checking.
+! Also: Some F90-only subroutines after the interface block
 
   implicit none
   public
@@ -103,6 +104,10 @@ module gptl
      integer function gptlreset ()
      end function gptlreset
 
+     integer function gptlreset_timer (name)
+       character(len=*) :: name
+     end function gptlreset_timer
+
      integer function gptlstamp (wall, usr, sys)
        real(8) :: wall, usr, sys
      end function gptlstamp
@@ -166,6 +171,23 @@ module gptl
        real(8) :: value
      end function gptlget_wallclock
 
+     integer function gptlget_wallclock_latest (name, t, value)
+       character(len=*) :: name
+       integer :: t
+       real(8) :: value
+     end function gptlget_wallclock_latest
+
+     integer function gptlget_threadwork (name, maxwork, imbal)
+       character(len=*) :: name
+       real(8) :: maxwork
+       real(8) :: imbal
+     end function gptlget_threadwork
+
+     integer function gptlstartstop_val (name, value)
+       character(len=*) :: name
+       real(8) :: value
+     end function gptlstartstop_val
+
      integer function gptlget_eventvalue (timername, eventname, t, value)
        character(len=*) :: timername
        character(len=*) :: eventname
@@ -225,9 +247,141 @@ module gptl
 
   end interface
 
-  contains
-! Do-nothing stub needed because some compilers otherwise generate no symbols
-! which can cause ar to barf
-    subroutine gptldo_nothing
-    end subroutine gptldo_nothing
+contains
+
+  ! These routines are available only in the F90 interface (not C either)
+
+! gptlstart_threadohd_outer: 
+!   Start a timer with "_OUT" appended
+!   Reset the "_FNL" inner timer to zero in preparation for a threaded loop
+  integer function gptlstart_threadohd_outer (name)
+    character(len=*), intent(in) :: name
+    
+    character(len=len(name)+4) :: outername  ! "_OUT" is 4 characters long
+    character(len=len(name)+4) :: innerlast  ! "_FNL" is 4 characters long
+    integer :: ret
+
+    gptlstart_threadohd_outer = -1
+    ! Append special tags for outer and and most recent inner timers
+    outername = name//'_OUT'
+    innerlast = name//'_FNL'
+
+    ret = gptlstart (outername)
+    if (ret /= 0) then
+      write(6,*)'gptlstart_threadohd_outer: Failure from gptlstart* name=',outername
+      return
+    end if
+
+    !TODO: Check the return code from gptlreset_timer
+    ret = gptlreset_timer (innerlast)
+    gptlstart_threadohd_outer = 0
+  end function gptlstart_threadohd_outer
+
+! gptlstart_threadohd_inner: 
+!   Start a timer with '_INN" appended
+!   Start a timer with "_FNL" appended for subsequent use in overhead calcs.
+  integer function gptlstart_threadohd_inner (name)
+    character(len=*), intent(in) :: name
+    
+    character(len=len(name)+4) :: innername  ! "_INN" is 4 characters long
+    character(len=len(name)+4) :: innerlast  ! "_FNL" is 4 characters long
+    integer :: ret
+    
+    gptlstart_threadohd_inner = -1
+    innername = name//'_INN'
+    innerlast = name//'_FNL'
+
+    ret = gptlstart (innername)
+    if (ret /= 0) then
+      write(6,*)'gptlstart_threadohd_inner: Failure from gptlstart* name=',innername
+      return
+    end if
+
+    ret = gptlstart (innerlast)
+    if (ret /= 0) then
+      write(6,*)'gptlstart_threadohd_inner: Failure from gptlstart* name=',innerlast
+      return
+    end if
+    gptlstart_threadohd_inner = 0
+  end function gptlstart_threadohd_inner
+  
+! gptlstop_threadohd_inner: 
+!   Stop a timer with '_INN" appended
+!   Stop a timer with "_FNL" appended for subsequent use in overhead calcs.
+  integer function gptlstop_threadohd_inner (name)
+    character(len=*), intent(in) :: name
+    
+    character(len=len(name)+4) :: innername  ! "_INN" is 4 characters long
+    character(len=len(name)+4) :: innerlast  ! "_FNL" is 4 characters long
+    integer :: ret
+    
+    gptlstop_threadohd_inner = -1
+    innername = name//'_INN'
+    innerlast = name//'_FNL'
+
+    ret = gptlstop (innerlast)
+    if (ret /= 0) then
+      write(6,*)'gptlstop_threadohd_inner: Failure from gptlstop* name=',innerlast
+      return
+    end if
+
+    ret = gptlstop (innername)
+    if (ret /= 0) then
+      write(6,*)'gptlstop_threadohd_inner: Failure from gptlstop* name=',innername
+      return
+    end if
+    gptlstop_threadohd_inner = 0
+  end function gptlstop_threadohd_inner
+  
+! gptlstop_threadohd_outer:
+!   Estimate threading overhead and threading load imbalance, using the formulae:
+!   overhead = time wrapping do/enddo minus slowest thread inside the loop
+!   imbalance = slowest thread minus mean time taken by all threads,
+!     where "mean time taken by all threads" is taken as best possible time
+!   Two pseudo-timers are invoked, with "_imbal" and "_thdovr" appended to be
+!     tracked and reported by the main GPTL library
+  integer function gptlstop_threadohd_outer (name)
+    character(len=*), intent(in) :: name
+    
+    real(8) :: innermax   ! Max time across threads
+    real(8) :: imbal      ! Computed imbalance
+    real(8) :: outertime  ! thread 0 time outside loop
+    real(8) :: threadover ! Computed overhead due to threading overhead
+    
+    character(len=len(name)+4) :: outername  ! "_OUT" is 4 characters long
+    character(len=len(name)+4) :: innerlast  ! "_FNL" is 4 characters long
+    integer :: ret
+    
+    gptlstop_threadohd_outer = -1  ! Init to bad value
+    outername = name//'_OUT'
+    innerlast = name//'_FNL'
+
+    ret = gptlstop (outername)
+    if (ret /= 0) then
+      write(6,*)'gptlstop_threadohd_outer: Failure from gptlstop* name=',outername
+      return
+    end if
+    
+    if (gptlget_threadwork (innerlast, innermax, imbal) /= 0) then
+      write(6,*)'gptlstop_threadohd_outer: Failure from gptlget_threadwork name=',innerlast
+      return
+    end if
+
+    if (gptlget_wallclock_latest (outername, 0, outertime) /= 0) then
+      write(6,*)'gptlstop_threadohd_outer: Failure from gptlget_wallclock name=',outername
+      return
+    end if
+
+    if (gptlstartstop_val (name//'_imbal', imbal) /= 0) then
+      write(6,*)'gptlstop_threadohd_outer: Failure from gptlstartstop_val name=',name//'_imbal'
+      return
+    end if
+
+    threadover = outertime - innermax
+    if (gptlstartstop_val (name//'_thdovr', threadover) /= 0) then
+      write(6,*)'gptlstop_threadohd_outer: Failure from gptlstartstop_val name=',name//'_thdovr'
+      return
+    end if
+    gptlstop_threadohd_outer = 0
+  end function gptlstop_threadohd_outer
 end module gptl

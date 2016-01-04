@@ -9,13 +9,13 @@
 # Where to install GPTL library and include files.
 # if "git" is not available, set REVNO by hand
 REVNO = $(shell git describe)
-INSTALLDIR = /scratch1/portfolios/BMC/fim/GPTL/gptl-$(REVNO)/intel_nompi
+INSTALLDIR = /contrib/gptl/gptl-$(REVNO)_impi_omp
 
 # Where to install man pages (if blank, defaults to $INSTALLDIR)
 MANDIR = 
 
 # C compiler
-CC = icc
+CC = mpiicc
 
 # Whether to build debug lib or optimized lib, and associated flags
 DEBUG = no
@@ -39,7 +39,7 @@ HAVE_SLASHPROC = yes
 # Thus COMPFLAG should be set to the compiler flag that enables OpenMP directives
 # if either OPENMP=yes, or PTHREADS=yes. If OPENMP=no and PTHREADS=no, GPTL 
 # will not be thread-safe.
-OPENMP = no
+OPENMP = yes
 COMPFLAG = -openmp
 # Set PTHREADS if available and OPENMP=no
 ifeq ($(OPENMP),no)
@@ -72,7 +72,7 @@ ifeq ($(FORTRAN),yes)
 # Set Fortran compiler, flags, and OpenMP compiler flag. Note that Fortran
 # OpenMP tests are possible with OPENMP=no as long as PTHREADS=yes
 # These settings are only used by the Fortran test applications in ftests/.
-  FC     = ifort
+  FC     = mpiifort
   FFLAGS = -g -O2
   FOMPFLAG = -openmp
 endif
@@ -90,14 +90,14 @@ endif
 
 # Whether to build GPTL with MPI support. Set inc and lib info if needed. 
 # If CC=mpicc, MPI_INCFLAGS and MPI_LIBFLAGS can be blank.
-HAVE_MPI = no
+HAVE_MPI = yes
 ifeq ($(HAVE_MPI),yes)
 # Hopefully MPI_Comm_f2c() exists, but if not, set HAVE_COMM_F2C = no
   HAVE_COMM_F2C = yes
   MPI_INCFLAGS = 
   MPI_LIBFLAGS = 
 # Want 2 MPI tasks
-  MPICMD = mpiexec_mpt -n 2
+  MPICMD = mpirun -n 2
 endif
 
 # clock_gettime() in librt.a is an option for gathering wallclock time stats
@@ -128,7 +128,7 @@ HAVE_GETTIMEOFDAY = yes
 TEST_AUTOPROFILE = yes
 ifeq ($(TEST_AUTOPROFILE),yes)
   INSTRFLAG = -finstrument-functions
-  CXX = icpc
+  CXX = mpiicpc
 endif
 
 # Whether to enable PMPI wrappers. Turning this on will result in automatic 

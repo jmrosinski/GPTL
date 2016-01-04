@@ -111,6 +111,7 @@
       integer gptlpr_summary_file
       integer gptlbarrier
       integer gptlreset 
+      integer gptlreset_timer
       integer gptlfinalize
       integer gptlget_memusage
       integer gptlprint_memusage
@@ -121,6 +122,9 @@
       integer gptlquery
       integer gptlquerycounters
       integer gptlget_wallclock
+      integer gptlget_wallclock_latest
+      integer gptlget_threadwork
+      integer gptlstartstop_val
       integer gptlget_eventvalue
       integer gptlget_nregions
       integer gptlget_regionname
@@ -145,6 +149,7 @@
       external gptlpr_summary_file
       external gptlbarrier
       external gptlreset 
+      external gptlreset_timer
       external gptlfinalize
       external gptlget_memusage
       external gptlprint_memusage
@@ -155,6 +160,9 @@
       external gptlquery
       external gptlquerycounters
       external gptlget_wallclock
+      external gptlget_wallclock_latest
+      external gptlget_threadwork
+      external gptlstartstop_val
       external gptlget_eventvalue
       external gptlget_nregions
       external gptlget_regionname

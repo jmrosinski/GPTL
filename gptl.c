@@ -1164,7 +1164,7 @@ int GPTLstop_handle (const char *name,     /* timer name */
 **
 ** Input arguments:
 **   ptr: pointer to timer
-**   tp1: input time stapm
+**   tp1: input time stamp
 **   usr: user time
 **   sys: system time
 **   t: thread index
@@ -1192,10 +1192,10 @@ static inline int update_stats (Timer *ptr,
   if (wallstats.enabled) {
     delta = tp1 - ptr->wall.last;
     ptr->wall.accum += delta;
+    ptr->wall.latest = delta;
 
-    if (delta < 0.) {
+    if (delta < 0.)
       fprintf (stderr, "GPTL: %s: negative delta=%g\n", thisfunc, delta);
-    }
 
     if (ptr->count == 1) {
       ptr->wall.max = delta;
@@ -1315,6 +1315,40 @@ int GPTLreset (void)
   if (verbose)
     printf ("%s: accumulators for all timers set to zero\n", thisfunc);
 
+  return 0;
+}
+
+/*
+** GPTLreset_timer: reset a timer to 0
+**
+** Return value: 0 (success) or GPTLerror (failure)
+*/
+int GPTLreset_timer (char *name)
+{
+  int t;             /* index over threads */
+  Timer *ptr;        /* linked list index */
+  unsigned int indx; /* hash table index */
+  static const char *thisfunc = "GPTLreset_timer";
+
+  if ( ! initialized)
+    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
+
+  if (get_thread_num () != 0)
+    return GPTLerror ("%s: Must be called by the master thread\n", thisfunc);
+
+  indx = genhashidx (name);
+  for (t = 0; t < nthreads; ++t) {
+    ptr = getentry (hashtable[t], name, indx);
+    if (ptr) {
+      ptr->onflg = false;
+      ptr->count = 0;
+      memset (&ptr->wall, 0, sizeof (ptr->wall));
+      memset (&ptr->cpu, 0, sizeof (ptr->cpu));
+#ifdef HAVE_PAPI
+      memset (&ptr->aux, 0, sizeof (ptr->aux));
+#endif
+    }
+  }
   return 0;
 }
 
@@ -2284,6 +2318,189 @@ int GPTLget_wallclock (const char *timername,
       return GPTLerror ("%s: requested timer %s does not exist\n", thisfunc, timername);
   }
   *value = ptr->wall.accum;
+  return 0;
+}
+
+/*
+** GPTLget_wallclock_latest: return most recent wallclock value for a timer.
+** 
+** Input args:
+**   timername: timer name
+**   t:         thread number (if < 0, the request is for the current thread)
+**
+** Output args:
+**   value: most recent wallclock value for the timer
+*/
+int GPTLget_wallclock_latest (const char *timername,
+			      int t,
+			      double *value)
+{
+  Timer *ptr;          /* linked list pointer */
+  unsigned int indx;   /* hash index returned from getentry (unused) */
+  static const char *thisfunc = "GPTLget_wallclock_latest";
+  
+  if ( ! initialized)
+    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
+
+  if ( ! wallstats.enabled)
+    return GPTLerror ("%s: wallstats not enabled\n", thisfunc);
+  
+  /* If t is < 0, assume the request is for the current thread */
+  if (t < 0) {
+    if ((t = get_thread_num ()) < 0)
+      return GPTLerror ("%s: bad return from get_thread_num\n", thisfunc);
+  } else {
+    if (t >= maxthreads)
+      return GPTLerror ("%s: requested thread %d is too big\n", thisfunc, t);
+  }
+  
+  indx = genhashidx (timername);
+  ptr = getentry (hashtable[t], timername, indx);
+  if ( !ptr)
+    return GPTLerror ("%s: requested timer %s does not exist\n", thisfunc, timername);
+  *value = ptr->wall.latest;
+  return 0;
+}
+
+/*
+** GPTLget_threadwork: For a timer, across threads compute max work and imbalance
+**
+** Input arguments:
+**   name: timer name
+**
+** Output arguments:
+**   maxwork: maximum work across threads
+**   imbal:   imbalance vs. perfectly distributed workload
+**
+** Return value: 0 (success) or -1 (failure)
+*/
+int GPTLget_threadwork (const char *name, 
+			double *maxwork,
+			double *imbal)
+{
+  Timer *ptr;                  /* linked list pointer */
+  int t;                       /* thread number for this process */
+  int nfound = 0;              /* number of threads which did work (must be > 0 */
+  unsigned int indx;           /* index into hash table */
+  double innermax = 0.;        /* maximum work across threads */
+  double totalwork = 0.;       /* total work done by all threads */
+  double balancedwork;         /* time if work were perfectly load balanced */
+  static const char *thisfunc = "GPTLget_threadwork";
+
+  if (disabled)
+    return 0;
+
+  if ( ! initialized)
+    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
+
+  if ( ! wallstats.enabled)
+    return GPTLerror ("%s: wallstats must be enabled to call this function\n", thisfunc);
+
+  if (get_thread_num () != 0)
+    return GPTLerror ("%s: Must be called by the master thread\n", thisfunc);
+
+  indx = genhashidx (name);
+  for (t = 0; t < nthreads; ++t) {
+    ptr = getentry (hashtable[t], name, indx);
+    if (ptr) {
+      ++nfound;
+      innermax = MAX (innermax, ptr->wall.accum);
+      totalwork += ptr->wall.accum;
+    }
+  }
+
+  /* It's an error to call this routine for a region that does not exist */
+  if (nfound == 0)
+    return GPTLerror ("%s: No entries exist for name=%s\n", thisfunc, name);
+
+  /*
+  ** A perfectly load-balanced calculation would take time=totalwork/nthreads
+  ** Therefore imbalance is slowest thread time minus this number
+  */
+  balancedwork = totalwork / nthreads;
+  *maxwork = innermax;
+  *imbal = innermax - balancedwork;
+
+  return 0;
+}
+
+/*
+** GPTLstartstop_val: Take user input to treat as the result of calling start/stop
+**
+** Input arguments:
+**   name: timer name
+**   value: value to add to the timer
+**
+** Return value: 0 (success) or -1 (failure)
+*/
+int GPTLstartstop_val (const char *name, 
+		       double value)
+{
+  Timer *ptr;                /* linked list pointer */
+  int t;                     /* thread number for this process */
+  unsigned int indx;         /* index into hash table */
+  static const char *thisfunc = "GPTLstartstop_val";
+
+  if (disabled)
+    return 0;
+
+  if ( ! initialized)
+    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
+
+  if ( ! wallstats.enabled)
+    return GPTLerror ("%s: wallstats must be enabled to call this function\n", thisfunc);
+
+  if (value < 0.)
+    return GPTLerror ("%s: Input value must not be negative\n", thisfunc);
+
+  /* getentry requires the thread number */
+  if ((t = get_thread_num ()) < 0)
+    return GPTLerror ("%s: bad return from get_thread_num\n", thisfunc);
+
+  /* Find out if the timer already exists */
+  indx = genhashidx (name);
+  ptr = getentry (hashtable[t], name, indx);
+
+  if (ptr) {
+    /*
+    ** The timer already exists. Bump the count manually, update the time stamp,
+    ** and let control jump to the point where wallclock settings are adjusted.
+    */
+    ++ptr->count;
+    ptr->wall.last = (*ptr2wtimefunc) ();
+  } else {
+    /*
+    ** Need to call start/stop to set up linked list and hash table.
+    ** "count" and "last" will also be set properly by the call to this pair.
+    */
+    if (GPTLstart (name) != 0)
+      return GPTLerror ("%s: Error from GPTLstart\n", thisfunc);
+
+    if (GPTLstop (name) != 0)
+      return GPTLerror ("%s: Error from GPTLstop\n", thisfunc);
+
+    /* start/stop pair just called should guarantee ptr will be found */
+    if ( ! (ptr = getentry (hashtable[t], name, indx)))
+      return GPTLerror ("%s: Unexpected error from getentry\n", thisfunc);
+
+    ptr->wall.min = value; /* Since this is the first call, set min to user input */
+    /* 
+    ** Minor mod: Subtract the overhead of the above start/stop call, before
+    ** adding user input
+    */
+    ptr->wall.accum -= ptr->wall.latest;
+  }
+
+  /* Overwrite the values with user input */
+  ptr->wall.accum += value;
+  ptr->wall.latest = value;
+  if (value > ptr->wall.max)
+    ptr->wall.max = value;
+
+  /* On first call this setting is unnecessary but avoid an "if" test for efficiency */
+  if (value < ptr->wall.min)
+    ptr->wall.min = value;
+
   return 0;
 }
 

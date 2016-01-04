@@ -39,7 +39,7 @@ HAVE_SLASHPROC = yes
 # Thus COMPFLAG should be set to the compiler flag that enables OpenMP directives
 # if either OPENMP=yes, or PTHREADS=yes. If OPENMP=no and PTHREADS=no, GPTL 
 # will not be thread-safe.
-OPENMP = no
+OPENMP = yes
 COMPFLAG = -mp
 # Set PTHREADS if available and OPENMP=no
 ifeq ($(OPENMP),no)
