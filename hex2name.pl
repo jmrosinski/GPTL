@@ -52,22 +52,7 @@ sub main()
     my ($function);  # name of function in symtab
     my ($nsym) = 0;  # number of symbols
     my ($nfunc) = 0; # number of functions
-    my ($sym);       # symbol
-    my ($begofline);
-    my ($off1);
     my ($spaftsym);
-    my ($ncalls);
-    my ($restofline);
-    my ($numsp);                 # number of spaces before rest of line
-    my ($spaces);                # text containing spaces before rest of line
-    my ($thread) = -1;           # thread number (init to -1
-    my ($doparse) = 0;           # logical flag: true indicates between "Statas for thread..."
-                                 # and "Number of calls..."
-    my ($indent);
-    my (@max_chars);             # longest symbol name + indentation (per thread)
-    my ($statsforthread) = 0;    # Inside region "Stats for thread ..."
-    my ($sortedbytimer) = 0;     # Inside region "Same stats sorted by ..."
-    my ($countnexttochild) = 0;  # Inside region "Count next to child ..."
 	
     if ($demangle) {
 	open (NM, "nm $binfile | c++filt | ") or die ("Unable to run 'nm $binfile | c++filt': $!\n");
@@ -90,10 +75,33 @@ sub main()
     printf("OK\nSeen %d symbols, stored %d function offsets\n", $nsym, $nfunc);
     close(NM);
 
-    @max_chars = &get_max_chars ("$timingout");
 
-    open (TEXT, "<$timingout") or die ("Unable to open '$timingout': $!\n");
-	
+    if ($timingout eq "timing.summary") {
+	&parse_and_print_summary ();
+    } else {
+	&parse_and_print ("$timingout");
+    }
+}
+
+sub parse_and_print ()
+{
+    my ($file) = $_[0];
+    my ($statsforthread) = 0;    # Inside region "Stats for thread ..."
+    my ($sortedbytimer) = 0;     # Inside region "Same stats sorted by ..."
+    my ($countnexttochild) = 0;  # Inside region "Count next to child ..."
+    my ($thread) = -1;           # thread number (init to -1
+    my ($spaces);                # text containing spaces before rest of line
+    my ($numsp);                 # number of spaces before rest of line
+    my ($begofline);
+    my ($indent);
+    my ($off1);
+    my ($ncalls);
+    my ($restofline);
+    my ($sym);       # symbol
+    my (@max_chars);             # longest symbol name + indentation (per thread)
+
+    @max_chars = &get_max_chars ("$file");
+    open (TEXT, "<$file") or die ("Unable to open '$file': $!\n");
     while (<TEXT>) {
 
 	# 3 types of input line will need parsing
@@ -192,6 +200,58 @@ sub main()
     printf("done\n");
 }
 
+sub parse_and_print_summary ()
+{
+    my ($restofline);
+    my ($addsp);
+    my ($spaces);
+    my ($off1);
+    my ($sym);       # symbol
+    my ($mc);
+    my ($num);       # first number after name
+
+    $mc = &get_max_chars_summary ("timing.summary");
+
+    open (TEXT, "<timing.summary") or die ("Unable to open 'timing.summary': $!\n");
+    while (<TEXT>) {
+	if (/^name *(ncalls nranks mean_time.*)$/) { # beginning of main region
+	    $addsp = $mc - 4;   # subtract length of "name"
+	    $spaces = " " x $addsp;
+	    printf ("name %s %s\n", $spaces, $1);
+	} elsif (/(^[[:xdigit:]]+) *([0-9.Ee+]+)(.*)$/) { # hex entry
+	    $off1       = hex($1);
+	    $num        = $2;
+	    $restofline = $3;
+	    if (defined ($symtab{$off1})) {
+		$sym = $symtab{$off1};
+	    } else {
+		$sym = "???";
+	    }
+	    $addsp = $mc - length ($sym);
+	    if ($addsp > 0) {
+		$spaces = " " x $addsp;
+	    } else {
+		$spaces = "";
+	    }
+	    printf ("%s %s%7s%s\n", $sym, $spaces, $num, $restofline);
+	} elsif (/^([a-zA-Z0-9_]+) *([0-9.Ee+]+)(.*)$/) {     # standard entry
+	    $num        = $2;
+	    $restofline = $3;
+	    $addsp = $mc - length ($1);
+	    if ($addsp > 0) {
+		$spaces = " " x $addsp;
+	    } else {
+		$spaces = "";
+	    }
+	    printf ("%s %s%7s%s\n", $1, $spaces, $num, $restofline);
+	} else {           # unknown: just print it
+	    print $_; 
+	}
+    }
+    close (TEXT);
+    printf("done\n");
+}
+
 sub get_max_chars ()
 {
     my ($file) = $_[0];
@@ -205,7 +265,6 @@ sub get_max_chars ()
     our ($max_sym) = 0;
     
     open (TEXT, "<$file") or die ("Unable to open '$file': $!\n");
-    
     while (<TEXT>) {
 
 	# Parse the line if it's a hex number followed by a number
@@ -235,4 +294,34 @@ sub get_max_chars ()
     }
     close (TEXT);
     return @max_chars;
+}
+
+sub get_max_chars_summary ()
+{
+    my ($file) = $_[0];
+    my ($sym);
+    my ($off1);
+    my ($lensym);
+    my ($max_chars) = 0;
+    
+    open (TEXT, "<$file") or die ("Unable to open '$file': $!\n");
+    while (<TEXT>) {
+
+	# Parse the line if it's a hex number followed by a number
+	
+	if (/(^[[:xdigit:]]+) +(.*)$/) {
+	    $off1 = hex($1);
+	    if (defined ($symtab{$off1})) {
+		$sym = $symtab{$off1};
+	    } else {
+		$sym = "???";
+	    }
+	    $lensym = length ($sym);
+	    if ($lensym > $max_chars) {
+		$max_chars = $lensym;
+	    }
+	}
+    }
+    close (TEXT);
+    return $max_chars;
 }
