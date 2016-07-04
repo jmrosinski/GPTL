@@ -18,6 +18,7 @@
 #if ( defined FORTRANUNDERSCORE )
 
 #define gptlinitialize gptlinitialize_
+#define gptlinit_thread gptlinit_thread_
 #define gptlfinalize gptlfinalize_
 #define gptlpr gptlpr_
 #define gptlpr_file gptlpr_file_
@@ -58,6 +59,7 @@
 #elif ( defined FORTRANDOUBLEUNDERSCORE )
 
 #define gptlinitialize gptlinitialize_
+#define gptlinit_thread gptlinit_thread__
 #define gptlfinalize gptlfinalize_
 #define gptlpr gptlpr_
 #define gptlpr_file gptlpr_file__
@@ -99,6 +101,7 @@
 
 /* Local function prototypes */
 int gptlinitialize (void);
+int gptlinit_thread (void);
 int gptlfinalize (void);
 int gptlpr (int *procid);
 int gptlpr_file (char *file, int nc1);
@@ -151,6 +154,11 @@ int gptlevent_code_to_name (int *code, char *str, int nc);
 int gptlinitialize (void)
 {
   return GPTLinitialize ();
+}
+
+int gptlinit_thread (void)
+{
+  return GPTLinit_thread ();
 }
 
 int gptlfinalize (void)

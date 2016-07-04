@@ -99,6 +99,7 @@
 
       integer gptlsetoption
       integer gptlinitialize
+      integer gptlinit_thread
       integer gptlstart
       integer gptlstart_handle
       integer gptlinit_handle
@@ -137,6 +138,7 @@
 
       external gptlsetoption
       external gptlinitialize
+      external gptlinit_thread
       external gptlstart
       external gptlstart_handle
       external gptlinit_handle

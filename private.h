@@ -113,7 +113,11 @@ typedef struct {
 extern volatile int *GPTLthreadid_omp;
 #elif ( defined THREADED_PTHREADS )
 #include <pthread.h>
-extern volatile pthread_t *GPTLthreadid;
+typedef struct {
+  pthread_t tid;      /* id of the thread */
+  int idx;            /* zero-based integer index which pthreadid maps to */
+} Pthreadid;
+extern volatile Pthreadid *GPTLthreadid;
 #else
 extern int GPTLthreadid;
 #endif

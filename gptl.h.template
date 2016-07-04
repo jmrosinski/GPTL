@@ -90,6 +90,7 @@ extern "C" {
 
 extern int GPTLsetoption (const int, const int);
 extern int GPTLinitialize (void);
+extern int GPTLinit_thread (void);
 extern int GPTLstart (const char *);
 extern int GPTLinit_handle (const char *, int *);
 extern int GPTLstart_handle (const char *, int *);

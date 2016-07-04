@@ -64,6 +64,9 @@ module gptl
      integer function gptlinitialize ()
      end function gptlinitialize
 
+     integer function gptlinit_thread ()
+     end function gptlinit_thread
+
      integer function gptlfinalize ()
      end function gptlfinalize
 

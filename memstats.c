@@ -63,7 +63,8 @@ static void print_threadmapping (FILE *fp, int nthreads)
   fprintf (fp, "\n");
   fprintf (fp, "Thread mapping:\n");
   for (t = 0; t < nthreads; ++t)
-    fprintf (fp, "GPTLthreadid[%d] = %lu\n", t, (unsigned long) GPTLthreadid[t]);
+    fprintf (fp, "logical id=%d pthreadid=%lu\n", 
+	     GPTLthreadid[t].idx, (unsigned long) GPTLthreadid[t].tid);
 }
 
 #else

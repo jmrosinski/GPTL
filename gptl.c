@@ -57,6 +57,8 @@ static volatile int maxthreads = -1;   /* max threads */
 static int depthlimit = 99999;         /* max depth for timers (99999 is effectively infinite) */
 static volatile bool disabled = false; /* Timers disabled? */
 static volatile bool initialized = false;        /* GPTLinitialize has been called */
+/* thread_initialized only relevant to THREADED_PTHREADS case due to list sorting */
+static volatile bool init_thread = false;        /* GPTLinit_thread has been called */
 static volatile bool pr_has_been_called = false; /* GPTLpr_file has been called */
 #ifdef HAVE_PAPI
 Entry GPTLeventlist[MAX_AUX];          /* list of PAPI-based events to be counted */
@@ -93,7 +95,7 @@ static volatile pthread_mutex_t t_mutex;
 #else
 static volatile pthread_mutex_t t_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
-volatile pthread_t *GPTLthreadid = 0;  /* array of thread ids */
+volatile Pthreadid *GPTLthreadid = 0;  /* array of thread ids and their integer index */
 static int lock_mutex (void);          /* lock a mutex for entry into a critical region */
 static int unlock_mutex (void);        /* unlock a mutex for exit from a critical region */
 
@@ -465,6 +467,26 @@ int GPTLinitialize (void)
 
   imperfect_nest = false;
   initialized = true;
+  return 0;
+}
+
+/*
+** GPTLinit_thread: Useful only for PTHREADS case
+**   Invoke get_thread_num inside a threaded region to fill in table of sorted thread ids
+**
+** Return value: 0 (success) or GPTLerror (failure)
+*/
+int GPTLinit_thread (void)
+{
+  static const char *thisfunc = "GPTLinit_thread";
+
+  if ( ! initialized)
+    return GPTLerror ("%s: GPTLinitialize was not completed\n", thisfunc);
+
+  (void) get_thread_num ();
+  /* Test before setting to avoid cache thrashing among threads */
+  if ( ! init_thread)
+    init_thread = true;
   return 0;
 }
 
@@ -3468,6 +3490,11 @@ static inline int get_thread_num (void)
 
 #elif ( defined THREADED_PTHREADS )
 
+static inline int binsearch (pthread_t);
+static void print_threadids (const char *, int);
+static inline int insert (pthread_t);
+static inline int sorted (void);
+
 /*
 ** threadinit: Allocate GPTLthreadid and initialize to -1; set max number of threads;
 **             Initialize the mutex for later use; Initialize nthreads to 0
@@ -3518,7 +3545,7 @@ static int threadinit (void)
   */
   if (GPTLthreadid) 
     return GPTLerror ("GPTL: PTHREADS %s: GPTLthreadid not null\n", thisfunc);
-  else if ( ! (GPTLthreadid = (pthread_t *) GPTLallocate (maxthreads * sizeof (pthread_t), thisfunc)))
+  else if ( ! (GPTLthreadid = (Pthreadid *) GPTLallocate (maxthreads * sizeof (Pthreadid), thisfunc)))
     return GPTLerror ("GPTL: PTHREADS %s: malloc failure for %d elements of GPTLthreadid\n", 
                       thisfunc, maxthreads);
 
@@ -3526,8 +3553,10 @@ static int threadinit (void)
   ** Initialize GPTLthreadid array to flag values for use by get_thread_num().
   ** get_thread_num() will fill in the values on first use.
   */
-  for (t = 0; t < maxthreads; ++t)
-    GPTLthreadid[t] = (pthread_t) -1;
+  for (t = 0; t < maxthreads; ++t) {
+    GPTLthreadid[t].tid = (pthread_t) -1;
+    GPTLthreadid[t].idx = -1;
+  }
 
 #ifdef VERBOSE
   printf ("GPTL: PTHREADS %s: Set maxthreads=%d nthreads=%d\n", thisfunc, maxthreads, nthreads);
@@ -3566,35 +3595,27 @@ static void threadfinalize ()
 **
 ** Return value: thread number (success) or GPTLerror (failure)
 */
+
 static inline int get_thread_num (void)
 {
   int t;                   /* logical thread number, defined by array index of found GPTLthreadid */
   pthread_t mythreadid;    /* thread id from pthreads library */
   int retval = -1;         /* value to return to caller: init to bad value to please compiler */
-  bool foundit = false;    /* thread id found in list */
   static const char *thisfunc = "get_thread_num";
 
   mythreadid = pthread_self ();
 
   /*
   ** If our thread number has already been set in the list, we are done
-  ** VECTOR code should run a bit faster on vector machines.
+  ** Critically important that binsearch is efficient 
   */
-#define VECTOR
-#ifdef VECTOR
-  for (t = 0; t < nthreads; ++t)
-    if (pthread_equal (mythreadid, GPTLthreadid[t])) {
-      foundit = true;
-      retval = t;
-    }
-
-  if (foundit)
-    return retval;
-#else
-  for (t = 0; t < nthreads; ++t)
-    if (pthread_equal (mythreadid, GPTLthreadid[t]))
-      return t;
-#endif
+  t = binsearch (mythreadid);
+  /*
+  printf ("binsearch for mythreadid=%lu returned t=%d\n", (unsigned long) mythreadid, t);
+  print_threadids ("After binsearch", nthreads);
+  */
+  if (t >= 0)
+    return t;
 
   /* 
   ** Thread id not found. Define a critical region, then start PAPI counters if
@@ -3616,7 +3637,10 @@ static inline int get_thread_num (void)
 		      "larger value of MAX_THREADS\n", thisfunc, nthreads);
   }
 
-  GPTLthreadid[nthreads] = mythreadid;
+  /* mythreadid not in GPTLthreadid array: Insert it and keep the list sorted */
+  if (insert (mythreadid) < 0)
+    return GPTLerror ("GPTL: THREADED_PTHREADS %s: 'insert' failed threadid=%lu nthreads=%d\n",
+		      thisfunc, (unsigned long) mythreadid, nthreads);
 
 #ifdef VERBOSE
   printf ("GPTL: PTHREADS %s: 1st call GPTLthreadid=%lu maps to location %d\n", 
@@ -3684,6 +3708,91 @@ static int unlock_mutex ()
   if (pthread_mutex_unlock ((pthread_mutex_t *) &t_mutex) != 0)
     return GPTLerror ("GPTL: %s: failure from pthread_unlock_mutex\n", thisfunc);
   return 0;
+}
+
+/*
+** binsearch: binary search through sorted list for a threadid
+** Once the thread is found, return the logical id
+*/
+static inline int binsearch (pthread_t mythreadid)
+{
+  int first = 0;
+  int last = nthreads - 1;
+  int mid = (first + last)/2;
+ 
+  while (first <= last) {
+    if (GPTLthreadid[mid].tid == mythreadid) {
+      return GPTLthreadid[mid].idx;
+    } else if (GPTLthreadid[mid].tid < mythreadid) {
+      first = mid + 1;    
+    } else {
+      last = mid - 1;
+    }
+    mid = (first + last)/2;
+  }
+  return -1;
+}
+
+/*
+** insert: Insert threadid into list such that the list remains sorted
+*/
+static inline int insert (pthread_t mythreadid)
+{
+  int nn;
+  int n = -1;
+  static const char *thisfunc = "insert";
+
+  if (nthreads == 0 || mythreadid < GPTLthreadid[0].tid) {
+    n = 0;
+  } else if (mythreadid > GPTLthreadid[nthreads-1].tid) {
+    n = nthreads;
+  } else {
+    for (nn = 0; nn < nthreads-1; ++nn) {
+      if (mythreadid > GPTLthreadid[nn].tid && mythreadid < GPTLthreadid[nn+1].tid) {
+	n = nn + 1;
+	break;
+      }
+    }
+  }
+
+  if (n == -1)
+    return GPTLerror ("GPTL: %s: Duplicate mythreadid found in GPTLthreadid\n", thisfunc);
+    
+  for (nn = nthreads; nn > n; --nn) {
+    GPTLthreadid[nn] = GPTLthreadid[nn-1];
+  }
+  GPTLthreadid[n].tid = mythreadid;
+  GPTLthreadid[n].idx = nthreads;
+
+  /* This test can be removed once the algorithm has been thoroughly tested */
+  /*
+  if (!sorted ()) {
+    print_threadids ("insert", nthreads+1);
+    return GPTLerror ("GPTL: %s: threadid list not sorted. BUG!\n", thisfunc);
+  }
+  */
+  return 0;
+}
+
+static inline int sorted ()
+{
+  int n;
+  int issorted = 1;
+  
+  for (n = 0; n < nthreads-1; ++n) {
+    if (GPTLthreadid[n].tid >= GPTLthreadid[n+1].tid)
+      issorted = 0;
+  }
+  return issorted;
+}
+
+static void print_threadids (const char *str, int npr)
+{
+  int n;
+
+  printf ("status of threadid array:%s\n", str);
+  for (n = 0; n < npr; ++n)
+    printf ("pthreadid=%lu logical id=%d\n", GPTLthreadid[n].tid, GPTLthreadid[n].idx);
 }
 
 /**********************************************************************************/

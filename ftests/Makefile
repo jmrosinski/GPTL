@@ -33,6 +33,10 @@ LDFLAGS = -g -L.. -l$(LIBNAME) $(ABIFLAGS)
 #For gptlf.mod
 FFLAGS += -I..
 
+ifeq ($(THREADED),yes)
+  EXES += init_thread
+endif
+
 ifeq ($(HAVE_MPI),yes)
   ifeq ($(THREADED),yes)
     EXES += threadohd
@@ -115,6 +119,9 @@ toomanythreads: toomanythreads.F90
 	$(FC) $(FFLAGS) -o $@ $< $(LDFLAGS)
 
 threadohd: threadohd.F90
+	$(FC) $(FFLAGS) -o $@ $< $(LDFLAGS)
+
+init_thread: init_thread.F90
 	$(FC) $(FFLAGS) -o $@ $< $(LDFLAGS)
 
 # Hidden executable testbacktrace requires some strange flags so don't build it unless asked
