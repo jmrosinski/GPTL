@@ -1,0 +1,12 @@
+o Merge nestedomp branch into trunk
+  - Requires better understanding of OMP standard on nesting
+o Refactor or clean-slate testing procedure
+o Update PAPI interface to latest PAPI rev.
+o Better handling of MPI vs. no MPI
+  - Best not to have pr_summary take different arguments
+o Possible to employ iso_c_binding?
+o Enable *threadohd_outer and *threadohd_inner in C, thus enabling to invoke
+  from C
+o Update web pages and man pages
+o Enable XML output (collapse/expand tree hierarchy)
+o Bug in ??? output?
