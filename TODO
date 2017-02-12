@@ -1,5 +1,6 @@
 o For THREADED_PTHREADS, improve speed of finding threadid
 o Why does C++ test break when use prototypes for pr_summary*?
+o Update to C standard allowing stack vars dimensioned by input args.
 o "make clean" should always get rid of everything that might have been built
 o Revamp test suite. Suggestions:
   - More, shorter tests
@@ -7,3 +8,6 @@ o Revamp test suite. Suggestions:
   - Overload specific tests only when necessary
   - Rewrite runalltests* in Perl
 o GPU port
+o Merge nested OMP to trunk, possibly enabling at compile-time if cost is
+  high
+  

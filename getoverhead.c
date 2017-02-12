@@ -69,7 +69,8 @@ int GPTLget_overhead (FILE *fp,
   t1 = (*ptr2wtimefunc)();
 #pragma unroll(10)
   for (i = 0; i < 1000; ++i) {
-    ret = gptlstart_sim ("timername", strlen ("timername"));
+    /* 9 is the number of characters in "timername" */
+    ret = gptlstart_sim ("timername", 9);
   }
   t2 = (*ptr2wtimefunc)();
   ftn_ohd = 0.001 * (t2 - t1);
@@ -205,14 +206,12 @@ int GPTLget_overhead (FILE *fp,
 **   name: timer name
 **   nc1:  number of characters in "name"
 */
-static int gptlstart_sim (char *name, int nc1)
+static int gptlstart_sim (char *name, int nc)
 {
-  char cname[MAX_CHARS+1];
-  int numchars;
+  char cname[nc+1];
 
-  numchars = MIN (nc1, MAX_CHARS);
-  strncpy (cname, name, numchars);
-  cname[numchars] = '\0';
+  strncpy (cname, name, nc);
+  cname[nc] = '\0';
   return 0;
 }
 

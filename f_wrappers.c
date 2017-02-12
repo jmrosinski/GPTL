@@ -101,24 +101,24 @@
 int gptlinitialize (void);
 int gptlfinalize (void);
 int gptlpr (int *procid);
-int gptlpr_file (char *file, int nc1);
+int gptlpr_file (char *file, int nc);
 #ifdef HAVE_MPI
 int gptlpr_summary (int *fcomm);
-int gptlpr_summary_file (int *fcomm, char *name, int nc1);
-int gptlbarrier (int *fcomm, char *name, int nc1);
+int gptlpr_summary_file (int *fcomm, char *name, int nc);
+int gptlbarrier (int *fcomm, char *name, int nc);
 #else
 int gptlpr_summary (void);
-int gptlpr_summary_file (char *name, int nc1);
+int gptlpr_summary_file (char *name, int nc);
 int gptlbarrier (void);
 #endif
 int gptlreset (void);
-int gptlreset_timer (char *name, int nc1);
+int gptlreset_timer (char *name, int nc);
 int gptlstamp (double *wall, double *usr, double *sys);
-int gptlstart (char *name, int nc1);
-int gptlinit_handle (char *name, int *, int nc1);
-int gptlstart_handle (char *name, int *, int nc1);
-int gptlstop (char *name, int nc1);
-int gptlstop_handle (char *name, int *, int nc1);
+int gptlstart (char *name, int nc);
+int gptlinit_handle (char *name, int *, int nc);
+int gptlstart_handle (char *name, int *, int nc);
+int gptlstop (char *name, int nc);
+int gptlstop_handle (char *name, int *, int nc);
 int gptlsetoption (int *option, int *val);
 int gptlenable (void);
 int gptldisable (void);
@@ -163,15 +163,12 @@ int gptlpr (int *procid)
   return GPTLpr (*procid);
 }
 
-int gptlpr_file (char *file, int nc1)
+int gptlpr_file (char *file, int nc)
 {
-  char *locfile;
+  char locfile[nc+1];
   int ret;
 
-  if ( ! (locfile = (char *) malloc (nc1+1)))
-    return GPTLerror ("gptlpr_file: malloc error\n");
-
-  snprintf (locfile, nc1+1, "%s", file);
+  snprintf (locfile, nc+1, "%s", file);
 
   ret = GPTLpr_file (locfile);
   free (locfile);
@@ -192,16 +189,13 @@ int gptlpr_summary (int *fcomm)
   return GPTLpr_summary (ccomm);
 }
 
-int gptlpr_summary_file (int *fcomm, char *outfile, int nc1)
+int gptlpr_summary_file (int *fcomm, char *outfile, int nc)
 {
   MPI_Comm ccomm;
-  char *locfile;
+  char locfile[nc+1];
   int ret;
 
-  if ( ! (locfile = (char *) malloc (nc1+1)))
-    return GPTLerror ("gptlpr_summary_file: malloc error\n");
-
-  snprintf (locfile, nc1+1, "%s", outfile);
+  snprintf (locfile, nc+1, "%s", outfile);
 
 #ifdef HAVE_COMM_F2C
   ccomm = MPI_Comm_f2c (*fcomm);
@@ -214,15 +208,13 @@ int gptlpr_summary_file (int *fcomm, char *outfile, int nc1)
   return ret;
 }
 
-int gptlbarrier (int *fcomm, char *name, int nc1)
+int gptlbarrier (int *fcomm, char *name, int nc)
 {
   MPI_Comm ccomm;
-  char cname[MAX_CHARS+1];
-  int numchars;
+  char cname[nc+1];
 
-  numchars = MIN (nc1, MAX_CHARS);
-  strncpy (cname, name, numchars);
-  cname[numchars] = '\0';
+  strncpy (cname, name, nc);
+  cname[nc] = '\0';
 #ifdef HAVE_COMM_F2C
   ccomm = MPI_Comm_f2c (*fcomm);
 #else
@@ -239,15 +231,12 @@ int gptlpr_summary (void)
   return GPTLpr_summary ();
 }
 
-int gptlpr_summary_file (char *outfile, int nc1)
+int gptlpr_summary_file (char *outfile, int nc)
 {
-  char *locfile;
+  char locfile[nc+1];
   int ret;
 
-  if ( ! (locfile = (char *) malloc (nc1+1)))
-    return GPTLerror ("gptlpr_summary_file: malloc error\n");
-
-  snprintf (locfile, nc1+1, "%s", outfile);
+  snprintf (locfile, nc+1, "%s", outfile);
   ret = GPTLpr_summary_file (locfile);
   free (locfile);
   return ret;
@@ -266,14 +255,12 @@ int gptlreset (void)
   return GPTLreset ();
 }
 
-int gptlreset_timer (char *name, int nc1)
+int gptlreset_timer (char *name, int nc)
 {
-  char cname[MAX_CHARS+1];
-  int numchars;
+  char cname[nc+1];
 
-  numchars = MIN (nc1, MAX_CHARS);
-  strncpy (cname, name, numchars);
-  cname[numchars] = '\0';
+  strncpy (cname, name, nc);
+  cname[nc] = '\0';
   return GPTLreset_timer (cname);
 }
 
@@ -282,58 +269,48 @@ int gptlstamp (double *wall, double *usr, double *sys)
   return GPTLstamp (wall, usr, sys);
 }
 
-int gptlstart (char *name, int nc1)
+int gptlstart (char *name, int nc)
 {
-  char cname[MAX_CHARS+1];
-  int numchars;
+  char cname[nc+1];
 
-  numchars = MIN (nc1, MAX_CHARS);
-  strncpy (cname, name, numchars);
-  cname[numchars] = '\0';
+  strncpy (cname, name, nc);
+  cname[nc] = '\0';
   return GPTLstart (cname);
 }
 
-int gptlinit_handle (char *name, int *handle, int nc1)
+int gptlinit_handle (char *name, int *handle, int nc)
 {
-  char cname[MAX_CHARS+1];
-  int numchars;
+  char cname[nc+1];
 
-  numchars = MIN (nc1, MAX_CHARS);
-  strncpy (cname, name, numchars);
-  cname[numchars] = '\0';
+  strncpy (cname, name, nc);
+  cname[nc] = '\0';
   return GPTLinit_handle (cname, handle);
 }
 
-int gptlstart_handle (char *name, int *handle, int nc1)
+int gptlstart_handle (char *name, int *handle, int nc)
 {
-  char cname[MAX_CHARS+1];
-  int numchars;
+  char cname[nc+1];
 
-  numchars = MIN (nc1, MAX_CHARS);
-  strncpy (cname, name, numchars);
-  cname[numchars] = '\0';
+  strncpy (cname, name, nc);
+  cname[nc] = '\0';
   return GPTLstart_handle (cname, handle);
 }
 
-int gptlstop (char *name, int nc1)
+int gptlstop (char *name, int nc)
 {
-  char cname[MAX_CHARS+1];
-  int numchars;
+  char cname[nc+1];
 
-  numchars = MIN (nc1, MAX_CHARS);
-  strncpy (cname, name, numchars);
-  cname[numchars] = '\0';
+  strncpy (cname, name, nc);
+  cname[nc] = '\0';
   return GPTLstop (cname);
 }
 
-int gptlstop_handle (char *name, int *handle, int nc1)
+int gptlstop_handle (char *name, int *handle, int nc)
 {
-  char cname[MAX_CHARS+1];
-  int numchars;
+  char cname[nc+1];
 
-  numchars = MIN (nc1, MAX_CHARS);
-  strncpy (cname, name, numchars);
-  cname[numchars] = '\0';
+  strncpy (cname, name, nc);
+  cname[nc] = '\0';
   return GPTLstop_handle (cname, handle);
 }
 
@@ -361,87 +338,72 @@ int gptlquery (const char *name, int *t, int *count, int *onflg, double *wallclo
 	       double *usr, double *sys, long long *papicounters_out, int *maxcounters, 
 	       int nc)
 {
-  char cname[MAX_CHARS+1];
-  int numchars;
+  char cname[nc+1];
 
-  numchars = MIN (nc, MAX_CHARS);
-  strncpy (cname, name, numchars);
-  cname[numchars] = '\0';
+  strncpy (cname, name, nc);
+  cname[nc] = '\0';
   return GPTLquery (cname, *t, count, onflg, wallclock, usr, sys, papicounters_out, *maxcounters);
 }
 
 int gptlquerycounters (const char *name, int *t, long long *papicounters_out, int nc)
 {
-  char cname[MAX_CHARS+1];
-  int numchars;
+  char cname[nc+1];
 
-  numchars = MIN (nc, MAX_CHARS);
-  strncpy (cname, name, numchars);
-  cname[numchars] = '\0';
+  strncpy (cname, name, nc);
+  cname[nc] = '\0';
   return GPTLquerycounters (cname, *t, papicounters_out);
 }
 
 int gptlget_wallclock (const char *name, int *t, double *value, int nc)
 {
-  char cname[MAX_CHARS+1];
-  int numchars;
+  char cname[nc+1];
 
-  numchars = MIN (nc, MAX_CHARS);
-  strncpy (cname, name, numchars);
-  cname[numchars] = '\0';
+  strncpy (cname, name, nc);
+  cname[nc] = '\0';
 
   return GPTLget_wallclock (cname, *t, value);
 }
 
 int gptlget_wallclock_latest (const char *name, int *t, double *value, int nc)
 {
-  char cname[MAX_CHARS+1];
-  int numchars;
+  char cname[nc+1];
 
-  numchars = MIN (nc, MAX_CHARS);
-  strncpy (cname, name, numchars);
-  cname[numchars] = '\0';
+  strncpy (cname, name, nc);
+  cname[nc] = '\0';
 
   return GPTLget_wallclock_latest (cname, *t, value);
 }
 
 int gptlget_threadwork (const char *name, double *maxwork, double *imbal, int nc)
 {
-  char cname[MAX_CHARS+1];
-  int numchars;
+  char cname[nc+1];
 
-  numchars = MIN (nc, MAX_CHARS);
-  strncpy (cname, name, numchars);
-  cname[numchars] = '\0';
+  strncpy (cname, name, nc);
+  cname[nc] = '\0';
 
   return GPTLget_threadwork (cname, maxwork, imbal);
 }
 
-int gptlstartstop_val (const char *name, double *value, int nc1)
+int gptlstartstop_val (const char *name, double *value, int nc)
 {
-  char cname[MAX_CHARS+1];
-  int numchars;
+  char cname[nc+1];
 
-  numchars = MIN (nc1, MAX_CHARS);
-  strncpy (cname, name, numchars);
-  cname[numchars] = '\0';
+  strncpy (cname, name, nc);
+  cname[nc] = '\0';
   return GPTLstartstop_val (cname, *value);
 }
 
 int gptlget_eventvalue (const char *timername, const char *eventname, int *t, double *value, 
 			int nc1, int nc2)
 {
-  char ctimername[MAX_CHARS+1];
-  char ceventname[MAX_CHARS+1];
-  int numchars;
+  char ctimername[nc1+1];
+  char ceventname[nc2+1];
 
-  numchars = MIN (nc1, MAX_CHARS);
-  strncpy (ctimername, timername, numchars);
-  ctimername[numchars] = '\0';
+  strncpy (ctimername, timername, nc1);
+  ctimername[nc1] = '\0';
 
-  numchars = MIN (nc2, MAX_CHARS);
-  strncpy (ceventname, eventname, numchars);
-  ceventname[numchars] = '\0';
+  strncpy (ceventname, eventname, nc2);
+  ceventname[nc2] = '\0';
 
   return GPTLget_eventvalue (ctimername, ceventname, *t, value);
 }
@@ -471,21 +433,19 @@ int gptlget_memusage (int *size, int *rss, int *share, int *text, int *datastack
 
 int gptlprint_memusage (const char *str, int nc)
 {
-  char cname[128+1];
-  int numchars = MIN (nc, 128);
+  char cname[nc+1];
 
-  strncpy (cname, str, numchars);
-  cname[numchars] = '\0';
+  strncpy (cname, str, nc);
+  cname[nc] = '\0';
   return GPTLprint_memusage (cname);
 }
 
 int gptlprint_rusage (const char *str, int nc)
 {
-  char cname[128+1];
-  int numchars = MIN (nc, 128);
+  char cname[nc+1];
 
-  strncpy (cname, str, numchars);
-  cname[numchars] = '\0';
+  strncpy (cname, str, nc);
+  cname[nc] = '\0';
   return GPTLprint_rusage (cname);
 }
 
@@ -501,12 +461,10 @@ int gptlnum_warn (void)
 
 int gptlget_count (char *name, int *t, int *count, int nc)
 {
-  char cname[MAX_CHARS+1];
-  int numchars;
+  char cname[nc+1];
 
-  numchars = MIN (nc, MAX_CHARS);
-  strncpy (cname, name, numchars);
-  cname[numchars] = '\0';
+  strncpy (cname, name, nc);
+  cname[nc] = '\0';
 
   return GPTLget_count (cname, *t, count);
 }

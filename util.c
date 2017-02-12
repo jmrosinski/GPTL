@@ -80,7 +80,31 @@ void GPTLwarn (const char *fmt, ...)
   va_end (args);
   
   ++num_warn;
-  return;
+}
+
+/*
+** GPTLnote: print a note
+**
+** Input arguments:
+**   fmt: format string
+**   variable list of additional arguments for vfprintf
+*/
+void GPTLnote (const char *fmt, ...)
+{
+  va_list args;
+  
+  va_start (args, fmt);
+  
+  if (fmt != NULL) {
+#ifdef HAVE_VPRINTF
+    (void) fprintf (stderr, "GPTL note:");
+    (void) vfprintf (stderr, fmt, args);
+#else
+    (void) fprintf (stderr, "GPTLnote: no vfprintf: fmt is %s\n", fmt);
+#endif
+  }
+  
+  va_end (args);
 }
 
 /*
