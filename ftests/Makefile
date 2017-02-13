@@ -77,7 +77,7 @@ OBJS = $(patsubst %,%.o,$(EXES))
 all: $(EXES)
 
 clean:
-	$(RM) $(OBJS) *.mod $(EXES) timing.*
+	$(RM) $(OBJS) *.mod $(EXES) timing.[0-9] timing.summary
 
 errtest: errtest.o
 	$(FC) $(FFLAGS) -o $@ $< $(LDFLAGS)

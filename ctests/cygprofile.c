@@ -32,7 +32,6 @@ int main (int argc, char **argv)
     printf ("%s: GPTLget_nregions failure\n", argv[0]);
     return -1;
   }
-  printf ("Success\n");
 
   printf ("%s: Testing GPTLget_regionname, GPTLget_wallclock "
 	  "for %d regions...\n", argv[0], nregions);
@@ -47,7 +46,6 @@ int main (int argc, char **argv)
       return -1;
     }
   }
-  printf ("Success\n");
 
   (void) GPTLfinalize ();
   return 0;

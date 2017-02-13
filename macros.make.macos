@@ -46,6 +46,13 @@ ifeq ($(OPENMP),no)
   PTHREADS = no
 endif
 
+# Set ENABLE_NESTEDOMP=yes only if you will be profiling code regions inside of doubly-nested
+# OpenMP regions. ENABLE_NESTEDOMP=yes can increase the cost of getting the thread number by
+# about 50% even in regions which are not doubly-nested.
+ifeq ($(OPENMP),yes)
+  ENABLE_NESTEDOMP = no
+endif
+
 # For gcc, -Dinline=inline is a no-op. For other C compilers, things like 
 # -Dinline=__inline__ may be required. To find your compiler's definition, try 
 # running "./suggestions CC=<your_C_compiler>".

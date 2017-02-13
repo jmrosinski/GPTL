@@ -12,7 +12,7 @@ set make = make                     # Name of gnu make program
 echo "$0 Testing $basescript..."
 echo "$basescript settings:"
 foreach setting (DEBUG OPENMP PTHREADS FORTRAN HAVE_PAPI HAVE_MPI TEST_AUTOPROFILE \
-                 ENABLE_PMPI HAVE_IARGCGETARG )
+                 ENABLE_PMPI HAVE_IARGCGETARG ENABLE_NESTEDOMP)
   echo `grep "^ *$setting *= " $basescript`
 end
 
@@ -25,7 +25,7 @@ echo "$0 $basescript worked" >! results
 #foreach usersettable ( DEBUG OPENMP PTHREADS FORTRAN HAVE_PAPI HAVE_MPI TEST_AUTOPROFILE \
 #                       ENABLE_PMPI HAVE_IARGCGETARG )
 foreach usersettable ( DEBUG OPENMP PTHREADS FORTRAN HAVE_PAPI HAVE_MPI TEST_AUTOPROFILE \
-                       ENABLE_PMPI )
+                       ENABLE_PMPI ENABLE_NESTEDOMP)
 grep "^ *$usersettable *= *yes *" $basescript
 set ret = $status
 

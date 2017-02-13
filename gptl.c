@@ -1480,6 +1480,12 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   fprintf (fp, "HAVE_PAPI was false\n");
 #endif
 
+#ifdef ENABLE_NESTEDOMP
+  fprintf (fp, "ENABLE_NESTEDOMP was true\n");
+#else
+  fprintf (fp, "ENABLE_NESTEDOMP was false\n");
+#endif
+
   fprintf (fp, "Underlying timing routine was %s.\n", funclist[funcidx].name);
   (void) GPTLget_overhead (fp, ptr2wtimefunc, getentry, genhashidx, get_thread_num, 
 			   stackidx, callstack, hashtable[0], tablesize, dousepapi, imperfect_nest, 
@@ -3412,13 +3418,42 @@ static void threadfinalize ()
 **   GPTLthreadid_omp: Our thread id added to list on 1st call
 **
 ** Return value: thread number (success) or GPTLerror (failure)
+**   5/8/16: Modified to enable 2-level OMP nesting: Fold combination of current and parent
+**   thread info into a single index
 */
 static inline int get_thread_num (void)
 {
   int t;        /* thread number */
   static const char *thisfunc = "get_thread_num";
 
-  if ((t = omp_get_thread_num ()) >= maxthreads)
+#ifdef ENABLE_NESTEDOMP
+  int myid;            /* my thread id */
+  int lvl;             /* nest level: Currently only 2 nesting levels supported */
+  int parentid;        /* thread number of parent team */
+  int my_nthreads;     /* number of threads in the parent team */
+
+  myid = omp_get_thread_num ();
+  if (omp_get_nested ()) {         /* nesting is "enabled", though not necessarily active */
+    lvl = omp_get_active_level (); /* lvl=2 => inside 2 #pragma omp regions */
+    if (lvl < 2) {
+      /* 0 or 1-level deep: simply use thread id as index */
+      t = myid;
+    } else if (lvl == 2) {
+      /* Create a unique id "t" for indexing into singly-dimensioned thread array */
+      parentid    = omp_get_ancestor_thread_num (lvl-1);
+      my_nthreads = omp_get_team_size (lvl);
+      t           = parentid*my_nthreads + myid;
+    } else {
+      return GPTLerror ("OMP %s: GPTL supports only 2 nested OMP levels got %d\n", thisfunc, lvl);
+    }
+  } else {
+    /* un-nested case: thread id is index */
+    t = myid;
+  }
+#else
+  t = omp_get_thread_num ();
+#endif
+  if (t >= maxthreads)
     return GPTLerror ("OMP %s: returned id=%d exceeds maxthreads=%d\n", thisfunc, t, maxthreads);
 
   /* If our thread number has already been set in the list, we are done */

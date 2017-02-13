@@ -15,6 +15,10 @@ ifeq ($(HAVE_PAPI),yes)
   TESTS += testpapi
 endif
 
+ifeq ($(ENABLE_NESTEDOMP),yes)
+  TESTS += nestedomp
+endif
+
 ifeq ($(ENABLE_PMPI),yes)
   CFLAGS += -DENABLE_PMPI
   LIBNAME = gptl_pmpi
@@ -73,7 +77,7 @@ OBJS += $(patsubst %,%.o,$(EXES))
 all: $(EXES)
 
 clean:
-	$(RM) *.o $(EXES) timing.*
+	$(RM) *.o $(EXES) timing.[0-9] timing.summary
 
 gptl_avail: avail.o
 	$(CC) -o $@ $< $(LDFLAGS)
@@ -112,6 +116,9 @@ global: global.o
 printwhileon: printwhileon.o
 	$(CC) -o $@ $< $(LDFLAGS)
 
+nestedomp: nestedomp.o
+	$(CC) -o $@ $< $(LDFLAGS)
+
 # Built-in tests to ensure that GPTL is behaving as expected
 # Invoke as "make test" from one dir above
 
@@ -123,6 +130,13 @@ ifeq ($(HAVE_PAPI),yes)
 	@echo
 endif
 
+ifeq ($(ENABLE_NESTEDOMP),yes)
+	@echo Testing nested OMP ...
+	@./nestedomp || (echo "Failed" && exit 1)
+	@echo Success
+	@mv timing.0 timing.0.nestedomp
+endif
+
 ifeq ($(HAVE_MPI),yes)
 	@echo Running env OMP_NUM_THREADS=2 $(MPICMD) ./summary...
 	@env OMP_NUM_THREADS=2 $(MPICMD) ./summary || (echo "Failure to run" && exit 1)
@@ -130,11 +144,13 @@ ifeq ($(HAVE_MPI),yes)
 	@echo "Shell is checking contents of timing.summary produced by ./summary for a specific region name..."
 	@grep -q sleep timing.summary || (echo "Failure" && exit 1)
 	@echo Success
+	@mv timing.summary timing.summary.summary
 ifeq ($(ENABLE_PMPI),yes)
 	@echo
 	@echo Running $(MPICMD) ./pmpi...
 	@env $(MPICMD) ./pmpi || (echo "Failure" && exit 1)
 	@echo Success
+	@mv timing.summary timing.summary.pmpi
 endif
 endif
 
@@ -144,7 +160,9 @@ ifeq ($(TEST_AUTOPROFILE),yes)
 	./cygprofile || (echo "Failure to run" && exit 1)
 	@echo Success at running
 	@echo "Running hex2name.pl | grep callutil100times..."
-	(../hex2name.pl ./cygprofile timing.0 | grep -q callutil100times) && echo "Success" || (echo "Failure" && exit 1)
+	../hex2name.pl ./cygprofile timing.0 > timing.0.cygprofile
+	@grep -q callutil100times timing.0.cygprofile || (echo "Failure" && exit 1)
+	@echo Success
 endif
 	@echo
 	@echo "All C and C++ tests passed"

@@ -54,6 +54,9 @@ ifeq ($(FORTRAN),yes)
 endif
 
 CFLAGS += $(INLINEFLAG) $(UNDERSCORING)
+ifeq ($(ENABLE_NESTEDOMP),yes)
+  CFLAGS += -DENABLE_NESTEDOMP
+endif
 
 ifeq ($(HAVE_PAPI),yes)
   CFLAGS += -DHAVE_PAPI
