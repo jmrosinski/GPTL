@@ -70,7 +70,8 @@ int main (int argc, char **argv)
     }
   }
 
-  if (optind > argc-1) {
+  // Exactly 2 arguments needed after optional flags
+  if (optind >= argc || optind < argc-2) {
     printf ("Usage: %s [-m mindiff] [-n listmax] file1 file2\n", argv[0]);
     return -1;
   }
@@ -297,7 +298,7 @@ int scanit (const char *line, struct Item *item)
     if (nitems > 0)
       printf ("item 0 got %s\n", item->name);
     if (nitems > 1)
-      printf ("item 1 got %f\n", item->ncalls);
+      printf ("item 1 got %d\n", item->ncalls);
   }
   return nitems;
 }
