@@ -27,7 +27,7 @@ struct List {
 };
 
 void maybe_insert (float, struct List *, struct Item *, int *);
-void printlist (char *, struct List *, int);
+void printlist (char *, char *, struct List *, int);
 int scanit (const char *, struct Item *);
 
 int main (int argc, char **argv)
@@ -116,8 +116,8 @@ int main (int argc, char **argv)
     }
   }
 
-  printlist ("Difflist", difflist, listsize_diff);
-  printlist ("\nRelative difflist", rdifflist, listsize_rdiff);
+  printlist ("Difflist", "diff ", difflist, listsize_diff);
+  printlist ("\nRelative difflist", "rdiff", rdifflist, listsize_rdiff);
   return 0;
 }
   
@@ -167,20 +167,20 @@ void maybe_insert (float diff, struct List *list, struct Item *item, int *listsi
 #endif
     }
 #ifdef DEBUG
-    printlist ("End of maybe_insert", list, *listsize);
+    printlist ("End of maybe_insert", "diff ", list, *listsize);
 #endif
   }
   return;
 }
 
-void printlist (char *str, struct List *list, int listsize)
+void printlist (char *str, char *difftype, struct List *list, int listsize)
 {
   int n;
 
   printf ("%s\n", str);
   for (n = 0; n < listsize; ++n) {
-    printf ("n=%d diff=%12.3f values=%12.3f %12.3f name=%s\n",
-	    n, list[n].diff, list[n].value[0], list[n].value[1], list[n].name);
+    printf ("n=%d %s=%9.3f values=%9.3f %9.3f name=%s\n",
+	    n, difftype, list[n].diff, list[n].value[0], list[n].value[1], list[n].name);
   }
 }
 
