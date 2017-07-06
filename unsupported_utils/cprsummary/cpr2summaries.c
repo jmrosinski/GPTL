@@ -26,11 +26,11 @@ struct List {
   float diff;
 };
 
-int get_matching_line (const char *, FILE *, struct Item *);
-void maybe_insert (float, struct List *, struct Item *, int *);
-void printlist (char *, struct List *, int);
-int scanit (const char *, struct Item *);
-int skipjunk (FILE *, int, char *);
+int get_matching_line (const char *, FILE *, struct Item *);    // find line in file2 matching file1
+void maybe_insert (float, struct List *, struct Item *, int *); // insert an item into list
+void printlist (char *, char *, struct List *, int);            // print results
+int scanit (const char *, struct Item *);       // parse line contents into components
+int skipjunk (FILE *, int, char *);             // skips the lines up to "name ..."
 
 int main (int argc, char **argv)
 {
@@ -135,8 +135,8 @@ int main (int argc, char **argv)
     }
   }
 
-  printlist ("Difflist", difflist, listsize_diff);
-  printlist ("\nRelative difflist", rdifflist, listsize_rdiff);
+  printlist ("Difflist", "diff ", difflist, listsize_diff);
+  printlist ("\nRelative difflist", "rdiff", rdifflist, listsize_rdiff);
   return 0;
 }
   
@@ -148,30 +148,12 @@ int get_matching_line (const char *name2match, FILE *fp, struct Item *item)
   char line[MAXSIZ_LINE]; // input line from file
   static const char *thisfunc = "get_matching_line";
 
-  // 1st see if name matches on current line
-  if ( ! fgets (line, sizeof line, fp)) {
-    printf ("%s: Premature EOF\n", thisfunc);
-    return -1;
-  }
-
   nlines_data_save = item->nlines_data;
-  if (scanit (line, item) == 6) {
-    ++item->nlines_data;
-    if (strcmp (item->name, name2match) == 0) {
-#ifdef DEBUG
-      printf ("%s: found %s on 1st try wallmax=%f\n", thisfunc, name2match, item->wallmax);
-#endif
-      return 0;
-    }
-  } else {
-    printf ("%s: Unexpected scanit failure\n", thisfunc);
-    return -1;
-  }
 
-  // Now try reading ahead
+  // First try reading ahead
   while (fgets (line, sizeof line, fp)) {
+    ++item->nlines_data;
     if (scanit (line, item) == 6) {
-      ++item->nlines_data;
       if (strcmp (item->name, name2match) == 0) {
 #ifdef DEBUG
 	printf ("found it ahead at line=%d wallmax=%f\n",
@@ -187,12 +169,11 @@ int get_matching_line (const char *name2match, FILE *fp, struct Item *item)
     }
   }
   
-  // Finally, try rewinding and start from the beginning
+  // Not found: Try rewinding and start from the beginning
 #ifdef DEBUG
   printf ("%s: %s not found ahead in 2nd file. Rewinding at starting from top...\n",
 	  thisfunc, name2match);
 #endif
-  item->nlines_data = 0;
   if (skipjunk (fp, item->nlines_hdr, line) < 0) {
     printf ("%s: skipjunk failure\n", thisfunc);
     return -1;
@@ -203,8 +184,15 @@ int get_matching_line (const char *name2match, FILE *fp, struct Item *item)
     printf ("%s: expected 'name' got %5s\n", thisfunc, line);
     return -1;
   }
-  // Read through the file looking for matchine 'name'
-  while (fgets (line, sizeof line, fp)) {
+
+  // Read through the file looking for matching 'name', at most up until where we started the search
+  // Reset nlines_data to 0 so if matching entry is found, it will be reset to the correct value
+  item->nlines_data = 0;
+  for (n = 0; n < nlines_data_save; ++n) {
+    if ( ! fgets (line, sizeof line, fp)) {
+      printf ("%s: Unexpected failure from fgets\n", thisfunc);
+      return -1;
+    }
     ++item->nlines_data;
     if (scanit (line, item) != 6) { // probably reached EOF
       if (skipjunk (fp, item->nlines_hdr, line) < 0) {
@@ -221,20 +209,7 @@ int get_matching_line (const char *name2match, FILE *fp, struct Item *item)
       return 0;
     }
   }
-  printf ("%s: %s not found: resetting pointer to previous position\n", thisfunc, name2match);
-
-  // Not found: Reset pointer to where we started (note skipjunk does the rewind)
-  item->nlines_data = nlines_data_save;
-  if (skipjunk (fp, item->nlines_hdr, line) < 0) {
-    printf ("%s: skipjunk failure\n", thisfunc);
-    return -1;
-  }
-  for (n = 0; n < nlines_data_save; ++n) {
-    if ( ! fgets (line, sizeof line, fp)) {
-      printf ("%s: error repositioning read pointer to prv position\n", thisfunc);
-      return -1;
-    }
-  }
+  printf ("%s: %s not found: skipping\n", thisfunc, name2match);
   return 1;
 }
 
@@ -284,20 +259,20 @@ void maybe_insert (float diff, struct List *list, struct Item item[2], int *list
 #endif
     }
 #ifdef DEBUG
-    printlist ("End of maybe_insert", list, *listsize);
+    printlist ("End of maybe_insert", "diff ", list, *listsize);
 #endif
   }
   return;
 }
 
-void printlist (char *str, struct List *list, int listsize)
+void printlist (char *str, char *difftype, struct List *list, int listsize)
 {
   int n;
 
   printf ("%s\n", str);
   for (n = 0; n < listsize; ++n) {
-    printf ("n=%d diff=%12.3f values=%12.3f %12.3f name=%s\n",
-	    n, list[n].diff, list[n].value[0], list[n].value[1], list[n].name);
+    printf ("n=%d %s=%12.3f values=%12.3f %12.3f name=%s\n",
+	    n, difftype, list[n].diff, list[n].value[0], list[n].value[1], list[n].name);
   }
 }
 
