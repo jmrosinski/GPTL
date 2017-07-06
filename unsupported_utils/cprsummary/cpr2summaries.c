@@ -144,6 +144,7 @@ int get_matching_line (const char *name2match, FILE *fp, struct Item *item)
 {
   int n;
   int nitems;
+  int nlines_data_save;   // save the initial value of nlines_data if need to replace
   char line[MAXSIZ_LINE]; // input line from file
   static const char *thisfunc = "get_matching_line";
 
@@ -153,6 +154,7 @@ int get_matching_line (const char *name2match, FILE *fp, struct Item *item)
     return -1;
   }
 
+  nlines_data_save = item->nlines_data;
   if (scanit (line, item) == 6) {
     ++item->nlines_data;
     if (strcmp (item->name, name2match) == 0) {
@@ -219,7 +221,20 @@ int get_matching_line (const char *name2match, FILE *fp, struct Item *item)
       return 0;
     }
   }
-  printf ("%s: %s not found\n", thisfunc, name2match);
+  printf ("%s: %s not found: resetting pointer to previous position\n", thisfunc, name2match);
+
+  // Not found: Reset pointer to where we started (note skipjunk does the rewind)
+  item->nlines_data = nlines_data_save;
+  if (skipjunk (fp, item->nlines_hdr, line) < 0) {
+    printf ("%s: skipjunk failure\n", thisfunc);
+    return -1;
+  }
+  for (n = 0; n < nlines_data_save; ++n) {
+    if ( ! fgets (line, sizeof line, fp)) {
+      printf ("%s: error repositioning read pointer to prv position\n", thisfunc);
+      return -1;
+    }
+  }
   return 1;
 }
 
@@ -298,7 +313,7 @@ int scanit (const char *line, struct Item *item)
     if (nitems > 0)
       printf ("item 0 got %s\n", item->name);
     if (nitems > 1)
-      printf ("item 1 got %d\n", item->ncalls);
+      printf ("item 1 got %f\n", item->ncalls);
   }
   return nitems;
 }
