@@ -284,7 +284,8 @@ int scanit (const char *line, struct Item *item)
 		   item->name, &(item->ncalls), &(item->nranks), &(item->mean_time),
 		   &(item->std_dev), &(item->wallmax));
   if (nitems != 6) {
-    printf ("scanit: sscanf returned %d items expected 6\n", nitems);
+    printf ("scanit: sscanf returned %d items expected 6: maybe timer name has embedded spaces?\n",
+	    nitems);
     if (nitems > 0)
       printf ("item 0 got %s\n", item->name);
     if (nitems > 1)
