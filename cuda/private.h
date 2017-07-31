@@ -1,0 +1,85 @@
+/*
+** $Id: private.h,v 1.74 2011-03-28 20:55:19 rosinski Exp $
+**
+** Author: Jim Rosinski
+**
+** Contains definitions private to GPTL and inaccessible to invoking user environment
+*/
+
+#include "../devicehost.h"
+
+#ifndef MIN
+#define MIN(X,Y) ((X) < (Y) ? (X) : (Y))
+#endif
+
+#ifndef MAX
+#define MAX(X,Y) ((X) > (Y) ? (X) : (Y))
+#endif
+
+#define STRMATCH(X,Y) (my_strcmp((X),(Y)) == 0)
+
+/* Maximum allowed callstack depth */
+#define MAX_STACK 128
+
+// Max number of colliding entries in hash table
+#define MAXENT 3
+
+// Warp size
+#define WARPSIZE 32
+
+#define NOT_ROOT_OF_WARP -2
+
+typedef struct {
+  long long last;           /* timestamp from last call */
+  long long accum;          /* accumulated time */
+  long long max;            /* longest time for start/stop pair */
+  long long min;            /* shortest time for start/stop pair */
+} Wallstats;
+
+typedef struct TIMER {
+  Wallstats wall;           /* wallclock stats */
+  unsigned long count;      /* number of start/stop calls */
+  struct TIMER *next;       /* next timer in linked list */
+  struct TIMER **parent;    /* array of parents */
+  struct TIMER **children;  /* array of children */
+  int *parent_count;        /* array of call counts, one for each parent */
+  unsigned int recurselvl;  /* recursion level */
+  unsigned int nchildren;   /* number of children */
+  unsigned int nparent;     /* number of parents */
+  unsigned int norphan;     /* number of times this timer was an orphan */
+  bool onflg;               /* timer currently on or off */
+  char name[MAX_CHARS+1];   /* timer name (user input) */
+} Timer;
+
+typedef struct {
+  Timer *entries[MAXENT];   /* array of timers hashed to the same value */
+  unsigned int nument;      /* number of entries hashed to the same value */
+} Hashentry;
+
+/* Function prototypes */
+extern __device__ int GPTLerror (const char *, const char *);
+extern __device__ int GPTLerror (const char *, const unsigned int, const int);
+extern __device__ int GPTLerror (const char *, const char *, const char *);
+extern __device__ int GPTLerror (const char *, const char *, const char *, const char *);
+extern __device__ int GPTLerror (const char *, const char *, const int);
+extern __device__ int GPTLerror (const char *, const char *, const char *, const int);
+extern __device__ int GPTLerror (const char *, const char *, const int, const int);
+extern __device__ int GPTLerror (const char *, const char *, const int, const char *);
+extern __device__ void GPTLreset_errors (void);                       /* num_errors to zero */
+extern __device__ void *GPTLallocate (const int, const char *);       /* malloc wrapper */
+extern __device__ int GPTLget_overhead (Timer *(),                    /* getentry() */
+					unsigned int (const char *),  /* genhashidx() */
+					int (void),                   /* get_thread_num() */
+					int *,                        /* stackidx */
+					Timer ***,                    /* callstack */
+					const Hashentry *,            /* hashtable */
+					const int,                    /* tablesize */
+					int,                          /* imperfect_nest */
+
+					long long,                    /* Getting my thread index */
+					long long,                    /* Generating hash index */
+					long long,                    /* Finding entry in hash table */
+					long long,                    /* Underlying timing routine */
+					long long,                    /* misc. start/stop calcs */
+					long long,                    /* self_ohd */
+					long long);                   /* parent_ohd */

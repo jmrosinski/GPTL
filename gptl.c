@@ -165,7 +165,6 @@ static inline int update_stats (Timer *, const double, const long, const long, c
 static int update_ll_hash (Timer *, int, unsigned int);
 static inline int update_ptr (Timer *, const int);
 static int construct_tree (Timer *, Method);
-static int get_max_depth (const Timer *, const int);
 
 typedef struct {
   const Funcoption option;
@@ -199,6 +198,15 @@ static char *clock_source = "UNKNOWN";            /* where clock found */
 #define DEFAULT_TABLE_SIZE 1023
 static int tablesize = DEFAULT_TABLE_SIZE;  /* per-thread size of hash table (settable parameter) */
 static int tablesizem1 = DEFAULT_TABLE_SIZE - 1;
+
+#ifdef ENABLE_GPU
+#include "devicehost.h"
+static int tablesize_gpu = DEFAULT_TABLE_SIZE_GPU;
+static int maxthreads_gpu = DEFAULT_MAXTHREADS_GPU;
+static int maxtimers_gpu = DEFAULT_MAXTIMERS_GPU;
+#pragma routine () seq GPTLinitialize_gpu
+#pragma routine () seq fill_gpustats
+#endif
 
 #define MSGSIZ 256                          /* max size of msg printed when dopr_memusage=true */
 static int rssmax = 0;                      /* max rss of the process */
@@ -309,6 +317,32 @@ int GPTLsetoption (const int option,  /* option */
     if (verbose)
       printf ("%s: tablesize = %d\n", thisfunc, tablesize);
     return 0;
+#ifdef ENABLE_GPU
+  case GPTLmaxthreads_gpu:
+    if (val < 1)
+      return GPTLerror ("%s: maxthreads_gpu must be positive. %d is invalid\n", thisfunc, val);
+
+    maxthreads_gpu = val;
+    if (verbose)
+      printf ("%s: tablesize_gpu = %d\n", thisfunc, maxthreads_gpu);
+    return 0;
+  case GPTLtablesize_gpu:
+    if (val < 1)
+      return GPTLerror ("%s: tablesize_gpu must be positive. %d is invalid\n", thisfunc, val);
+
+    tablesize_gpu = val;
+    if (verbose)
+      printf ("%s: tablesize_gpu = %d\n", thisfunc, tablesize_gpu);
+    return 0;
+  case GPTLmaxtimers_gpu:
+    if (val < 1)
+      return GPTLerror ("%s: maxtimers_gpu must be positive. %d is invalid\n", thisfunc, val);
+
+    maxtimers_gpu = val;
+    if (verbose)
+      printf ("%s: maxtimers_gpu = %d\n", thisfunc, maxtimers_gpu);
+    return 0;
+#endif
   case GPTLsync_mpi:
 #ifdef ENABLE_PMPI
     if (GPTLpmpi_setoption (option, val) != 0)
@@ -462,7 +496,11 @@ int GPTLinitialize (void)
     printf ("Per call overhead est. t2-t1=%g should be near zero\n", t2-t1);
     printf ("Underlying wallclock timing routine is %s\n", funclist[funcidx].name);
   }
-
+#ifdef ENABLE_GPU
+#pragma acc kernels copyin(verbose, tablesize_gpu, maxthreads_gpu, maxtimers_gpu)
+  if ((ret = GPTLinitialize_gpu (verbose, tablesize_gpu, maxthreads_gpu, maxtimers_gpu)) < 0)
+    return GPTLerror ("%s: Failure from GPTLinitialize_gpu\n", thisfunc);
+#endif
   imperfect_nest = false;
   initialized = true;
   return 0;
@@ -1669,6 +1707,11 @@ int GPTLpr_file (const char *outfile) /* output file to write */
     fprintf (stderr, "%s: Attempt to close %s failed\n", thisfunc, outfile);
 
   pr_has_been_called = true;
+#ifdef ENABLE_GPU
+#pragma acc kernels pcopy(gpustats, max_name_len_gpu)
+  ret = fill_gpustats (gpustats, max_name_len_gpu);
+#endif
+
   return 0;
 }
 
@@ -3767,3 +3810,4 @@ static inline int get_thread_num ()
 }
 
 #endif  /* Unthreaded case */
+

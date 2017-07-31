@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 #include <sys/time.h>
+#include "devicehost.h"
 
 #ifndef MIN
 #define MIN(X,Y) ((X) < (Y) ? (X) : (Y))
@@ -24,9 +25,6 @@
 
 /* Maximum allowed callstack depth */
 #define MAX_STACK 128
-
-/* longest timer name allowed (probably safe to just change) */
-#define MAX_CHARS 63
 
 /* 
 ** max allowable number of PAPI counters, or derived events. For convenience,
