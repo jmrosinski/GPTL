@@ -98,17 +98,27 @@ ifeq ($(HAVE_GETTIMEOFDAY),yes)
   CFLAGS += -DHAVE_GETTIMEOFDAY
 endif
 
+ALLARGS = lib$(LIBNAME).a $(MAKETESTS)
+ifeq ($(ENABLE_GPU),yes)
+  ALLARGS += cuda
+endif
+
+ifeq ($(FORTRAN),yes)
+  ALLARGS += printmpistatussize
+endif
+
 ##############################################################################
 %.o: %.F90
 	$(FC) -c $(FFLAGS) $<
 
+all: $(ALLARGS)
 ifeq ($(FORTRAN),yes)
-all: lib$(LIBNAME).a $(MAKETESTS) printmpistatussize
 printmpistatussize: printmpistatussize.o
 	$(FC) -o $@ $? $(FFLAGS)
-else
-all: lib$(LIBNAME).a $(MAKETESTS)
 endif
+
+cuda:
+	$(MAKE) -C cuda
 
 libonly: lib$(LIBNAME).a 
 test: $(RUNTESTS)

@@ -8,7 +8,6 @@
 
 #include <stdio.h>
 #include <sys/time.h>
-#include "devicehost.h"
 
 #ifndef MIN
 #define MIN(X,Y) ((X) < (Y) ? (X) : (Y))
