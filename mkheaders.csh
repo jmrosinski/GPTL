@@ -25,6 +25,9 @@ set GPTLprint_method    = 16
 set GPTLdopr_memusage   = 27
 set GPTLtablesize       = 50
 set GPTLmaxthreads      = 51
+set GPTLmaxthreads_gpu  = 52
+set GPTLtablesize_gpu   = 53
+set GPTLmaxtimers_gpu   = 54
 
 set GPTL_IPC           = 17
 set GPTL_CI            = 18
@@ -71,8 +74,6 @@ s/#GPTLdopr_multparent/$GPTLdopr_multparent/1
 s/#GPTLdopr_collision/$GPTLdopr_collision/1
 s/#GPTLdopr_memusage/$GPTLdopr_memusage/1
 s/#GPTLprint_method/$GPTLprint_method/1
-s/#GPTLtablesize/$GPTLtablesize/1
-s/#GPTLmaxthreads/$GPTLmaxthreads/1
 s/#GPTL_IPC/$GPTL_IPC/1
 s/#GPTL_CI/$GPTL_CI/1
 s/#GPTL_FPC/$GPTL_FPC/1
@@ -94,6 +95,11 @@ s/#GPTLlast_parent/$GPTLlast_parent/1
 s/#GPTLmost_frequent/$GPTLmost_frequent/1
 s/#GPTLfull_tree/$GPTLfull_tree/1
 s/#GPTLread_real_time/$GPTLread_real_time/1
+s/#GPTLmaxthreads_gpu/$GPTLmaxthreads_gpu/1
+s/#GPTLmaxthreads/$GPTLmaxthreads/1
+s/#GPTLtablesize_gpu/$GPTLtablesize_gpu/1
+s/#GPTLtablesize/$GPTLtablesize/1
+s/#GPTLmaxtimers_gpu/$GPTLmaxtimers_gpu/1
 EOF
 
 # Run the sed script to create the 3 header files

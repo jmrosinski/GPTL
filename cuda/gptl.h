@@ -10,24 +10,14 @@
 #define GPTL_H
 
 /*
-** Function prototypes
+** User-visible function prototypes
 */
 
-__device__ extern int GPTLinitialize_gpu (void);
-
 extern "C" {
-
-__device__ extern int GPTLstart (const char *);
-__device__ extern int GPTLinit_handle (const char *, int *);
-__device__ extern int GPTLstart_handle (const char *, int *);
-__device__ extern int GPTLstop (const char *);
-__device__ extern int GPTLstop_handle (const char *, int *);
-
-__device__ extern int GPTLreset (void);
-__device__ extern int GPTLfinalize (void);
-__device__ extern int GPTLenable (void);
-__device__ extern int GPTLdisable (void);
-
+__device__ extern int GPTLstart_gpu (const char *);
+__device__ extern int GPTLinit_handle_gpu (const char *, int *);
+__device__ extern int GPTLstart_handle_gpu (const char *, int *);
+__device__ extern int GPTLstop_gpu (const char *);
+__device__ extern int GPTLstop_handle_gpu (const char *, const int *);
 };
-
 #endif

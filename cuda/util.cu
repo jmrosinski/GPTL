@@ -23,7 +23,9 @@ __device__ static int num_errors = 0; /* number of times GPTLerror was called */
 ** Return value: -1 (failure)
 */
 
-__device__ int GPTLerror (const char *fmt, const unsigned int arg1, const int arg2)
+extern "C" {
+
+__device__ int GPTLerror_1u1d (const char *fmt, const unsigned int arg1, const int arg2)
 {
   (void) printf ("GPTL error:");
   (void) printf (fmt, arg1, arg2);
@@ -33,7 +35,7 @@ __device__ int GPTLerror (const char *fmt, const unsigned int arg1, const int ar
   return -1;
 }
 
-__device__ int GPTLerror (const char *fmt, const char *str)
+__device__ int GPTLerror_1s (const char *fmt, const char *str)
 {
   (void) printf ("GPTL error:");
   (void) printf (fmt, str);
@@ -43,7 +45,7 @@ __device__ int GPTLerror (const char *fmt, const char *str)
   return -1;
 }
 
-__device__ int GPTLerror (const char *fmt, const char *str1, const char *str2)
+__device__ int GPTLerror_2s (const char *fmt, const char *str1, const char *str2)
 {
   (void) printf ("GPTL error:");
   (void) printf (fmt, str1, str2);
@@ -53,17 +55,7 @@ __device__ int GPTLerror (const char *fmt, const char *str1, const char *str2)
   return -1;
 }
 
-__device__ int GPTLerror (const char *fmt, const char *str1, const char *str2, const char *str3)
-{
-  (void) printf ("GPTL error:");
-  (void) printf (fmt, str1, str2, str3);
-  if (num_errors == max_errors)
-    (void) printf ("Truncating further error print now after %d msgs", num_errors);
-  ++num_errors;
-  return -1;
-}
-
-__device__ int GPTLerror (const char *fmt, const char *str1, const int arg)
+__device__ int GPTLerror_1s1d (const char *fmt, const char *str1, const int arg)
 {
   (void) printf ("GPTL error:");
   (void) printf (fmt, str1, arg);
@@ -73,7 +65,7 @@ __device__ int GPTLerror (const char *fmt, const char *str1, const int arg)
   return -1;
 }
 
-__device__ int GPTLerror (const char *fmt, const char *str1, const char *str2, const int arg1)
+__device__ int GPTLerror_2s1d (const char *fmt, const char *str1, const char *str2, const int arg1)
 {
   (void) printf ("GPTL error:");
   (void) printf (fmt, str1, str2, arg1);
@@ -83,7 +75,7 @@ __device__ int GPTLerror (const char *fmt, const char *str1, const char *str2, c
   return -1;
 }
 
-__device__ int GPTLerror (const char *fmt, const char *str1, const int arg1, const int arg2)
+__device__ int GPTLerror_1s2d (const char *fmt, const char *str1, const int arg1, const int arg2)
 {
   (void) printf ("GPTL error:");
   (void) printf (fmt, str1, arg1, arg2);
@@ -93,7 +85,7 @@ __device__ int GPTLerror (const char *fmt, const char *str1, const int arg1, con
   return -1;
 }
 
-__device__ int GPTLerror (const char *fmt, const char *str1, const int arg, const char *str2)
+__device__ int GPTLerror_1s1d1s (const char *fmt, const char *str1, const int arg, const char *str2)
 {
   (void) printf ("GPTL error:");
   (void) printf (fmt, str1, arg, str2);
@@ -151,4 +143,6 @@ __device__ void *GPTLallocate (const int nbytes, const char *caller)
 
   ++num_errors;
   return ptr;
+}
+
 }

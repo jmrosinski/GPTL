@@ -18,7 +18,7 @@ MANDIR =
 CC = pgcc
 
 # Whether to build debug lib or optimized lib, and associated flags
-DEBUG = no
+DEBUG = yes
 ifeq ($(DEBUG),yes)
   CFLAGS = -g -O0
 else
@@ -167,4 +167,11 @@ endif
 HAVE_BACKTRACE = no
 ifeq ($(HAVE_BACKTRACE),yes)
   CFLAGS += -DHAVE_BACKTRACE
+endif
+
+# Whether to enable nVidia-based GPU timers as well as CPU timers
+ENABLE_GPU = yes
+ifeq ($(ENABLE_GPU),yes)
+  CFLAGS += -DENABLE_GPU
+  GPULIB = gptl_cuda
 endif

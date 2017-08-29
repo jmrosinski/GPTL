@@ -26,7 +26,9 @@ module gptl
   integer, parameter :: GPTLdopr_memusage  = 27
   integer, parameter :: GPTLprint_method   = 16
   integer, parameter :: GPTLtablesize      = 50
-  integer, parameter :: GPTLmaxthreads     = 51
+  integer, parameter :: GPTLmaxthreads_gpu = 52
+  integer, parameter :: GPTLtablesize_gpu  = 53
+  integer, parameter :: GPTLmaxtimers_gpu  = 54
 
   integer, parameter :: GPTL_IPC           = 17
   integer, parameter :: GPTL_CI            = 18

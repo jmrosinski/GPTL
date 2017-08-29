@@ -30,6 +30,9 @@ else
 endif
 
 LDFLAGS = $(CFLAGS) -L.. -l$(LIBNAME) $(ABIFLAGS) -lm
+ifeq ($(ENABLE_GPU),yes)
+#  LDFLAGS += -L../cuda -l$(GPULIB)
+endif
 
 ifeq ($(OPENMP),yes)
   CFLAGS  += -DTHREADED_OMP $(COMPFLAG)
@@ -110,8 +113,8 @@ testpapi: testpapi.o
 pmpi: pmpi.o
 	$(CC) -o $@ $< $(LDFLAGS)
 
-global: global.o
-	$(CC) -o $@ $< $(LDFLAGS)
+global: global.c
+	$(CC) -o $@ $< $(LDFLAGS) 
 
 printwhileon: printwhileon.o
 	$(CC) -o $@ $< $(LDFLAGS)

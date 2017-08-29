@@ -26,7 +26,9 @@ module gptl
   integer, parameter :: GPTLdopr_memusage  = #GPTLdopr_memusage
   integer, parameter :: GPTLprint_method   = #GPTLprint_method
   integer, parameter :: GPTLtablesize      = #GPTLtablesize
-  integer, parameter :: GPTLmaxthreads     = #GPTLmaxthreads
+  integer, parameter :: GPTLmaxthreads_gpu = #GPTLmaxthreads_gpu
+  integer, parameter :: GPTLtablesize_gpu  = #GPTLtablesize_gpu
+  integer, parameter :: GPTLmaxtimers_gpu  = #GPTLmaxtimers_gpu
 
   integer, parameter :: GPTL_IPC           = #GPTL_IPC
   integer, parameter :: GPTL_CI            = #GPTL_CI

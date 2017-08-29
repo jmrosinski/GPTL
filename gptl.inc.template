@@ -26,6 +26,9 @@
       integer GPTLprint_method
       integer GPTLtablesize
       integer GPTLmaxthreads
+      integer GPTLmaxthreads_gpu
+      integer GPTLtablesize_gpu
+      integer GPTLmaxtimers_gpu
 
       integer GPTL_IPC
       integer GPTL_CI
@@ -70,6 +73,9 @@
       parameter (GPTLprint_method   = #GPTLprint_method)
       parameter (GPTLtablesize      = #GPTLtablesize)
       parameter (GPTLmaxthreads     = #GPTLmaxthreads)
+      parameter (GPTLmaxthreads_gpu = #GPTLmaxthreads_gpu)
+      parameter (GPTLtablesize_gpu  = #GPTLtablesize_gpu)
+      parameter (GPTLmaxtimers_gpu  = #GPTLmaxtimers_gpu)
 
       parameter (GPTL_IPC           = #GPTL_IPC)
       parameter (GPTL_CI            = #GPTL_CI)

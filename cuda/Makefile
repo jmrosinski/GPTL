@@ -1,18 +1,27 @@
-CU         = nvcc
-# -O2 causes bitwise differences in test codes!
-OPTFLAGS   = -g -O2 -UDEBUG
-# CUFLAGS only needed in acclib
-CUFLAGS    = $(OPTFLAGS) -G -ftz=true -fmad=false -gencode arch=compute_60,code=compute_60 -rdc=true
-ARFLAGS    = ruv
-LIBNAME    = gptl
+include ../macros.make
 
-OBJS = gptl.o util.o
+FC      = pgfortran
+FFLAGS  = -acc -Minfo=accel -Minfo -ta=tesla:cc60,keepgpu
+CU      = nvcc
+CUFLAGS = -UDEBUG -DENABLE_GPU $(UNDERSCORING) -G -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true
+#CUFLAGS = -UDEBUG -DENABLE_GPU $(UNDERSCORING) -G -ftz=true -gencode arch=compute_60,code=compute_60
+ARFLAGS = ruv
+
+OBJS = gptl.o util.o f_wrappers.o gptlf.o
 
 %.o: %.cu
 	$(CU) -c $< $(CUFLAGS)
 
+%.o: %.F90
+	$(FC) -c $< $(FFLAGS)
+
 all: $(OBJS)
-	$(AR) $(ARFLAGS) lib$(LIBNAME).a $(OBJS)
+	$(AR) $(ARFLAGS) lib$(GPULIB).a $(OBJS)
+	ranlib lib$(GPULIB).a
 
 gptl.o: gptl.h private.h
+gptlf.o: gptlf.F90 gptl.h private.h
 util.o: private.h
+
+clean:
+	$(RM) $(OBJS) *.mod lib$(GPULIB).a

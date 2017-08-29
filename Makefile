@@ -98,10 +98,13 @@ ifeq ($(HAVE_GETTIMEOFDAY),yes)
   CFLAGS += -DHAVE_GETTIMEOFDAY
 endif
 
-ALLARGS = lib$(LIBNAME).a $(MAKETESTS)
+ALLARGS = lib$(LIBNAME).a
 ifeq ($(ENABLE_GPU),yes)
-  ALLARGS += cuda
+  CFLAGS  += -acc -Minfo=accel -Minfo -ta=tesla:cc60
+  ALLARGS += acctests/all
 endif
+
+ALLARGS += $(MAKETESTS)
 
 ifeq ($(FORTRAN),yes)
   ALLARGS += printmpistatussize
@@ -117,8 +120,11 @@ printmpistatussize: printmpistatussize.o
 	$(FC) -o $@ $? $(FFLAGS)
 endif
 
-cuda:
+cuda/all:
 	$(MAKE) -C cuda
+
+acctests/all: cuda/all
+	$(MAKE) -C acctests
 
 libonly: lib$(LIBNAME).a 
 test: $(RUNTESTS)
@@ -164,23 +170,25 @@ uninstall:
 
 clean:
 	$(RM) -f $(OBJS) $(FOBJS) lib$(LIBNAME).a *.mod printmpistatussize.o printmpistatussize
+	$(MAKE) -C cuda clean
+	$(MAKE) -C acctests clean
 	$(MAKE) -C ctests clean
 	$(MAKE) -C ftests clean
 
-f_wrappers.o: gptl.h private.h
-f_wrappers_pmpi.o: gptl.h private.h
-gptl.o: gptl.h private.h
-util.o: gptl.h private.h
-gptl_papi.o: gptl.h private.h
+f_wrappers.o: gptl.h private.h devicehost.h
+f_wrappers_pmpi.o: gptl.h private.h devicehost.h
+gptl.o: gptl.h private.h devicehost.h
+util.o: gptl.h private.h devicehost.h
+gptl_papi.o: gptl.h private.h devicehost.h
 process_namelist.o: process_namelist.F90 gptl.inc
 gptlf.o: gptlf.F90
-pmpi.o: gptl.h private.h
-getoverhead.o: private.h
-hashstats.o: private.h
-memstats.o: private.h
-pr_summary.o: private.h
+pmpi.o: gptl.h private.h devicehost.h
+getoverhead.o: private.h devicehost.h
+hashstats.o: private.h devicehost.h
+memstats.o: private.h devicehost.h
+pr_summary.o: private.h devicehost.h
 get_memusage.o: 
 print_memusage.o: gptl.h
-print_rusage.o: private.h
+print_rusage.o: private.h devicehost.h
 
 printmpistatussize.o: printmpistatussize.F90

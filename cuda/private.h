@@ -57,17 +57,23 @@ typedef struct {
 } Hashentry;
 
 /* Function prototypes */
-extern __device__ int GPTLerror (const char *, const char *);
-extern __device__ int GPTLerror (const char *, const unsigned int, const int);
-extern __device__ int GPTLerror (const char *, const char *, const char *);
-extern __device__ int GPTLerror (const char *, const char *, const char *, const char *);
-extern __device__ int GPTLerror (const char *, const char *, const int);
-extern __device__ int GPTLerror (const char *, const char *, const char *, const int);
-extern __device__ int GPTLerror (const char *, const char *, const int, const int);
-extern __device__ int GPTLerror (const char *, const char *, const int, const char *);
-extern __device__ void GPTLreset_errors (void);                       /* num_errors to zero */
-extern __device__ void *GPTLallocate (const int, const char *);       /* malloc wrapper */
-extern __device__ int GPTLget_overhead (Timer *(),                    /* getentry() */
+extern "C" {
+/* These are user callable */
+__device__ extern int GPTLfinalize_gpu (void);
+__device__ extern int GPTLenable_gpu (void);
+__device__ extern int GPTLdisable_gpu (void);
+__device__ extern int GPTLreset_gpu (void);
+
+  /* These are callable from within gptl.cu */
+__device__ extern int GPTLerror_1s (const char *, const char *);
+__device__ extern int GPTLerror_2s (const char *, const char *, const char *);
+__device__ extern int GPTLerror_1s1d (const char *, const char *, const int);
+__device__ extern int GPTLerror_2s1d (const char *, const char *, const char *, const int);
+__device__ extern int GPTLerror_1s2d (const char *, const char *, const int, const int);
+__device__ extern int GPTLerror_1s1d1s (const char *, const char *, const int, const char *);
+__device__ extern void GPTLreset_errors (void);                       /* num_errors to zero */
+__device__ extern void *GPTLallocate (const int, const char *);       /* malloc wrapper */
+__device__ extern int GPTLget_overhead (Timer *(),                    /* getentry() */
 					unsigned int (const char *),  /* genhashidx() */
 					int (void),                   /* get_thread_num() */
 					int *,                        /* stackidx */
@@ -83,3 +89,5 @@ extern __device__ int GPTLget_overhead (Timer *(),                    /* getentr
 					long long,                    /* misc. start/stop calcs */
 					long long,                    /* self_ohd */
 					long long);                   /* parent_ohd */
+
+}

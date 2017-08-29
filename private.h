@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 #include <sys/time.h>
+#include "devicehost.h"
 
 #ifndef MIN
 #define MIN(X,Y) ((X) < (Y) ? (X) : (Y))
@@ -142,6 +143,17 @@ extern void GPTLprint_hashstats (FILE *, int, Hashentry **, int);
 extern void GPTLprint_memstats (FILE *, Timer **, int, int, int);
 extern int GPTLget_nthreads (void);
 extern Timer **GPTLget_timersaddr (void);
+
+/* CUDA routines which need separate prototypes here because CPU code doesn't understand
+** __device__
+*/
+#ifdef ENABLE_GPU
+extern int GPTLinitialize_gpu (const int, const int, const int, const int);
+extern int GPTLenable_gpu (void);
+extern int GPTLdisable_gpu (void);
+extern int GPTLreset_gpu (void);
+extern int GPTLfill_gpustats (Gpustats [][], int []);
+#endif
 
 #ifdef __cplusplus
 extern "C" {

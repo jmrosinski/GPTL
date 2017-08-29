@@ -200,12 +200,15 @@ static int tablesize = DEFAULT_TABLE_SIZE;  /* per-thread size of hash table (se
 static int tablesizem1 = DEFAULT_TABLE_SIZE - 1;
 
 #ifdef ENABLE_GPU
-#include "devicehost.h"
 static int tablesize_gpu = DEFAULT_TABLE_SIZE_GPU;
 static int maxthreads_gpu = DEFAULT_MAXTHREADS_GPU;
 static int maxtimers_gpu = DEFAULT_MAXTIMERS_GPU;
-#pragma routine () seq GPTLinitialize_gpu
-#pragma routine () seq fill_gpustats
+#pragma acc routine (GPTLinitialize_gpu) seq 
+#pragma acc routine (GPTLfill_gpustats) seq 
+#pragma acc routine (GPTLfinalize_gpu) seq 
+#pragma acc routine (GPTLenable_gpu) seq 
+#pragma acc routine (GPTLdisable_gpu) seq 
+#pragma acc routine (GPTLreset_gpu) seq 
 #endif
 
 #define MSGSIZ 256                          /* max size of msg printed when dopr_memusage=true */
@@ -428,6 +431,7 @@ int GPTLinitialize (void)
 {
   int i;          /* loop index */
   int t;          /* thread index */
+  int ret;        /* return value */
   double t1, t2;  /* returned from underlying timer */
   static const char *thisfunc = "GPTLinitialize";
 
@@ -497,8 +501,9 @@ int GPTLinitialize (void)
     printf ("Underlying wallclock timing routine is %s\n", funclist[funcidx].name);
   }
 #ifdef ENABLE_GPU
-#pragma acc kernels copyin(verbose, tablesize_gpu, maxthreads_gpu, maxtimers_gpu)
-  if ((ret = GPTLinitialize_gpu (verbose, tablesize_gpu, maxthreads_gpu, maxtimers_gpu)) < 0)
+#pragma acc kernels pcopyout(ret)
+  ret = GPTLinitialize_gpu (verbose, tablesize_gpu, maxthreads_gpu, maxtimers_gpu);
+  if (ret < 0)
     return GPTLerror ("%s: Failure from GPTLinitialize_gpu\n", thisfunc);
 #endif
   imperfect_nest = false;
@@ -517,6 +522,7 @@ int GPTLfinalize (void)
   int t;                /* thread index */
   int n;                /* array index */
   Timer *ptr, *ptrnext; /* ll indices */
+  int ret;
   static const char *thisfunc = "GPTLfinalize";
 
   if ( ! initialized)
@@ -593,7 +599,13 @@ int GPTLfinalize (void)
   tablesize = DEFAULT_TABLE_SIZE;
   tablesizem1 = tablesize - 1;
 
-  return 0;
+#ifdef ENABLE_GPU
+#pragma acc kernels copyout(ret)
+  ret = GPTLfinalize_gpu ();
+#else
+  ret = 0;
+#endif
+  return ret;
 }
 
 /*
@@ -1278,8 +1290,16 @@ static inline int update_stats (Timer *ptr,
 */
 int GPTLenable (void)
 {
+  int ret;
+
   disabled = false;
-  return (0);
+#ifdef ENABLE_GPU
+#pragma acc kernels copyout(ret)
+  ret = GPTLenable_gpu ();
+#else
+  ret = 0;
+#endif
+  return ret;
 }
 
 /*
@@ -1289,8 +1309,16 @@ int GPTLenable (void)
 */
 int GPTLdisable (void)
 {
+  int ret;
+
   disabled = true;
-  return (0);
+#ifdef ENABLE_GPU
+#pragma acc kernels copyout(ret)
+  ret = GPTLdisable_gpu ();
+#else
+  ret = 0;
+#endif
+  return ret;
 }
 
 /*
@@ -1331,6 +1359,7 @@ int GPTLstamp (double *wall, double *usr, double *sys)
 */
 int GPTLreset (void)
 {
+  int ret;
   int t;             /* index over threads */
   Timer *ptr;        /* linked list index */
   static const char *thisfunc = "GPTLreset";
@@ -1350,10 +1379,17 @@ int GPTLreset (void)
     }
   }
 
-  if (verbose)
+#ifdef ENABLE_GPU
+#pragma acc kernels copyout(ret)
+  ret = GPTLreset_gpu ();
+#else
+  ret = 0;
+#endif
+
+  if (verbose && ret == 0)
     printf ("%s: accumulators for all timers set to zero\n", thisfunc);
 
-  return 0;
+  return ret;
 }
 
 /*
@@ -1708,10 +1744,26 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   pr_has_been_called = true;
 #ifdef ENABLE_GPU
-#pragma acc kernels pcopy(gpustats, max_name_len_gpu)
-  ret = fill_gpustats (gpustats, max_name_len_gpu);
-#endif
+  {
+//JR want to use variables to dimension arrays but nvcc is not C99 compliant
+    Gpustats gpustats[DEFAULT_MAXTHREADS_GPU][DEFAULT_MAXTIMERS_GPU];
+    int max_name_len_gpu[DEFAULT_MAXTHREADS_GPU];
+    int ret;
+#ifdef MARKSWAY
+    Gpustats *d_gpustats;
 
+    cudaMalloc (d_gpustats, sizeof());
+    <<<1,1 GPTLfill_gpustats(d_gpustats, max_name_len_gpu, maxtimers_gpu) >>>
+    cudaMemcpy (gpustats, d_gpustats, dtoh);
+#endif
+    //#pragma acc declare create gpustats
+
+    //gpustats = (Gpustats *) GPTLallocate (maxtimers_gpu * sizeof (Gpustats), thisfunc);
+    //max_name_len_gpu = (int *) GPTLallocate (maxtimers_gpu * sizeof (int), thisfunc);
+#pragma acc kernels copy(gpustats, max_name_len_gpu)
+    ret = GPTLfill_gpustats (gpustats, max_name_len_gpu);
+#endif
+  }
   return 0;
 }
 
