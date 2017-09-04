@@ -5,7 +5,9 @@
 ** Main file contains most user-accessible GPTL functions
 */
 
-#include <stdlib.h>        /* malloc */
+// Per Duane's suggestion, try turning off static. Didn't help
+//#define static \ 
+
 #include <stdio.h>
 #include <string.h>        /* memcpy */
 
@@ -18,6 +20,8 @@ __device__ static int *max_depth;                 /* maximum indentation level e
 __device__ static int *max_name_len;              /* max length of timer name */
 __device__ static int nthreads = -1;                /* num threads. Init to bad value */
 __device__ static int maxthreads = -1;              /* max threads */
+__device__ static int maxwarps = -1;              /* max warps */
+__device__ static int nwarps = 0;              /* number of warps: init to 0 */
 __device__ static bool disabled = false;          /* Timers disabled? */
 __device__ static bool initialized = false;       /* GPTLinitialize has been called */
 __device__ static bool verbose = false;           /* output verbosity */
@@ -46,13 +50,13 @@ __device__ static inline char *my_strcpy (char *, const char *);
 __device__ static inline int my_strcmp (const char *, const char *);
 
 /* These are invoked only from gptl.c */
-__device__ extern int GPTLinitialize_gpu (const int, const int, const int, const int);
+__device__ extern int GPTLinitialize_gpu (const int, const int, const int);
 __device__ extern int GPTLenable_gpu (void);
 __device__ extern int GPTLdisable_gpu (void);
 __device__ extern int GPTLreset_gpu (void);
 
 /* VERBOSE is a debugging ifdef local to the rest of this file */
-#undef VERBOSE
+#define VERBOSE
 
 /*
 ** GPTLinitialize_gpu (): Initialization routine must be called from single-threaded
@@ -63,48 +67,57 @@ __device__ extern int GPTLreset_gpu (void);
 */
 __device__ int GPTLinitialize_gpu (const int verbose_in,
 				   const int tablesize_in,
-				   const int maxthreads_in,
-				   const int maxtimers_in)
+				   const int maxthreads_in)
 {
   int i;                 /* loop index */
-  int w;                 /* warp index */
+  int w;
   long long t1, t2;      /* returned from underlying timer */
+  size_t heapsize;
   static const char *thisfunc = "GPTLinitialize_gpu";
 
-  if (initialized)
-    printf ("%s: has already been called\n", thisfunc);
-  
+#ifdef VERBOSE
+  printf ("Entered %s\n", thisfunc);
+#endif
+  if (initialized) {
+    return GPTLerror_1s ("%s: has already been called\n", thisfunc);
+  }
 
   // Set global vars from input args
   verbose     = verbose_in;
-  maxthreads    = maxthreads_in;
+  maxthreads  = maxthreads_in;
+  if (maxthreads % WARPSIZE != 0)
+    return GPTLerror_1s1d ("%s: maxthreads=%d must divide WARPSIZE evenly\n", 
+			   thisfunc, maxthreads);
+
   tablesize   = tablesize_in;
   tablesizem1 = tablesize_in - 1;
-  maxtimers   = maxtimers_in;
+  maxwarps = maxthreads / WARPSIZE;
 
   /* Allocate space for global arrays */
-  printf ("Calling GPTLallocate (gpu) for callstack\n");
-  callstack     = (Timer ***)    GPTLallocate (maxthreads * sizeof (Timer **), thisfunc);
-  printf ("Calling GPTLallocate (gpu) for stackidx\n");
-  stackidx      = (int *)        GPTLallocate (maxthreads * sizeof (int), thisfunc);
-  timers        = (Timer **)     GPTLallocate (maxthreads * sizeof (Timer *), thisfunc);
-  last          = (Timer **)     GPTLallocate (maxthreads * sizeof (Timer *), thisfunc);
-  max_depth     = (int *)        GPTLallocate (maxthreads * sizeof (int), thisfunc);
-  max_name_len  = (int *)        GPTLallocate (maxthreads * sizeof (int), thisfunc);
-  hashtable     = (Hashentry **) GPTLallocate (maxthreads * sizeof (Hashentry *), thisfunc);
+  printf ("Calling GPTLallocate_gpu for callstack\n");
+  callstack     = (Timer ***)    GPTLallocate_gpu (maxwarps * sizeof (Timer **), thisfunc);
+  printf ("Calling GPTLallocate_gpu for stackidx\n");
+  stackidx      = (int *)        GPTLallocate_gpu (maxwarps * sizeof (int), thisfunc);
+  timers        = (Timer **)     GPTLallocate_gpu (maxwarps * sizeof (Timer *), thisfunc);
+  last          = (Timer **)     GPTLallocate_gpu (maxwarps * sizeof (Timer *), thisfunc);
+  max_depth     = (int *)        GPTLallocate_gpu (maxwarps * sizeof (int), thisfunc);
+  max_name_len  = (int *)        GPTLallocate_gpu (maxwarps * sizeof (int), thisfunc);
+  //  cudaMalloc (&hashtable, maxwarps * sizeof (Hashentry *));
+  hashtable     = (Hashentry **) GPTLallocate_gpu (maxwarps * sizeof (Hashentry *), thisfunc);
 
   /* Initialize array values */
-  for (w = 0; w < maxthreads; w++) {
+  printf ("GPU initialize loop 1\n");
+  for (w = 0; w < maxwarps; w++) {
     max_depth[w]    = -1;
     max_name_len[w] = 0;
-    callstack[w] = (Timer **) GPTLallocate (MAX_STACK * sizeof (Timer *), thisfunc);
-    hashtable[w] = (Hashentry *) GPTLallocate (tablesize * sizeof (Hashentry), thisfunc);
+    callstack[w] = (Timer **) GPTLallocate_gpu (MAX_STACK * sizeof (Timer *), thisfunc);
+    hashtable[w] = (Hashentry *) GPTLallocate_gpu (tablesize * sizeof (Hashentry), thisfunc);
     for (i = 0; i < tablesize; i++) {
       hashtable[w][i].nument = 0;
     }
 
     /* Make a timer "GPTL_ROOT" to ensure no orphans, and to simplify printing. */
-    timers[w] = (Timer *) GPTLallocate (sizeof (Timer), thisfunc);
+    timers[w] = (Timer *) GPTLallocate_gpu (sizeof (Timer), thisfunc);
     memset (timers[w], 0, sizeof (Timer));
     (void) my_strcpy (timers[w]->name, "GPTL_ROOT");
     timers[w]->onflg = true;
@@ -128,6 +141,8 @@ __device__ int GPTLinitialize_gpu (const int verbose_in,
 
   imperfect_nest = false;
   initialized = true;
+  printf("end %s: maxthreads=%d maxwarps=%d hashtable addr=%p\n", 
+	 thisfunc, maxthreads, maxwarps, hashtable);
   return 0;
 }
 
@@ -146,7 +161,7 @@ __device__ int GPTLfinalize_gpu (void)
   if ( ! initialized)
     return GPTLerror_1s ("%s: initialization was not completed\n", thisfunc);
 
-  for (w = 0; w < maxthreads; ++w) {
+  for (w = 0; w < maxwarps; ++w) {
     free (hashtable[w]);
     hashtable[w] = NULL;
     free (callstack[w]);
@@ -170,7 +185,7 @@ __device__ int GPTLfinalize_gpu (void)
   free (max_name_len);
   free (hashtable);
 
-  GPTLreset_errors ();
+  GPTLreset_errors_gpu ();
 
   /* Reset initial values */
   timers = 0;
@@ -200,8 +215,9 @@ __device__ int GPTLstart_gpu (const char *name)               /* timer name */
   int w;             /* warp index (of this thread) */
   int numchars;      /* number of characters to copy */
   unsigned int indx; /* hash table index */
-  static const char *thisfunc = "GPTLstart";
+  static const char *thisfunc = "GPTLstart_gpu";
 
+  printf("%s: name=%s: maxwarps=%d hashtable addr=%p\n", thisfunc, name, maxwarps, hashtable);
   if (disabled)
     return 0;
 
@@ -237,7 +253,8 @@ __device__ int GPTLstart_gpu (const char *name)               /* timer name */
     return GPTLerror_1s ("%s: stack too big\n", thisfunc);
 
   if ( ! ptr) { /* Add a new entry and initialize */
-    ptr = (Timer *) GPTLallocate (sizeof (Timer), thisfunc);
+    if ((ptr = (Timer *) GPTLallocate_gpu (sizeof (Timer), thisfunc)) == NULL)
+      return GPTLerror_2s ("%s: malloc failure for timer %s\n", thisfunc, name);
     memset (ptr, 0, sizeof (Timer));
 
     numchars = MIN (my_strlen (name), MAX_CHARS);
@@ -293,7 +310,7 @@ __device__ int GPTLstart_handle_gpu (const char *name,  /* timer name */
   Timer *ptr;        /* linked list pointer */
   int w;             /* warp index (of this thread) */
   int numchars;      /* number of characters to copy */
-  static const char *thisfunc = "GPTLstart_handle";
+  static const char *thisfunc = "GPTLstart_handle_gpu";
 
   if (disabled)
     return 0;
@@ -344,7 +361,8 @@ __device__ int GPTLstart_handle_gpu (const char *name,  /* timer name */
     return GPTLerror_1s ("%s: stack too big\n", thisfunc);
 
   if ( ! ptr) { /* Add a new entry and initialize */
-    ptr = (Timer *) GPTLallocate (sizeof (Timer), thisfunc);
+    if ((ptr = (Timer *) GPTLallocate_gpu (sizeof (Timer), thisfunc)) == NULL)
+      return GPTLerror_2s ("%s: malloc failure for timer %s\n", thisfunc, name);
     memset (ptr, 0, sizeof (Timer));
 
     numchars = MIN (my_strlen (name), MAX_CHARS);
@@ -487,8 +505,9 @@ __device__ int GPTLstop_gpu (const char *name)               /* timer name */
   Timer *ptr;                /* linked list pointer */
   int w;                     /* warp number for this process */
   unsigned int indx;         /* index into hash table */
-  static const char *thisfunc = "GPTLstop";
+  static const char *thisfunc = "GPTLstop_gpu";
 
+  printf("%s: name=%s: maxwarps=%d\n", thisfunc, name, maxwarps);
   if (disabled)
     return 0;
 
@@ -547,7 +566,7 @@ __device__ int GPTLstop_handle_gpu (const char *name,     /* timer name */
   Timer *ptr;                /* linked list pointer */
   int w;                     /* warp number for this process */
   unsigned int indx;
-  static const char *thisfunc = "GPTLstop_handle";
+  static const char *thisfunc = "GPTLstop_handle_gpu";
 
   if (disabled)
     return 0;
@@ -680,12 +699,12 @@ __device__ int GPTLreset_gpu (void)
 {
   int w;             /* index over threads */
   Timer *ptr;        /* linked list index */
-  static const char *thisfunc = "GPTLreset";
+  static const char *thisfunc = "GPTLreset_gpu";
 
   if ( ! initialized)
     return GPTLerror_1s ("%s: GPTLinitialize has not been called\n", thisfunc);
 
-  for (w = 0; w < nthreads; w++) {
+  for (w = 0; w < nwarps; w++) {
     for (ptr = timers[w]; ptr; ptr = ptr->next) {
       ptr->onflg = false;
       ptr->count = 0;
@@ -795,22 +814,46 @@ __device__ static inline int get_warp_num ()
     + (threadIdx.y * blockDim.x)
     + threadIdx.x;
 
-#ifdef USE_WARP_NUM
   if (threadId % WARPSIZE != 0)
     return NOT_ROOT_OF_WARP;
 
   warpId = threadId / WARPSIZE;
-#else
-  warpId = threadId;
-#endif
-  if (warpId > maxthreads-1)
-    return GPTLerror_1s2d ("%s: warpId=%d exceeds maxthreads=%d\n", thisfunc, warpId, maxthreads);
+  // nwarps is needed only by CPU code gptl.c
+  if (warpId+1 > nwarps)
+    nwarps = warpId+1;
+  if (warpId > maxwarps-1)
+    return GPTLerror_1s2d ("%s: warpId=%d exceeds maxwarps=%d\n", thisfunc, warpId, maxwarps);
   else
     return warpId;
 }
 
 //JR want to use parameters to dimension arrays but nvcc is not C99 compliant
-__device__ int GPTLfill_gpustats (Gpustats gpustats[][DEFAULT_MAXTIMERS_GPU], 
+//JR maxgputimers and nwarps_out are 1-element arrays so value gets copied to
+//JR acc parent
+__device__ int GPTLget_gpusizes (int maxgputimers[], 
+				 int nwarps_out[], 
+				 int ngputimers[])
+{
+  Timer *ptr;
+  int ntimers;
+  int w;
+
+  maxgputimers[0] = 0;
+  for (w = 0; w < maxwarps; ++w) {
+    ntimers = 0;
+    //JR start at "next" to skip past GPTL_ROOT
+    for (ptr = timers[w]->next; ptr; ptr = ptr->next)
+      ++ntimers;
+    ngputimers[w] = ntimers;
+    if (ntimers > maxgputimers[0])
+      maxgputimers[0] = ntimers;
+  }
+  nwarps_out[0] = nwarps;
+  return 0;
+}
+
+//JR want to use variables to dimension arrays but nvcc is not C99 compliant
+__device__ int GPTLfill_gpustats (Gpustats gpustats[][MAXWARPS], 
                                   int *max_name_len_out)
 {
   int w;      // warp index
@@ -819,25 +862,28 @@ __device__ int GPTLfill_gpustats (Gpustats gpustats[][DEFAULT_MAXTIMERS_GPU],
   Timer *ptr; // loop through linked list
   static const char *thisfunc = "GPTLfill_gpustats";
 
-  for (w = 0; w < nthreads; ++w) {
-    for (ptr = timers[w], n = 0; ptr; ptr = ptr->next, ++n) {
-      if (n > maxtimers-1) 
-	return GPTLerror_1s1d ("%s: Truncating timer output at %d entries."
-			       "Suggest increase maxtimers array size to fill_output_stats()\n",
-			       thisfunc, maxtimers);
-      (void) my_strcpy (gpustats[w][n].name, ptr->name);
-      gpustats[w][n].count       = ptr->count;
-      gpustats[w][n].accum       = ptr->wall.accum;
-      gpustats[w][n].max         = ptr->wall.max;
-      gpustats[w][n].min         = ptr->wall.min;
-      gpustats[w][n].nparent     = ptr->nparent;
+  for (w = 0; w < nwarps; ++w) {
+    if (w > MAXWARPS-1) 
+      return GPTLerror_2s1d ("%s: timer=%s: truncating output at warp=%d\n"
+			     "Suggest increasing MAXWARPS\n", thisfunc, ptr->name, w);
+    n = 0;
+    //JR start at "next" to skip past GPTL_ROOT
+    for (ptr = timers[w]->next; ptr; ptr = ptr->next, ++n) {
+      printf ("%s: n=%d w=%d\n", thisfunc, n, w);
+      printf ("%s: copying %s\n", thisfunc, ptr->name);
+      (void) my_strcpy (gpustats[n][w].name, ptr->name);
+      gpustats[n][w].count       = ptr->count;
+      gpustats[n][w].accum       = ptr->wall.accum;
+      gpustats[n][w].max         = ptr->wall.max;
+      gpustats[n][w].min         = ptr->wall.min;
+      gpustats[n][w].nparent     = ptr->nparent;
       for (p = 0; p < ptr->nparent; ++p) {
 	if (p > MAXPARENT-1) {
 	  printf ("%s w=%d Timer=%s: Truncating parent count at MAXPARENT=%d out of %d\n", 
 		  thisfunc, w, ptr->name, MAXPARENT, ptr->nparent);
 	  break;
 	}
-	(void) my_strcpy (gpustats[w][n].parentname[p], ptr->parent[p]->name);
+	(void) my_strcpy (gpustats[n][w].parentname[p], ptr->parent[p]->name);
       }
     }
     max_name_len_out[w] = max_name_len[w];
@@ -872,6 +918,31 @@ __device__ static inline int my_strcmp (const char *str1, const char *str2)
     ++str2;
   }
   return (int) (*str1 - *str2);
+}
+
+__device__ int GPTLdummy_gpu (void)
+{
+  static const char *thisfunc = "GPTLinitialize_gpu";
+  
+  printf ("%s: addr of hashtable=%p\n", thisfunc, hashtable);
+  return 0;
+}
+
+__host__ int GPTLget_gpu_freq (void)
+{
+  cudaDeviceProp prop;
+  cudaError_t err;
+  int khz;
+  static const char *thisfunc = "GPTLget_gpu_freq";
+
+  err = cudaGetDeviceProperties (&prop, 0);
+  if (err != cudaSuccess) {
+    printf ("%s: error:%s", thisfunc, cudaGetErrorString (err));
+    return 0.;
+  } else {
+    khz = prop.clockRate;
+    return khz;
+  }
 }
 
 }

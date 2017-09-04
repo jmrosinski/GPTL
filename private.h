@@ -148,11 +148,13 @@ extern Timer **GPTLget_timersaddr (void);
 ** __device__
 */
 #ifdef ENABLE_GPU
-extern int GPTLinitialize_gpu (const int, const int, const int, const int);
+extern int GPTLinitialize_gpu (const int, const int, const int);
 extern int GPTLenable_gpu (void);
 extern int GPTLdisable_gpu (void);
 extern int GPTLreset_gpu (void);
+extern int GPTLget_gpusizes (int [], int [], int []);
 extern int GPTLfill_gpustats (Gpustats [][], int []);
+extern int GPTLget_gpu_freq (void);
 #endif
 
 #ifdef __cplusplus

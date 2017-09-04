@@ -22,7 +22,7 @@ DEBUG = yes
 ifeq ($(DEBUG),yes)
   CFLAGS = -g -O0
 else
-  CFLAGS = -g -fast
+  CFLAGS = -g -O2
 endif
 
 # Set compiler flags for non-default ABIs (e.g. 64-bit addressing). 
@@ -39,11 +39,11 @@ HAVE_SLASHPROC = yes
 # Thus COMPFLAG should be set to the compiler flag that enables OpenMP directives
 # if either OPENMP=yes, or PTHREADS=yes. If OPENMP=no and PTHREADS=no, GPTL 
 # will not be thread-safe.
-OPENMP = yes
+OPENMP = no
 COMPFLAG = -mp
 # Set PTHREADS if available and OPENMP=no
 ifeq ($(OPENMP),no)
-  PTHREADS = yes
+  PTHREADS = no
 endif
 
 # Set ENABLE_NESTEDOMP=yes only if you will be profiling code regions inside of doubly-nested

@@ -123,7 +123,7 @@ static Nofalse *stackidx;        /* index into callstack: */
 static Method method = GPTLfull_tree;  /* default parent/child printing mechanism */
 
 /* Local function prototypes */
-static void print_titles (int, FILE *fp);
+static void print_titles (int, FILE *);
 static void printstats (const Timer *, FILE *, int, int, bool, double, double);
 static void add (Timer *, const Timer *);
 static void print_multparentinfo (FILE *, Timer *);
@@ -202,13 +202,14 @@ static int tablesizem1 = DEFAULT_TABLE_SIZE - 1;
 #ifdef ENABLE_GPU
 static int tablesize_gpu = DEFAULT_TABLE_SIZE_GPU;
 static int maxthreads_gpu = DEFAULT_MAXTHREADS_GPU;
-static int maxtimers_gpu = DEFAULT_MAXTIMERS_GPU;
 #pragma acc routine (GPTLinitialize_gpu) seq 
+#pragma acc routine (GPTLget_ngputimers) seq 
 #pragma acc routine (GPTLfill_gpustats) seq 
 #pragma acc routine (GPTLfinalize_gpu) seq 
 #pragma acc routine (GPTLenable_gpu) seq 
 #pragma acc routine (GPTLdisable_gpu) seq 
-#pragma acc routine (GPTLreset_gpu) seq 
+#pragma acc routine (GPTLreset_gpu) seq
+#pragma acc routine (GPTLget_gpusizes) seq
 #endif
 
 #define MSGSIZ 256                          /* max size of msg printed when dopr_memusage=true */
@@ -324,6 +325,9 @@ int GPTLsetoption (const int option,  /* option */
   case GPTLmaxthreads_gpu:
     if (val < 1)
       return GPTLerror ("%s: maxthreads_gpu must be positive. %d is invalid\n", thisfunc, val);
+    if (val % WARPSIZE != 0)
+      return GPTLerror ("%s: maxthreads_gpu must be multiple of WARPSIZE=%d. %d is invalid\n", 
+			thisfunc, WARPSIZE, val);
 
     maxthreads_gpu = val;
     if (verbose)
@@ -336,14 +340,6 @@ int GPTLsetoption (const int option,  /* option */
     tablesize_gpu = val;
     if (verbose)
       printf ("%s: tablesize_gpu = %d\n", thisfunc, tablesize_gpu);
-    return 0;
-  case GPTLmaxtimers_gpu:
-    if (val < 1)
-      return GPTLerror ("%s: maxtimers_gpu must be positive. %d is invalid\n", thisfunc, val);
-
-    maxtimers_gpu = val;
-    if (verbose)
-      printf ("%s: maxtimers_gpu = %d\n", thisfunc, maxtimers_gpu);
     return 0;
 #endif
   case GPTLsync_mpi:
@@ -501,9 +497,11 @@ int GPTLinitialize (void)
     printf ("Underlying wallclock timing routine is %s\n", funclist[funcidx].name);
   }
 #ifdef ENABLE_GPU
-#pragma acc kernels pcopyout(ret)
-  ret = GPTLinitialize_gpu (verbose, tablesize_gpu, maxthreads_gpu, maxtimers_gpu);
-  if (ret < 0)
+#pragma acc kernels copyout(ret)
+  ret = GPTLinitialize_gpu (verbose, tablesize_gpu, maxthreads_gpu);
+  if (ret == 0)
+    printf ("%s: Successful return from GPTLinitialize_gpu\n", thisfunc);
+  else
     return GPTLerror ("%s: Failure from GPTLinitialize_gpu\n", thisfunc);
 #endif
   imperfect_nest = false;
@@ -1739,15 +1737,16 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (sum);
 
-  if (fp != stderr && fclose (fp) != 0)
-    fprintf (stderr, "%s: Attempt to close %s failed\n", thisfunc, outfile);
-
-  pr_has_been_called = true;
 #ifdef ENABLE_GPU
   {
-//JR want to use variables to dimension arrays but nvcc is not C99 compliant
-    Gpustats gpustats[DEFAULT_MAXTHREADS_GPU][DEFAULT_MAXTIMERS_GPU];
-    int max_name_len_gpu[DEFAULT_MAXTHREADS_GPU];
+    int max_name_len_gpu[maxthreads_gpu];
+    int ngputimers[maxthreads_gpu];
+    //JR Use arrays not scalars so "acc copyout" works properly!
+    int maxgputimers_arr[1], maxgputimers;
+    int maxwarps_arr[1], maxwarps;
+    int khz;
+    double hz;
+    double walltime, wallmax, wallmin;
     int ret;
 #ifdef MARKSWAY
     Gpustats *d_gpustats;
@@ -1760,10 +1759,36 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
     //gpustats = (Gpustats *) GPTLallocate (maxtimers_gpu * sizeof (Gpustats), thisfunc);
     //max_name_len_gpu = (int *) GPTLallocate (maxtimers_gpu * sizeof (int), thisfunc);
+    khz = GPTLget_gpu_freq ();
+    hz = khz * 1000.;
+    printf ("%s: GPU khz=%d\n", thisfunc, khz);
+#pragma acc kernels copyout(ret, maxgputimers_arr, maxwarps_arr, ngputimers)
+    ret = GPTLget_gpusizes (maxgputimers_arr, maxwarps_arr, ngputimers);
+    maxgputimers = maxgputimers_arr[0];
+    maxwarps = maxwarps_arr[0];
+    printf ("%s: got maxgputimers=%d maxwarps=%d\n", thisfunc, maxgputimers, maxwarps);
+    //JR want to use variables to dimension arrays but nvcc is not C99 compliant
+    Gpustats gpustats[maxgputimers][MAXWARPS];
+    printf ("%s: calling gpu kernel GPTLfill_gpustats...\n", thisfunc);
 #pragma acc kernels copy(gpustats, max_name_len_gpu)
     ret = GPTLfill_gpustats (gpustats, max_name_len_gpu);
-#endif
+    printf ("%s: returned from GPTLfill_gpustats: printing results\n", thisfunc);
+    for (int t = 0; t < maxgputimers; ++t) {
+      fprintf (fp, "GPU results for timer=%s\n", gpustats[t][0].name);
+      for (int w = 0; w < ngputimers[t]; ++w) {
+        walltime = gpustats[t][w].accum / hz;
+        wallmax  = gpustats[t][w].max / hz;
+        wallmin  = gpustats[t][w].min / hz;
+	fprintf (fp, "warp=%d time(s)=%f max=%f min=%f\n", w, walltime, wallmax, wallmin);
+      }
+    }
   }
+#endif
+
+  if (fp != stderr && fclose (fp) != 0)
+    fprintf (stderr, "%s: Attempt to close %s failed\n", thisfunc, outfile);
+
+  pr_has_been_called = true;
   return 0;
 }
 

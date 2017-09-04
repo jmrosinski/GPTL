@@ -9,10 +9,14 @@
 /* longest timer name allowed (probably safe to just change) */
 #define MAX_CHARS 63
 #ifdef ENABLE_GPU
+#define WARPSIZE 32
 #define DEFAULT_MAXTHREADS_GPU 1280
+// MAXWARPS is required because nvcc is not C99 compliant
+#define MAXWARPS (DEFAULT_MAXTHREADS_GPU / WARPSIZE)
 #define DEFAULT_TABLE_SIZE_GPU 63
 #define DEFAULT_MAXTIMERS_GPU 20
 #define MAXPARENT 3
+
 
 typedef struct {
   int count;

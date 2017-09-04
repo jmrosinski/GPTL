@@ -24,9 +24,6 @@
 // Max number of colliding entries in hash table
 #define MAXENT 3
 
-// Warp size
-#define WARPSIZE 32
-
 #define NOT_ROOT_OF_WARP -2
 
 typedef struct {
@@ -40,9 +37,9 @@ typedef struct TIMER {
   Wallstats wall;           /* wallclock stats */
   unsigned long count;      /* number of start/stop calls */
   struct TIMER *next;       /* next timer in linked list */
-  struct TIMER **parent;    /* array of parents */
+  struct TIMER *parent[MAXPARENT];    /* array of parents */
   struct TIMER **children;  /* array of children */
-  int *parent_count;        /* array of call counts, one for each parent */
+  int parent_count[MAXPARENT];        /* array of call counts, one for each parent */
   unsigned int recurselvl;  /* recursion level */
   unsigned int nchildren;   /* number of children */
   unsigned int nparent;     /* number of parents */
@@ -71,8 +68,8 @@ __device__ extern int GPTLerror_1s1d (const char *, const char *, const int);
 __device__ extern int GPTLerror_2s1d (const char *, const char *, const char *, const int);
 __device__ extern int GPTLerror_1s2d (const char *, const char *, const int, const int);
 __device__ extern int GPTLerror_1s1d1s (const char *, const char *, const int, const char *);
-__device__ extern void GPTLreset_errors (void);                       /* num_errors to zero */
-__device__ extern void *GPTLallocate (const int, const char *);       /* malloc wrapper */
+__device__ extern void GPTLreset_errors_gpu (void);                       /* num_errors to zero */
+__device__ extern void *GPTLallocate_gpu (const int, const char *);       /* malloc wrapper */
 __device__ extern int GPTLget_overhead (Timer *(),                    /* getentry() */
 					unsigned int (const char *),  /* genhashidx() */
 					int (void),                   /* get_thread_num() */

@@ -5,8 +5,8 @@
 ** 
 ** Fortran wrappers for timing library routines
 */
-
 #include <stdlib.h>
+#include <stdio.h>
 #include "private.h" /* MAX_CHARS, private prototypes */
 #include "gptl.h"    /* function prototypes */
 
@@ -17,6 +17,7 @@
 #define gptlstart_handle_gpu gptlstart_handle_gpu_
 #define gptlstop_gpu gptlstop_gpu_
 #define gptlstop_handle_gpu gptlstop_handle_gpu_
+#define gptldummy_gpu gptldummy_gpu_
 
 #elif ( defined FORTRANDOUBLEUNDERSCORE )
 
@@ -25,6 +26,7 @@
 #define gptlstart_handle_gpu gptlstart_handle_gpu__
 #define gptlstop_gpu_gpu gptlstop_gpu_gpu__
 #define gptlstop_handle_gpu gptlstop_handle_gpu__
+#define gptldummy_gpu gptldummy_gpu__
 
 #endif
 
@@ -40,6 +42,7 @@ __device__ int gptlstop_handle_gpu (const char *, const int *, long long);
 
 __device__ int gptlstart_gpu (char *name, long long nc)
 {
+  int ret;
   char cname[MAX_CHARS+1];
   const char *thisfunc = "gptlstart_gpu";
 
@@ -49,7 +52,9 @@ __device__ int gptlstart_gpu (char *name, long long nc)
   for (int n = 0; n < nc; ++n)
     cname[n] = name[n];
   cname[nc] = '\0';
-  return GPTLstart_gpu (cname);
+  printf ("%s passing to GPTLstart_gpu: cname=%s\n", thisfunc, cname);
+  ret = GPTLstart_gpu (cname);
+  return ret;
 }
 
 __device__ int gptlinit_handle_gpu (const char *name, int *handle, long long nc)
@@ -88,7 +93,6 @@ __device__ int gptlstop_gpu (const char *name, long long nc)
   if (nc > MAX_CHARS)
     return GPTLerror_1s2d ("%s: %d exceeds MAX_CHARS=%d\n", thisfunc, nc, MAX_CHARS);
 
-
   for (int n = 0; n < nc; ++n)
     cname[n] = name[n];
   cname[nc] = '\0';
@@ -107,6 +111,37 @@ __device__ int gptlstop_handle_gpu (const char *name, const int *handle, long lo
     cname[n] = name[n];
   cname[nc] = '\0';
   return GPTLstop_handle_gpu (cname, handle);
+}
+
+//JR routines below are only for testing
+
+__device__ int gptldummy_gpu (void)
+{
+  printf ("entered gptldummy_gpu\n");
+  return GPTLdummy_gpu ();
+}
+
+__device__ extern int sub2 (char *);
+
+__device__ int sub2_ (char *, long long);
+
+__device__ int sub2_ (char *name, long long nc)
+{
+  int ret;
+  char cname[MAX_CHARS+1];
+  const char *thisfunc = "sub2_";
+
+  if (nc > MAX_CHARS) {
+    printf ("%s: %d exceeds MAX_CHARS=%d\n", thisfunc, nc, MAX_CHARS);
+    return -1;
+  }
+
+  for (int n = 0; n < nc; ++n)
+    cname[n] = name[n];
+  cname[nc] = '\0';
+  printf ("%s passing to sub2: cname=%s\n", thisfunc, cname);
+  ret = sub2 (cname);
+  return ret;
 }
 
 }

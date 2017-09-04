@@ -1,19 +1,24 @@
 program simple
   use gptl
-  use gptl_gpu
   implicit none
+#include "../cuda/gptl.inc"
 
   integer :: ret
   integer :: n
+  integer, external :: dummy
 
 !$acc routine (sub) seq
 
+  write(6,*)'simple: calling gptlinitialize 1'
   ret = gptlinitialize ()
+  write(6,*)'simple: calling dummy'
+  ret = dummy ()
+
   ret = gptlstart ('total')
   write(6,*) 'Entering kernels loop'
   call flush(6)
 !$acc kernels
-  do n=1,1000
+  do n=1,1
     call sub ()
   end do
 !$acc end kernels
@@ -37,3 +42,14 @@ subroutine sub ()
   ret = gptlstop_gpu ('innersub')
   ret = gptlstop_gpu ('sub')
 end subroutine sub
+
+integer function dummy ()
+  implicit none
+#include "../cuda/gptl.inc"
+
+  integer :: ret
+!$acc routine (gptldummy_gpu) seq
+
+  write(6,*)'entered dummy'
+  ret = gptldummy_gpu ()
+end function dummy

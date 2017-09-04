@@ -3,11 +3,12 @@ include ../macros.make
 FC      = pgfortran
 FFLAGS  = -acc -Minfo=accel -Minfo -ta=tesla:cc60,keepgpu
 CU      = nvcc
-CUFLAGS = -UDEBUG -DENABLE_GPU $(UNDERSCORING) -G -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true
+CUFLAGS = -UDEBUG -DENABLE_GPU $(UNDERSCORING) -g -O0 -G -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true
 #CUFLAGS = -UDEBUG -DENABLE_GPU $(UNDERSCORING) -G -ftz=true -gencode arch=compute_60,code=compute_60
 ARFLAGS = ruv
 
 OBJS = gptl.o util.o f_wrappers.o gptlf.o
+OBJS += subs.o
 
 %.o: %.cu
 	$(CU) -c $< $(CUFLAGS)
