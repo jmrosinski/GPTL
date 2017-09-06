@@ -2,7 +2,6 @@ program persist
   use gptl
   use gptl_gpu
   implicit none
-!$acc routine (sub2) seq
 !$acc routine (gptlstart_gpu) seq
 !$acc routine (gptlstop_gpu) seq
 !$acc routine (doalot) seq
@@ -11,18 +10,12 @@ program persist
   integer :: n
   integer :: pret(1000)
   real :: vals(1000)
-  integer, external :: sub1, sub2
 !  integer, external :: gptlstart_gpu, gptlstop_gpu
   real, external :: doalot
 
-  write(6,*) 'calling sub1'
-  ret = sub1 ()
-  write(6,*) 'calling sub2'
-!$acc kernels copyout (ret)
-  ret = sub2 ('zzz')
-!$acc end kernels
-
-  write(6,*)'persist: calling gptlinitialize 1'
+  write(6,*)'persist: calling gptlinitialize'
+!JR NOTE: gptlinitialize call increases mallocable memory size on GPU. That call will fail
+!JR if any GPU activity happens before the call to gptlinitialize
   ret = gptlinitialize ()
   ret = gptlstart ('doalot_cpu')
 !$acc parallel loop copyout(ret, vals)

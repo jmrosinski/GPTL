@@ -11,10 +11,9 @@
 #ifdef ENABLE_GPU
 #define WARPSIZE 32
 // Pascal: 56 SMs 64 cuda cores each = 3584 cores
-#define DEFAULT_MAXTHREADS_GPU 1280
+#define DEFAULT_MAXTHREADS_GPU 140000
 #define DEFAULT_TABLE_SIZE_GPU 63
 #define MAX_GPUTIMERS 50
-#define MAXPARENT 3
 
 typedef struct {
   long long accum_max;

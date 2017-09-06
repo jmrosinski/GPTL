@@ -211,6 +211,8 @@ static int maxthreads_gpu = DEFAULT_MAXTHREADS_GPU;
 #pragma acc routine (GPTLdisable_gpu) seq 
 #pragma acc routine (GPTLreset_gpu) seq
 #pragma acc routine (GPTLget_gpusizes) seq
+#pragma acc routine (GPTLget_overhead_gpu) seq
+#pragma acc routine (GPTLget_memstats_gpu) seq
 #endif
 
 #define MSGSIZ 256                          /* max size of msg printed when dopr_memusage=true */
@@ -1753,15 +1755,61 @@ int GPTLpr_file (const char *outfile) /* output file to write */
     int nwarps_timed[1];
     int max_name_len_gpu[1];
     int ngputimers[1];
+
+    // Returned from GPTLget_overhead_gpu:
+    long long ftn_ohdgpu[1];            // Fortran wrapper overhead
+    long long get_thread_num_ohdgpu[1]; /* Getting my thread index */
+    long long genhashidx_ohdgpu[1];     /* Generating hash index */
+    long long getentry_ohdgpu[1];       /* Finding entry in hash table */
+    long long utr_ohdgpu[1];            /* Underlying timing routine */
+    long long self_ohdgpu[1];
+    long long parent_ohdgpu[1];
+
+    // Returned from GPTLget_memstats_gpu:
+    float hashmem[1];
+    float regionmem[1];
+
     int count_max, count_min;
     int extraspace;
-    double wallmax, wallmin;
     int ret;
+    double wallmax, wallmin;
+    double tot_ohdgpu;
+    Gpustats gpustats[MAX_GPUTIMERS];
 
+    printf ("%s: calling GPTLget_gpusizes\n", thisfunc);
 #pragma acc kernels copyout(ret, nwarps_found, nwarps_timed)
     ret = GPTLget_gpusizes (nwarps_found, nwarps_timed);
     printf ("%s: nwarps_found=%d nwarps_timed=%d\n", thisfunc, nwarps_found[0], nwarps_timed[0]);
-    Gpustats gpustats[MAX_GPUTIMERS];
+    printf ("%s: calling GPTLget_overhead_gpu\n", thisfunc);
+
+#pragma acc kernels copyout(ret, ftn_ohdgpu, get_thread_num_ohdgpu, genhashidx_ohdgpu, \
+			    getentry_ohdgpu, utr_ohdgpu, self_ohdgpu, parent_ohdgpu)
+			     
+    ret = GPTLget_overhead_gpu (ftn_ohdgpu,
+				get_thread_num_ohdgpu,
+				genhashidx_ohdgpu,
+				getentry_ohdgpu,
+				utr_ohdgpu,
+				self_ohdgpu,
+				parent_ohdgpu);
+
+    fprintf (fp, "\n\nGPU Results:\n");
+    fprintf (fp, "Underlying timing routine was clock64()\n");
+    tot_ohdgpu = (ftn_ohdgpu[0] + get_thread_num_ohdgpu[0] + genhashidx_ohdgpu[0] + 
+	          getentry_ohdgpu[0] + utr_ohdgpu[0]) / gpu_hz;
+    fprintf (fp, "Total overhead of 1 GPTLstart_gpu or GPTLstop_gpu call=%g seconds\n", tot_ohdgpu);
+    fprintf (fp, "Components are as follows:\n");
+    fprintf (fp, "Fortran layer:             %7.1e = %5.1f%% of total\n", 
+	     ftn_ohdgpu[0] / gpu_hz, ftn_ohdgpu[0] * 100. / (tot_ohdgpu * gpu_hz) );
+    fprintf (fp, "Get thread number:         %7.1e = %5.1f%% of total\n", 
+	     get_thread_num_ohdgpu[0] / gpu_hz, get_thread_num_ohdgpu[0] * 100. / (tot_ohdgpu * gpu_hz) );
+    fprintf (fp, "Generate hash index:       %7.1e = %5.1f%% of total\n", 
+	     genhashidx_ohdgpu[0] / gpu_hz, genhashidx_ohdgpu[0] * 100. / (tot_ohdgpu * gpu_hz) );
+    fprintf (fp, "Find hashtable entry:      %7.1e = %5.1f%% of total\n", 
+	     getentry_ohdgpu[0] / gpu_hz, getentry_ohdgpu[0] * 100. / (tot_ohdgpu * gpu_hz) );
+    fprintf (fp, "Underlying timing routine: %7.1e = %5.1f%% of total\n", 
+	     utr_ohdgpu[0] / gpu_hz, utr_ohdgpu[0] * 100. / (tot_ohdgpu * gpu_hz) );
+
     printf ("%s: calling gpu kernel GPTLfill_gpustats...\n", thisfunc);
 #pragma acc kernels copyout(ret, gpustats, max_name_len_gpu, ngputimers)
     ret = GPTLfill_gpustats (gpustats, max_name_len_gpu, ngputimers);
@@ -1781,7 +1829,6 @@ int GPTLpr_file (const char *outfile) /* output file to write */
       for (i = 0; i < extraspace; ++i)
 	fprintf (fp, " ");
       fprintf (fp, "%s ", gpustats[n].name);            // print name
-      
       fprintf (fp, "%4d ", gpustats[n].nwarps);         // nwarps_timed involving name
 
       wallmax = gpustats[n].accum_max / gpu_hz;         // max time for name across warps
@@ -1812,6 +1859,15 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 	fprintf (fp, "%8.1e ", (float) count_min);
       fprintf (fp, "%4d ",gpustats[n].count_min_warp);  // warp which accounted for max times
     }
+
+    printf ("%s: calling gpu kernel GPTLget_memstats_gpu...\n", thisfunc);
+#pragma acc kernels copyout(ret, hashmem, regionmem)
+    ret = GPTLget_memstats_gpu (hashmem, regionmem);
+    fprintf (fp, "\n");
+    fprintf (fp, "Total GPTL GPU memory usage = %g KB\n", (hashmem[0] + regionmem[0])*.001);
+    fprintf (fp, "Components:\n");
+    fprintf (fp, "Hashmem                     = %g KB\n" 
+                 "Regionmem                   = %g KB\n", hashmem[0]*.001, regionmem[0]*.001);
   }
 #endif
 
@@ -3917,4 +3973,3 @@ static inline int get_thread_num ()
 }
 
 #endif  /* Unthreaded case */
-

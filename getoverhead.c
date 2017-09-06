@@ -200,7 +200,7 @@ int GPTLget_overhead (FILE *fp,
 }
 
 /*
-** GPTLstart_sim: Simulate the cost of Fortran wrapper layer "gptlstart()"
+** gptlstart_sim: Simulate the cost of Fortran wrapper layer "gptlstart()"
 ** 
 ** Input args:
 **   name: timer name

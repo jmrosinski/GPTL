@@ -40,9 +40,10 @@ __device__ int gptlstop_gpu (const char *, long long);
 __device__ int gptlstop_handle_gpu (const char *, const int *, long long);
 /* Fortran wrapper functions start here */
 
+//JR Cannot dimension local cname[nc] because nc is an input argument
+//JR Maybe a C99-compliancy issue?
 __device__ int gptlstart_gpu (char *name, long long nc)
 {
-  int ret;
   char cname[MAX_CHARS+1];
   const char *thisfunc = "gptlstart_gpu";
 
@@ -52,9 +53,7 @@ __device__ int gptlstart_gpu (char *name, long long nc)
   for (int n = 0; n < nc; ++n)
     cname[n] = name[n];
   cname[nc] = '\0';
-  //printf ("%s passing to GPTLstart_gpu: cname=%s\n", thisfunc, cname);
-  ret = GPTLstart_gpu (cname);
-  return ret;
+  return GPTLstart_gpu (cname);
 }
 
 __device__ int gptlinit_handle_gpu (const char *name, int *handle, long long nc)
