@@ -25,6 +25,7 @@
 #define MAXENT 3
 
 #define NOT_ROOT_OF_WARP -2
+#define WARPID_GT_MAXWARPS -3
 
 typedef struct {
   long long last;           /* timestamp from last call */
@@ -37,14 +38,9 @@ typedef struct TIMER {
   Wallstats wall;           /* wallclock stats */
   unsigned long count;      /* number of start/stop calls */
   struct TIMER *next;       /* next timer in linked list */
-  struct TIMER *parent[MAXPARENT];    /* array of parents */
-  struct TIMER **children;  /* array of children */
-  int parent_count[MAXPARENT];        /* array of call counts, one for each parent */
   unsigned int recurselvl;  /* recursion level */
-  unsigned int nchildren;   /* number of children */
-  unsigned int nparent;     /* number of parents */
-  unsigned int norphan;     /* number of times this timer was an orphan */
   bool onflg;               /* timer currently on or off */
+  bool beenprocessed;       // keep track of which timers in which warps have been processed
   char name[MAX_CHARS+1];   /* timer name (user input) */
 } Timer;
 

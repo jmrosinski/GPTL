@@ -200,6 +200,7 @@ static int tablesize = DEFAULT_TABLE_SIZE;  /* per-thread size of hash table (se
 static int tablesizem1 = DEFAULT_TABLE_SIZE - 1;
 
 #ifdef ENABLE_GPU
+static double gpu_hz = 0.;       // GPU frequency in cycles per second
 static int tablesize_gpu = DEFAULT_TABLE_SIZE_GPU;
 static int maxthreads_gpu = DEFAULT_MAXTHREADS_GPU;
 #pragma acc routine (GPTLinitialize_gpu) seq 
@@ -497,6 +498,14 @@ int GPTLinitialize (void)
     printf ("Underlying wallclock timing routine is %s\n", funclist[funcidx].name);
   }
 #ifdef ENABLE_GPU
+  int khz;
+  int warpsize;
+  ret = GPTLget_gpu_props (&khz, &warpsize);
+  if (warpsize != WARPSIZE)
+    return GPTLerror ("%s: warpsize=%d WARPSIZE=%d\n", thisfunc, warpsize, WARPSIZE);
+
+  gpu_hz = khz * 1000.;
+  printf ("%s: GPU khz=%d\n", thisfunc, khz);
 #pragma acc kernels copyout(ret)
   ret = GPTLinitialize_gpu (verbose, tablesize_gpu, maxthreads_gpu);
   if (ret == 0)
@@ -1462,7 +1471,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   Timer *ptr;               /* walk through master thread linked list */
   Timer *tptr;              /* walk through slave threads linked lists */
   Timer sumstats;           /* sum of same timer stats over threads */
-  int n, t;                 /* indices */
+  int i, n, t;              /* indices */
   unsigned long totcount;   /* total timer invocations */
   float *sum;               /* sum of overhead values (per thread) */
   float osum;               /* sum of overhead over threads */
@@ -1739,48 +1748,69 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
 #ifdef ENABLE_GPU
   {
-    int max_name_len_gpu[maxthreads_gpu];
-    int ngputimers[maxthreads_gpu];
-    //JR Use arrays not scalars so "acc copyout" works properly!
-    int maxgputimers_arr[1], maxgputimers;
-    int maxwarps_arr[1], maxwarps;
-    int khz;
-    double hz;
-    double walltime, wallmax, wallmin;
+    //JR Use arrays of length 1 not scalars so "acc copyout" works properly!
+    int nwarps_found[1];
+    int nwarps_timed[1];
+    int max_name_len_gpu[1];
+    int ngputimers[1];
+    int count_max, count_min;
+    int extraspace;
+    double wallmax, wallmin;
     int ret;
-#ifdef MARKSWAY
-    Gpustats *d_gpustats;
 
-    cudaMalloc (d_gpustats, sizeof());
-    <<<1,1 GPTLfill_gpustats(d_gpustats, max_name_len_gpu, maxtimers_gpu) >>>
-    cudaMemcpy (gpustats, d_gpustats, dtoh);
-#endif
-    //#pragma acc declare create gpustats
-
-    //gpustats = (Gpustats *) GPTLallocate (maxtimers_gpu * sizeof (Gpustats), thisfunc);
-    //max_name_len_gpu = (int *) GPTLallocate (maxtimers_gpu * sizeof (int), thisfunc);
-    khz = GPTLget_gpu_freq ();
-    hz = khz * 1000.;
-    printf ("%s: GPU khz=%d\n", thisfunc, khz);
-#pragma acc kernels copyout(ret, maxgputimers_arr, maxwarps_arr, ngputimers)
-    ret = GPTLget_gpusizes (maxgputimers_arr, maxwarps_arr, ngputimers);
-    maxgputimers = maxgputimers_arr[0];
-    maxwarps = maxwarps_arr[0];
-    printf ("%s: got maxgputimers=%d maxwarps=%d\n", thisfunc, maxgputimers, maxwarps);
-    //JR want to use variables to dimension arrays but nvcc is not C99 compliant
-    Gpustats gpustats[maxgputimers][MAXWARPS];
+#pragma acc kernels copyout(ret, nwarps_found, nwarps_timed)
+    ret = GPTLget_gpusizes (nwarps_found, nwarps_timed);
+    printf ("%s: nwarps_found=%d nwarps_timed=%d\n", thisfunc, nwarps_found[0], nwarps_timed[0]);
+    Gpustats gpustats[MAX_GPUTIMERS];
     printf ("%s: calling gpu kernel GPTLfill_gpustats...\n", thisfunc);
-#pragma acc kernels copy(gpustats, max_name_len_gpu)
-    ret = GPTLfill_gpustats (gpustats, max_name_len_gpu);
+#pragma acc kernels copyout(ret, gpustats, max_name_len_gpu, ngputimers)
+    ret = GPTLfill_gpustats (gpustats, max_name_len_gpu, ngputimers);
     printf ("%s: returned from GPTLfill_gpustats: printing results\n", thisfunc);
-    for (int t = 0; t < maxgputimers; ++t) {
-      fprintf (fp, "GPU results for timer=%s\n", gpustats[t][0].name);
-      for (int w = 0; w < ngputimers[t]; ++w) {
-        walltime = gpustats[t][w].accum / hz;
-        wallmax  = gpustats[t][w].max / hz;
-        wallmin  = gpustats[t][w].min / hz;
-	fprintf (fp, "warp=%d time(s)=%f max=%f min=%f\n", w, walltime, wallmax, wallmin);
-      }
+
+    fprintf (fp, "GPU timing stats\n");
+    fprintf (fp, "%d warps were found\n", nwarps_found[0]);
+    fprintf (fp, "%d warps were timed\n", nwarps_timed[0]);
+    fprintf (fp, "Only warps which were timed are counted in the following stats\n");
+    // Print header, padding to length of longest name
+    extraspace = max_name_len_gpu[0] - 4; // "name" is 4 chars
+    for (i = 0; i < extraspace; ++i)
+      fprintf (fp, " ");
+    fprintf (fp, "name nwarps wallmax (warp) wallmin (warp) maxcount (warp) mincount (warp)\n");
+    for (n = 0; n < ngputimers[0]; ++n) {
+      extraspace = max_name_len_gpu[0] - strlen (gpustats[n].name);
+      for (i = 0; i < extraspace; ++i)
+	fprintf (fp, " ");
+      fprintf (fp, "%s ", gpustats[n].name);            // print name
+      
+      fprintf (fp, "%4d ", gpustats[n].nwarps);         // nwarps_timed involving name
+
+      wallmax = gpustats[n].accum_max / gpu_hz;         // max time for name across warps
+      if (wallmax < 0.01)
+	fprintf (fp, "%9.2e ", wallmax);
+      else
+	fprintf (fp, "%9.3f ", wallmax);
+      fprintf (fp, "%4d ",gpustats[n].accum_max_warp);  // warp number for max
+
+      wallmin = gpustats[n].accum_min / gpu_hz;         // min time for name across warps
+      if (wallmin < 0.01)
+	fprintf (fp, "%9.2e ", wallmin);
+      else
+	fprintf (fp, "%9.3f ", wallmin);	       
+      fprintf (fp, "%4d ",gpustats[n].accum_min_warp);  // warp number for min
+      
+      count_max = gpustats[n].count_max;
+      if (count_max < PRTHRESH)
+	fprintf (fp, "%8lu ", count_max);               // max count for region "name"
+      else
+	fprintf (fp, "%8.1e ", (float) count_max);
+      fprintf (fp, "%4d ",gpustats[n].count_max_warp);  // warp which accounted for max times
+
+      count_min = gpustats[n].count_min;                
+      if (count_min < PRTHRESH)
+	fprintf (fp, "%8lu ", count_min);               // min count for region "name"
+      else
+	fprintf (fp, "%8.1e ", (float) count_min);
+      fprintf (fp, "%4d ",gpustats[n].count_min_warp);  // warp which accounted for max times
     }
   }
 #endif

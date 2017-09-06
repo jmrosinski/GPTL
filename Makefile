@@ -102,7 +102,7 @@ ALLARGS = lib$(LIBNAME).a
 ifeq ($(ENABLE_GPU),yes)
   OBJS    += sub1_.o
   CFLAGS  += -acc -Minfo=accel -Minfo -ta=tesla:cc60
-  ALLARGS += acctests/all
+  ALLARGS += acctests2/all acctests/all
 endif
 
 ALLARGS += $(MAKETESTS)
@@ -123,6 +123,9 @@ endif
 
 cuda/all:
 	$(MAKE) -C cuda
+
+acctests2/all: cuda/all
+	$(MAKE) -C acctests2
 
 acctests/all: cuda/all
 	$(MAKE) -C acctests
@@ -172,6 +175,7 @@ uninstall:
 clean:
 	$(RM) -f $(OBJS) $(FOBJS) lib$(LIBNAME).a *.mod printmpistatussize.o printmpistatussize
 	$(MAKE) -C cuda clean
+	$(MAKE) -C acctests2 clean
 	$(MAKE) -C acctests clean
 	$(MAKE) -C ctests clean
 	$(MAKE) -C ftests clean

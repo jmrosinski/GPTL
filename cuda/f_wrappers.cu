@@ -52,7 +52,7 @@ __device__ int gptlstart_gpu (char *name, long long nc)
   for (int n = 0; n < nc; ++n)
     cname[n] = name[n];
   cname[nc] = '\0';
-  printf ("%s passing to GPTLstart_gpu: cname=%s\n", thisfunc, cname);
+  //printf ("%s passing to GPTLstart_gpu: cname=%s\n", thisfunc, cname);
   ret = GPTLstart_gpu (cname);
   return ret;
 }

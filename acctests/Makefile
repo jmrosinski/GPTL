@@ -3,7 +3,8 @@ include ../macros.make
 FC       = pgfortran
 CC       = pgcc
 CPPFLAGS = -I.. -I../cuda
-FFLAGS   = -g -O0 $(CPPFLAGS) -acc -Minfo=accel -Minfo -Mcuda=flushz -ta=tesla:cc60,nofma,keepgpu
+#FFLAGS   = -g -O0 $(CPPFLAGS) -acc -Minfo=accel -Minfo -Mcuda=flushz -ta=tesla:cc60,nofma,keepgpu
+FFLAGS   = -g -O0 $(CPPFLAGS) -acc -Minfo=accel -Minfo -Mcuda=flushz -ta=tesla:cc60,nofma
 CFLAGS   = $(FFLAGS)
 CULIBS   = -lcuda -lcudart -lculibos 
 #LDFLAGS  = -L.. -lgptl -L../cuda -lgptl_cuda -L$(CUDALIBDIR) -lm -ldl -lstdc++ $(CULIBS) -Mcuda=cuda8 -ta=tesla:cc60
