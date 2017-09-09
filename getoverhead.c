@@ -98,11 +98,13 @@ int GPTLget_overhead (FILE *fp,
   ** Find the first hashtable entry with a valid name. Start at 1 because 0 is not a valid hash
   */
   for (n = 1; n < tablesize; ++n) {
+    char *name;
     if (hashtable[n].nument > 0 && strlen (hashtable[n].entries[0]->name) > 0) {
       hashidx = genhashidx (hashtable[n].entries[0]->name);
+      name = hashtable[n].entries[0]->name;
       t1 = (*ptr2wtimefunc)();
       for (i = 0; i < 1000; ++i)
-	entry = getentry (hashtable, hashtable[n].entries[0]->name, hashidx);
+	entry = getentry (hashtable, name, hashidx);
       t2 = (*ptr2wtimefunc)();
       fprintf (fp, "%s: using hash entry %d=%s for getentry estimate\n", 
 	       thisfunc, n, hashtable[n].entries[0]->name);

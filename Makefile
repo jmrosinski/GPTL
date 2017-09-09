@@ -100,7 +100,7 @@ endif
 
 ALLARGS = lib$(LIBNAME).a
 ifeq ($(ENABLE_GPU),yes)
-  OBJS    += sub1_.o
+  OBJS    += print_gpustats.o
   CFLAGS  += -acc -Minfo=accel -Minfo -ta=tesla:cc60
   ALLARGS += acctests2/all acctests/all
 endif

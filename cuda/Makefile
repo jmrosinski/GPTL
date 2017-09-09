@@ -9,7 +9,6 @@ CUFLAGS = -UDEBUG -DENABLE_GPU $(UNDERSCORING) -G -O2 -ftz=true -gencode arch=co
 ARFLAGS = ruv
 
 OBJS = gptl.o util.o f_wrappers.o gptlf.o
-OBJS += subs.o
 
 %.o: %.cu
 	$(CU) -c $< $(CUFLAGS)

@@ -214,6 +214,8 @@ __device__ int GPTLstart_gpu (const char *name)               /* timer name */
   }
 
   if ( ! ptr) { /* Add a new entry and initialize */
+    if (hashtable[w][indx].nument > MAXENT-1)
+      return GPTLerror_2s ("%s: %s caused too many hash collisions\n", thisfunc, name);
     if ((ptr = (Timer *) GPTLallocate_gpu (sizeof (Timer), thisfunc)) == NULL)
       return GPTLerror_2s ("%s: malloc failure for timer %s\n", thisfunc, name);
     memset (ptr, 0, sizeof (Timer));
@@ -244,7 +246,7 @@ __device__ int GPTLstart_gpu (const char *name)               /* timer name */
 ** Return value: 0 (success) or GPTLerror (failure)
 */
 __device__ int GPTLinit_handle_gpu (const char *name,     /* timer name */
-				int *handle)          /* handle (output if input value is zero) */
+				    int *handle)          /* handle (output if input value is zero) */
 {
   if (disabled)
     return 0;
@@ -263,7 +265,7 @@ __device__ int GPTLinit_handle_gpu (const char *name,     /* timer name */
 ** Return value: 0 (success) or GPTLerror (failure)
 */
 __device__ int GPTLstart_handle_gpu (const char *name,  /* timer name */
-				 int *handle)       /* handle (output if input value is zero) */
+                                     int *handle)       /* handle (output if input value is zero) */
 {
   Timer *ptr;        /* linked list pointer */
   int w;             /* warp index (of this thread) */
@@ -312,6 +314,8 @@ __device__ int GPTLstart_handle_gpu (const char *name,  /* timer name */
   }
 
   if ( ! ptr) { /* Add a new entry and initialize */
+    if (hashtable[w][*handle].nument > MAXENT-1)
+      return GPTLerror_2s ("%s: %s caused too many hash collisions\n", thisfunc, name);
     if ((ptr = (Timer *) GPTLallocate_gpu (sizeof (Timer), thisfunc)) == NULL)
       return GPTLerror_2s ("%s: malloc failure for timer %s\n", thisfunc, name);
     memset (ptr, 0, sizeof (Timer));
@@ -353,9 +357,8 @@ __device__ static int update_ll_hash (Timer *ptr, int w, unsigned int indx)
 
   last[w]->next = ptr;
   last[w] = ptr;
-  if (hashtable[w][indx].nument > MAXENT-1)
-    return GPTLerror_2s ("%s: %s has too many hash collisions\n", thisfunc, ptr->name);
 
+  // Caller MUST have guaranteed sufficient space to increment nument
   ++hashtable[w][indx].nument;
   nument = hashtable[w][indx].nument;
   hashtable[w][indx].entries[nument-1] = ptr;
@@ -652,6 +655,7 @@ __device__ static inline Timer *getentry (const Hashentry *hashtable, /* hash ta
   ** If nument exceeds 1 there was one or more hash collisions and we must search
   ** linearly through the array of names with the same hash for a match
   */
+#pragma unroll 2
   for (i = 0; i < hashtable[indx].nument; ++i) {
     if (STRMATCH (name, hashtable[indx].entries[i]->name)) {
       ptr = hashtable[indx].entries[i];
@@ -799,6 +803,7 @@ __device__ int GPTLfill_gpustats (Gpustats gpustats[MAX_GPUTIMERS],
 __device__ static void init_gpustats (Gpustats *gpustats, Timer *ptr, int w)
 {
   (void) my_strcpy (gpustats->name, ptr->name);
+  gpustats->count  = ptr->count;
   gpustats->nwarps = 1;
 
   gpustats->accum_max = ptr->wall.accum;
@@ -818,6 +823,7 @@ __device__ static void init_gpustats (Gpustats *gpustats, Timer *ptr, int w)
 
 __device__ static void fill_gpustats (Gpustats *gpustats, Timer *ptr, int w)
 {
+  gpustats->count += ptr->count;
   ++gpustats->nwarps;
   if (ptr->wall.accum > gpustats->accum_max) {
     gpustats->accum_max = ptr->wall.accum;
@@ -863,8 +869,10 @@ __device__ static inline char *my_strcpy (char *dest, const char *src)
   return ret;
 }
 
+//JR Both of these have about the same performance
 __device__ static inline int my_strcmp (const char *str1, const char *str2)
 {
+#ifdef MINE
   while (*str1 == *str2) {
     if (*str1 == '\0')
       break;
@@ -872,6 +880,19 @@ __device__ static inline int my_strcmp (const char *str1, const char *str2)
     ++str2;
   }
   return (int) (*str1 - *str2);
+#else
+  register const unsigned char *s1 = (const unsigned char *) str1;
+  register const unsigned char *s2 = (const unsigned char *) str2;
+  register unsigned char c1, c2;
+ 
+  do {
+      c1 = (unsigned char) *s1++;
+      c2 = (unsigned char) *s2++;
+      if (c1 == '\0')
+	return c1 - c2;
+  } while (c1 == c2); 
+  return c1 - c2;
+#endif
 }
 
 __device__ int GPTLdummy_gpu (void)
@@ -940,6 +961,7 @@ __device__ int GPTLget_overhead_gpu (long long ftn_ohd[1],
   int mywarp;              /* which warp are we */
   unsigned int hashidx;      /* Hash index */
   Timer *entry;              /* placeholder for return from "getentry()" */
+  static const char *thisfunc = "GPTLget_overhead_gpu";
 
   /*
   ** Gather timings by running kernels 1000 times each
@@ -974,22 +996,25 @@ __device__ int GPTLget_overhead_gpu (long long ftn_ohd[1],
   ** Find the first hashtable entry with a valid name. Start at 1 because 0 is not a valid hash
   */
   for (n = 1; n < tablesize; ++n) {
+    char name[MAX_CHARS+1];
     if (hashtable[0][n].nument > 0 && my_strlen (hashtable[0][n].entries[0]->name) > 0) {
-      hashidx = genhashidx (hashtable[0][n].entries[0]->name);
+      my_strcpy (name, hashtable[0][n].entries[0]->name);
+      hashidx = genhashidx (name);
       t1 = clock64();
       for (i = 0; i < 1000; ++i)
-	entry = getentry (hashtable[0], hashtable[0][n].entries[0]->name, hashidx);
+	entry = getentry (hashtable[0], name, hashidx);
       t2 = clock64();
       break;
     }
   }
+
   if (n == tablesize) {
-    t1 = clock64();
-    for (i = 0; i < 1000; ++i)
-      entry = getentry (hashtable[0], "timername", hashidx);
-    t2 = clock64();
+    getentry_ohd[0] = 0.;
+    printf ("%s: No valid timer found in hashtable: cannot estimer getentry cost\n", thisfunc);
+  } else {
+    getentry_ohd[0] = (t2 - t1) / 1000;
   }
-  getentry_ohd[0] = (t2 - t1) / 1000;
+
   /* utr overhead */
   t1 = clock64();
   for (i = 0; i < 1000; ++i) {
@@ -998,7 +1023,7 @@ __device__ int GPTLget_overhead_gpu (long long ftn_ohd[1],
   utr_ohd[0] = (t2 - t1) / 1000;
 
   self_ohd[0]   = utr_ohd[0];
-  parent_ohd[0] = utr_ohd[0] + 2*(get_warp_num_ohd[0] + genhashidx_ohd[0] + getentry_ohd[0]);
+  parent_ohd[0] = utr_ohd[0] + 2*(ftn_ohd[0] + get_warp_num_ohd[0] + genhashidx_ohd[0] + getentry_ohd[0]);
   return 0;
 }
 

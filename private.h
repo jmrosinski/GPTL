@@ -148,20 +148,13 @@ extern Timer **GPTLget_timersaddr (void);
 ** __device__
 */
 #ifdef ENABLE_GPU
+extern int GPTLget_gpu_props (int *, int *);
 extern int GPTLinitialize_gpu (const int, const int, const int);
 extern int GPTLenable_gpu (void);
 extern int GPTLdisable_gpu (void);
 extern int GPTLreset_gpu (void);
-extern int GPTLget_gpusizes (int [], int []);
-extern int GPTLget_overhead_gpu (long long [],            /* Fortran overhead */
-				 long long [],            /* Getting my thread index */
-				 long long [],            /* Generating hash index */
-				 long long [],            /* Finding entry in hash table */
-				 long long [],            /* Underlying timing routine */
-				 long long [],            /* self_ohd */
-				 long long []);           /* parent_ohd */
-extern int GPTLfill_gpustats (Gpustats [], int [], int []);
 extern int GPTLget_gpu_freq (void);
+extern void GPTLprint_gpustats (FILE *fp, double gpu_hz, int);
 #endif
 
 #ifdef __cplusplus
