@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 #include <sys/time.h>
+// MAX_CHARS is needed from devicehost.h
 #include "devicehost.h"
 
 #ifndef MIN
@@ -147,14 +148,14 @@ extern Timer **GPTLget_timersaddr (void);
 /* CUDA routines which need separate prototypes here because CPU code doesn't understand
 ** __device__
 */
-#ifdef ENABLE_GPU
-extern int GPTLget_gpu_props (int *, int *);
+#ifdef ENABLE_ACC
+extern int GPTLget_gpu_props (int *, int *, int *);
 extern int GPTLinitialize_gpu (const int, const int, const int);
 extern int GPTLenable_gpu (void);
 extern int GPTLdisable_gpu (void);
 extern int GPTLreset_gpu (void);
 extern int GPTLget_gpu_freq (void);
-extern void GPTLprint_gpustats (FILE *fp, double gpu_hz, int);
+extern void GPTLprint_gpustats (FILE *fp, double gpu_hz, int, int);
 #endif
 
 #ifdef __cplusplus

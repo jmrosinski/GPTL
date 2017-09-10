@@ -170,7 +170,7 @@ ifeq ($(HAVE_BACKTRACE),yes)
 endif
 
 # Whether to enable nVidia-based GPU timers as well as CPU timers
-ENABLE_GPU = yes
-ifeq ($(ENABLE_GPU),yes)
-  CFLAGS += -DENABLE_GPU
+ENABLE_ACC = yes
+ifeq ($(ENABLE_ACC),yes)
+  CFLAGS += -DENABLE_ACC
 endif

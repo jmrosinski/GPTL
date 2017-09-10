@@ -1,6 +1,6 @@
 program persist
   use gptl
-  use gptl_gpu
+  use gptl_acc
   implicit none
 !$acc routine (gptlinit_handle_gpu) seq
 !$acc routine (doalot) seq

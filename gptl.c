@@ -199,10 +199,11 @@ static char *clock_source = "UNKNOWN";            /* where clock found */
 static int tablesize = DEFAULT_TABLE_SIZE;  /* per-thread size of hash table (settable parameter) */
 static int tablesizem1 = DEFAULT_TABLE_SIZE - 1;
 
-#ifdef ENABLE_GPU
+#ifdef ENABLE_ACC
 static double gpu_hz = 0.;       // GPU frequency in cycles per second
 static int tablesize_gpu = DEFAULT_TABLE_SIZE_GPU;
 static int maxthreads_gpu = DEFAULT_MAXTHREADS_GPU;
+static int devnum = -1;
 #pragma acc routine (GPTLinitialize_gpu) seq 
 #pragma acc routine (GPTLget_ngputimers) seq 
 #pragma acc routine (GPTLfinalize_gpu) seq 
@@ -320,7 +321,7 @@ int GPTLsetoption (const int option,  /* option */
     if (verbose)
       printf ("%s: tablesize = %d\n", thisfunc, tablesize);
     return 0;
-#ifdef ENABLE_GPU
+#ifdef ENABLE_ACC
   case GPTLmaxthreads_gpu:
     if (val < 1)
       return GPTLerror ("%s: maxthreads_gpu must be positive. %d is invalid\n", thisfunc, val);
@@ -495,12 +496,14 @@ int GPTLinitialize (void)
     printf ("Per call overhead est. t2-t1=%g should be near zero\n", t2-t1);
     printf ("Underlying wallclock timing routine is %s\n", funclist[funcidx].name);
   }
-#ifdef ENABLE_GPU
+#ifdef ENABLE_ACC
   int khz;
   int warpsize;
-  ret = GPTLget_gpu_props (&khz, &warpsize);
+
+  ret = GPTLget_gpu_props (&khz, &warpsize, &devnum);
   if (warpsize != WARPSIZE)
     return GPTLerror ("%s: warpsize=%d WARPSIZE=%d\n", thisfunc, warpsize, WARPSIZE);
+  printf ("%s: device number=%d\n", thisfunc, devnum);
 
   gpu_hz = khz * 1000.;
   printf ("%s: GPU khz=%d\n", thisfunc, khz);
@@ -604,7 +607,7 @@ int GPTLfinalize (void)
   tablesize = DEFAULT_TABLE_SIZE;
   tablesizem1 = tablesize - 1;
 
-#ifdef ENABLE_GPU
+#ifdef ENABLE_ACC
 #pragma acc kernels copyout(ret)
   ret = GPTLfinalize_gpu ();
 #else
@@ -1298,7 +1301,7 @@ int GPTLenable (void)
   int ret;
 
   disabled = false;
-#ifdef ENABLE_GPU
+#ifdef ENABLE_ACC
 #pragma acc kernels copyout(ret)
   ret = GPTLenable_gpu ();
 #else
@@ -1317,7 +1320,7 @@ int GPTLdisable (void)
   int ret;
 
   disabled = true;
-#ifdef ENABLE_GPU
+#ifdef ENABLE_ACC
 #pragma acc kernels copyout(ret)
   ret = GPTLdisable_gpu ();
 #else
@@ -1384,7 +1387,7 @@ int GPTLreset (void)
     }
   }
 
-#ifdef ENABLE_GPU
+#ifdef ENABLE_ACC
 #pragma acc kernels copyout(ret)
   ret = GPTLreset_gpu ();
 #else
@@ -1744,8 +1747,8 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (sum);
 
-#ifdef ENABLE_GPU
-  GPTLprint_gpustats (fp, gpu_hz, maxthreads_gpu);
+#ifdef ENABLE_ACC
+  GPTLprint_gpustats (fp, gpu_hz, maxthreads_gpu, devnum);
 #endif
 
   if (fp != stderr && fclose (fp) != 0)

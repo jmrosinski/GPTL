@@ -1,17 +1,14 @@
-include ../macros.make
-
-FC       = pgfortran
-CC       = pgcc
-CPPFLAGS = -I.. -I../cuda
-#FFLAGS   = -g -O0 $(CPPFLAGS) -acc -Minfo=accel -Minfo -Mcuda=flushz -ta=tesla:cc60,nofma,keepgpu
-FFLAGS   = -g -O0 $(CPPFLAGS) -acc -Minfo=accel -Minfo -Mcuda=flushz -ta=tesla:cc60,nofma
-CFLAGS   = $(FFLAGS)
-CULIBS   = -lcuda -lcudart -lculibos 
-#LDFLAGS  = -L.. -lgptl -L../cuda -lgptl_cuda -L$(CUDALIBDIR) -lm -ldl -lstdc++ $(CULIBS) -Mcuda=cuda8 -ta=tesla:cc60
-LDFLAGS  = -L.. -lgptl -L../cuda -lgptl_cuda -L$(CUDALIBDIR) -lm -ldl -lstdc++ -Mcuda=cuda8 -ta=tesla:cc60
-OBJS     = simple.o simplec.o simple2.o
-
-EXES = simple simplec simple2
+FC      = mpif90
+CC      = mpicc
+# ADDING -Mcuda=keepgpu causes runtime failure!
+#FFLAGS  = -g -O0 -I$(GPTL) -I$(GPTL)/cuda -acc -Minfo=accel -Minfo -ta=tesla:cc60 -Mcuda=keepgpu
+FFLAGS  = -g -O0 -I$(GPTL) -I$(GPTL)/cuda -acc -Minfo=accel -Minfo -ta=tesla:cc60
+CFLAGS  = $(FFLAGS)
+CU      = nvcc
+CUFLAGS = -g -O0 -G -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true
+GPTL    = /scratch4/BMC/gsd-hpcs/rosinski/gptl_cuda
+LDFLAGS = -L$(GPTL) -lgptl -L$(GPTL)/cuda -lgptl_cuda -L$(CUDALIBDIR) -Mcuda=cuda8 -ta=tesla:cc60
+OBJS    = persist.o
 
 %.o: %.F90
 	$(FC) -c $< $(FFLAGS)
@@ -19,16 +16,12 @@ EXES = simple simplec simple2
 %.o: %.c
 	$(CC) -c $< $(CFLAGS)
 
-all: $(EXES)
+%.o: %.cu
+	$(CU) -c $< $(CUFLAGS)
 
-simple: simple.o ../libgptl.a ../cuda/libgptl_cuda.a
-	$(FC) $< -o $@ $(LDFLAGS)
-
-simplec: simplec.o ../libgptl.a ../cuda/libgptl_cuda.a
-	$(CC) $< -o $@ $(LDFLAGS)
-
-simple2: simple2.o ../libgptl.a ../cuda/libgptl_cuda.a
-	$(FC) $< -o $@ $(LDFLAGS)
+a.out: $(OBJS) $(GPTL)/libgptl.a $(GPTL)/cuda/libgptl_cuda.a
+	$(FC) -o $@ $(OBJS) $(LDFLAGS)
 
 clean:
-	$(RM) $(OBJS) $(EXES)
+	$(RM) $(OBJS) *.gpu a.out timing.0
+

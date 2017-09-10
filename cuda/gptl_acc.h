@@ -1,13 +1,13 @@
 /*
-** $Id: gptl.h.template,v 1.3 2011-03-28 20:55:19 rosinski Exp $
+** $Id: gptl_acc.h.template,v 1.3 2011-03-28 20:55:19 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
 ** GPTL header file to be included in user code
 */
 
-#ifndef GPTL_H
-#define GPTL_H
+#ifndef GPTL_ACC_H
+#define GPTL_ACC_H
 
 /*
 ** User-visible function prototypes

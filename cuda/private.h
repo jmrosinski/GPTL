@@ -12,14 +12,7 @@
 #define MIN(X,Y) ((X) < (Y) ? (X) : (Y))
 #endif
 
-#ifndef MAX
-#define MAX(X,Y) ((X) > (Y) ? (X) : (Y))
-#endif
-
 #define STRMATCH(X,Y) (my_strcmp((X),(Y)) == 0)
-
-/* Maximum allowed callstack depth */
-#define MAX_STACK 128
 
 // Max number of allowed colliding entries in hash table
 #define MAXENT 2

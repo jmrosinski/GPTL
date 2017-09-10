@@ -30,8 +30,8 @@ else
 endif
 
 LDFLAGS = $(CFLAGS) -L.. -l$(LIBNAME) $(ABIFLAGS) -lm
-ifeq ($(ENABLE_GPU),yes)
-#  LDFLAGS += -L../cuda -l$(GPULIB)
+ifeq ($(ENABLE_ACC),yes)
+  LDFLAGS += -L../cuda -l$(GPULIB)
 endif
 
 ifeq ($(OPENMP),yes)

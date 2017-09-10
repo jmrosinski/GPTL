@@ -15,10 +15,10 @@ INSTALLDIR = $(HOME)/gptl-$(REVNO)/pgi_nompi
 MANDIR = 
 
 # C compiler
-CC = pgcc
+CC = mpicc
 
 # Whether to build debug lib or optimized lib, and associated flags
-DEBUG = no
+DEBUG = yes
 ifeq ($(DEBUG),yes)
   CFLAGS = -g -O0
 else
@@ -79,7 +79,7 @@ ifeq ($(FORTRAN),yes)
 # Set Fortran compiler, flags, and OpenMP compiler flag. Note that Fortran
 # OpenMP tests are possible with OPENMP=no as long as PTHREADS=yes
 # These settings are only used by the Fortran test applications in ftests/.
-  FC     = pgf90
+  FC     = mpif90
   FFLAGS = -g -O2
   FOMPFLAG = -mp
 endif
@@ -97,14 +97,14 @@ endif
 
 # Whether to build GPTL with MPI support. Set inc and lib info if needed. 
 # If CC=mpicc, MPI_INCFLAGS and MPI_LIBFLAGS can be blank.
-HAVE_MPI = no
+HAVE_MPI = yes
 ifeq ($(HAVE_MPI),yes)
 # Hopefully MPI_Comm_f2c() exists, but if not, set HAVE_COMM_F2C = no
   HAVE_COMM_F2C = yes
   MPI_INCFLAGS = 
   MPI_LIBFLAGS = 
 # Want 2 MPI tasks
-  MPICMD = mpiexec -n 2
+  MPICMD = mpirun -n 2
 endif
 
 # clock_gettime() in librt.a is an option for gathering wallclock time stats
@@ -135,7 +135,7 @@ HAVE_GETTIMEOFDAY = yes
 TEST_AUTOPROFILE = yes
 ifeq ($(TEST_AUTOPROFILE),yes)
   INSTRFLAG = -Minstrument=functions
-  CXX = pgCC
+  CXX = mpicxx
 endif
 
 # Whether to enable PMPI wrappers. Turning this on will result in automatic 
@@ -170,8 +170,8 @@ ifeq ($(HAVE_BACKTRACE),yes)
 endif
 
 # Whether to enable nVidia-based GPU timers as well as CPU timers
-ENABLE_GPU = yes
-ifeq ($(ENABLE_GPU),yes)
-  CFLAGS += -DENABLE_GPU
+ENABLE_ACC = yes
+ifeq ($(ENABLE_ACC),yes)
+  CFLAGS += -DENABLE_ACC
   GPULIB = gptl_cuda
 endif

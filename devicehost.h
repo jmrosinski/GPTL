@@ -7,11 +7,15 @@
 */
 
 /* longest timer name allowed (probably safe to just change) */
+#ifndef GPTL_DH
+#define GPTL_DH
+
 #define MAX_CHARS 63
-#ifdef ENABLE_GPU
+#ifdef ENABLE_ACC
+// Warpsize will be verified by the library
 #define WARPSIZE 32
 // Pascal: 56 SMs 64 cuda cores each = 3584 cores
-#define DEFAULT_MAXTHREADS_GPU 140000
+#define DEFAULT_MAXTHREADS_GPU 14336
 #define DEFAULT_TABLE_SIZE_GPU 63
 #define MAX_GPUTIMERS 50
 
@@ -31,4 +35,5 @@ typedef struct {
   char name[MAX_CHARS+1];
 } Gpustats;
 
+#endif
 #endif

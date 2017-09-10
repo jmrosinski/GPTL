@@ -1,7 +1,6 @@
-module gptl_gpu
-! GPTL module file for user code. Parameter values match their counterparts
-! in gptl.h. This file also contains an interface block for parameter checking.
-! Also: Some F90-only subroutines after the interface block
+module gptl_acc
+! GPTL module file for user code. This file contains an interface block for 
+! parameter checking.
 
   implicit none
   public
@@ -58,4 +57,4 @@ module gptl_gpu
        integer :: handle
      end function gptlstop_handle_gpu_c
   end interface
-end module gptl_gpu
+end module gptl_acc

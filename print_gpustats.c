@@ -1,4 +1,8 @@
 #include <stdio.h>
+#include <unistd.h>
+#ifdef HAVE_MPI
+#include <mpi.h>
+#endif
 #include "private.h"
 
 extern int GPTLget_gpusizes (int [], int []);
@@ -16,8 +20,8 @@ extern int GPTLfill_gpustats (Gpustats [], int [], int []);
 #pragma acc routine (GPTLget_memstats_gpu) seq
 #pragma acc routine (GPTLget_overhead_gpu) seq
 
-void GPTLprint_gpustats (FILE *fp, double gpu_hz, int maxthreads_gpu)
-{  			
+void GPTLprint_gpustats (FILE *fp, double gpu_hz, int maxthreads_gpu, int devnum)
+{
   //JR Use arrays of length 1 not scalars so "acc copyout" works properly!
   int nwarps_found[1];
   int nwarps_timed[1];
@@ -45,13 +49,27 @@ void GPTLprint_gpustats (FILE *fp, double gpu_hz, int maxthreads_gpu)
   double self, parent;
   double tot_ohdgpu;
   Gpustats gpustats[MAX_GPUTIMERS];
+  int myrank = 0;
+  int mpi_active;
+#define HOSTSIZE 32
+  char hostname[HOSTSIZE];
   static const char *thisfunc = "GPTLprint_gpustats";
 
-  printf ("%s: calling GPTLget_gpusizes\n", thisfunc);
+  fprintf (fp, "\n\nGPU Results:\n");
+
+#ifdef HAVE_MPI
+  ret = MPI_Initialized (&mpi_active);
+  if (mpi_active) {
+    ret = MPI_Comm_rank (MPI_COMM_WORLD, &myrank);
+    fprintf (fp, "%s: MPI rank=%d\n", thisfunc, myrank);
+  }
+#endif
+  fprintf (fp, "%s: device number=%d\n", thisfunc, devnum);
+  ret = gethostname (hostname, HOSTSIZE);
+  fprintf (fp, "%s: hostname=%s\n", thisfunc, hostname);
+
 #pragma acc kernels copyout(ret, nwarps_found, nwarps_timed)
   ret = GPTLget_gpusizes (nwarps_found, nwarps_timed);
-  printf ("%s: nwarps_found=%d nwarps_timed=%d\n", thisfunc, nwarps_found[0], nwarps_timed[0]);
-  printf ("%s: calling GPTLget_overhead_gpu\n", thisfunc);
 
 #pragma acc kernels copyout(ret, ftn_ohdgpu, get_thread_num_ohdgpu, genhashidx_ohdgpu, \
 			    getentry_ohdgpu, utr_ohdgpu, self_ohdgpu, parent_ohdgpu)			     
@@ -63,7 +81,6 @@ void GPTLprint_gpustats (FILE *fp, double gpu_hz, int maxthreads_gpu)
 			      self_ohdgpu,
 			      parent_ohdgpu);
 
-  fprintf (fp, "\n\nGPU Results:\n");
   fprintf (fp, "Underlying timing routine was clock64()\n");
   tot_ohdgpu = (ftn_ohdgpu[0] + get_thread_num_ohdgpu[0] + genhashidx_ohdgpu[0] + 
 		getentry_ohdgpu[0] + utr_ohdgpu[0]) / gpu_hz;
@@ -86,7 +103,9 @@ void GPTLprint_gpustats (FILE *fp, double gpu_hz, int maxthreads_gpu)
   printf ("%s: returned from GPTLfill_gpustats: printing results\n", thisfunc);
 
   fprintf (fp, "\nGPU timing stats\n");
-  fprintf (fp, "GPTL was built with support for %d warps (%d threads)\n", maxthreads_gpu / WARPSIZE, maxthreads_gpu);
+  fprintf (fp, "GPTL could handle up to %d warps (%d threads)\n", 
+	   maxthreads_gpu / WARPSIZE, maxthreads_gpu);
+  fprintf (fp, "This setting can be changed with: GPTLsetoption(GPTLmaxthreads_gpu,<number>)\n");
   fprintf (fp, "%d warps were found\n", nwarps_found[0]);
   fprintf (fp, "%d warps were timed\n", nwarps_timed[0]);
   fprintf (fp, "Only warps which were timed are counted in the following stats\n");

@@ -7,8 +7,8 @@
 */
 #include <stdlib.h>
 #include <stdio.h>
-#include "private.h" /* MAX_CHARS, private prototypes */
-#include "gptl.h"    /* function prototypes */
+#include "private.h"   // MAX_CHARS, private prototypes
+#include "gptl_acc.h"  // user-visible function prototypes
 
 #if ( defined FORTRANUNDERSCORE )
 
@@ -52,7 +52,7 @@ __device__ int gptlstop_handle_gpu (const char *, const int *, long long);
 //JR Maybe a C99-compliancy issue?
 __device__ int gptlstart_gpu (char *name, long long nc)
 {
-  char cname[MAX_CHARS+1];
+  register char cname[MAX_CHARS+1];
   const char *thisfunc = "gptlstart_gpu";
 
   if (nc > MAX_CHARS)
@@ -71,7 +71,7 @@ __device__ int gptlstart_gpu_c (char *name, long long nc)
 
 __device__ int gptlinit_handle_gpu (const char *name, int *handle, long long nc)
 {
-  char cname[MAX_CHARS+1];
+  register char cname[MAX_CHARS+1];
   const char *thisfunc = "gptlinit_handle_gpu";
 
   if (nc > MAX_CHARS)
@@ -85,7 +85,7 @@ __device__ int gptlinit_handle_gpu (const char *name, int *handle, long long nc)
 
 __device__ int gptlstart_handle_gpu (const char *name, int *handle, long long nc)
 {
-  char cname[MAX_CHARS+1];
+  register char cname[MAX_CHARS+1];
   const char *thisfunc = "gptlstart_handle_gpu";
 
   if (nc > MAX_CHARS)
@@ -104,7 +104,7 @@ __device__ int gptlstart_handle_gpu_c (const char *name, int *handle, long long 
 
 __device__ int gptlstop_gpu (const char *name, long long nc)
 {
-  char cname[MAX_CHARS+1];
+  register char cname[MAX_CHARS+1];
   const char *thisfunc = "gptlstop_gpu";
 
   if (nc > MAX_CHARS)

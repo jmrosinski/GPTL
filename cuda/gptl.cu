@@ -9,7 +9,7 @@
 #include <string.h>        /* memcpy */
 
 #include "./private.h"
-#include "./gptl.h"
+#include "./gptl_acc.h"
 
 __device__ static Timer **timers = 0;             /* linked list of timers */
 __device__ static Timer **last = 0;               /* last element in list */
@@ -23,9 +23,9 @@ __device__ static bool initialized = false;       /* GPTLinitialize has been cal
 __device__ static bool verbose = false;           /* output verbosity */
 
 /* Options, print strings, and default enable flags */
-__device__ static Hashentry **hashtable;    /* table of entries */
-__device__ static int tablesize;
-__device__ static int tablesizem1;
+__device__ static Hashentry **hashtable;          /* table of entries */
+__device__ static int tablesize;                  // size of hash table
+__device__ static int tablesizem1;                // one less
 
 extern "C" {
 
@@ -400,7 +400,6 @@ __device__ int GPTLstop_gpu (const char *name)               /* timer name */
   unsigned int indx;         /* index into hash table */
   static const char *thisfunc = "GPTLstop_gpu";
 
-  //printf("%s: name=%s: maxwarps=%d\n", thisfunc, name, maxwarps);
   if (disabled)
     return 0;
 
@@ -408,7 +407,6 @@ __device__ int GPTLstop_gpu (const char *name)               /* timer name */
     return GPTLerror_1s ("%s: GPTLinitialize has not been called\n", thisfunc);
 
   /* Get the timestamp */
-    
   tp1 = clock64 ();
 
   if ((w = get_warp_num ()) == -1)
@@ -420,10 +418,12 @@ __device__ int GPTLstop_gpu (const char *name)               /* timer name */
 
   indx = genhashidx (name);
   if (! (ptr = getentry (hashtable[w], name, indx)))
-    return GPTLerror_1s1d1s ("%s warp %d: timer for %s had not been started.\n", thisfunc, w, name);
+    return GPTLerror_1s1d1s ("%s warp %d: timer for %s had not been started.\n",
+			     thisfunc, w, name);
 
   if ( ! ptr->onflg )
-    return GPTLerror_2s ("%s: timer %s was already off.\n", thisfunc, ptr->name);
+    return GPTLerror_2s ("%s: timer %s was already off.\n", 
+			 thisfunc, ptr->name);
 
   ++ptr->count;
 
@@ -479,7 +479,8 @@ __device__ int GPTLstop_handle_gpu (const char *name,     /* timer name */
 
   indx = (unsigned int) *handle;
   if (indx == 0 || indx > tablesizem1)
-    return GPTLerror_1s1d1s ("%s: bad input handle=%u for timer %s.\n", thisfunc, (int) indx, name);
+    return GPTLerror_1s1d1s ("%s: bad input handle=%u for timer %s.\n", 
+			     thisfunc, (int) indx, name);
   
   if ( ! (ptr = getentry (hashtable[w], name, indx)))
     return GPTLerror_1s1d1s ("%s: handle=%u has not been set for timer %s.\n", 
@@ -620,7 +621,8 @@ __device__ static inline unsigned int genhashidx (const char *name)
   */
 #ifdef NEWWAY
   c = (unsigned char *) name;
-  indx = (MAX_CHARS*c[0] + (MAX_CHARS-mididx)*c[mididx] + (MAX_CHARS-lastidx)*c[lastidx]) % tablesizem1 + 1;
+  indx = (MAX_CHARS*c[0] + (MAX_CHARS-mididx)*c[mididx] + 
+	  (MAX_CHARS-lastidx)*c[lastidx]) % tablesizem1 + 1;
 #else
   indx = 0;
   i = MAX_CHARS;
@@ -655,7 +657,6 @@ __device__ static inline Timer *getentry (const Hashentry *hashtable, /* hash ta
   ** If nument exceeds 1 there was one or more hash collisions and we must search
   ** linearly through the array of names with the same hash for a match
   */
-#pragma unroll 2
   for (i = 0; i < hashtable[indx].nument; ++i) {
     if (STRMATCH (name, hashtable[indx].entries[i]->name)) {
       ptr = hashtable[indx].entries[i];
@@ -694,6 +695,7 @@ __device__ static inline int get_warp_num ()
     return NOT_ROOT_OF_WARP;
 
   warpId = threadId / WARPSIZE;
+
   // nwarps_found is needed only by CPU code gptl.c
   if (warpId+1 > nwarps_found)
     nwarps_found = warpId+1;
@@ -740,15 +742,16 @@ __device__ int GPTLfill_gpustats (Gpustats gpustats[MAX_GPUTIMERS],
   n = 0;
   for (ptr = timers[0]->next; ptr; ptr = ptr->next, ++n) {
     if (n > MAX_GPUTIMERS-1) {
-      printf ("%s: Timer=%s: Truncating timer results at n=%d name=%s: Increase MAX_GPUTIMERS\n", 
-	      thisfunc, n, ptr->name);
+      printf ("%s: Timer=%s: Truncating timer results at n=%d name=%s:" 
+	      "Increase MAX_GPUTIMERS\n", thisfunc, n, ptr->name);
       *ngputimers = n;
       return 0;
     }
     w = 0;
     init_gpustats (&gpustats[n], ptr, w);
     for (w = 1; w < nwarps_timed; ++w) {
-      for (tptr = timers[w]->next; tptr && my_strcmp (ptr->name, tptr->name); tptr = tptr->next);
+      for (tptr = timers[w]->next; tptr && my_strcmp (ptr->name, tptr->name); 
+	   tptr = tptr->next);
       if (tptr) {     // my_strcmp must have hit a match
 	fill_gpustats (&gpustats[n], tptr, w);
 	tptr->beenprocessed = true;
@@ -762,18 +765,21 @@ __device__ int GPTLfill_gpustats (Gpustats gpustats[MAX_GPUTIMERS],
       if ( ! ptr->beenprocessed) {
 	++n;           // found a new timer name which has not yet been processed (not in warp 0)
 	if (n > MAX_GPUTIMERS-1) {
-	  printf ("%s: Timer=%s: Truncating timer results at n=%d name=%s: Increase MAX_GPUTIMERS\n", 
-		  thisfunc, n, ptr->name);
+	  printf ("%s: Timer=%s: Truncating timer results at n=%d name=%s: "
+		  "Increase MAX_GPUTIMERS\n", thisfunc, n, ptr->name);
 	  *ngputimers = n;
 	  return 0;
 	}
 	init_gpustats (&gpustats[n], ptr, w);
-	printf ("%s: Found non-root entry for name=%s at warp=%d\n", thisfunc, ptr->name, w);
+	printf ("%s: Found non-root entry for name=%s at warp=%d\n", 
+		thisfunc, ptr->name, w);
 	for (ww = w+1; ww < nwarps_timed; ++w) {
-	  for (tptr = timers[ww]->next; tptr && my_strcmp (ptr->name, tptr->name); tptr = tptr->next);
+	  for (tptr = timers[ww]->next; tptr && my_strcmp (ptr->name, tptr->name); 
+	       tptr = tptr->next);
 	  if (tptr) {  // my_strcmp must have hit a match
 	    if ( tptr->beenprocessed) {
-	      printf ("%s: Something fishy: %s from warp=%d not processed but %s from warp=%d has been\n",
+	      printf ("%s: Something fishy: %s from warp=%d not processed "
+		      "but %s from warp=%d has been\n",
 		      thisfunc, ptr->name, w, tptr->name, ww);
 	    } else {
 	      printf ("%s: Found additional entry for name=%s at warp=%d\n", 
@@ -791,7 +797,8 @@ __device__ int GPTLfill_gpustats (Gpustats gpustats[MAX_GPUTIMERS],
   for (w = 0; w < nwarps_timed; ++w) {
     for (ptr = timers[w]->next; ptr; ptr = ptr->next) {
       if ( ! ptr->beenprocessed) {
-	printf ("%s: Something fishy: Timer=%s was not processed\n", thisfunc, ptr->name);
+	printf ("%s: Something fishy: Timer=%s was not processed\n", 
+		thisfunc, ptr->name);
       }
     }
   }
@@ -903,7 +910,7 @@ __device__ int GPTLdummy_gpu (void)
   return 0;
 }
 
-__host__ int GPTLget_gpu_props (int *khz, int *warpsize)
+__host__ int GPTLget_gpu_props (int *khz, int *warpsize, int *devnum)
 {
   cudaDeviceProp prop;
   size_t size;
@@ -920,11 +927,14 @@ __host__ int GPTLget_gpu_props (int *khz, int *warpsize)
   *khz      = prop.clockRate;
   *warpsize = prop.warpSize;
 
+  err = cudaGetDevice (devnum);  // device number
   err = cudaDeviceGetLimit (&size, cudaLimitMallocHeapSize);
-  printf ("%s: default cudaLimitMallocHeapSize=%d MB\n", thisfunc, size / onemb);
+  printf ("%s: default cudaLimitMallocHeapSize=%d MB\n", 
+	  thisfunc, size / onemb);
   if (size < heap_mb * onemb) {
     printf ("Changing to %ld MB\n", heap_mb);
-    if ((err = cudaDeviceSetLimit (cudaLimitMallocHeapSize, heap_mb * onemb)) != cudaSuccess) {
+    if ((err = cudaDeviceSetLimit (cudaLimitMallocHeapSize, heap_mb * onemb))
+	!= cudaSuccess) {
       printf ("%s: error:%s\n", thisfunc, cudaGetErrorString (err));
       return -1;
     }
@@ -948,17 +958,17 @@ __host__ int GPTLget_gpu_props (int *khz, int *warpsize)
 **   parent_ohd:         Estimate of GPTL-induced overhead for the timer which appears in its parents
 */
 __device__ int GPTLget_overhead_gpu (long long ftn_ohd[1],
-				     long long get_warp_num_ohd[1], /* Getting my warp index */
-				     long long genhashidx_ohd[1],     /* Generating hash index */
-				     long long getentry_ohd[1],       /* Finding entry in hash table */
-				     long long utr_ohd[1],            /* Underlying timing routine */
+				     long long get_warp_num_ohd[1], // Getting my warp index
+				     long long genhashidx_ohd[1],   // Generating hash index
+				     long long getentry_ohd[1],     // Finding entry in hash table
+				     long long utr_ohd[1],          // Underlying timing routine
 				     long long self_ohd[1],
 				     long long parent_ohd[1])
 {
   long long t1, t2;          /* Initial, final timer values */
   int i, n;
   int ret;
-  int mywarp;              /* which warp are we */
+  int mywarp;                /* which warp are we */
   unsigned int hashidx;      /* Hash index */
   Timer *entry;              /* placeholder for return from "getentry()" */
   static const char *thisfunc = "GPTLget_overhead_gpu";
@@ -993,11 +1003,12 @@ __device__ int GPTLget_overhead_gpu (long long ftn_ohd[1],
 
   /* 
   ** getentry overhead
-  ** Find the first hashtable entry with a valid name. Start at 1 because 0 is not a valid hash
+  ** Find the first hashtable entry with a valid name. 
+  ** Start at 1 because 0 is not a valid hash
   */
   for (n = 1; n < tablesize; ++n) {
     char name[MAX_CHARS+1];
-    if (hashtable[0][n].nument > 0 && my_strlen (hashtable[0][n].entries[0]->name) > 0) {
+    if (hashtable[0][n].nument > 0) {
       my_strcpy (name, hashtable[0][n].entries[0]->name);
       hashidx = genhashidx (name);
       t1 = clock64();
@@ -1010,7 +1021,8 @@ __device__ int GPTLget_overhead_gpu (long long ftn_ohd[1],
 
   if (n == tablesize) {
     getentry_ohd[0] = 0.;
-    printf ("%s: No valid timer found in hashtable: cannot estimer getentry cost\n", thisfunc);
+    printf ("%s: No valid timer found in hashtable: cannot estimer getentry cost\n", 
+	    thisfunc);
   } else {
     getentry_ohd[0] = (t2 - t1) / 1000;
   }
@@ -1023,7 +1035,8 @@ __device__ int GPTLget_overhead_gpu (long long ftn_ohd[1],
   utr_ohd[0] = (t2 - t1) / 1000;
 
   self_ohd[0]   = utr_ohd[0];
-  parent_ohd[0] = utr_ohd[0] + 2*(ftn_ohd[0] + get_warp_num_ohd[0] + genhashidx_ohd[0] + getentry_ohd[0]);
+  parent_ohd[0] = utr_ohd[0] + 2*(ftn_ohd[0] + get_warp_num_ohd[0] + 
+				  genhashidx_ohd[0] + getentry_ohd[0]);
   return 0;
 }
 
@@ -1054,7 +1067,7 @@ __device__ int GPTLget_memstats_gpu (float hashmem [1], float regionmem [1])
   int w;                    // warp index
 
   regionmem[0] = 0.;
-  hashmem[0] = (float) sizeof (Hashentry) * tablesize * maxwarps;  /* fixed size of table */
+  hashmem[0] = (float) sizeof (Hashentry) * tablesize * maxwarps;  // fixed size of table
   for (w = 0; w < nwarps_timed; w++) {
     numtimers = 0;
     for (ptr = timers[w]->next; ptr; ptr = ptr->next) {
