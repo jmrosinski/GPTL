@@ -185,7 +185,9 @@ __device__ int GPTLstart_gpu (const char *name)               /* timer name */
   unsigned int indx; /* hash table index */
   static const char *thisfunc = "GPTLstart_gpu";
 
-  // printf("%s: name=%s: maxwarps=%d hashtable addr=%p\n", thisfunc, name, maxwarps, hashtable);
+  //JR: This is for debugging the CUDA bug in which static data reverts to initial values
+  //printf("%s: name=%s: maxwarps=%d hashtable addr=%p\n", thisfunc, name, maxwarps, hashtable);
+
   if (disabled)
     return 0;
 
@@ -900,14 +902,6 @@ __device__ static inline int my_strcmp (const char *str1, const char *str2)
   } while (c1 == c2); 
   return c1 - c2;
 #endif
-}
-
-__device__ int GPTLdummy_gpu (void)
-{
-  static const char *thisfunc = "GPTLinitialize_gpu";
-  
-  printf ("%s: addr of hashtable=%p\n", thisfunc, hashtable);
-  return 0;
 }
 
 __host__ int GPTLget_gpu_props (int *khz, int *warpsize, int *devnum)

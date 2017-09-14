@@ -1,4 +1,6 @@
 program persist
+  use mpi
+  use openacc
   use gptl
   use gptl_acc
   implicit none
@@ -13,18 +15,43 @@ program persist
   integer :: innerlooplen = 100
   integer :: ans
   integer :: handle, handle2
+  integer :: myrank, ierr         ! MPI stuff
+  integer :: ngpus, devicenum     ! gpu stuff
   real, allocatable :: vals(:)
   real, external :: doalot, doalot2
 
-  call getval (maxthreads_gpu, 'maxthreads_gpu')
-  call getval (outerlooplen, 'outerlooplen')
-  call getval (innerlooplen, 'innerlooplen')
+  call mpi_init (ierr)
+  write(6,*)'calling mpi_comm_rank'
+  call mpi_comm_rank (MPI_COMM_WORLD, myrank, ierr)
+  write(6,*)'myrank=',myrank
+  write(6,*)'calling acc_init'
+  call acc_init (ACC_DEVICE_NVIDIA)
+  write(6,*)'calling acc_get_num_devices'
+  ngpus = acc_get_num_devices (ACC_DEVICE_NVIDIA)
+  if (ngpus .eq. 0) then
+    print *,'No GPUs found on this system.  Exiting'
+    call mpi_abort (MPI_COMM_WORLD,1,ierr)
+  endif
+  write(6,*)'myrank=',myrank,' ngpus=',ngpus
+  devicenum = mod(myrank,ngpus)
+  write(6,*)'JR calling acc_set_device_num(',devicenum,')'
+  call acc_set_device_num (devicenum,ACC_DEVICE_NVIDIA)
+  print *,'ngpus = ',ngpus,' rank = ',myrank,' device = ',acc_get_device_num(ACC_DEVICE_NVIDIA)
+
+  if (myrank == 0) then
+    call getval (maxthreads_gpu, 'maxthreads_gpu')
+    call getval (outerlooplen, 'outerlooplen')
+    call getval (innerlooplen, 'innerlooplen')
+  end if
+  call mpi_bcast (maxthreads_gpu, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
+  call mpi_bcast (outerlooplen,   1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
+  call mpi_bcast (innerlooplen,   1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
   allocate (vals(outerlooplen))
 
 !JR NOTE: gptlinitialize call increases mallocable memory size on GPU. That call will fail
 !JR if any GPU activity happens before the call to gptlinitialize
   ret = gptlsetoption (gptlmaxthreads_gpu, maxthreads_gpu)
-  write(6,*)'persist: calling gptlinitialize'
+  write(6,*)'persist_mpi myrank=',myrank,': calling gptlinitialize'
   ret = gptlinitialize ()
 !JR Need to call GPU-specific init_handle routine because its tablesize may differ from CPU
 !$acc kernels copyout(ret,handle,handle2)
@@ -69,7 +96,8 @@ program persist
   end do
 !$acc end parallel
   ret = gptlstop ('doalot_cpu_nogputimers')
-  ret = gptlpr (0)
+  ret = gptlpr (myrank)
+  call mpi_finalize (ierr)
 end program persist
 
 real function doalot (n, innerlooplen) result (sum)

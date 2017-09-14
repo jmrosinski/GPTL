@@ -161,13 +161,20 @@ install: lib$(LIBNAME).a
 	install -d $(INSTALLDIR)/man/man3 
 	install -m 0644 lib$(LIBNAME).a $(INSTALLDIR)/lib
 	install -m 0644 gptl.h $(INSTALLDIR)/include
+ifeq ($(ENABLE_ACC),yes)
+	install -m 0644 cuda/lib$(LIBNAME)_cuda.a $(INSTALLDIR)/lib
+	install -m 0644 cuda/gptl_acc.h $(INSTALLDIR)/include
+	install -m 0644 cuda/gptl_acc.mod $(INSTALLDIR)/include
+endif
 ifeq ($(FORTRAN),yes)
 # *.mod will install either gptl.mod or GPTL.mod
 	install -m 0644 gptl.inc *.mod $(INSTALLDIR)/include
 endif
 	install -m 0644 man/man3/*.3 $(MANDIR)/man/man3
 	install -m 0755 *pl $(INSTALLDIR)/bin
+ifneq ($(ENABLE_ACC),yes)
 	$(MAKE) -C ctests/ install INSTALLDIR=$(INSTALLDIR)
+endif
 
 # Some Fortran compilers name modules in upper case, so account for both possibilities
 uninstall:

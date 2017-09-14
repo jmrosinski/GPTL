@@ -21,7 +21,6 @@
 #define gptlstop_gpu_c gptlstop_gpu_c_
 #define gptlstop_handle_gpu gptlstop_handle_gpu_
 #define gptlstop_handle_gpu_c gptlstop_handle_gpu_c_
-#define gptldummy_gpu gptldummy_gpu_
 
 #elif ( defined FORTRANDOUBLEUNDERSCORE )
 
@@ -34,7 +33,6 @@
 #define gptlstop_gpu_c gptlstop_gpu_c__
 #define gptlstop_handle_gpu gptlstop_handle_gpu__
 #define gptlstop_handle_gpu_c gptlstop_handle_gpu_c__
-#define gptldummy_gpu gptldummy_gpu__
 
 #endif
 
@@ -124,14 +122,6 @@ __device__ int gptlstop_gpu_c (const char *name, long long nc)
 __device__ int gptlstop_handle_gpu_c (const char *name, const int *handle, long long nc)
 {
   return GPTLstop_handle_gpu (name, handle);
-}
-
-//JR routines below are only for testing
-
-__device__ int gptldummy_gpu (void)
-{
-  printf ("entered gptldummy_gpu\n");
-  return GPTLdummy_gpu ();
 }
 
 }
