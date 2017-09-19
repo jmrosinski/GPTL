@@ -15,10 +15,7 @@ module gptl
   integer, parameter :: GPTLoverhead       = 4
   integer, parameter :: GPTLdepthlimit     = 5
   integer, parameter :: GPTLverbose        = 6
-  integer, parameter :: GPTLnarrowprint    = 7
   integer, parameter :: GPTLpercent        = 9
-  integer, parameter :: GPTLpersec         = 10
-  integer, parameter :: GPTLmultiplex      = 11
   integer, parameter :: GPTLdopr_preamble  = 12
   integer, parameter :: GPTLdopr_threadsort= 13
   integer, parameter :: GPTLdopr_multparent= 14
@@ -30,22 +27,10 @@ module gptl
   integer, parameter :: GPTLtablesize_gpu  = 53
   integer, parameter :: GPTLmaxtimers_gpu  = 54
 
-  integer, parameter :: GPTL_IPC           = 17
-  integer, parameter :: GPTL_CI            = 18
-  integer, parameter :: GPTL_FPC           = 19
-  integer, parameter :: GPTL_FPI           = 20
-  integer, parameter :: GPTL_LSTPI         = 21
-  integer, parameter :: GPTL_DCMRT         = 22
-  integer, parameter :: GPTL_LSTPDCM       = 23
-  integer, parameter :: GPTL_L2MRT         = 24
-  integer, parameter :: GPTL_LSTPL2M       = 25
-  integer, parameter :: GPTL_L3MRT         = 26
-
   integer, parameter :: GPTLgettimeofday   = 1
   integer, parameter :: GPTLnanotime       = 2
   integer, parameter :: GPTLmpiwtime       = 4
   integer, parameter :: GPTLclockgettime   = 5
-  integer, parameter :: GPTLpapitime       = 6
   integer, parameter :: GPTLplacebo        = 7
   integer, parameter :: GPTLread_real_time = 3
 					                
@@ -152,20 +137,12 @@ module gptl
      end function gptlsetutr
 
      integer function gptlquery (name, t, count, onflg, wallclock, &
-                                 usr, sys, papicounters_out, maxcounters)
+                                 usr, sys)
        character(len=*) :: name
        integer :: t, count
        integer :: onflg
        real(8) :: wallclock, usr, sys
-       integer(8) :: papicounters_out
-       integer :: maxcounters
      end function gptlquery
-
-     integer function gptlquerycounters (name, t, papicounters_out)
-       character(len=*) :: name
-       integer :: t
-       integer(8) :: papicounters_out
-     end function gptlquerycounters
 
      integer function gptlget_wallclock (name, t, value)
        character(len=*) :: name
@@ -231,22 +208,6 @@ module gptl
        integer :: t
        integer :: count
      end function gptlget_count
-
-#ifdef HAVE_PAPI
-     integer function gptl_papilibraryinit ()
-     end function gptl_papilibraryinit
-
-     integer function gptlevent_name_to_code (str, code)
-       character(len=*) :: str
-       integer :: code
-     end function gptlevent_name_to_code
-
-     integer function gptlevent_code_to_name (code, str)
-       integer :: code
-       character(len=*) :: str
-     end function gptlevent_code_to_name
-#endif
-
   end interface
 
 contains

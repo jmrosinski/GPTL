@@ -34,10 +34,6 @@
 */
 #define MAX_AUX 9
 
-#ifndef __cplusplus
-typedef enum {false = 0, true = 1} bool;  /* mimic C++ */
-#endif
-
 typedef struct {
   int val;                  /* depth in calling tree */
   int padding[31];          /* padding is to mitigate false cache sharing */
@@ -78,12 +74,6 @@ typedef struct {
 } Pr_event;
 
 typedef struct TIMER {
-#ifdef ENABLE_PMPI
-  double nbytes;            /* number of bytes for MPI call */
-#endif
-#ifdef HAVE_PAPI
-  Papistats aux;            /* PAPI stats  */
-#endif 
   Cpustats cpu;             /* cpu stats */
   Wallstats wall;           /* wallclock stats */
   unsigned long count;      /* number of start/stop calls */
@@ -110,14 +100,14 @@ typedef struct {
 /* array of thread ids */
 #if ( defined THREADED_OMP )
 extern volatile int *GPTLthreadid_omp;
-#elif ( defined THREADED_PTHREADS )
-#include <pthread.h>
-extern volatile pthread_t *GPTLthreadid;
 #else
 extern int GPTLthreadid;
 #endif
 
 /* Function prototypes */
+
+extern "C" {
+
 extern int GPTLerror (const char *, ...);                  /* print error msg and return */
 extern void GPTLwarn (const char *, ...);                  /* print warning msg and return */
 extern void GPTLset_abort_on_error (bool val);             /* set flag to abort on error */
@@ -129,14 +119,13 @@ extern int GPTLstop_instr (void *);                        /* auto-instrumented 
 extern int GPTLis_initialized (void);                      /* needed by MPI_Init wrapper */
 extern int GPTLget_overhead (FILE *,                       /* file descriptor */
 			     double (*)(),                 /* UTR() */
-			     Timer *(),                    /* getentry() */
+			     Timer *(const Hashentry *, const char *, unsigned int), /* getentry() */
 			     unsigned int (const char *),  /* genhashidx() */
 			     int (void),                   /* get_thread_num() */
 			     Nofalse *,                    /* stackidx */
 			     Timer ***,                    /* callstack */
 			     const Hashentry *,            /* hashtable */
 			     const int,                    /* tablesize */
-			     bool,                         /* dousepapi */
 			     int,                          /* imperfect_nest */
 			     double *,                     /* self_ohd */
 			     double *);                    /* parent_ohd */
@@ -145,54 +134,11 @@ extern void GPTLprint_memstats (FILE *, Timer **, int, int, int);
 extern int GPTLget_nthreads (void);
 extern Timer **GPTLget_timersaddr (void);
 
-/* CUDA routines which need separate prototypes here because CPU code doesn't understand
-** __device__
-*/
-#ifdef ENABLE_ACC
-extern int GPTLget_gpu_props (int *, int *, int *);
-extern int GPTLinitialize_gpu (const int, const int, const int);
-extern int GPTLenable_gpu (void);
-extern int GPTLdisable_gpu (void);
-extern int GPTLreset_gpu (void);
-extern int GPTLget_gpu_freq (void);
-extern void GPTLprint_gpustats (FILE *fp, double gpu_hz, int, int);
-#endif
-
-#ifdef __cplusplus
-extern "C" {
+#ifdef ENABLE_CUDA
+__host__ extern void GPTLprint_gpustats (FILE *fp, double gpu_hz, int, int);
 #endif
 
 extern void __cyg_profile_func_enter (void *, void *);
 extern void __cyg_profile_func_exit (void *, void *);
 
-#ifdef __cplusplus
-};
-#endif
-
-/* These are needed for communication between gptl.c and other files (mainly gptl_papi.c) */
-#ifdef HAVE_PAPI
-extern Entry GPTLeventlist[];          /* list of PAPI-based events to be counted */
-extern int GPTLnevents;                /* number of PAPI events (init to 0) */
-
-extern int GPTL_PAPIsetoption (const int, const int);
-extern int GPTL_PAPIinitialize (const int, const bool, int *, Entry *);
-extern int GPTL_PAPIstart (const int, Papistats *);
-extern int GPTL_PAPIstop (const int, Papistats *);
-extern void GPTL_PAPIprstr (FILE *);
-extern void GPTL_PAPIpr (FILE *, const Papistats *, const int, const int, const double);
-extern void GPTL_PAPIadd (Papistats *, const Papistats *);
-extern void GPTL_PAPIfinalize (int);
-extern void GPTL_PAPIquery (const Papistats *, long long *, int);
-extern int GPTL_PAPIget_eventvalue (const char *, const Papistats *, double *);
-extern bool GPTL_PAPIis_multiplexed (void);
-extern void GPTL_PAPIprintenabled (FILE *);
-extern void read_counters1000 (void);
-extern int GPTLget_npapievents (void);
-extern int GPTLcreate_and_start_events (const int);
-#endif
-
-#ifdef ENABLE_PMPI
-extern Timer *GPTLgetentry (const char *);
-extern int GPTLpmpi_setoption (const int, const int);
-extern int GPTLpr_has_been_called (void);      /* needed by MPI_Finalize wrapper*/
-#endif
+}

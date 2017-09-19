@@ -1,3 +1,4 @@
+//#define _GLIBCXX_CMATH
 /*
 ** f_wrappers.c
 **
@@ -37,12 +38,10 @@
 #define gptldisable gptldisable_
 #define gptlsetutr gptlsetutr_
 #define gptlquery gptlquery_
-#define gptlquerycounters gptlquerycounters_
 #define gptlget_wallclock gptlget_wallclock_
 #define gptlget_wallclock_latest gptlget_wallclock_latest_
 #define gptlget_threadwork gptlget_threadwork_
 #define gptlstartstop_val gptlstartstop_val_
-#define gptlget_eventvalue gptlget_eventvalue_
 #define gptlget_nregions gptlget_nregions_
 #define gptlget_regionname gptlget_regionname_
 #define gptlget_memusage gptlget_memusage_
@@ -51,9 +50,6 @@
 #define gptlnum_errors gptlnum_errors_
 #define gptlnum_warn gptlnum_warn_
 #define gptlget_count gptlget_count_
-#define gptl_papilibraryinit gptl_papilibraryinit_
-#define gptlevent_name_to_code gptlevent_name_to_code_
-#define gptlevent_code_to_name gptlevent_code_to_name_
 
 #elif ( defined FORTRANDOUBLEUNDERSCORE )
 
@@ -77,12 +73,10 @@
 #define gptldisable gptldisable_
 #define gptlsetutr gptlsetutr_
 #define gptlquery gptlquery_
-#define gptlquerycounters gptlquerycounters_
 #define gptlget_wallclock gptlget_wallclock__
 #define gptlget_wallclock_latest gptlget_wallclock_latest__
 #define gptlget_threadwork gptlget_threadwork__
 #define gptlstartstop_val gptlstartstop_val__
-#define gptlget_eventvalue gptlget_eventvalue__
 #define gptlget_nregions gptlget_nregions__
 #define gptlget_regionname gptlget_regionname__
 #define gptlget_memusage gptlget_memusage__
@@ -91,11 +85,10 @@
 #define gptlnum_errors gptlnum_errors__
 #define gptlnum_warn gptlnum_warn__
 #define gptlget_count gptlget_count__
-#define gptl_papilibraryinit gptl_papilibraryinit__
-#define gptlevent_name_to_code gptlevent_name_to_code__
-#define gptlevent_code_to_name gptlevent_code_to_name__
 
 #endif
+
+extern "C" {
 
 /* Local function prototypes */
 int gptlinitialize (void);
@@ -124,15 +117,11 @@ int gptlenable (void);
 int gptldisable (void);
 int gptlsetutr (int *option);
 int gptlquery (const char *name, int *t, int *count, int *onflg, double *wallclock, 
-	       double *usr, double *sys, long long *papicounters_out, int *maxcounters, 
-	       int nc);
-int gptlquerycounters (const char *name, int *t, long long *papicounters_out, int nc);
+	       double *usr, double *sys, int nc);
 int gptlget_wallclock (const char *name, int *t, double *value, int nc);
 int gptlget_wallclock_last (const char *name, int *t, double *value, int nc);
 int gptlget_threadwork (const char *name, double *maxwork, double *imbal, int nc);
 int gptlstartstop_val (const char *name, double *value, int nc);
-int gptlget_eventvalue (const char *timername, const char *eventname, int *t, double *value, 
-			int nc1, int nc2);
 int gptlget_nregions (int *t, int *nregions);
 int gptlget_regionname (int *t, int *region, char *name, int nc);
 int gptlget_memusage (int *size, int *rss, int *share, int *text, int *datastack);
@@ -141,11 +130,6 @@ int gptlprint_rusage (const char *str, int nc);
 int gptlnum_errors (void);
 int gptlnum_warn (void);
 int gptlget_count (char *, int *, int *, int);
-#ifdef HAVE_PAPI
-int gptl_papilibraryinit (void);
-int gptlevent_name_to_code (const char *str, int *code, int nc);
-int gptlevent_code_to_name (int *code, char *str, int nc);
-#endif
 
 /* Fortran wrapper functions start here */
 int gptlinitialize (void)
@@ -335,23 +319,13 @@ int gptlsetutr (int *option)
 }
 
 int gptlquery (const char *name, int *t, int *count, int *onflg, double *wallclock, 
-	       double *usr, double *sys, long long *papicounters_out, int *maxcounters, 
-	       int nc)
+	       double *usr, double *sys, int nc)
 {
   char cname[nc+1];
 
   strncpy (cname, name, nc);
   cname[nc] = '\0';
-  return GPTLquery (cname, *t, count, onflg, wallclock, usr, sys, papicounters_out, *maxcounters);
-}
-
-int gptlquerycounters (const char *name, int *t, long long *papicounters_out, int nc)
-{
-  char cname[nc+1];
-
-  strncpy (cname, name, nc);
-  cname[nc] = '\0';
-  return GPTLquerycounters (cname, *t, papicounters_out);
+  return GPTLquery (cname, *t, count, onflg, wallclock, usr, sys);
 }
 
 int gptlget_wallclock (const char *name, int *t, double *value, int nc)
@@ -391,21 +365,6 @@ int gptlstartstop_val (const char *name, double *value, int nc)
   strncpy (cname, name, nc);
   cname[nc] = '\0';
   return GPTLstartstop_val (cname, *value);
-}
-
-int gptlget_eventvalue (const char *timername, const char *eventname, int *t, double *value, 
-			int nc1, int nc2)
-{
-  char ctimername[nc1+1];
-  char ceventname[nc2+1];
-
-  strncpy (ctimername, timername, nc1);
-  ctimername[nc1] = '\0';
-
-  strncpy (ceventname, eventname, nc2);
-  ceventname[nc2] = '\0';
-
-  return GPTLget_eventvalue (ctimername, ceventname, *t, value);
 }
 
 int gptlget_nregions (int *t, int *nregions)
@@ -469,40 +428,4 @@ int gptlget_count (char *name, int *t, int *count, int nc)
   return GPTLget_count (cname, *t, count);
 }
 
-#ifdef HAVE_PAPI
-#include <papi.h>
-
-int gptl_papilibraryinit (void)
-{
-  return GPTL_PAPIlibraryinit ();;
 }
-
-int gptlevent_name_to_code (const char *str, int *code, int nc)
-{
-  char cname[PAPI_MAX_STR_LEN+1];
-  int numchars = MIN (nc, PAPI_MAX_STR_LEN);
-
-  strncpy (cname, str, numchars);
-  cname[numchars] = '\0';
-
-  /* "code" is an int* and is an output variable */
-  return GPTLevent_name_to_code (cname, code);
-}
-
-int gptlevent_code_to_name (int *code, char *str, int nc)
-{
-  int i;
-
-  if (nc < PAPI_MAX_STR_LEN)
-    return GPTLerror ("gptl_event_code_to_name: output name must hold at least %d characters\n",
-		      PAPI_MAX_STR_LEN);
-
-  if (GPTLevent_code_to_name (*code, str) == 0) {
-    for (i = strlen(str); i < nc; ++i)
-      str[i] = ' ';
-  } else {
-    return GPTLerror ("");
-  }
-  return 0;
-}
-#endif

@@ -7,24 +7,13 @@ else
 endif
 
 null =
-OBJS = gptl.o util.o memusage.o gptl_papi.o pmpi.o getoverhead.o \
+OBJS = gptl.o util.o memusage.o getoverhead.o \
        hashstats.o memstats.o pr_summary.o print_rusage.o
 
-ifeq ($(ENABLE_PMPI),yes)
-  CFLAGS += -DENABLE_PMPI -DMPI_STATUS_SIZE_IN_INTS=$(MPI_STATUS_SIZE_IN_INTS)
-  ifeq ($(MPI_CONST),yes)
-    CFLAGS += -DCONST=const
-  else
-    CFLAGS += -DCONST=
-  endif
-  ifeq ($(HAVE_IARGCGETARG),yes)
-    CFLAGS += -DHAVE_IARGCGETARG
-  endif
-endif
 LIBNAME = gptl
 
 # Only build/run acctests if ENABLE_ACC is set
-ifeq ($(ENABLE_ACC),yes)
+ifeq ($(ENABLE_CUDA),yes)
   MAKETESTS = acctests/all
   RUNTESTS = acctests/test
 else
@@ -37,95 +26,82 @@ ifeq ($(MANDIR),$(null))
 endif
 
 ifeq ($(HAVE_SLASHPROC),yes)
-  CFLAGS += -DHAVE_SLASHPROC
+  CUFLAGS += -DHAVE_SLASHPROC
 endif
 
 ifeq ($(OPENMP),yes)
-  CFLAGS += -DTHREADED_OMP $(COMPFLAG)
+  CUFLAGS += -DTHREADED_OMP $(COMPFLAG)
 else
   ifeq ($(PTHREADS),yes)
-    CFLAGS += -DTHREADED_PTHREADS
+    CUFLAGS += -DTHREADED_PTHREADS
   endif
 endif
 
 FOBJS =
 ifeq ($(FORTRAN),yes)
   FOBJS      = process_namelist.o gptlf.o
-  OBJS      += f_wrappers.o f_wrappers_pmpi.o
-  ifneq ($(ENABLE_ACC),yes)
+  OBJS      += f_wrappers.o
+  ifneq ($(ENABLE_CUDA),yes)
     MAKETESTS += ftests/all
     RUNTESTS  += ftests/test
   endif
 endif
 
-CFLAGS += $(INLINEFLAG) $(UNDERSCORING)
+CUFLAGS += $(INLINEFLAG) $(UNDERSCORING)
 ifeq ($(ENABLE_NESTEDOMP),yes)
-  CFLAGS += -DENABLE_NESTEDOMP
-endif
-
-ifeq ($(HAVE_PAPI),yes)
-  CFLAGS += -DHAVE_PAPI
-  CFLAGS += $(PAPI_INCFLAGS)
-  FFLAGS += $(DEFINE)HAVE_PAPI
+  CUFLAGS += -DENABLE_NESTEDOMP
 endif
 
 ifeq ($(HAVE_MPI),yes)
-  CFLAGS       += -DHAVE_MPI
+  CUFLAGS       += -DHAVE_MPI
   FFLAGS       += $(DEFINE)HAVE_MPI
   ifeq ($(HAVE_COMM_F2C),yes)
-    CFLAGS     += -DHAVE_COMM_F2C
+    CUFLAGS     += -DHAVE_COMM_F2C
   endif
-  CFLAGS       += $(MPI_INCFLAGS)
+  CUFLAGS       += $(MPI_INCFLAGS)
   LDFLAGS      += $(MPI_LIBFLAGS)
 endif
 
 ifeq ($(HAVE_LIBRT),yes)
-  CFLAGS  += -DHAVE_LIBRT
+  CUFLAGS  += -DHAVE_LIBRT
   LDFLAGS += -lrt
 endif
 
 ifeq ($(HAVE_NANOTIME),yes)
-  CFLAGS += -DHAVE_NANOTIME
+  CUFLAGS += -DHAVE_NANOTIME
   ifeq ($(BIT64),yes)
-    CFLAGS += -DBIT64
+    CUFLAGS += -DBIT64
   endif
 endif
 
 ifeq ($(HAVE_VPRINTF),yes)
-  CFLAGS += -DHAVE_VPRINTF
+  CUFLAGS += -DHAVE_VPRINTF
 endif
 
 ifeq ($(HAVE_TIMES),yes)
-  CFLAGS += -DHAVE_TIMES
+  CUFLAGS += -DHAVE_TIMES
 endif
 
 ifeq ($(HAVE_GETTIMEOFDAY),yes)
-  CFLAGS += -DHAVE_GETTIMEOFDAY
+  CUFLAGS += -DHAVE_GETTIMEOFDAY
 endif
 
 ALLARGS = lib$(LIBNAME).a
-ifeq ($(ENABLE_ACC),yes)
+ifeq ($(ENABLE_CUDA),yes)
   OBJS    += print_gpustats.o
-  CFLAGS  += -acc -Minfo=accel -Minfo -ta=tesla:cc60
+  CUFLAGS  +=
 endif
 
 ALLARGS += $(MAKETESTS)
 
-ifeq ($(FORTRAN),yes)
-ifneq ($(ENABLE_ACC),yes)
-  ALLARGS += printmpistatussize
-endif
-endif
-
 ##############################################################################
+%.o: %.cu
+	$(CC) -c $(CUFLAGS) $<
+
 %.o: %.F90
 	$(FC) -c $(FFLAGS) $<
 
 all: $(ALLARGS)
-ifeq ($(FORTRAN),yes)
-printmpistatussize: printmpistatussize.o
-	$(FC) -o $@ $? $(FFLAGS)
-endif
 
 cuda/all:
 	$(MAKE) -C cuda
@@ -161,9 +137,9 @@ install: lib$(LIBNAME).a
 	install -d $(INSTALLDIR)/man/man3 
 	install -m 0644 lib$(LIBNAME).a $(INSTALLDIR)/lib
 	install -m 0644 gptl.h $(INSTALLDIR)/include
-ifeq ($(ENABLE_ACC),yes)
+ifeq ($(ENABLE_CUDA),yes)
 	install -m 0644 cuda/lib$(LIBNAME)_cuda.a $(INSTALLDIR)/lib
-	install -m 0644 cuda/gptl_acc.h $(INSTALLDIR)/include
+	install -m 0644 cuda/gptl_cuda.h $(INSTALLDIR)/include
 	install -m 0644 cuda/gptl_acc.mod $(INSTALLDIR)/include
 endif
 ifeq ($(FORTRAN),yes)
@@ -172,7 +148,7 @@ ifeq ($(FORTRAN),yes)
 endif
 	install -m 0644 man/man3/*.3 $(MANDIR)/man/man3
 	install -m 0755 *pl $(INSTALLDIR)/bin
-ifneq ($(ENABLE_ACC),yes)
+ifneq ($(ENABLE_CUDA),yes)
 	$(MAKE) -C ctests/ install INSTALLDIR=$(INSTALLDIR)
 endif
 
@@ -183,20 +159,17 @@ uninstall:
 	$(RM) -f $(MANDIR)/man/man3/GPTL*.3
 
 clean:
-	$(RM) -f $(OBJS) $(FOBJS) lib$(LIBNAME).a *.mod printmpistatussize.o printmpistatussize
+	$(RM) -f $(OBJS) $(FOBJS) lib$(LIBNAME).a *.mod
 	$(MAKE) -C cuda clean
 	$(MAKE) -C acctests clean
 	$(MAKE) -C ctests clean
 	$(MAKE) -C ftests clean
 
 f_wrappers.o: gptl.h private.h devicehost.h
-f_wrappers_pmpi.o: gptl.h private.h devicehost.h
 gptl.o: gptl.h private.h devicehost.h
 util.o: gptl.h private.h devicehost.h
-gptl_papi.o: gptl.h private.h devicehost.h
 process_namelist.o: process_namelist.F90 gptl.inc
 gptlf.o: gptlf.F90
-pmpi.o: gptl.h private.h devicehost.h
 getoverhead.o: private.h devicehost.h
 hashstats.o: private.h devicehost.h
 memstats.o: private.h devicehost.h
@@ -204,5 +177,3 @@ pr_summary.o: private.h devicehost.h
 get_memusage.o: 
 print_memusage.o: gptl.h
 print_rusage.o: private.h devicehost.h
-
-printmpistatussize.o: printmpistatussize.F90

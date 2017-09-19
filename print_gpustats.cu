@@ -1,3 +1,4 @@
+//#define _GLIBCXX_CMATH
 #include <stdio.h>
 #include <unistd.h>
 #ifdef HAVE_MPI
@@ -5,22 +6,16 @@
 #endif
 #include "private.h"
 
-extern int GPTLget_gpusizes (int [], int []);
-extern int GPTLget_overhead_gpu (long long [],            /* Fortran overhead */
-				 long long [],            /* Getting my thread index */
-				 long long [],            /* Generating hash index */
-				 long long [],            /* Finding entry in hash table */
-				 long long [],            /* Underlying timing routine */
-				 long long [],            /* self_ohd */
-				 long long []);           /* parent_ohd */
-extern int GPTLfill_gpustats (Gpustats [], int [], int []);
+extern "C" {
 
-#pragma acc routine (GPTLget_gpusizes) seq
-#pragma acc routine (GPTLfill_gpustats) seq 
-#pragma acc routine (GPTLget_memstats_gpu) seq
-#pragma acc routine (GPTLget_overhead_gpu) seq
-
-void GPTLprint_gpustats (FILE *fp, double gpu_hz, int maxthreads_gpu, int devnum)
+__global__ extern void GPTLget_overhead_gpu (long long [],  // Fortran overhead
+					     long long [],  // Getting my thread index
+					     long long [],  // Generating hash index
+					     long long [],  // Finding entry in hash table
+					     long long [],  // Underlying timing routine
+					     long long [],  // self_ohd
+					     long long []); // parent_ohd
+__host__ void GPTLprint_gpustats (FILE *fp, double gpu_hz, int maxthreads_gpu, int devnum)
 {
   //JR Use arrays of length 1 not scalars so "acc copyout" works properly!
   int nwarps_found[1];
@@ -30,10 +25,10 @@ void GPTLprint_gpustats (FILE *fp, double gpu_hz, int maxthreads_gpu, int devnum
 
   // Returned from GPTLget_overhead_gpu:
   long long ftn_ohdgpu[1];            // Fortran wrapper overhead
-  long long get_thread_num_ohdgpu[1]; /* Getting my thread index */
-  long long genhashidx_ohdgpu[1];     /* Generating hash index */
-  long long getentry_ohdgpu[1];       /* Finding entry in hash table */
-  long long utr_ohdgpu[1];            /* Underlying timing routine */
+  long long get_thread_num_ohdgpu[1]; // Getting my thread index */
+  long long genhashidx_ohdgpu[1];     // Generating hash index */
+  long long getentry_ohdgpu[1];       // Finding entry in hash table */
+  long long utr_ohdgpu[1];            // Underlying timing routine */
   long long self_ohdgpu[1];           // Cost est. for timing this region
   long long parent_ohdgpu[1];         // Cost est. to parent of this region
 
@@ -68,18 +63,14 @@ void GPTLprint_gpustats (FILE *fp, double gpu_hz, int maxthreads_gpu, int devnum
   ret = gethostname (hostname, HOSTSIZE);
   fprintf (fp, "%s: hostname=%s\n", thisfunc, hostname);
 
-#pragma acc kernels copyout(ret, nwarps_found, nwarps_timed)
-  ret = GPTLget_gpusizes (nwarps_found, nwarps_timed);
-
-#pragma acc kernels copyout(ret, ftn_ohdgpu, get_thread_num_ohdgpu, genhashidx_ohdgpu, \
-			    getentry_ohdgpu, utr_ohdgpu, self_ohdgpu, parent_ohdgpu)			     
-  ret = GPTLget_overhead_gpu (ftn_ohdgpu,
-			      get_thread_num_ohdgpu,
-			      genhashidx_ohdgpu,
-			      getentry_ohdgpu,
-			      utr_ohdgpu,
-			      self_ohdgpu,
-			      parent_ohdgpu);
+  GPTLget_gpusizes<<<1,1>>> (nwarps_found, nwarps_timed);
+  GPTLget_overhead_gpu<<<1,1>>> (ftn_ohdgpu,
+				 get_thread_num_ohdgpu,
+				 genhashidx_ohdgpu,
+				 getentry_ohdgpu,
+				 utr_ohdgpu,
+				 self_ohdgpu,
+				 parent_ohdgpu);
 
   fprintf (fp, "Underlying timing routine was clock64()\n");
   tot_ohdgpu = (ftn_ohdgpu[0] + get_thread_num_ohdgpu[0] + genhashidx_ohdgpu[0] + 
@@ -98,8 +89,8 @@ void GPTLprint_gpustats (FILE *fp, double gpu_hz, int maxthreads_gpu, int devnum
 	   utr_ohdgpu[0] / gpu_hz, utr_ohdgpu[0] * 100. / (tot_ohdgpu * gpu_hz) );
 
   printf ("%s: calling gpu kernel GPTLfill_gpustats...\n", thisfunc);
-#pragma acc kernels copyout(ret, gpustats, max_name_len_gpu, ngputimers)
-  ret = GPTLfill_gpustats (gpustats, max_name_len_gpu, ngputimers);
+
+  GPTLfill_gpustats<<<1,1>>> (gpustats, max_name_len_gpu, ngputimers);
   printf ("%s: returned from GPTLfill_gpustats: printing results\n", thisfunc);
 
   fprintf (fp, "\nGPU timing stats\n");
@@ -169,11 +160,12 @@ void GPTLprint_gpustats (FILE *fp, double gpu_hz, int maxthreads_gpu, int devnum
   }
   
   printf ("%s: calling gpu kernel GPTLget_memstats_gpu...\n", thisfunc);
-#pragma acc kernels copyout(ret, hashmem, regionmem)
-  ret = GPTLget_memstats_gpu (hashmem, regionmem);
+
+  GPTLget_memstats_gpu<<<1,1>>> (hashmem, regionmem);
   fprintf (fp, "\n");
   fprintf (fp, "Total GPTL GPU memory usage = %g KB\n", (hashmem[0] + regionmem[0])*.001);
   fprintf (fp, "Components:\n");
   fprintf (fp, "Hashmem                     = %g KB\n" 
                "Regionmem                   = %g KB\n", hashmem[0]*.001, regionmem[0]*.001);
+}
 }

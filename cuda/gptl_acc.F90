@@ -8,6 +8,12 @@ module gptl_acc
 ! Function prototypes
 
   interface
+    subroutine gptldummy_gpu (num) bind(C,name="GPTLdummy_gpu")
+      use iso_c_binding
+      integer(c_int), intent(in), value :: num
+!$acc routine seq
+    end subroutine gptldummy_gpu
+
      integer function gptlstart_gpu (name)
 !$acc routine seq
        character(len=*) :: name

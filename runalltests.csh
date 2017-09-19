@@ -11,8 +11,8 @@ set basescript = macros.make.linux  # This is the base script to start from
 set make = make                     # Name of gnu make program
 echo "$0 Testing $basescript..."
 echo "$basescript settings:"
-foreach setting (DEBUG OPENMP PTHREADS FORTRAN HAVE_PAPI HAVE_MPI TEST_AUTOPROFILE \
-                 ENABLE_PMPI HAVE_IARGCGETARG ENABLE_NESTEDOMP)
+foreach setting (DEBUG OPENMP PTHREADS FORTRAN HAVE_MPI TEST_AUTOPROFILE \
+                 HAVE_IARGCGETARG ENABLE_NESTEDOMP)
   echo `grep "^ *$setting *= " $basescript`
 end
 
@@ -22,10 +22,10 @@ $make test  || echo "Failure in $make test" && exit 1
 echo "$0 $basescript worked" >! results
 
 # Will need to delete from user settable list all items which truly aren't available
-#foreach usersettable ( DEBUG OPENMP PTHREADS FORTRAN HAVE_PAPI HAVE_MPI TEST_AUTOPROFILE \
-#                       ENABLE_PMPI HAVE_IARGCGETARG )
-foreach usersettable ( DEBUG OPENMP PTHREADS FORTRAN HAVE_PAPI HAVE_MPI TEST_AUTOPROFILE \
-                       ENABLE_PMPI ENABLE_NESTEDOMP)
+#foreach usersettable ( DEBUG OPENMP PTHREADS FORTRAN HAVE_MPI TEST_AUTOPROFILE \
+#                       HAVE_IARGCGETARG )
+foreach usersettable ( DEBUG OPENMP PTHREADS FORTRAN HAVE_MPI TEST_AUTOPROFILE \
+                       ENABLE_NESTEDOMP)
 grep "^ *$usersettable *= *yes *" $basescript
 set ret = $status
 
@@ -45,16 +45,6 @@ if ( $usersettable == PTHREADS ) then
   sed -e "s/^ *OPENMP *= *yes */OPENMP = no/g" \
       -e "s/^ *$usersettable *= *$oldtest */$usersettable = $newtest/g" $basescript >! macros.make
 
-# For HAVE_IARGCGETARG case, ensure HAVE_MPI and ENABLE_PMPI are true
-else if ( $usersettable == HAVE_IARGCGETARG ) then
-  sed -e "s/^ *HAVE_MPI *= *no */HAVE_MPI = yes/g" \
-      -e "s/^ *ENABLE_PMPI *= *no */ENABLE_PMPI = yes/g" \
-      -e "s/^ *$usersettable *= *$oldtest */$usersettable = $newtest/g" $basescript >! macros.make
-
-# For ENABLE_PMPI case, ensure HAVE_MPI is true
-else if ( $usersettable == ENABLE_PMPI ) then
-  sed -e "s/^ *HAVE_MPI *= *no */HAVE_MPI = yes/g" \
-      -e "s/^ *$usersettable *= *$oldtest */$usersettable = $newtest/g" $basescript >! macros.make
 else
   sed -e "s/^ *$usersettable *= *$oldtest */$usersettable = $newtest/g" $basescript >! macros.make
 endif

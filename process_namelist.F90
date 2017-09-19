@@ -36,10 +36,7 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
   integer, parameter :: def_maxthreads      = -1
   integer, parameter :: def_tablesize       = 1023     ! Needs to match DEFAULT_TABLE_SIZE in gptl.c
   logical, parameter :: def_verbose         = .false.
-  logical, parameter :: def_narrowprint     = .true.
   logical, parameter :: def_percent         = .false.
-  logical, parameter :: def_persec          = .true.
-  logical, parameter :: def_multiplex       = .false.
   logical, parameter :: def_dopr_preamble   = .true.
   logical, parameter :: def_dopr_threadsort = .true.
   logical, parameter :: def_dopr_multparent = .true.
@@ -58,10 +55,7 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
   integer :: maxthreads      = def_maxthreads
   integer :: tablesize       = def_tablesize
   logical :: verbose         = def_verbose
-  logical :: narrowprint     = def_narrowprint
   logical :: percent         = def_percent
-  logical :: persec          = def_persec
-  logical :: multiplex       = def_multiplex
   logical :: dopr_preamble   = def_dopr_preamble
   logical :: dopr_threadsort = def_dopr_threadsort
   logical :: dopr_multparent = def_dopr_multparent
@@ -74,7 +68,7 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
   character(len=20), parameter :: thisfunc = 'gptlprocess_namelist'
   
   namelist /gptlnl/ sync_mpi, wall, cpu, abort_on_error, overhead, depthlimit, &
-                    maxthreads, tablesize, verbose, narrowprint, percent, persec, multiplex, &
+                    maxthreads, tablesize, verbose, percent, &
                     dopr_preamble, dopr_threadsort, dopr_multparent, dopr_collision, &
                     dopr_memusage, print_method, eventlist, utr
 
@@ -180,17 +174,6 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
     ret = gptlsetoption (gptltablesize, tablesize)
   end if
 
-  if (narrowprint .neqv. def_narrowprint) then
-    if (verbose) then
-      write(6,*) thisfunc, ': setting narrowprint to ', narrowprint
-    end if
-    if (narrowprint) then
-      ret = gptlsetoption (gptlnarrowprint, 1)
-    else
-      ret = gptlsetoption (gptlnarrowprint, 0)
-    end if
-  end if
-
   if (percent .neqv. def_percent) then
     if (verbose) then
       write(6,*) thisfunc, ': setting percent to ', percent
@@ -199,28 +182,6 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
       ret = gptlsetoption (gptlpercent, 1)
     else
       ret = gptlsetoption (gptlpercent, 0)
-    end if
-  end if
-
-  if (persec .neqv. def_persec) then
-    if (verbose) then
-      write(6,*) thisfunc, ': setting persec to ', persec
-    end if
-    if (persec) then
-      ret = gptlsetoption (gptlpersec, 1)
-    else
-      ret = gptlsetoption (gptlpersec, 0)
-    end if
-  end if
-
-  if (multiplex .neqv. def_multiplex) then
-    if (verbose) then
-      write(6,*) thisfunc, ': setting multiplex to ', multiplex
-    end if
-    if (multiplex) then
-      ret = gptlsetoption (gptlmultiplex, 1)
-    else
-      ret = gptlsetoption (gptlmultiplex, 0)
     end if
   end if
 
@@ -294,8 +255,6 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
       ret = gptlsetutr (gptlmpiwtime)
     else if (trim(utr) == 'clockgettime') then
       ret = gptlsetutr (gptlclockgettime)
-    else if (trim(utr) == 'papitime') then
-      ret = gptlsetutr (gptlpapitime)
     else
       write(6,*) thisfunc, ': Underlying timing routine not available: ', trim (utr)
     end if
@@ -319,26 +278,9 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
     end if
   end if
 
-#ifdef HAVE_PAPI
-  do j=1,maxevents
-    if (eventlist(j)(1:16) /= '                ') then
-      ret = gptlevent_name_to_code (trim (eventlist(j)), code)
-      if (ret == 0) then
-        if (verbose) then
-          write(6,*) thisfunc, ': enabling event ', trim (eventlist(j))
-        end if
-        ret = gptlsetoption (code, 1)
-      else
-        write(6,*) thisfunc, ': no code found for event ', trim (eventlist(j))
-      end if
-    end if
-  end do
-#else
 ! Comment out this print because it can be very annoying when the MPI task count is large
 !  write(6,*) thisfunc, ': skipping check for PAPI-based events because ', &
 !            'GPTL was built without PAPI support'
-#endif
   close (unit=unitno)
   outret = 0
-  return
 end subroutine gptlprocess_namelist

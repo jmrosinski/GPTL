@@ -45,10 +45,6 @@ typedef struct {
 /* Function prototypes */
 extern "C" {
 /* These are user callable */
-__device__ extern int GPTLfinalize_gpu (void);
-__device__ extern int GPTLenable_gpu (void);
-__device__ extern int GPTLdisable_gpu (void);
-__device__ extern int GPTLreset_gpu (void);
 
   /* These are callable from within gptl.cu */
 __device__ extern int GPTLerror_1s (const char *, const char *);

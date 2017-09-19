@@ -1,3 +1,4 @@
+//#define _GLIBCXX_CMATH
 /*
 ** print_rusage.c
 **
@@ -16,7 +17,9 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
-int GPTLprint_rusage (const char *str)
+extern "C" {
+
+__host__ int GPTLprint_rusage (const char *str)
 {
   struct rusage usage;
   static const char *thisfunc = "GPTLprint_rusage";
@@ -32,4 +35,6 @@ int GPTLprint_rusage (const char *str)
 	  usage.ru_majflt/onek, 
 	  usage.ru_nvcsw/onek);
   return 0;
+}
+
 }

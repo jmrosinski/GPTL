@@ -1,3 +1,4 @@
+//#define _GLIBCXX_CMATH
 /*
 ** memusage.c
 **
@@ -40,15 +41,16 @@
 #include "gptl.h"       /* function prototypes */
 #include "private.h"
 
-static int set_convert2mb (void);
-
 static double convert2mb = 0.;  /* convert pages to MB (init to unset) */
 
-int GPTLget_memusage (int *size_out,        /* process size in MB */
-		      int *rss_out,         /* resident set size in MB */ 
-		      int *share_out,       /* share segment size in MB */
-		      int *text_out,        /* text segment size in MB */
-		      int *datastack_out)   /* datastack segment size in MB */
+extern "C" {
+__host__ static int set_convert2mb (void);
+
+__host__ int GPTLget_memusage (int *size_out,        /* process size in MB */
+			       int *rss_out,         /* resident set size in MB */ 
+			       int *share_out,       /* share segment size in MB */
+			       int *text_out,        /* text segment size in MB */
+			       int *datastack_out)   /* datastack segment size in MB */
 {
   int size;  /* raw process size returned from system */
   int rss;   /* raw rss returned from system */
@@ -135,7 +137,7 @@ int GPTLget_memusage (int *size_out,        /* process size in MB */
 **                 -1 = failure
 */
 
-int GPTLprint_memusage (const char *str)
+__host__ int GPTLprint_memusage (const char *str)
 {
   int size;      /* process size (returned from OS) */
   int rss;       /* resident set size (returned from OS) */
@@ -158,7 +160,7 @@ int GPTLprint_memusage (const char *str)
 **
 **   Determine if possible the size of a page
 */
-static int set_convert2mb ()
+__host__ static int set_convert2mb ()
 {
 #if (defined HAVE_SLASHPROC)
   int pagesize;
@@ -183,4 +185,6 @@ static int set_convert2mb ()
 
 #endif
   return 0;
+}
+
 }

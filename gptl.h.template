@@ -11,10 +11,6 @@
 
 /*
 ** Options settable by a call to GPTLsetoption() (default in parens)
-** These numbers need to be small integers because GPTLsetoption can
-** be passed PAPI counters, and we need to avoid collisions in that
-** integer space. PAPI presets are big negative integers, and PAPI
-** native events are big positive integers.
 */
 
 typedef enum {
@@ -25,10 +21,7 @@ typedef enum {
   GPTLoverhead        = #GPTLoverhead,  /* Estimate overhead of underlying timing routine (true) */
   GPTLdepthlimit      = #GPTLdepthlimit,  /* Only print timers this depth or less in the tree (inf) */
   GPTLverbose         = #GPTLverbose,  /* Verbose output (false) */
-  GPTLnarrowprint     = #GPTLnarrowprint,  /* Print PAPI and derived stats in 8 columns not 16 (true) */
   GPTLpercent         = #GPTLpercent,  /* Add a column for percent of first timer (false) */
-  GPTLpersec          = #GPTLpersec, /* Add a PAPI column that prints "per second" stats (true) */
-  GPTLmultiplex       = #GPTLmultiplex, /* Allow PAPI multiplexing (false) */
   GPTLdopr_preamble   = #GPTLdopr_preamble, /* Print preamble info (true) */
   GPTLdopr_threadsort = #GPTLdopr_threadsort, /* Print sorted thread stats (true) */
   GPTLdopr_multparent = #GPTLdopr_multparent, /* Print multiple parent info (true) */
@@ -41,19 +34,6 @@ typedef enum {
   GPTLmaxthreads      = #GPTLmaxthreads, /* maximum number of threads */
   GPTLtablesize_gpu   = #GPTLtablesize_gpu,
   GPTLmaxtimers_gpu   = #GPTLmaxtimers_gpu,
-  /*
-  ** These are derived counters based on PAPI counters. All default to false
-  */
-  GPTL_IPC           = #GPTL_IPC, /* Instructions per cycle */
-  GPTL_CI            = #GPTL_CI, /* Computational intensity */
-  GPTL_FPC           = #GPTL_FPC, /* FP ops per cycle */
-  GPTL_FPI           = #GPTL_FPI, /* FP ops per instruction */
-  GPTL_LSTPI         = #GPTL_LSTPI, /* Load-store instruction fraction */
-  GPTL_DCMRT         = #GPTL_DCMRT, /* L1 miss rate (fraction) */
-  GPTL_LSTPDCM       = #GPTL_LSTPDCM, /* Load-stores per L1 miss */
-  GPTL_L2MRT         = #GPTL_L2MRT, /* L2 miss rate (fraction) */
-  GPTL_LSTPL2M       = #GPTL_LSTPL2M, /* Load-stores per L2 miss */
-  GPTL_L3MRT         = #GPTL_L3MRT  /* L3 read miss rate (fraction) */
 } Option;
 
 /*
@@ -67,7 +47,6 @@ typedef enum {
   GPTLnanotime       = #GPTLnanotime, /* only available on x86 */
   GPTLmpiwtime       = #GPTLmpiwtime, /* MPI_Wtime */
   GPTLclockgettime   = #GPTLclockgettime, /* clock_gettime */
-  GPTLpapitime       = #GPTLpapitime,  /* only if PAPI is available */
   GPTLplacebo        = #GPTLplacebo,  /* do-nothing */
   GPTLread_real_time = #GPTLread_real_time  /* AIX only */
 } Funcoption;
@@ -87,9 +66,7 @@ typedef enum {
 ** Function prototypes
 */
 
-#ifdef __cplusplus
 extern "C" {
-#endif
 
 extern int GPTLsetoption (const int, const int);
 extern int GPTLinitialize (void);
@@ -106,9 +83,15 @@ extern int GPTLpr_file (const char *);
 ** Use K&R prototype for these 3 because they require MPI
 ** C++ compilers can encounter problems
 */
-extern int GPTLpr_summary ();
-extern int GPTLpr_summary_file ();
+#ifdef HAVE_MPI
+extern int GPTLpr_summary (MPI_Comm);
+extern int GPTLpr_summary_file (MPI_Comm, const char *);
 extern int GPTLbarrier ();
+#else
+extern int GPTLpr_summary (void);
+extern int GPTLpr_summary_file (const char *);
+extern int GPTLbarrier ();
+#endif
 
 extern int GPTLreset (void);
 extern int GPTLreset_timer (char *);
@@ -119,25 +102,19 @@ extern int GPTLprint_rusage (const char *);
 extern int GPTLenable (void);
 extern int GPTLdisable (void);
 extern int GPTLsetutr (const int);
-extern int GPTLquery (const char *, int, int *, int *, double *, double *, double *,
-		      long long *, const int);
-extern int GPTLquerycounters (const char *, int, long long *);
+extern int GPTLquery (const char *, int, int *, int *, double *, double *, double *);
 extern int GPTLget_wallclock (const char *, int, double *);
 extern int GPTLget_wallclock_latest (const char *, int, double *);
 extern int GPTLget_threadwork (const char *, double *, double *);
 extern int GPTLstartstop_val (const char *, double);
-extern int GPTLget_eventvalue (const char *, const char *, int, double *);
 extern int GPTLget_nregions (int, int *);
 extern int GPTLget_regionname (int, int, char *, int);
-extern int GPTL_PAPIlibraryinit (void);
 extern int GPTLevent_name_to_code (const char *, int *);
 extern int GPTLevent_code_to_name (const int, char *);
 extern int GPTLnum_errors (void);
 extern int GPTLnum_warn (void);
 extern int GPTLget_count (const char *, int, int *);
 
-#ifdef __cplusplus
 };
-#endif
 
 #endif

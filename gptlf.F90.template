@@ -15,10 +15,7 @@ module gptl
   integer, parameter :: GPTLoverhead       = #GPTLoverhead
   integer, parameter :: GPTLdepthlimit     = #GPTLdepthlimit
   integer, parameter :: GPTLverbose        = #GPTLverbose
-  integer, parameter :: GPTLnarrowprint    = #GPTLnarrowprint
   integer, parameter :: GPTLpercent        = #GPTLpercent
-  integer, parameter :: GPTLpersec         = #GPTLpersec
-  integer, parameter :: GPTLmultiplex      = #GPTLmultiplex
   integer, parameter :: GPTLdopr_preamble  = #GPTLdopr_preamble
   integer, parameter :: GPTLdopr_threadsort= #GPTLdopr_threadsort
   integer, parameter :: GPTLdopr_multparent= #GPTLdopr_multparent
@@ -30,22 +27,10 @@ module gptl
   integer, parameter :: GPTLtablesize_gpu  = #GPTLtablesize_gpu
   integer, parameter :: GPTLmaxtimers_gpu  = #GPTLmaxtimers_gpu
 
-  integer, parameter :: GPTL_IPC           = #GPTL_IPC
-  integer, parameter :: GPTL_CI            = #GPTL_CI
-  integer, parameter :: GPTL_FPC           = #GPTL_FPC
-  integer, parameter :: GPTL_FPI           = #GPTL_FPI
-  integer, parameter :: GPTL_LSTPI         = #GPTL_LSTPI
-  integer, parameter :: GPTL_DCMRT         = #GPTL_DCMRT
-  integer, parameter :: GPTL_LSTPDCM       = #GPTL_LSTPDCM
-  integer, parameter :: GPTL_L2MRT         = #GPTL_L2MRT
-  integer, parameter :: GPTL_LSTPL2M       = #GPTL_LSTPL2M
-  integer, parameter :: GPTL_L3MRT         = #GPTL_L3MRT
-
   integer, parameter :: GPTLgettimeofday   = #GPTLgettimeofday
   integer, parameter :: GPTLnanotime       = #GPTLnanotime
   integer, parameter :: GPTLmpiwtime       = #GPTLmpiwtime
   integer, parameter :: GPTLclockgettime   = #GPTLclockgettime
-  integer, parameter :: GPTLpapitime       = #GPTLpapitime
   integer, parameter :: GPTLplacebo        = #GPTLplacebo
   integer, parameter :: GPTLread_real_time = #GPTLread_real_time
 					                
@@ -152,20 +137,12 @@ module gptl
      end function gptlsetutr
 
      integer function gptlquery (name, t, count, onflg, wallclock, &
-                                 usr, sys, papicounters_out, maxcounters)
+                                 usr, sys)
        character(len=*) :: name
        integer :: t, count
        integer :: onflg
        real(8) :: wallclock, usr, sys
-       integer(8) :: papicounters_out
-       integer :: maxcounters
      end function gptlquery
-
-     integer function gptlquerycounters (name, t, papicounters_out)
-       character(len=*) :: name
-       integer :: t
-       integer(8) :: papicounters_out
-     end function gptlquerycounters
 
      integer function gptlget_wallclock (name, t, value)
        character(len=*) :: name
@@ -231,22 +208,6 @@ module gptl
        integer :: t
        integer :: count
      end function gptlget_count
-
-#ifdef HAVE_PAPI
-     integer function gptl_papilibraryinit ()
-     end function gptl_papilibraryinit
-
-     integer function gptlevent_name_to_code (str, code)
-       character(len=*) :: str
-       integer :: code
-     end function gptlevent_name_to_code
-
-     integer function gptlevent_code_to_name (code, str)
-       integer :: code
-       character(len=*) :: str
-     end function gptlevent_code_to_name
-#endif
-
   end interface
 
 contains

@@ -1,3 +1,4 @@
+//#define _GLIBCXX_CMATH
 /*
 ** $Id: util.c,v 1.13 2010-01-01 01:34:07 rosinski Exp $
 */
@@ -14,6 +15,7 @@ static int num_errors = 0;           /* number of times GPTLerror was called */
 static int max_warn = 10;            /* max number of warning messages */
 static int num_warn = 0;             /* number of times GPTLwarn was called */
 
+extern "C" {
 /*
 ** GPTLerror: error return routine to print a message and return a failure
 ** value.
@@ -24,7 +26,7 @@ static int num_warn = 0;             /* number of times GPTLwarn was called */
 **
 ** Return value: -1 (failure)
 */
-int GPTLerror (const char *fmt, ...)
+__host__ int GPTLerror (const char *fmt, ...)
 {
   va_list args;
   
@@ -59,7 +61,7 @@ int GPTLerror (const char *fmt, ...)
 **   fmt: format string
 **   variable list of additional arguments for vfprintf
 */
-void GPTLwarn (const char *fmt, ...)
+__host__ void GPTLwarn (const char *fmt, ...)
 {
   va_list args;
   
@@ -89,7 +91,7 @@ void GPTLwarn (const char *fmt, ...)
 **   fmt: format string
 **   variable list of additional arguments for vfprintf
 */
-void GPTLnote (const char *fmt, ...)
+__host__ void GPTLnote (const char *fmt, ...)
 {
   va_list args;
   
@@ -113,7 +115,7 @@ void GPTLnote (const char *fmt, ...)
 ** Input arguments:
 **   val: true (abort on error) or false (don't)
 */
-void GPTLset_abort_on_error (bool val)
+__host__ void GPTLset_abort_on_error (bool val)
 {
   abort_on_error = val;
 }
@@ -122,7 +124,7 @@ void GPTLset_abort_on_error (bool val)
 ** GPTLreset_errors: reset error state to no errors
 **
 */
-void GPTLreset_errors (void)
+__host__ void GPTLreset_errors (void)
 {
   num_errors = 0;
 }
@@ -131,7 +133,7 @@ void GPTLreset_errors (void)
 ** GPTLnum_errors: User-visible routine returns number of times GPTLerror() called
 **
 */
-int GPTLnum_errors (void)
+__host__ int GPTLnum_errors (void)
 {
   return num_errors;
 }
@@ -140,7 +142,7 @@ int GPTLnum_errors (void)
 ** GPTLnum_errors: User-visible routine returns number of times GPTLerror() called
 **
 */
-int GPTLnum_warn (void)
+__host__ int GPTLnum_warn (void)
 {
   return num_warn;
 }
@@ -153,7 +155,7 @@ int GPTLnum_warn (void)
 **
 ** Return value: pointer to the new space (or NULL)
 */
-void *GPTLallocate (const int nbytes, const char *caller)
+__host__ void *GPTLallocate (const int nbytes, const char *caller)
 {
   void *ptr;
 
@@ -161,4 +163,6 @@ void *GPTLallocate (const int nbytes, const char *caller)
     (void) GPTLerror ("GPTLallocate from %s: malloc failed for %d bytes\n", nbytes, caller);
 
   return ptr;
+}
+
 }

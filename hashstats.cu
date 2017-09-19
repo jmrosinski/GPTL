@@ -1,9 +1,11 @@
+//#define _GLIBCXX_CMATH
 #include "private.h"
 #include <stdio.h>
 
-static float meanhashvalue (Hashentry *, int);
+extern "C" {
+__host__ static float meanhashvalue (Hashentry *, int);
 
-void GPTLprint_hashstats (FILE *fp, int nthreads, Hashentry **hashtable, int tablesize)
+__host__ void GPTLprint_hashstats (FILE *fp, int nthreads, Hashentry **hashtable, int tablesize)
 {
   int t;                    /* thread index */
   int i, ii;
@@ -70,7 +72,7 @@ void GPTLprint_hashstats (FILE *fp, int nthreads, Hashentry **hashtable, int tab
   fprintf (fp, "Mean hash index for thread 0 was %f\n", meanhashvalue (hashtable[0], tablesize));
 }
   
-static float meanhashvalue (Hashentry *hashtable, int tablesize)
+__host__ static float meanhashvalue (Hashentry *hashtable, int tablesize)
 {
   float sum = 0.;  /* used to calculate mean */
   int nument;
@@ -88,4 +90,5 @@ static float meanhashvalue (Hashentry *hashtable, int tablesize)
     return (float) 0.;
   else
     return sum / totent;
+}
 }

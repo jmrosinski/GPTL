@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "private.h"   // MAX_CHARS, private prototypes
-#include "gptl_acc.h"  // user-visible function prototypes
+#include "gptl_cuda.h"  // user-visible function prototypes
 
 #if ( defined FORTRANUNDERSCORE )
 

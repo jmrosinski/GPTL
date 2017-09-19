@@ -14,10 +14,7 @@
       integer GPTLoverhead
       integer GPTLdepthlimit
       integer GPTLverbose
-      integer GPTLnarrowprint
       integer GPTLpercent
-      integer GPTLpersec
-      integer GPTLmultiplex
       integer GPTLdopr_preamble
       integer GPTLdopr_threadsort
       integer GPTLdopr_multparent
@@ -30,22 +27,10 @@
       integer GPTLtablesize_gpu
       integer GPTLmaxtimers_gpu
 
-      integer GPTL_IPC
-      integer GPTL_CI
-      integer GPTL_FPC
-      integer GPTL_FPI
-      integer GPTL_LSTPI
-      integer GPTL_DCMRT
-      integer GPTL_LSTPDCM
-      integer GPTL_L2MRT
-      integer GPTL_LSTPL2M
-      integer GPTL_L3MRT
-
       integer GPTLnanotime
       integer GPTLmpiwtime
       integer GPTLclockgettime
       integer GPTLgettimeofday
-      integer GPTLpapitime
       integer GPTLplacebo
       integer GPTLread_real_time
 
@@ -61,10 +46,7 @@
       parameter (GPTLoverhead       = 4)
       parameter (GPTLdepthlimit     = 5)
       parameter (GPTLverbose        = 6)
-      parameter (GPTLnarrowprint    = 7)
       parameter (GPTLpercent        = 9)
-      parameter (GPTLpersec         = 10)
-      parameter (GPTLmultiplex      = 11)
       parameter (GPTLdopr_preamble  = 12)
       parameter (GPTLdopr_threadsort= 13)
       parameter (GPTLdopr_multparent= 14)
@@ -77,22 +59,10 @@
       parameter (GPTLtablesize_gpu  = 53)
       parameter (GPTLmaxtimers_gpu  = 54)
 
-      parameter (GPTL_IPC           = 17)
-      parameter (GPTL_CI            = 18)
-      parameter (GPTL_FPC           = 19)
-      parameter (GPTL_FPI           = 20)
-      parameter (GPTL_LSTPI         = 21)
-      parameter (GPTL_DCMRT         = 22)
-      parameter (GPTL_LSTPDCM       = 23)
-      parameter (GPTL_L2MRT         = 24)
-      parameter (GPTL_LSTPL2M       = 25)
-      parameter (GPTL_L3MRT         = 26)
-
       parameter (GPTLgettimeofday   = 1)
       parameter (GPTLnanotime       = 2)
       parameter (GPTLmpiwtime       = 4)
       parameter (GPTLclockgettime   = 5)
-      parameter (GPTLpapitime       = 6)
       parameter (GPTLplacebo        = 7)
       parameter (GPTLread_real_time = 3)
 
@@ -126,7 +96,6 @@
       integer gptldisable
       integer gptlsetutr
       integer gptlquery
-      integer gptlquerycounters
       integer gptlget_wallclock
       integer gptlget_wallclock_latest
       integer gptlget_threadwork
@@ -134,7 +103,6 @@
       integer gptlget_eventvalue
       integer gptlget_nregions
       integer gptlget_regionname
-      integer gptl_papilibraryinit
       integer gptlevent_name_to_code
       integer gptlevent_code_to_name
       integer gptlnum_errors
@@ -164,7 +132,6 @@
       external gptldisable
       external gptlsetutr
       external gptlquery
-      external gptlquerycounters
       external gptlget_wallclock
       external gptlget_wallclock_latest
       external gptlget_threadwork
@@ -172,7 +139,6 @@
       external gptlget_eventvalue
       external gptlget_nregions
       external gptlget_regionname
-      external gptl_papilibraryinit
       external gptlevent_name_to_code
       external gptlevent_code_to_name
       external gptlnum_errors

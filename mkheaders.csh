@@ -13,10 +13,7 @@ set GPTLabort_on_error  = 3
 set GPTLoverhead        = 4
 set GPTLdepthlimit      = 5
 set GPTLverbose         = 6
-set GPTLnarrowprint     = 7
 set GPTLpercent         = 9
-set GPTLpersec          = 10
-set GPTLmultiplex       = 11
 set GPTLdopr_preamble   = 12
 set GPTLdopr_threadsort = 13
 set GPTLdopr_multparent = 14
@@ -29,23 +26,11 @@ set GPTLmaxthreads_gpu  = 52
 set GPTLtablesize_gpu   = 53
 set GPTLmaxtimers_gpu   = 54
 
-set GPTL_IPC           = 17
-set GPTL_CI            = 18
-set GPTL_FPC           = 19
-set GPTL_FPI           = 20
-set GPTL_LSTPI         = 21
-set GPTL_DCMRT         = 22
-set GPTL_LSTPDCM       = 23
-set GPTL_L2MRT         = 24
-set GPTL_LSTPL2M       = 25
-set GPTL_L3MRT         = 26
-
 set GPTLgettimeofday   = 1
 set GPTLnanotime       = 2
 set GPTLread_real_time = 3
 set GPTLmpiwtime       = 4
 set GPTLclockgettime   = 5
-set GPTLpapitime       = 6
 set GPTLplacebo        = 7
 
 set GPTLfirst_parent  = 1
@@ -64,31 +49,17 @@ s/#GPTLabort_on_error/$GPTLabort_on_error/1
 s/#GPTLoverhead/$GPTLoverhead/1
 s/#GPTLdepthlimit/$GPTLdepthlimit/1
 s/#GPTLverbose/$GPTLverbose/1
-s/#GPTLnarrowprint/$GPTLnarrowprint/1
 s/#GPTLpercent/$GPTLpercent/1
-s/#GPTLpersec/$GPTLpersec/1
-s/#GPTLmultiplex/$GPTLmultiplex/1
 s/#GPTLdopr_preamble/$GPTLdopr_preamble/1
 s/#GPTLdopr_threadsort/$GPTLdopr_threadsort/1
 s/#GPTLdopr_multparent/$GPTLdopr_multparent/1
 s/#GPTLdopr_collision/$GPTLdopr_collision/1
 s/#GPTLdopr_memusage/$GPTLdopr_memusage/1
 s/#GPTLprint_method/$GPTLprint_method/1
-s/#GPTL_IPC/$GPTL_IPC/1
-s/#GPTL_CI/$GPTL_CI/1
-s/#GPTL_FPC/$GPTL_FPC/1
-s/#GPTL_FPI/$GPTL_FPI/1
-s/#GPTL_LSTPI/$GPTL_LSTPI/1
-s/#GPTL_DCMRT/$GPTL_DCMRT/1
-s/#GPTL_LSTPDCM/$GPTL_LSTPDCM/1
-s/#GPTL_L2MRT/$GPTL_L2MRT/1
-s/#GPTL_LSTPL2M/$GPTL_LSTPL2M/1
-s/#GPTL_L3MRT/$GPTL_L3MRT/1
 s/#GPTLgettimeofday/$GPTLgettimeofday/1
 s/#GPTLnanotime/$GPTLnanotime/1
 s/#GPTLmpiwtime/$GPTLmpiwtime/1
 s/#GPTLclockgettime/$GPTLclockgettime/1
-s/#GPTLpapitime/$GPTLpapitime/1
 s/#GPTLplacebo/$GPTLplacebo/1
 s/#GPTLfirst_parent/$GPTLfirst_parent/1
 s/#GPTLlast_parent/$GPTLlast_parent/1
