@@ -226,12 +226,12 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)       /* communicat
           for (e = 0; e < GPTLnevents; ++e) {
             if (global_p[n].papimax[e] > global[nn].papimax[e]) {
               global[nn].papimax[e]   = global_p[n].papimax[e];
-              global[nn].papimax_p[e] = p;
+              global[nn].papimax_p[e] = global_p[n].papimax_p[e];
               global[nn].papimax_t[e] = global_p[n].papimax_t[e];
             }
             if (global_p[n].papimin[e] < global[nn].papimin[e]) {
               global[nn].papimin[e]   = global_p[n].papimin[e];
-              global[nn].papimin_p[e] = p;
+              global[nn].papimin_p[e] = global_p[n].papimin_p[e];
               global[nn].papimin_t[e] = global_p[n].papimin_t[e];
             }
           }
