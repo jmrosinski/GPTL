@@ -271,8 +271,8 @@ void printlist (char *str, char *difftype, struct List *list, int listsize)
 
   printf ("%s\n", str);
   for (n = 0; n < listsize; ++n) {
-    printf ("n=%d %s=%9.3f values=%9.3f %9.3f name=%s\n",
-	    n, difftype, list[n].diff, list[n].value[0], list[n].value[1], list[n].name);
+    printf ("n=%4d %s=%9.3f values=%9.3f %9.3f ratio (a/b) =%7.3f name=%s\n",
+	    n, difftype, list[n].diff, list[n].value[0], list[n].value[1], list[n].value[0]/list[n].value[1], list[n].name);
   }
 }
 
