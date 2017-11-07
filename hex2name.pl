@@ -213,12 +213,14 @@ sub parse_and_print_summary ()
     $mc = &get_max_chars_summary ("timing.summary");
 
     open (TEXT, "<timing.summary") or die ("Unable to open 'timing.summary': $!\n");
+    # Read through header stuff and just print w/o processing
     while (<TEXT>) {
-	if (/^name *(ncalls nranks mean_time.*)$/) { # beginning of main region
-	    $addsp = $mc - 4;   # subtract length of "name"
-	    $spaces = " " x $addsp;
-	    printf ("name %s %s\n", $spaces, $1);
-	} elsif (/(^[[:xdigit:]]+) *([0-9.Ee+]+)(.*)$/) { # hex entry
+        print $_;
+        last if (/^name *(ncalls nranks mean_time.*)$/) # beginning of main region
+    }
+
+    while (<TEXT>) {
+	if (/(^[[:xdigit:]]+) *([0-9.Ee+]+)(.*)$/) { # hex entry
 	    $off1       = hex($1);
 	    $num        = $2;
 	    $restofline = $3;
