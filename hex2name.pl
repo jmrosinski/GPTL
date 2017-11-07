@@ -215,8 +215,14 @@ sub parse_and_print_summary ()
     open (TEXT, "<timing.summary") or die ("Unable to open 'timing.summary': $!\n");
     # Read through header stuff and just print w/o processing
     while (<TEXT>) {
-        print $_;
-        last if (/^name *(ncalls nranks mean_time.*)$/) # beginning of main region
+        if (/^name *(ncalls nranks mean_time.*)$/) {
+            $addsp = $mc - 4;   # subtract length of "name"                                      
+            $spaces = " " x $addsp;
+            printf ("name %s %s\n", $spaces, $1);
+            last;
+        } else {
+            print $_;
+        }
     }
 
     while (<TEXT>) {
