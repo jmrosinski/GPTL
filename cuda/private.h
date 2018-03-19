@@ -55,11 +55,4 @@ __device__ extern int GPTLerror_1s2d (const char *, const char *, const int, con
 __device__ extern int GPTLerror_1s1d1s (const char *, const char *, const int, const char *);
 __device__ extern void GPTLreset_errors_gpu (void);                  /* num_errors to zero */
 __device__ extern void *GPTLallocate_gpu (const int, const char *);  /* malloc wrapper */
-__device__ extern int GPTLget_overhead_gpu (long long [],            /* Fortran wrapper */
-					    long long [],            /* Getting my thread index */
-					    long long [],            /* Generating hash index */
-					    long long [],            /* Finding entry in hash table */
-					    long long [],            /* Underlying timing routine */
-					    long long [],            /* self_ohd */
-					    long long []);           /* parent_ohd */
 }

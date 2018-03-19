@@ -1,54 +1,84 @@
-//#define _GLIBCXX_CMATH
 #include <stdio.h>
 #include <unistd.h>
-#ifdef HAVE_MPI
-#include <mpi.h>
-#endif
+#include <cuda.h>
 #include "private.h"
 
-extern "C" {
-
-__global__ extern void GPTLget_overhead_gpu (long long [],  // Fortran overhead
-					     long long [],  // Getting my thread index
-					     long long [],  // Generating hash index
-					     long long [],  // Finding entry in hash table
-					     long long [],  // Underlying timing routine
-					     long long [],  // self_ohd
-					     long long []); // parent_ohd
-__host__ void GPTLprint_gpustats (FILE *fp, double gpu_hz, int maxthreads_gpu, int devnum)
+#define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
+inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
 {
-  //JR Use arrays of length 1 not scalars so "acc copyout" works properly!
-  int nwarps_found[1];
-  int nwarps_timed[1];
-  int max_name_len_gpu[1];
-  int ngputimers[1];
+  if (code != cudaSuccess) 
+    {
+      fprintf(stderr,"GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
+      if (abort) exit(code);
+    }
+}
 
-  // Returned from GPTLget_overhead_gpu:
-  long long ftn_ohdgpu[1];            // Fortran wrapper overhead
-  long long get_thread_num_ohdgpu[1]; // Getting my thread index */
-  long long genhashidx_ohdgpu[1];     // Generating hash index */
-  long long getentry_ohdgpu[1];       // Finding entry in hash table */
-  long long utr_ohdgpu[1];            // Underlying timing routine */
-  long long self_ohdgpu[1];           // Cost est. for timing this region
-  long long parent_ohdgpu[1];         // Cost est. to parent of this region
-
-  // Returned from GPTLget_memstats_gpu:
-  float hashmem[1];
-  float regionmem[1];
-
-  int count_max, count_min;
+__host__ void GPTLprint_gpustats (FILE *fp, int maxthreads_gpu, double gpu_hz, int devnum)
+{
+  Gpustats *gpustats;
+  int *max_name_len_gpu;
+  int *ngputimers;
+  int *ncollisions;
   int extraspace;
   int i, n;
   int ret;
+  int maxwarps = maxthreads_gpu / WARPSIZE;
+  //JR Use arrays of length 1 not scalars so "acc copyout" works properly!                                                                                      
+  int *nwarps_found;
+  int *nwarps_timed;
+
+  // Returned from GPTLget_overhead_gpu:                                                                                                                        
+  long long *ftn_ohdgpu;            // Fortran wrapper overhead
+  long long *get_thread_num_ohdgpu; /* Getting my thread index */
+  long long *genhashidx_ohdgpu;     /* Generating hash index */
+  long long *getentry_ohdgpu;       /* Finding entry in hash table */
+  long long *utr_ohdgpu;            /* Underlying timing routine */
+  long long *self_ohdgpu;           // Cost est. for timing this region
+  long long *parent_ohdgpu;         // Cost est. to parent of this region
+  // Returned from GPTLget_memstats_gpu:
+  float *hashmem;
+  float *regionmem;
+
+  int count_max, count_min;
   double wallmax, wallmin;
   double self, parent;
   double tot_ohdgpu;
-  Gpustats gpustats[MAX_GPUTIMERS];
   int myrank = 0;
   int mpi_active;
 #define HOSTSIZE 32
   char hostname[HOSTSIZE];
   static const char *thisfunc = "GPTLprint_gpustats";
+
+  gpuErrchk (cudaMallocManaged (&ngputimers,                       sizeof (int)));
+  gpuErrchk (cudaMallocManaged (&max_name_len_gpu,                 sizeof (int)));
+  gpuErrchk (cudaMallocManaged (&ncollisions,                      sizeof (int)));
+  gpuErrchk (cudaMallocManaged (&gpustats,         MAX_GPUTIMERS * sizeof (Gpustats)));
+
+  gpuErrchk (cudaMallocManaged (&nwarps_found,          sizeof (int)));
+  gpuErrchk (cudaMallocManaged (&nwarps_timed,          sizeof (int)));
+  gpuErrchk (cudaMallocManaged (&ftn_ohdgpu,            sizeof (long long)));
+  gpuErrchk (cudaMallocManaged (&get_thread_num_ohdgpu, sizeof (long long)));
+  gpuErrchk (cudaMallocManaged (&genhashidx_ohdgpu,     sizeof (long long)));
+  gpuErrchk (cudaMallocManaged (&getentry_ohdgpu,       sizeof (long long)));
+  gpuErrchk (cudaMallocManaged (&utr_ohdgpu,            sizeof (long long)));
+  gpuErrchk (cudaMallocManaged (&self_ohdgpu,           sizeof (long long)));
+  gpuErrchk (cudaMallocManaged (&parent_ohdgpu,         sizeof (long long)));
+  gpuErrchk (cudaMallocManaged (&hashmem,               sizeof (float)));
+  gpuErrchk (cudaMallocManaged (&regionmem,             sizeof (float)));
+
+  GPTLfill_gpustats<<<1,1>>> (gpustats, max_name_len_gpu, ngputimers, ncollisions);
+  if (cudaGetLastError() != cudaSuccess)
+    printf( "%s: Error from GPTLfill_gpustats\n", thisfunc);
+  cudaDeviceSynchronize();
+
+#ifdef DEBUG
+  printf ("%s: ngputimers=%d\n",       thisfunc, *ngputimers);
+  printf ("%s: max_name_len_gpu=%d\n", thisfunc, *max_name_len_gpu);
+  for (n = 0; n < *ngputimers; ++n) {
+    printf ("%s: timer=%s accum_max=%lld accum_min=%lld count_max=%d nwarps=%d\n", 
+	    thisfunc, gpustats[n].name, gpustats[n].accum_max, gpustats[n].accum_min, gpustats[n].count_max, gpustats[n].nwarps);
+  }
+#endif
 
   fprintf (fp, "\n\nGPU Results:\n");
 
@@ -63,14 +93,15 @@ __host__ void GPTLprint_gpustats (FILE *fp, double gpu_hz, int maxthreads_gpu, i
   ret = gethostname (hostname, HOSTSIZE);
   fprintf (fp, "%s: hostname=%s\n", thisfunc, hostname);
 
-  GPTLget_gpusizes<<<1,1>>> (nwarps_found, nwarps_timed);
-  GPTLget_overhead_gpu<<<1,1>>> (ftn_ohdgpu,
-				 get_thread_num_ohdgpu,
-				 genhashidx_ohdgpu,
-				 getentry_ohdgpu,
-				 utr_ohdgpu,
-				 self_ohdgpu,
-				 parent_ohdgpu);
+  GPTLget_gpusizes <<<1,1>>> (nwarps_found, nwarps_timed);
+  GPTLget_overhead_gpu <<<1,1>>> (ftn_ohdgpu,
+				  get_thread_num_ohdgpu,
+				  genhashidx_ohdgpu,
+				  getentry_ohdgpu,
+				  utr_ohdgpu,
+				  self_ohdgpu,
+				  parent_ohdgpu);
+  cudaDeviceSynchronize();
 
   fprintf (fp, "Underlying timing routine was clock64()\n");
   tot_ohdgpu = (ftn_ohdgpu[0] + get_thread_num_ohdgpu[0] + genhashidx_ohdgpu[0] + 
@@ -89,8 +120,6 @@ __host__ void GPTLprint_gpustats (FILE *fp, double gpu_hz, int maxthreads_gpu, i
 	   utr_ohdgpu[0] / gpu_hz, utr_ohdgpu[0] * 100. / (tot_ohdgpu * gpu_hz) );
 
   printf ("%s: calling gpu kernel GPTLfill_gpustats...\n", thisfunc);
-
-  GPTLfill_gpustats<<<1,1>>> (gpustats, max_name_len_gpu, ngputimers);
   printf ("%s: returned from GPTLfill_gpustats: printing results\n", thisfunc);
 
   fprintf (fp, "\nGPU timing stats\n");
@@ -103,6 +132,7 @@ __host__ void GPTLprint_gpustats (FILE *fp, double gpu_hz, int maxthreads_gpu, i
   fprintf (fp, "Overhead estimates self_OH and parent_OH are for warp with \'maxcount\' calls\n");
   fprintf (fp, "OHD estimate assumes Fortran, and non-handle routines used\n");
   fprintf (fp, "Actual overhead can be reduced by using \'handle\' routines and \'_c\' Fortran routines\n");
+  fprintf (fp, "Total collisions warp 0=%d\n", ncollisions[0]);
   // Print header, padding to length of longest name
   extraspace = max_name_len_gpu[0] - 4; // "name" is 4 chars
   for (i = 0; i < extraspace; ++i)
@@ -112,7 +142,7 @@ __host__ void GPTLprint_gpustats (FILE *fp, double gpu_hz, int maxthreads_gpu, i
     extraspace = max_name_len_gpu[0] - strlen (gpustats[n].name);
     for (i = 0; i < extraspace; ++i)
       fprintf (fp, " ");
-    fprintf (fp, "%s ", gpustats[n].name);             // regopm name
+    fprintf (fp, "%s ", gpustats[n].name);             // region name
     fprintf (fp, "%5d ", gpustats[n].count);           // # start/stops of region 
     fprintf (fp, "%5d ", gpustats[n].nwarps);          // nwarps_timed involving name
     
@@ -155,17 +185,15 @@ __host__ void GPTLprint_gpustats (FILE *fp, double gpu_hz, int maxthreads_gpu, i
       fprintf (fp, "%8.2e ", parent);
     else
       fprintf (fp, "%8.3f ", parent);	       
-    
     fprintf (fp, "\n");
   }
-  
-  printf ("%s: calling gpu kernel GPTLget_memstats_gpu...\n", thisfunc);
 
-  GPTLget_memstats_gpu<<<1,1>>> (hashmem, regionmem);
+  printf ("%s: calling gpu kernel GPTLget_memstats_gpu...\n", thisfunc);
+  GPTLget_memstats_gpu <<<1,1>>> (hashmem, regionmem);
+  cudaDeviceSynchronize();
   fprintf (fp, "\n");
   fprintf (fp, "Total GPTL GPU memory usage = %g KB\n", (hashmem[0] + regionmem[0])*.001);
   fprintf (fp, "Components:\n");
-  fprintf (fp, "Hashmem                     = %g KB\n" 
-               "Regionmem                   = %g KB\n", hashmem[0]*.001, regionmem[0]*.001);
-}
+  fprintf (fp, "Hashmem                     = %g KB\n"
+	       "Regionmem                   = %g KB\n", hashmem[0]*.001, regionmem[0]*.001);
 }

@@ -133,12 +133,9 @@ extern void GPTLprint_hashstats (FILE *, int, Hashentry **, int);
 extern void GPTLprint_memstats (FILE *, Timer **, int, int, int);
 extern int GPTLget_nthreads (void);
 extern Timer **GPTLget_timersaddr (void);
-
-#ifdef ENABLE_CUDA
-__host__ extern void GPTLprint_gpustats (FILE *fp, double gpu_hz, int, int);
-#endif
-
 extern void __cyg_profile_func_enter (void *, void *);
 extern void __cyg_profile_func_exit (void *, void *);
+
+__host__ extern void GPTLprint_gpustats (FILE *, int, double, int);
 
 }

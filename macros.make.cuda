@@ -20,9 +20,9 @@ CC = nvcc
 # Whether to build debug lib or optimized lib, and associated flags
 DEBUG = yes
 ifeq ($(DEBUG),yes)
-  CUFLAGS = -g -O0 -G -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true
+  CUFLAGS = -g -O0 -G -lineinfo -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true
 else
-  CUFLAGS = -g -O2 -G -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true
+  CUFLAGS = -g -O2 -G           -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true
 endif
 
 # Set compiler flags for non-default ABIs (e.g. 64-bit addressing). 
@@ -149,9 +149,5 @@ ifeq ($(HAVE_BACKTRACE),yes)
   CUFLAGS += -DHAVE_BACKTRACE
 endif
 
-# Whether to enable nVidia-based GPU timers as well as CPU timers
-ENABLE_CUDA = yes
-ifeq ($(ENABLE_CUDA),yes)
-  CUFLAGS += -DENABLE_CUDA
-  GPULIB = gptl_cuda
-endif
+CUFLAGS += -DENABLE_CUDA
+GPULIB = gptl_cuda

@@ -4,24 +4,32 @@ ifeq ($(FLAGS),fail)
   FFLAGS  = -g -O0 -I$(GPTL) -I$(GPTL)/cuda -acc -Minfo=accel -Minfo -Mcuda=cuda8 -ta=tesla:cc60
   LDFLAGS = -L$(GPTL) -lgptl -L$(GPTL)/cuda -lgptl_cuda -Mcuda=cuda8,rdc -ta=tesla:cc60
 else
-  FFLAGS  = -g -O0 -I$(GPTL) -I$(GPTL)/cuda -acc -Minfo=accel -Minfo              -ta=tesla:cc60
+  FFLAGS  = -g -O0 -I$(GPTL) -I$(GPTL)/cuda -acc -Minfo=accel -Minfo              -ta=tesla:cc60,keepgpu
   LDFLAGS = -L$(GPTL) -lgptl -L$(GPTL)/cuda -lgptl_cuda -Mcuda=cuda8     -ta=tesla:cc60
 endif
-OBJS1 = persist.o
-OBJS2 = persist_mpi.o
-OBJS = $(OBJS1) $(OBJS2)
+
+# DO NOT ADD THIS FLAG: IT SCREWS UP THE OUTPUT!!!
+#FFLAGS += -Mcuda
+
+COMMONOBJS = persist.o getval.o
+MPROG1 = driver_serial.o
+MPROG2 = driver_mpi.o
+OBJS1 = $(MPROG1) $(COMMONOBJS)
+OBJS2 = $(MPROG2)  $(COMMONOBJS)
 
 %.o: %.F90
 	$(FC) -c $< $(FFLAGS)
 
-all: persist persist_mpi
+all: driver_serial driver_mpi
 
-persist: $(OBJS1) ../libgptl.a ../cuda/libgptl_cuda.a
+driver_serial: $(OBJS1) ../libgptl.a ../cuda/libgptl_cuda.a
 	$(FC) -o $@ $(OBJS1) $(LDFLAGS)
 
-persist_mpi: $(OBJS2) ../libgptl.a ../cuda/libgptl_cuda.a
+driver_mpi: $(OBJS2) ../libgptl.a ../cuda/libgptl_cuda.a
 	$(FC) -o $@ $(OBJS2) $(LDFLAGS)
 
 clean:
-	$(RM) $(OBJS) *.gpu persist persist_mpi
+	$(RM) $(MPROG1) $(MPROG2) $(OBJS1) $(OBJS2) *.mod *.gpu driver_serial driver_mpi
 
+$(MPROG1): getval.o
+$(MPROG2): getval.o

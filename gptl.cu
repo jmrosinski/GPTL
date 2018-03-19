@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <string.h>        /* memset, strcmp (via STRMATCH) */
 #include <ctype.h>         /* isdigit */
+#include <cuda.h>
 
 #ifdef HAVE_LIBRT
 #include <time.h>
@@ -94,19 +95,17 @@ extern "C" {
   static inline long long nanotime (void);          /* read counter (assembler) */
   static float get_clockfreq (void);                /* cycles/sec */
 }
-static char *clock_source = "UNKNOWN";            /* where clock found */
+static char *clock_source = "Unknown";            /* where clock found */
 #endif
 
 #define DEFAULT_TABLE_SIZE 1023
 static int tablesize = DEFAULT_TABLE_SIZE;  /* per-thread size of hash table (settable parameter) */
 static int tablesizem1 = DEFAULT_TABLE_SIZE - 1;
 
-#ifdef ENABLE_CUDA
 static double gpu_hz = 0.;       // GPU frequency in cycles per second
 static int tablesize_gpu = DEFAULT_TABLE_SIZE_GPU;
 static int maxthreads_gpu = DEFAULT_MAXTHREADS_GPU;
 static int devnum = -1;
-#endif
 
 #define MSGSIZ 256                          /* max size of msg printed when dopr_memusage=true */
 static int rssmax = 0;                      /* max rss of the process */
@@ -126,7 +125,7 @@ __host__ static int newchild (Timer *, Timer *);
 __host__ static int get_max_depth (const Timer *, const int);
 __host__ static int is_descendant (const Timer *, const Timer *);
 __host__ static int is_onlist (const Timer *, const Timer *);
-__host__ static char *methodstr (Method);
+__host__ static const char *methodstr (Method);
 __host__ static int GPTLget_gpu_props (int *, int *, int *);
 
 /* Prototypes from previously separate file threadutil.c */
@@ -277,15 +276,17 @@ __host__ int GPTLsetoption (const int option,  /* option */
     if (verbose)
       printf ("%s: tablesize = %d\n", thisfunc, tablesize);
     return 0;
-#ifdef ENABLE_CUDA
   case GPTLmaxthreads_gpu:
     if (val < 1)
       return GPTLerror ("%s: maxthreads_gpu must be positive. %d is invalid\n", thisfunc, val);
-    if (val % WARPSIZE != 0)
-      return GPTLerror ("%s: maxthreads_gpu must be multiple of WARPSIZE=%d. %d is invalid\n", 
-			thisfunc, WARPSIZE, val);
+    if (val % WARPSIZE == 0) {
+      maxthreads_gpu = val;
+    } else {
+      maxthreads_gpu = ((val / WARPSIZE) * WARPSIZE) + WARPSIZE;
+      printf ("%s: changed maxthreads_gpu from %d to %d to be multiple of WARPSIZE=%d\n",
+	      thisfunc, val, maxthreads_gpu, WARPSIZE);
+    }
 
-    maxthreads_gpu = val;
     if (verbose)
       printf ("%s: tablesize_gpu = %d\n", thisfunc, maxthreads_gpu);
     return 0;
@@ -297,7 +298,6 @@ __host__ int GPTLsetoption (const int option,  /* option */
     if (verbose)
       printf ("%s: tablesize_gpu = %d\n", thisfunc, tablesize_gpu);
     return 0;
-#endif
   case GPTLsync_mpi:
     if (verbose)
       printf ("%s: boolean sync_mpi = %d\n", thisfunc, val);
@@ -429,7 +429,6 @@ __host__ int GPTLinitialize (void)
     printf ("Per call overhead est. t2-t1=%g should be near zero\n", t2-t1);
     printf ("Underlying wallclock timing routine is %s\n", funclist[funcidx].name);
   }
-#ifdef ENABLE_CUDA
   int khz;
   int warpsize;
 
@@ -440,9 +439,8 @@ __host__ int GPTLinitialize (void)
 
   gpu_hz = khz * 1000.;
   printf ("%s: GPU khz=%d\n", thisfunc, khz);
-  GPTLinitialize_gpu<<<1,1>>> (verbose, tablesize_gpu, maxthreads_gpu);
+  GPTLinitialize_gpu<<<1,1>>> (verbose, tablesize_gpu, maxthreads_gpu, gpu_hz);
   printf ("%s: Returned from GPTLinitialize_gpu\n", thisfunc);
-#endif
   imperfect_nest = false;
   initialized = true;
   return 0;
@@ -525,9 +523,7 @@ __host__ int GPTLfinalize (void)
   tablesize = DEFAULT_TABLE_SIZE;
   tablesizem1 = tablesize - 1;
 
-#ifdef ENABLE_CUDA
   GPTLfinalize_gpu<<<1,1>>>();
-#endif
   return 0;
 }
 
@@ -1205,9 +1201,7 @@ __host__ static inline int update_stats (Timer *ptr,
 __host__ int GPTLenable (void)
 {
   disabled = false;
-#ifdef ENABLE_CUDA
   GPTLenable_gpu<<<1,1>>>();
-#endif
   return 0;
 }
 
@@ -1219,9 +1213,7 @@ __host__ int GPTLenable (void)
 int GPTLdisable (void)
 {
   disabled = true;
-#ifdef ENABLE_CUDA
   GPTLdisable_gpu<<<1,1>>>();
-#endif
   return 0;
 }
 
@@ -1279,9 +1271,7 @@ __host__ int GPTLreset (void)
     }
   }
 
-#ifdef ENABLE_CUDA
   GPTLreset_gpu<<<1,1>>>();
-#endif
   if (verbose)
     printf ("%s: accumulators for all timers set to zero\n", thisfunc);
 
@@ -1600,9 +1590,8 @@ __host__ int GPTLpr_file (const char *outfile) /* output file to write */
 
   free (sum);
 
-#ifdef ENABLE_CUDA
-  GPTLprint_gpustats (fp, gpu_hz, maxthreads_gpu, devnum);
-#endif
+  // Now retrieve  and print the GPU info
+  GPTLprint_gpustats (fp, maxthreads_gpu, gpu_hz, devnum);
 
   if (fp != stderr && fclose (fp) != 0)
     fprintf (stderr, "%s: Attempt to close %s failed\n", thisfunc, outfile);
@@ -1610,6 +1599,16 @@ __host__ int GPTLpr_file (const char *outfile) /* output file to write */
   pr_has_been_called = true;
   return 0;
 }
+
+#define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
+  inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
+  {
+    if (code != cudaSuccess) 
+      {
+	fprintf(stderr,"GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
+	if (abort) exit(code);
+      }
+  }
 
 /* 
 ** print_titles: Print headings to output file. If imperfect nesting was detected, print simply by
@@ -1730,18 +1729,24 @@ __host__ int construct_tree (Timer *timerst, Method method)
 ** Input arguments:
 **   method: method type
 */
-__host__ static char *methodstr (Method method)
+__host__ static const char *methodstr (Method method)
 {
+  static const char *first_parent  = "first_parent";
+  static const char *last_parent   = "last_parent";
+  static const char *most_frequent = "most_frequent";
+  static const char *full_tree     = "full_tree";
+  static const char *Unknown       = "Unknown";
+
   if (method == GPTLfirst_parent)
-    return "first_parent";
+    return first_parent;
   else if (method == GPTLlast_parent)
-    return "last_parent";
+    return last_parent;
   else if (method == GPTLmost_frequent)
-    return "most_frequent";
+    return most_frequent;
   else if (method == GPTLfull_tree)
-    return "full_tree";
+    return full_tree;
   else
-    return "Unknown";
+    return Unknown;
 }
 
 /* 
@@ -3063,6 +3068,7 @@ __host__ static int GPTLget_gpu_props (int *khz, int *warpsize, int *devnum)
   size_t size;
   cudaError_t err;
   static const size_t onemb = 1024 * 1024;
+  //  static const size_t heap_mb = 8;  // this number should avoid needing to reset the limit
   static const size_t heap_mb = 128;
   static const char *thisfunc = "GPTLget_gpu_props";
 
@@ -3107,7 +3113,7 @@ __host__ static int GPTLget_gpu_props (int *khz, int *warpsize, int *devnum)
 
 /**********************************************************************************/
 /* 
-** 3 sets of routines: OMP threading, PTHREADS, unthreaded
+** 2 sets of routines: OMP threading, unthreaded
 */
 
 #if ( defined THREADED_OMP )
@@ -3276,3 +3282,4 @@ __host__ static inline int get_thread_num ()
 
 #endif  /* Unthreaded case */
 }
+
