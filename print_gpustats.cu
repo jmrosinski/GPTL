@@ -23,11 +23,10 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxthreads_gpu, double gpu_hz, i
   int i, n;
   int ret;
   int maxwarps = maxthreads_gpu / WARPSIZE;
-  //JR Use arrays of length 1 not scalars so "acc copyout" works properly!                                                                                      
   int *nwarps_found;
   int *nwarps_timed;
 
-  // Returned from GPTLget_overhead_gpu:                                                                                                                        
+  // Returned from GPTLget_overhead_gpu:
   long long *ftn_ohdgpu;            // Fortran wrapper overhead
   long long *get_thread_num_ohdgpu; /* Getting my thread index */
   long long *genhashidx_ohdgpu;     /* Generating hash index */
@@ -63,6 +62,7 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxthreads_gpu, double gpu_hz, i
   gpuErrchk (cudaMallocManaged (&utr_ohdgpu,            sizeof (long long)));
   gpuErrchk (cudaMallocManaged (&self_ohdgpu,           sizeof (long long)));
   gpuErrchk (cudaMallocManaged (&parent_ohdgpu,         sizeof (long long)));
+
   gpuErrchk (cudaMallocManaged (&hashmem,               sizeof (float)));
   gpuErrchk (cudaMallocManaged (&regionmem,             sizeof (float)));
 
@@ -185,6 +185,7 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxthreads_gpu, double gpu_hz, i
       fprintf (fp, "%8.2e ", parent);
     else
       fprintf (fp, "%8.3f ", parent);	       
+
     fprintf (fp, "\n");
   }
 

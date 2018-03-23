@@ -1,5 +1,5 @@
 CU      = nvcc
-CUFLAGS = -g -O0 -G -lineinfo -UDEBUG -DENABLE_CUDA $(UNDERSCORING) -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true
+CUFLAGS = -g -O0 -G -lineinfo -UDEBUG $(UNDERSCORING) -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true
 GPTL    = ..
 LDFLAGS = $(CUFLAGS) -L$(GPTL) -lgptl -L$(GPTL)/cuda -lgptl_cuda
 OBJS    = getval.o driver_serial.o persist.o

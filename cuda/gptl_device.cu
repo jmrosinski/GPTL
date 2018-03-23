@@ -952,7 +952,7 @@ __global__ void GPTLget_overhead_gpu (long long *ftn_ohd,
     ret = gptlstart_sim (timername, (long long) 9);
   }
   t2 = clock64();
-  ftn_ohd[0] = 0.001 * (t2 - t1);
+  *ftn_ohd = (t2 - t1) / 1000;
 
   /* get_warp_num() overhead */
   t1 = clock64();
@@ -968,7 +968,7 @@ __global__ void GPTLget_overhead_gpu (long long *ftn_ohd,
     hashidx = genhashidx (timername);
   }
   t2 = clock64();
-  genhashidx_ohd[0] = (t2 - t1) / 1000;
+  *genhashidx_ohd = (t2 - t1) / 1000;
 
   /* 
   ** getentry overhead
@@ -989,11 +989,11 @@ __global__ void GPTLget_overhead_gpu (long long *ftn_ohd,
   }
 
   if (n == tablesize) {
-    getentry_ohd[0] = 0.;
+    *getentry_ohd = 0.;
     printf ("%s: No valid timer found in hashtable: cannot estimer getentry cost\n", 
 	    thisfunc);
   } else {
-    getentry_ohd[0] = (t2 - t1) / 1000;
+    *getentry_ohd = (t2 - t1) / 1000;
   }
 
   /* utr overhead */
@@ -1001,11 +1001,11 @@ __global__ void GPTLget_overhead_gpu (long long *ftn_ohd,
   for (i = 0; i < 1000; ++i) {
     t2 = clock64();
   }
-  utr_ohd[0] = (t2 - t1) / 1000;
+  *utr_ohd = (t2 - t1) / 1000;
 
-  self_ohd[0]   = utr_ohd[0];
-  parent_ohd[0] = utr_ohd[0] + 2*(ftn_ohd[0] + get_warp_num_ohd[0] + 
-				  genhashidx_ohd[0] + getentry_ohd[0]);
+  *self_ohd   = *utr_ohd;
+  *parent_ohd = *utr_ohd + 2*(*ftn_ohd + *get_warp_num_ohd + 
+			      *genhashidx_ohd + *getentry_ohd);
   return;
 }
 
@@ -1070,8 +1070,11 @@ __device__ int GPTLmy_sleep (float seconds)
 
 __device__ void GPTLdummy_gpu (int num)
 {
+  Hashentry *x;
   static const char *thisfunc = "GPTLdummy_gpu";
   printf ("%s: num=%d hashtable=%p\n", thisfunc, num, hashtable);
+  // If hashtable pointer has become bad, force a cuda error
+  x = *hashtable;
   return;
 }
 

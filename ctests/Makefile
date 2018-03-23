@@ -11,10 +11,6 @@ ifeq ($(HAVE_MPI),yes)
   TESTS += summary pmpi
 endif
 
-ifeq ($(HAVE_PAPI),yes)
-  TESTS += testpapi
-endif
-
 ifeq ($(ENABLE_NESTEDOMP),yes)
   TESTS += nestedomp
 endif
@@ -45,11 +41,6 @@ else
   endif
 endif
 
-ifeq ($(HAVE_PAPI),yes)
-  CFLAGS  += -DHAVE_PAPI $(PAPI_INCFLAGS)
-  LDFLAGS += $(PAPI_LIBFLAGS)
-endif
-
 ifeq ($(HAVE_MPI),yes)
   CFLAGS  += -DHAVE_MPI $(MPI_INCFLAGS)
   LDFLAGS += $(MPI_LIBFLAGS)
@@ -67,12 +58,9 @@ endif
 # Items in EXES but not TESTS are built by "make all" but
 # not run by "make test"
 
-EXES = $(TESTS) papiomptest gptl_gran_overhead printwhileon
+EXES = $(TESTS) gptl_gran_overhead printwhileon
 
 UTILEXES = gptl_gran_overhead
-ifeq ($(HAVE_PAPI),yes)
-  UTILEXES += gptl_avail gptl_knownflopcount
-endif
 EXES += $(UTILEXES)
 
 OBJS += $(patsubst %,%.o,$(EXES))
@@ -91,9 +79,6 @@ gptl_knownflopcount: knownflopcount.o
 gptl_gran_overhead: gran_overhead.o
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
 
-papiomptest: papiomptest.o
-	$(CC) $(THREADFLAGS) -o $@ $< $(LDFLAGS)
-
 cygprofile: cygprofile.o cygprofilesubs.o
 	$(CC) -o $@ cygprofile.o cygprofilesubs.o $(LDFLAGS) $(INSTRFLAG)
 cygprofilesubs.o: cygprofilesubs.c
@@ -105,9 +90,6 @@ profcxx.o: profcxx.C myclasses.h
 	$(CXX) -c $(CFLAGS) $(INSTRFLAG) -o $@ $<
 
 summary: summary.o
-	$(CC) -o $@ $< $(LDFLAGS)
-
-testpapi: testpapi.o
 	$(CC) -o $@ $< $(LDFLAGS)
 
 pmpi: pmpi.o
@@ -127,11 +109,6 @@ nestedomp: nestedomp.o
 
 test: $(TESTS)
 	@echo
-
-ifeq ($(HAVE_PAPI),yes)
-	@./testpapi
-	@echo
-endif
 
 ifeq ($(ENABLE_NESTEDOMP),yes)
 	@echo Testing nested OMP ...

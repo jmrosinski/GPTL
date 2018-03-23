@@ -29,15 +29,14 @@ subroutine persist (myrank, mostwork, maxthreads_gpu, outerlooplen, innerlooplen
 !  ret = gptlsetoption (gptltablesize_gpu, 32)   ! This setting gives 1 collision
   write(6,*)'persist: calling gptlinitialize'
   ret = gptlinitialize ()
+  write(6,*)'Calling gptldummy_gpu: CUDA will barf if hashtable is no longer a valid pointer'
 !$acc kernels
   call gptldummy_gpu (0)
 !$acc end kernels
   
 !JR Need to call GPU-specific init_handle routine because its tablesize may differ from CPU
 !$acc parallel copyout(ret,handle,handle2)
-  call gptldummy_gpu (1)
   ret = gptlinit_handle_gpu ('doalot_handle_sqrt_c', handle)
-  call gptldummy_gpu (2)
   ret = gptlinit_handle_gpu ('a', handle2)
 !$acc end parallel
 

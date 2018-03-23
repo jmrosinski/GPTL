@@ -12,8 +12,11 @@ OBJS = gptl.o util.o memusage.o getoverhead.o \
 
 LIBNAME = gptl
 
-MAKETESTS = acctests/all cutests/all
-RUNTESTS = acctests/test
+MAKETESTS = cutests/all
+ifeq ($(ENABLE_ACC),yes)
+  MAKETESTS += acctests/all 
+  RUNTESTS   = acctests/test
+endif
 
 ifeq ($(MANDIR),$(null))
   MANDIR = $(INSTALLDIR)
@@ -33,8 +36,8 @@ endif
 
 FOBJS =
 ifeq ($(FORTRAN),yes)
-  FOBJS      = process_namelist.o gptlf.o
-  OBJS      += f_wrappers.o
+  FOBJS = process_namelist.o gptlf.o
+  OBJS += f_wrappers.o
 endif
 
 CUFLAGS += $(INLINEFLAG) $(UNDERSCORING)
@@ -43,12 +46,12 @@ ifeq ($(ENABLE_NESTEDOMP),yes)
 endif
 
 ifeq ($(HAVE_MPI),yes)
-  CUFLAGS       += -DHAVE_MPI
+  CUFLAGS      += -DHAVE_MPI
   FFLAGS       += $(DEFINE)HAVE_MPI
   ifeq ($(HAVE_COMM_F2C),yes)
-    CUFLAGS     += -DHAVE_COMM_F2C
+    CUFLAGS    += -DHAVE_COMM_F2C
   endif
-  CUFLAGS       += $(MPI_INCFLAGS)
+  CUFLAGS      += $(MPI_INCFLAGS)
   LDFLAGS      += $(MPI_LIBFLAGS)
 endif
 
@@ -96,7 +99,7 @@ cuda/all:
 acctests/all: cuda/all
 	$(MAKE) -C acctests
 
-cutests/all: cutests/all
+cutests/all: cuda/all
 	$(MAKE) -C cutests
 
 libonly: lib$(LIBNAME).a 
@@ -127,15 +130,15 @@ install: lib$(LIBNAME).a
 	install -d $(INSTALLDIR)/man/man3 
 	install -m 0644 lib$(LIBNAME).a $(INSTALLDIR)/lib
 	install -m 0644 gptl.h $(INSTALLDIR)/include
-	install -m 0644 cuda/lib$(LIBNAME)_cuda.a $(INSTALLDIR)/lib
-	install -m 0644 cuda/gptl_cuda.h $(INSTALLDIR)/include
-	install -m 0644 cuda/gptl_acc.mod $(INSTALLDIR)/include
 ifeq ($(FORTRAN),yes)
 # *.mod will install either gptl.mod or GPTL.mod
 	install -m 0644 gptl.inc *.mod $(INSTALLDIR)/include
 endif
 	install -m 0644 man/man3/*.3 $(MANDIR)/man/man3
 	install -m 0755 *pl $(INSTALLDIR)/bin
+ifeq ($(ENABLE_ACC),yes)
+	$(MAKE) -C cuda install
+endif
 
 # Some Fortran compilers name modules in upper case, so account for both possibilities
 uninstall:

@@ -14,12 +14,19 @@
 */
 
 extern "C" {
-__device__ extern int GPTLstart_gpu (const char *);
-__device__ extern int GPTLinit_handle_gpu (const char *, int *);
-__device__ extern int GPTLstart_handle_gpu (const char *, int *);
-__device__ extern int GPTLstop_gpu (const char *);
-__device__ extern int GPTLstop_handle_gpu (const char *, const int *);
-__device__ extern void GPTLdummy_gpu (int);
-__device__ extern int GPTLmy_sleep (float);
+#pragma acc routine seq
+__device__ int GPTLinit_handle_gpu (const char *, int *);
+#pragma acc routine seq
+__device__ int GPTLstart_gpu (const char *);
+#pragma acc routine seq
+__device__ int GPTLstart_handle_gpu (const char *, int *);
+#pragma acc routine seq
+__device__ int GPTLstop_gpu (const char *);
+#pragma acc routine seq
+__device__ int GPTLstop_handle_gpu (const char *, const int *);
+#pragma acc routine seq
+__device__ void GPTLdummy_gpu (int);
+#pragma acc routine seq
+__device__ int GPTLmy_sleep (float);
 };
 #endif
