@@ -44,7 +44,7 @@ __global__ static void initialize_gpu (const int, const int, const int, const in
 				       Timer *, Hashentry *, int *, int *, Timer **);
 __device__ static inline int get_warp_num (void);         /* get 0-based warp number */
 __device__ static inline unsigned int genhashidx (const char *);
-__device__ static inline Timer *getentry (const int, const char *, const unsigned int);
+__device__ static __forceinline__ Timer *getentry (const int, const char *, const unsigned int);
 __device__ static inline int update_stats (Timer *, const long long, const int);
 __device__ static int update_ll_hash (Timer *, int, unsigned int);
 __device__ static inline int update_ptr (Timer *, const int);
@@ -700,7 +700,7 @@ __device__ static inline unsigned int genhashidx (const char *name)
 **
 ** Return value: pointer to the entry, or NULL if not found
 */
-__device__ static inline Timer *getentry (const int w, /* hash table */
+__device__ static __forceinline__ Timer *getentry (const int w, /* hash table */
 					  const char *name,           /* name to hash */
 					  const unsigned int indx)          /* hash index */
 {

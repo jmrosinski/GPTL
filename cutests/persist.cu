@@ -4,6 +4,8 @@
 #include "../cuda/gptl_cuda.h"
 #include "./localproto.h"
 
+__global__ void dummy (int);
+
 __host__ int persist (int myrank, int mostwork, int maxwarps_gpu, int outerlooplen, 
 		      int innerlooplen, int balfact)
 {
@@ -28,10 +30,19 @@ __host__ int persist (int myrank, int mostwork, int maxwarps_gpu, int outerloopl
   ret = GPTLsetoption (GPTLmaxwarps_gpu, maxwarps_gpu);
   printf ("%s: calling gptlinitialize\n", thisfunc);
   ret = GPTLinitialize ();
+  printf ("%s: running dummy kernel 0\n", thisfunc);
+  dummy <<<1,1>>> (0);
 
+  printf ("%s: running dummy kernel 1\n", thisfunc);
+  dummy <<<1,1>>> (1);
+
+  printf ("%s: issuing cudaMalloc calls 1\n", thisfunc);
   cudaMalloc (&logvals, outerlooplen * sizeof (float));
   cudaMalloc (&sqrtvals, outerlooplen * sizeof (float));
   printf ("%s: allocated %d elements of vals\n", thisfunc, outerlooplen);
+
+  printf ("%s: running dummy kernel 2\n", thisfunc);
+  dummy <<<1,1>>> (2);
 
   // Warmup without timers
   warmup <<<grid, block>>> ();
@@ -199,4 +210,9 @@ __global__ void sleep1 (int outerlooplen)
     ret = GPTLstop_gpu ("sleep1");
   }
   ret = GPTLstop_gpu ("all_gpucalls");
+}
+
+__global__ void dummy (int id)
+{
+  GPTLdummy_gpu (id);
 }
