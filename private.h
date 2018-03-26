@@ -136,6 +136,6 @@ extern Timer **GPTLget_timersaddr (void);
 extern void __cyg_profile_func_enter (void *, void *);
 extern void __cyg_profile_func_exit (void *, void *);
 
-__host__ extern void GPTLprint_gpustats (FILE *, int, double, int);
+__host__ extern void GPTLprint_gpustats (FILE *, int, int, double, int);
 
 }

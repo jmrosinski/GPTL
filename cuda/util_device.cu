@@ -32,7 +32,7 @@ __device__ int GPTLerror_1u1d (const char *fmt, const unsigned int arg1, const i
   (void) printf ("%s: GPTL error:", thisfunc);
   (void) printf (fmt, arg1, arg2);
   if (num_errors == max_errors)
-    (void) printf ("Truncating further error print now after %d msgs", num_errors);
+    (void) printf ("Truncating further error print now after %d msgs\n", num_errors);
   ++num_errors;
   return -1;
 }
@@ -44,7 +44,7 @@ __device__ int GPTLerror_1s (const char *fmt, const char *str)
   (void) printf ("%s: GPTL error:", thisfunc);
   (void) printf (fmt, str);
   if (num_errors == max_errors)
-    (void) printf ("Truncating further error print now after %d msgs", num_errors);
+    (void) printf ("Truncating further error print now after %d msgs\n", num_errors);
   ++num_errors;
   return -1;
 }
@@ -56,7 +56,19 @@ __device__ int GPTLerror_2s (const char *fmt, const char *str1, const char *str2
   (void) printf ("%s: GPTL error:", thisfunc);
   (void) printf (fmt, str1, str2);
   if (num_errors == max_errors)
-    (void) printf ("Truncating further error print now after %d msgs", num_errors);
+    (void) printf ("Truncating further error print now after %d msgs\n", num_errors);
+  ++num_errors;
+  return -1;
+}
+
+__device__ int GPTLerror_3s (const char *fmt, const char *str1, const char *str2, const char *str3)
+{
+  static const char *thisfunc = "GPTLerror_3s";
+
+  (void) printf ("%s: GPTL error:", thisfunc);
+  (void) printf (fmt, str1, str2, str3);
+  if (num_errors == max_errors)
+    (void) printf ("Truncating further error print now after %d msgs\n", num_errors);
   ++num_errors;
   return -1;
 }
@@ -68,7 +80,7 @@ __device__ int GPTLerror_1s1d (const char *fmt, const char *str1, const int arg)
   (void) printf ("%s: GPTL error:", thisfunc);
   (void) printf (fmt, str1, arg);
   if (num_errors == max_errors)
-    (void) printf ("Truncating further error print now after %d msgs", num_errors);
+    (void) printf ("Truncating further error print now after %d msgs\n", num_errors);
   ++num_errors;
   return -1;
 }
@@ -80,7 +92,7 @@ __device__ int GPTLerror_2s1d (const char *fmt, const char *str1, const char *st
   (void) printf ("%s: GPTL error:", thisfunc);
   (void) printf (fmt, str1, str2, arg1);
   if (num_errors == max_errors)
-    (void) printf ("Truncating further error print now after %d msgs", num_errors);
+    (void) printf ("Truncating further error print now after %d msgs\n", num_errors);
   ++num_errors;
   return -1;
 }
@@ -92,7 +104,7 @@ __device__ int GPTLerror_1s2d (const char *fmt, const char *str1, const int arg1
   (void) printf ("%s: GPTL error:", thisfunc);
   (void) printf (fmt, str1, arg1, arg2);
   if (num_errors == max_errors)
-    (void) printf ("Truncating further error print now after %d msgs", num_errors);
+    (void) printf ("Truncating further error print now after %d msgs\n", num_errors);
   ++num_errors;
   return -1;
 }
@@ -104,7 +116,7 @@ __device__ int GPTLerror_1s1d1s (const char *fmt, const char *str1, const int ar
   (void) printf ("%s: GPTL error:", thisfunc);
   (void) printf (fmt, str1, arg, str2);
   if (num_errors == max_errors)
-    (void) printf ("Truncating further error print now after %d msgs", num_errors);
+    (void) printf ("Truncating further error print now after %d msgs\n", num_errors);
   ++num_errors;
   return -1;
 }
@@ -137,35 +149,6 @@ __device__ void GPTLreset_errors_gpu (void)
 __device__ int GPTLnum_errors_gpu (void)
 {
   return num_errors;
-}
-
-/*
-** GPTLallocate: wrapper utility for malloc
-**
-** Input arguments:
-**   nbytes: size to alTlocate
-**
-** Return value: pointer to the new space (or NULL)
-*/
-__device__ void *GPTLallocate_gpu (const int nbytes, const char *caller)
-{
-  void *ptr;
-  cudaError_t ret;
-
-  if ( nbytes <= 0 || ! (ptr = malloc (nbytes)))
-    printf ("GPTLallocate_gpu from %s: malloc failed for %d bytes\n", nbytes, caller);
-
-  /*
-  if ( nbytes <= 0)
-    printf ("GPTLallocate_gpu from %s: cannot allocate %d bytes\n", caller, nbytes);
-
-  ret = cudaMalloc (&ptr, nbytes);
-  if ( ret != cudaSuccess) {
-    printf ("GPTLallocate_gpu from %s: cudaMalloc failed for %d bytes\n", caller, nbytes);
-    printf ("%s\n", cudaGetErrorString(ret));
-  }
-  */
-  return ptr;
 }
 
 }

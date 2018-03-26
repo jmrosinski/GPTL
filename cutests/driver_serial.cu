@@ -3,6 +3,7 @@
 
 int main ()
 {
+  int maxwarps_gpu;
   int maxthreads_gpu;
   int outerlooplen;
   int innerlooplen;
@@ -19,11 +20,12 @@ int main ()
   } while (! ok);
 
   do {
-    maxthreads_gpu = getval_int ("maxthreads_gpu", 3584);
-    ok = maxthreads_gpu % 32 == 0;
+    maxwarps_gpu = getval_int ("maxwarps_gpu", 112);
+    ok = maxwarps_gpu > 0;
     if (! ok)
-      printf ("maxthreads_gpu must be a multiple of warpsize (32)\n");
+      printf ("maxwarps_gpu must be positive\n");
   } while (! ok);
+  maxthreads_gpu = maxwarps_gpu * 32;
 
   do {
     outerlooplen   = getval_int ("outerlooplen",   maxthreads_gpu);
@@ -47,6 +49,6 @@ int main ()
       printf ("valid balfact values are 0, 1, or 2\n");
   } while (! ok);
 
-  ret = persist (0, mostwork, maxthreads_gpu, outerlooplen, 
+  ret = persist (0, mostwork, maxwarps_gpu, outerlooplen, 
 		 innerlooplen, balfact);
 }

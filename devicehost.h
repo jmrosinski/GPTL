@@ -17,9 +17,9 @@
 // Warpsize will be verified by the library
 #define WARPSIZE 32
 // Pascal: 56 SMs 64 cuda cores each = 3584 cores
-#define DEFAULT_MAXTHREADS_GPU 14336
+#define DEFAULT_MAXWARPS_GPU 1792
 #define DEFAULT_TABLE_SIZE_GPU 63
-#define MAX_GPUTIMERS 50
+#define DEFAULT_MAXTIMERS_GPU 10
 
 typedef struct {
   long long accum_max;
@@ -38,20 +38,22 @@ typedef struct {
 } Gpustats;
 
 extern "C" {
-__global__ extern void GPTLinitialize_gpu (const int, const int, const int, const double);
-__global__ extern void GPTLfinalize_gpu (void);
-__global__ extern void GPTLenable_gpu (void);
-__global__ extern void GPTLdisable_gpu (void);
-__global__ extern void GPTLreset_gpu (void);
-__global__ extern void GPTLfill_gpustats (Gpustats *, int *, int *, int *);
-__global__ extern void GPTLget_memstats_gpu (float *, float *);
-__global__ extern void GPTLget_gpusizes (int *, int *);
-__global__ extern void GPTLget_overhead_gpu (long long *,            /* Fortran wrapper */
-					     long long *,            /* Getting my thread index */
-					     long long *,            /* Generating hash index */
-					     long long *,            /* Finding entry in hash table */
-					     long long *,            /* Underlying timing routine */
-					     long long *,            /* self_ohd */
-					     long long *);           /* parent_ohd */
+__host__   int GPTLinitialize_gpu (const int, const int, const int, const int, const double);
+__global__ void GPTLfinalize_gpu (void);
+__global__ void GPTLenable_gpu (void);
+__global__ void GPTLdisable_gpu (void);
+__global__ void GPTLreset_gpu (void);
+__global__ void GPTLfill_gpustats (Gpustats *, int *, int *);
+__global__ void GPTLget_memstats_gpu (float *, float *);
+__global__ void GPTLget_gpusizes (int *, int *);
+__global__ void GPTLget_overhead_gpu (long long *,            /* Fortran wrapper */
+				      long long *,            /* Getting my thread index */
+				      long long *,            /* Generating hash index */
+				      long long *,            /* Finding entry in hash table */
+				      long long *,            /* Underlying timing routine */
+				      long long *,            /* self_ohd */
+				      long long *,            /* parent_ohd */
+				      long long *,            // my_strlen ohd
+				      long long *);           // STRMATCH ohd
 }
 #endif

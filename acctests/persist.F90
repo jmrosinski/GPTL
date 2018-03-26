@@ -1,4 +1,4 @@
-subroutine persist (myrank, mostwork, maxthreads_gpu, outerlooplen, innerlooplen, balfact)
+subroutine persist (myrank, mostwork, maxwarps_gpu, outerlooplen, innerlooplen, balfact)
   use gptl
   use gptl_acc
   implicit none
@@ -8,7 +8,7 @@ subroutine persist (myrank, mostwork, maxthreads_gpu, outerlooplen, innerlooplen
 
   integer, intent(in) :: myrank
   integer, intent(in) :: mostwork
-  integer, intent(in) :: maxthreads_gpu
+  integer, intent(in) :: maxwarps_gpu
   integer, intent(in) :: outerlooplen
   integer, intent(in) :: innerlooplen
   integer, intent(in) :: balfact
@@ -25,7 +25,7 @@ subroutine persist (myrank, mostwork, maxthreads_gpu, outerlooplen, innerlooplen
 
 !JR NOTE: gptlinitialize call increases mallocable memory size on GPU. That call will fail
 !JR if any GPU activity happens before the call to gptlinitialize
-  ret = gptlsetoption (gptlmaxthreads_gpu, maxthreads_gpu)
+  ret = gptlsetoption (gptlmaxwarps_gpu, maxwarps_gpu)
 !  ret = gptlsetoption (gptltablesize_gpu, 32)   ! This setting gives 1 collision
   write(6,*)'persist: calling gptlinitialize'
   ret = gptlinitialize ()

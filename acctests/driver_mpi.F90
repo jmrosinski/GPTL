@@ -4,7 +4,7 @@ program driver_mpi
   use getval, only: getval_int
   implicit none
 
-  integer :: maxthreads_gpu = 3584
+  integer :: maxwarps_gpu = 112
   integer :: outerlooplen
   integer :: innerlooplen = 100
   integer :: mostwork = 1000
@@ -44,19 +44,19 @@ program driver_mpi
 
   if (myrank == 0) then
     call getval_int (mostwork, 'mostwork')
-    call getval_int (maxthreads_gpu, 'maxthreads_gpu')
-    outerlooplen = maxthreads_gpu
+    call getval_int (maxwarps_gpu, 'maxwarps_gpu')
+    outerlooplen = maxwarps_gpu * 32
     call getval_int (outerlooplen, 'outerlooplen')
     write(6,*)'outerlooplen=',outerlooplen
     call getval_int (innerlooplen, 'innerlooplen')
     call getval_int (balfact, 'balfact: 0=LtoR 1=balanced 2=RtoL')
   end if
   call mpi_bcast (mostwork,       1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
-  call mpi_bcast (maxthreads_gpu, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
+  call mpi_bcast (maxwarps_gpu, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
   call mpi_bcast (outerlooplen,   1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
   call mpi_bcast (innerlooplen,   1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
   call mpi_bcast (balfact,        1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
 
-  call persist (myrank, mostwork, maxthreads_gpu, outerlooplen, innerlooplen, balfact)
+  call persist (myrank, mostwork, maxwarps_gpu, outerlooplen, innerlooplen, balfact)
   call mpi_finalize (ierr)
 end program driver_mpi

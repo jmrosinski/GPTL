@@ -22,7 +22,7 @@ set GPTLprint_method    = 16
 set GPTLdopr_memusage   = 27
 set GPTLtablesize       = 50
 set GPTLmaxthreads      = 51
-set GPTLmaxthreads_gpu  = 52
+set GPTLmaxwarps_gpu  = 52
 set GPTLtablesize_gpu   = 53
 set GPTLmaxtimers_gpu   = 54
 
@@ -66,7 +66,7 @@ s/#GPTLlast_parent/$GPTLlast_parent/1
 s/#GPTLmost_frequent/$GPTLmost_frequent/1
 s/#GPTLfull_tree/$GPTLfull_tree/1
 s/#GPTLread_real_time/$GPTLread_real_time/1
-s/#GPTLmaxthreads_gpu/$GPTLmaxthreads_gpu/1
+s/#GPTLmaxwarps_gpu/$GPTLmaxwarps_gpu/1
 s/#GPTLmaxthreads/$GPTLmaxthreads/1
 s/#GPTLtablesize_gpu/$GPTLtablesize_gpu/1
 s/#GPTLtablesize/$GPTLtablesize/1

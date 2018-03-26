@@ -104,7 +104,8 @@ static int tablesizem1 = DEFAULT_TABLE_SIZE - 1;
 
 static double gpu_hz = 0.;       // GPU frequency in cycles per second
 static int tablesize_gpu = DEFAULT_TABLE_SIZE_GPU;
-static int maxthreads_gpu = DEFAULT_MAXTHREADS_GPU;
+static int maxwarps_gpu = DEFAULT_MAXWARPS_GPU;
+static int maxtimers_gpu = DEFAULT_MAXTIMERS_GPU;
 static int devnum = -1;
 
 #define MSGSIZ 256                          /* max size of msg printed when dopr_memusage=true */
@@ -267,49 +268,43 @@ __host__ int GPTLsetoption (const int option,  /* option */
     if (verbose)
       printf ("%s: print_method = %s\n", thisfunc, methodstr (method));
     return 0;
+  case GPTLsync_mpi:
+    if (verbose)
+      printf ("%s: boolean sync_mpi = %d\n", thisfunc, val);
+    return 0;
+  case GPTLmaxthreads:
+    if (val < 1)
+      return GPTLerror ("%s: maxthreads must be positive. %d is invalid\n", thisfunc, val);
+    maxthreads = val;
+    return 0;
   case GPTLtablesize:
     if (val < 1)
       return GPTLerror ("%s: tablesize must be positive. %d is invalid\n", thisfunc, val);
-
     tablesize = val;
     tablesizem1 = val - 1;
     if (verbose)
       printf ("%s: tablesize = %d\n", thisfunc, tablesize);
     return 0;
-  case GPTLmaxthreads_gpu:
-    if (val < 1)
-      return GPTLerror ("%s: maxthreads_gpu must be positive. %d is invalid\n", thisfunc, val);
-    if (val % WARPSIZE == 0) {
-      maxthreads_gpu = val;
-    } else {
-      maxthreads_gpu = ((val / WARPSIZE) * WARPSIZE) + WARPSIZE;
-      printf ("%s: changed maxthreads_gpu from %d to %d to be multiple of WARPSIZE=%d\n",
-	      thisfunc, val, maxthreads_gpu, WARPSIZE);
-    }
-
-    if (verbose)
-      printf ("%s: tablesize_gpu = %d\n", thisfunc, maxthreads_gpu);
-    return 0;
+    // GPU-specific items start here
   case GPTLtablesize_gpu:
     if (val < 1)
       return GPTLerror ("%s: tablesize_gpu must be positive. %d is invalid\n", thisfunc, val);
-
     tablesize_gpu = val;
     if (verbose)
       printf ("%s: tablesize_gpu = %d\n", thisfunc, tablesize_gpu);
     return 0;
-  case GPTLsync_mpi:
-    if (verbose)
-      printf ("%s: boolean sync_mpi = %d\n", thisfunc, val);
-    return 0;
-
-  case GPTLmaxthreads:
+  case GPTLmaxwarps_gpu:
     if (val < 1)
-      return GPTLerror ("%s: maxthreads must be positive. %d is invalid\n", thisfunc, val);
-
-    maxthreads = val;
+      return GPTLerror ("%s: maxwarps_gpu must be positive. %d is invalid\n", thisfunc, val);
+    maxwarps_gpu = val;
+    printf ("%s: maxwarps_gpu = %d\n", thisfunc, maxwarps_gpu);
     return 0;
-    
+  case GPTLmaxtimers_gpu:
+    if (val < 1)
+      return GPTLerror ("%s: maxtimers_gpu must be positive. %d is invalid\n", thisfunc, val);
+    maxtimers_gpu = val;
+    printf ("%s: maxtimers_gpu = %d\n", thisfunc, maxtimers_gpu);
+    return 0;
   default:
     break;
   }
@@ -425,7 +420,6 @@ __host__ int GPTLinitialize (void)
     t2 = (*ptr2wtimefunc) ();
     if (t1 > t2)
       fprintf (stderr, "%s: negative delta-t=%g\n", thisfunc, t2-t1);
-
     printf ("Per call overhead est. t2-t1=%g should be near zero\n", t2-t1);
     printf ("Underlying wallclock timing routine is %s\n", funclist[funcidx].name);
   }
@@ -439,7 +433,7 @@ __host__ int GPTLinitialize (void)
 
   gpu_hz = khz * 1000.;
   printf ("%s: GPU khz=%d\n", thisfunc, khz);
-  GPTLinitialize_gpu<<<1,1>>> (verbose, tablesize_gpu, maxthreads_gpu, gpu_hz);
+  ret = GPTLinitialize_gpu (verbose, maxwarps_gpu, tablesize_gpu, maxtimers_gpu, gpu_hz);
   printf ("%s: Returned from GPTLinitialize_gpu\n", thisfunc);
   imperfect_nest = false;
   initialized = true;
@@ -1591,7 +1585,7 @@ __host__ int GPTLpr_file (const char *outfile) /* output file to write */
   free (sum);
 
   // Now retrieve  and print the GPU info
-  GPTLprint_gpustats (fp, maxthreads_gpu, gpu_hz, devnum);
+  GPTLprint_gpustats (fp, maxwarps_gpu, maxtimers_gpu, gpu_hz, devnum);
 
   if (fp != stderr && fclose (fp) != 0)
     fprintf (stderr, "%s: Attempt to close %s failed\n", thisfunc, outfile);
@@ -1599,16 +1593,6 @@ __host__ int GPTLpr_file (const char *outfile) /* output file to write */
   pr_has_been_called = true;
   return 0;
 }
-
-#define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
-  inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
-  {
-    if (code != cudaSuccess) 
-      {
-	fprintf(stderr,"GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
-	if (abort) exit(code);
-      }
-  }
 
 /* 
 ** print_titles: Print headings to output file. If imperfect nesting was detected, print simply by
@@ -3068,8 +3052,8 @@ __host__ static int GPTLget_gpu_props (int *khz, int *warpsize, int *devnum)
   size_t size;
   cudaError_t err;
   static const size_t onemb = 1024 * 1024;
-  //  static const size_t heap_mb = 8;  // this number should avoid needing to reset the limit
-  static const size_t heap_mb = 128;
+  //static const size_t heap_mb = 8;  // this number should avoid needing to reset the limit
+  //static const size_t heap_mb = 128;
   static const char *thisfunc = "GPTLget_gpu_props";
 
   if ((err = cudaGetDeviceProperties (&prop, 0)) != cudaSuccess) {
@@ -3082,8 +3066,9 @@ __host__ static int GPTLget_gpu_props (int *khz, int *warpsize, int *devnum)
 
   err = cudaGetDevice (devnum);  // device number
   err = cudaDeviceGetLimit (&size, cudaLimitMallocHeapSize);
-  printf ("%s: default cudaLimitMallocHeapSize=%d MB\n", 
-	  thisfunc, size / onemb);
+  printf ("%s: default cudaLimitMallocHeapSize=%d MB\n", thisfunc, size / onemb);
+  // This stuff shouldn't be needed since malloc on GPU is gone
+  /*
   if (size < heap_mb * onemb) {
     printf ("Changing to %ld MB\n", heap_mb);
     if ((err = cudaDeviceSetLimit (cudaLimitMallocHeapSize, heap_mb * onemb))
@@ -3094,6 +3079,7 @@ __host__ static int GPTLget_gpu_props (int *khz, int *warpsize, int *devnum)
     err = cudaDeviceGetLimit (&size, cudaLimitMallocHeapSize);
     printf ("CUDA now says limit=%d MB\n", size / onemb);
   }
+  */
   return 0;
 }
 
@@ -3282,4 +3268,3 @@ __host__ static inline int get_thread_num ()
 
 #endif  /* Unthreaded case */
 }
-

@@ -13,16 +13,14 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
     }
 }
 
-__host__ void GPTLprint_gpustats (FILE *fp, int maxthreads_gpu, double gpu_hz, int devnum)
+__host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double gpu_hz, int devnum)
 {
   Gpustats *gpustats;
   int *max_name_len_gpu;
   int *ngputimers;
-  int *ncollisions;
   int extraspace;
   int i, n;
   int ret;
-  int maxwarps = maxthreads_gpu / WARPSIZE;
   int *nwarps_found;
   int *nwarps_timed;
 
@@ -34,6 +32,9 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxthreads_gpu, double gpu_hz, i
   long long *utr_ohdgpu;            /* Underlying timing routine */
   long long *self_ohdgpu;           // Cost est. for timing this region
   long long *parent_ohdgpu;         // Cost est. to parent of this region
+
+  long long *my_strlen_ohdgpu;
+  long long *STRMATCH_ohdgpu;
   // Returned from GPTLget_memstats_gpu:
   float *hashmem;
   float *regionmem;
@@ -48,10 +49,9 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxthreads_gpu, double gpu_hz, i
   char hostname[HOSTSIZE];
   static const char *thisfunc = "GPTLprint_gpustats";
 
-  gpuErrchk (cudaMallocManaged (&ngputimers,                       sizeof (int)));
-  gpuErrchk (cudaMallocManaged (&max_name_len_gpu,                 sizeof (int)));
-  gpuErrchk (cudaMallocManaged (&ncollisions,                      sizeof (int)));
-  gpuErrchk (cudaMallocManaged (&gpustats,         MAX_GPUTIMERS * sizeof (Gpustats)));
+  gpuErrchk (cudaMallocManaged (&ngputimers,                   sizeof (int)));
+  gpuErrchk (cudaMallocManaged (&max_name_len_gpu,             sizeof (int)));
+  gpuErrchk (cudaMallocManaged (&gpustats,         maxtimers * sizeof (Gpustats)));
 
   gpuErrchk (cudaMallocManaged (&nwarps_found,          sizeof (int)));
   gpuErrchk (cudaMallocManaged (&nwarps_timed,          sizeof (int)));
@@ -63,10 +63,13 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxthreads_gpu, double gpu_hz, i
   gpuErrchk (cudaMallocManaged (&self_ohdgpu,           sizeof (long long)));
   gpuErrchk (cudaMallocManaged (&parent_ohdgpu,         sizeof (long long)));
 
+  gpuErrchk (cudaMallocManaged (&my_strlen_ohdgpu,      sizeof (long long)));
+  gpuErrchk (cudaMallocManaged (&STRMATCH_ohdgpu,       sizeof (long long)));
+
   gpuErrchk (cudaMallocManaged (&hashmem,               sizeof (float)));
   gpuErrchk (cudaMallocManaged (&regionmem,             sizeof (float)));
 
-  GPTLfill_gpustats<<<1,1>>> (gpustats, max_name_len_gpu, ngputimers, ncollisions);
+  GPTLfill_gpustats<<<1,1>>> (gpustats, max_name_len_gpu, ngputimers);
   if (cudaGetLastError() != cudaSuccess)
     printf( "%s: Error from GPTLfill_gpustats\n", thisfunc);
   cudaDeviceSynchronize();
@@ -100,7 +103,9 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxthreads_gpu, double gpu_hz, i
 				  getentry_ohdgpu,
 				  utr_ohdgpu,
 				  self_ohdgpu,
-				  parent_ohdgpu);
+				  parent_ohdgpu,
+				  my_strlen_ohdgpu,
+				  STRMATCH_ohdgpu);
   cudaDeviceSynchronize();
 
   fprintf (fp, "Underlying timing routine was clock64()\n");
@@ -108,23 +113,27 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxthreads_gpu, double gpu_hz, i
 		getentry_ohdgpu[0] + utr_ohdgpu[0]) / gpu_hz;
   fprintf (fp, "Total overhead of 1 GPTLstart_gpu or GPTLstop_gpu call=%g seconds\n", tot_ohdgpu);
   fprintf (fp, "Components are as follows:\n");
-  fprintf (fp, "Fortran layer:             %7.1e = %5.1f%% of total\n", 
+  fprintf (fp, "Fortran layer:                  %7.1e = %5.1f%% of total\n", 
 	   ftn_ohdgpu[0] / gpu_hz, ftn_ohdgpu[0] * 100. / (tot_ohdgpu * gpu_hz) );
-  fprintf (fp, "Get thread number:         %7.1e = %5.1f%% of total\n", 
+  fprintf (fp, "Get thread number:              %7.1e = %5.1f%% of total\n", 
 	   get_thread_num_ohdgpu[0] / gpu_hz, get_thread_num_ohdgpu[0] * 100. / (tot_ohdgpu * gpu_hz) );
-  fprintf (fp, "Generate hash index:       %7.1e = %5.1f%% of total\n", 
+  fprintf (fp, "Generate hash index:            %7.1e = %5.1f%% of total\n", 
 	   genhashidx_ohdgpu[0] / gpu_hz, genhashidx_ohdgpu[0] * 100. / (tot_ohdgpu * gpu_hz) );
-  fprintf (fp, "Find hashtable entry:      %7.1e = %5.1f%% of total\n", 
+  fprintf (fp, "Find hashtable entry:           %7.1e = %5.1f%% of total\n", 
 	   getentry_ohdgpu[0] / gpu_hz, getentry_ohdgpu[0] * 100. / (tot_ohdgpu * gpu_hz) );
-  fprintf (fp, "Underlying timing routine: %7.1e = %5.1f%% of total\n", 
+  fprintf (fp, "Underlying timing routine:      %7.1e = %5.1f%% of total\n", 
 	   utr_ohdgpu[0] / gpu_hz, utr_ohdgpu[0] * 100. / (tot_ohdgpu * gpu_hz) );
+  fprintf (fp, "\n");
+
+  fprintf (fp, "my_strlen (part of genhashidx): %7.1e\n", my_strlen_ohdgpu[0] / gpu_hz);
+  fprintf (fp, "STRMATCH (part of getentry):    %7.1e\n", STRMATCH_ohdgpu[0] / gpu_hz);
+  fprintf (fp, "\n");
 
   printf ("%s: calling gpu kernel GPTLfill_gpustats...\n", thisfunc);
   printf ("%s: returned from GPTLfill_gpustats: printing results\n", thisfunc);
 
   fprintf (fp, "\nGPU timing stats\n");
-  fprintf (fp, "GPTL could handle up to %d warps (%d threads)\n", 
-	   maxthreads_gpu / WARPSIZE, maxthreads_gpu);
+  fprintf (fp, "GPTL could handle up to %d warps (%d threads)\n", maxwarps, maxwarps * WARPSIZE);
   fprintf (fp, "This setting can be changed with: GPTLsetoption(GPTLmaxthreads_gpu,<number>)\n");
   fprintf (fp, "%d warps were found\n", nwarps_found[0]);
   fprintf (fp, "%d warps were timed\n", nwarps_timed[0]);
@@ -132,40 +141,43 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxthreads_gpu, double gpu_hz, i
   fprintf (fp, "Overhead estimates self_OH and parent_OH are for warp with \'maxcount\' calls\n");
   fprintf (fp, "OHD estimate assumes Fortran, and non-handle routines used\n");
   fprintf (fp, "Actual overhead can be reduced by using \'handle\' routines and \'_c\' Fortran routines\n");
-  fprintf (fp, "Total collisions warp 0=%d\n", ncollisions[0]);
   // Print header, padding to length of longest name
   extraspace = max_name_len_gpu[0] - 4; // "name" is 4 chars
   for (i = 0; i < extraspace; ++i)
     fprintf (fp, " ");
-  fprintf (fp, "name calls warps  wallmax (warp) wallmin (warp) maxcount (warp) mincount (warp) self_OH parent_OH\n");
+  fprintf (fp, "name    calls  warps  wallmax  (warp) wallmin  (warp) maxcount (warp) mincount  (warp) self_OH parent_OH\n");
   for (n = 0; n < ngputimers[0]; ++n) {
     extraspace = max_name_len_gpu[0] - strlen (gpustats[n].name);
     for (i = 0; i < extraspace; ++i)
       fprintf (fp, " ");
-    fprintf (fp, "%s ", gpustats[n].name);             // region name
-    fprintf (fp, "%5d ", gpustats[n].count);           // # start/stops of region 
-    fprintf (fp, "%5d ", gpustats[n].nwarps);          // nwarps_timed involving name
+    fprintf (fp, "%s ", gpustats[n].name);               // region name
+    if (gpustats[n].count < 1000000)
+      fprintf (fp, "%8d ", gpustats[n].count);           // # start/stops of region
+    else
+      fprintf (fp, "%8.2e ", (float) gpustats[n].count); // # start/stops of region  
+
+    fprintf (fp, "%6d ", gpustats[n].nwarps);          // nwarps_timed involving name
     
     wallmax = gpustats[n].accum_max / gpu_hz;          // max time for name across warps
     if (wallmax < 0.01)
       fprintf (fp, "%8.2e ", wallmax);
     else
       fprintf (fp, "%8.3f ", wallmax);
-    fprintf (fp, "%5d ",gpustats[n].accum_max_warp);   // warp number for max
+    fprintf (fp, "%6d ",gpustats[n].accum_max_warp);   // warp number for max
     
     wallmin = gpustats[n].accum_min / gpu_hz;          // min time for name across warps
     if (wallmin < 0.01)
       fprintf (fp, "%8.2e ", wallmin);
     else
       fprintf (fp, "%8.3f ", wallmin);	       
-    fprintf (fp, "%5d ",gpustats[n].accum_min_warp);   // warp number for min
+    fprintf (fp, "%6d ",gpustats[n].accum_min_warp);   // warp number for min
     
     count_max = gpustats[n].count_max;
     if (count_max < PRTHRESH)
       fprintf (fp, "%9lu ", count_max);                // max count for region "name"
     else
       fprintf (fp, "%9.1e ", (float) count_max);
-    fprintf (fp, "%5d ",gpustats[n].count_max_warp);   // warp which accounted for max times
+    fprintf (fp, "%6d ",gpustats[n].count_max_warp);   // warp which accounted for max times
     
     count_min = gpustats[n].count_min;                
     if (count_min < PRTHRESH)

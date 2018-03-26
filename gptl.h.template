@@ -30,7 +30,7 @@ typedef enum {
   GPTLprint_method    = #GPTLprint_method, /* Tree print method: first parent, last parent
 			       most frequent, or full tree (most frequent) */
   GPTLtablesize       = #GPTLtablesize, /* per-thread size of hash table */
-  GPTLmaxthreads_gpu  = #GPTLmaxthreads_gpu,
+  GPTLmaxwarps_gpu    = #GPTLmaxwarps_gpu,
   GPTLmaxthreads      = #GPTLmaxthreads, /* maximum number of threads */
   GPTLtablesize_gpu   = #GPTLtablesize_gpu,
   GPTLmaxtimers_gpu   = #GPTLmaxtimers_gpu,

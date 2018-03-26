@@ -9,7 +9,7 @@ __host__ int getval_int (const char *str, const int arg)
   scanf ("%d", &ans);
   if (ans != -1)
     ret = ans;
-  printf ("arg=%d\n", arg);
+  printf ("returning %d\n", ret);
   return ret;
 }
 

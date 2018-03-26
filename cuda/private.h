@@ -38,8 +38,7 @@ typedef struct TIMER {
 } Timer;
 
 typedef struct {
-  Timer *entries[MAXENT];   /* array of timers hashed to the same value */
-  unsigned int nument;      /* number of entries hashed to the same value */
+  Timer *entry;   // timer hash
 } Hashentry;
 
 /* Function prototypes */
@@ -49,10 +48,20 @@ extern "C" {
   /* These are callable from within gptl.cu */
 __device__ extern int GPTLerror_1s (const char *, const char *);
 __device__ extern int GPTLerror_2s (const char *, const char *, const char *);
+__device__ extern int GPTLerror_3s (const char *, const char *, const char *, const char *);
 __device__ extern int GPTLerror_1s1d (const char *, const char *, const int);
 __device__ extern int GPTLerror_2s1d (const char *, const char *, const char *, const int);
 __device__ extern int GPTLerror_1s2d (const char *, const char *, const int, const int);
 __device__ extern int GPTLerror_1s1d1s (const char *, const char *, const int, const char *);
 __device__ extern void GPTLreset_errors_gpu (void);                  /* num_errors to zero */
-__device__ extern void *GPTLallocate_gpu (const int, const char *);  /* malloc wrapper */
 }
+
+#define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
+  inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
+  {
+    if (code != cudaSuccess) 
+      {
+	fprintf(stderr,"GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
+	if (abort) exit(code);
+      }
+  }

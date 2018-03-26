@@ -4,7 +4,7 @@
 #include "../cuda/gptl_cuda.h"
 #include "./localproto.h"
 
-__host__ int persist (int myrank, int mostwork, int maxthreads_gpu, int outerlooplen, 
+__host__ int persist (int myrank, int mostwork, int maxwarps_gpu, int outerlooplen, 
 		      int innerlooplen, int balfact)
 {
   const int cores_per_sm = 64;
@@ -25,13 +25,17 @@ __host__ int persist (int myrank, int mostwork, int maxthreads_gpu, int outerloo
   
   //JR NOTE: gptlinitialize call increases mallocable memory size on GPU. That call will fail
   //JR if any GPU activity happens before the call to gptlinitialize
-  ret = GPTLsetoption (GPTLmaxthreads_gpu, maxthreads_gpu);
+  ret = GPTLsetoption (GPTLmaxwarps_gpu, maxwarps_gpu);
   printf ("%s: calling gptlinitialize\n", thisfunc);
   ret = GPTLinitialize ();
 
-  cudaMallocManaged (&logvals, outerlooplen * sizeof (float));
-  cudaMallocManaged (&sqrtvals, outerlooplen * sizeof (float));
+  cudaMalloc (&logvals, outerlooplen * sizeof (float));
+  cudaMalloc (&sqrtvals, outerlooplen * sizeof (float));
   printf ("%s: allocated %d elements of vals\n", thisfunc, outerlooplen);
+
+  // Warmup without timers
+  warmup <<<grid, block>>> ();
+  cudaDeviceSynchronize();
 
   ret = GPTLstart ("gpu_fromcpu");
   ret = GPTLstart ("do_nothing_cpu");
@@ -60,6 +64,11 @@ __host__ int persist (int myrank, int mostwork, int maxthreads_gpu, int outerloo
 
   ret = GPTLpr (myrank);
   return 0;
+}
+
+__global__ void warmup (void)
+{
+  int ret;
 }
 
 __global__ void donothing (void)
