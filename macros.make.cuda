@@ -9,7 +9,7 @@
 # Where to install GPTL library and include files.
 # if "git" is not available, set REVNO by hand
 REVNO = $(shell git describe)
-INSTALLDIR = /contrib/gptl/gptl-testing/nvcc_noacc
+INSTALLDIR = /contrib/gptl/gptl-testing/nvcc_flatten
 
 # Where to install man pages (if blank, defaults to $INSTALLDIR)
 MANDIR = 

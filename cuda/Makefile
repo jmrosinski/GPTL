@@ -26,7 +26,7 @@ install: all
 	install -m 0644 lib$(GPULIB).a $(INSTALLDIR)/lib
 	install -m 0644 gptl_cuda.h $(INSTALLDIR)/include
 ifeq ($(ENABLE_ACC),yes)
-	install -m 0644 gptl_acc.inc $(INSTALLDIR)/include
+	install -m 0644 gptl_cuda.inc $(INSTALLDIR)/include
 	install -m 0644 gptl_acc.mod $(INSTALLDIR)/include
 endif
 
