@@ -27,6 +27,8 @@ typedef struct {
   long long max;
   long long min;
   unsigned long count;
+  unsigned int negcount_max;
+  int negcount_max_warp;
   int accum_max_warp;
   int accum_min_warp;
   int nwarps;

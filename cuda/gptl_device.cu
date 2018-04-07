@@ -30,8 +30,8 @@ __device__ static int maxtimers = -1;                  /* max timers */
 __device__ static int tablesize;                  // size of hash table
 #endif
 __device__ static int tablesizem1;                // one less
-__device__ static int nwarps_found = 0;           /* number of warps found : init to 0 */
-__device__ static int nwarps_timed = 0;           /* number of warps analyzed : init to 0 */
+__device__ static int maxwarpid_found = 0;           /* number of warps found : init to 0 */
+__device__ static int maxwarpid_timed = 0;           /* number of warps analyzed : init to 0 */
 __device__ static bool disabled = false;          /* Timers disabled? */
 __device__ static bool initialized = false;       /* GPTLinitialize has been called */
 __device__ static bool verbose = false;           /* output verbosity */
@@ -476,9 +476,6 @@ __device__ int GPTLstop_gpu (const char *name)               /* timer name */
   if ( ! ptr->onflg )
     return GPTLerror_2s ("%s: timer %s was already off.\n", 
 			 thisfunc, ptr->name);
-
-  ++ptr->count;
-
   /* 
   ** Recursion => decrement depth in recursion and return.  We need to return
   ** because we don't want to stop the timer.  We want the reported time for
@@ -486,6 +483,7 @@ __device__ int GPTLstop_gpu (const char *name)               /* timer name */
   */
   if (ptr->recurselvl > 0) {
     --ptr->recurselvl;
+    ++ptr->count;
     return SUCCESS;
   }
 
@@ -541,8 +539,6 @@ __device__ int GPTLstop_handle_gpu (const char *name,     /* timer name */
   if ( ! ptr->onflg )
     return GPTLerror_2s ("%s: timer %s was already off.\n", thisfunc, ptr->name);
 
-  ++ptr->count;
-
   /* 
   ** Recursion => decrement depth in recursion and return.  We need to return
   ** because we don't want to stop the timer.  We want the reported time for
@@ -550,6 +546,7 @@ __device__ int GPTLstop_handle_gpu (const char *name,     /* timer name */
   */
   if (ptr->recurselvl > 0) {
     --ptr->recurselvl;
+    ++ptr->count;
     return SUCCESS;
   }
 
@@ -580,12 +577,16 @@ __device__ static inline int update_stats (Timer *ptr,
 #endif
 
   ptr->onflg = false;
-
   delta = tp1 - ptr->wall.last;
-  ptr->wall.accum += delta;
 
-  if (delta < 0)
-    printf ("GPTL: %s: negative delta=%lld\n", thisfunc, delta);
+  if (delta < 0) {
+    printf ("GPTL: %s: w=%d negative delta: %lld-%lld=%lld: IGNORING\n", 
+	    thisfunc, w, tp1, ptr->wall.last, delta);
+    ++ptr->negcount;
+  }
+
+  ++ptr->count;
+  ptr->wall.accum += delta;
 
   if (ptr->count == 1) {
     ptr->wall.max = delta;
@@ -632,7 +633,7 @@ __global__ void GPTLreset_gpu (void)
     return;
   }
 
-  for (w = 0; w < nwarps_timed; w++) {
+  for (w = 0; w <= maxwarpid_timed; w++) {
     wi = FLATTEN_TIMERS(w,0);
     for (ptr = &timers[wi]; ptr; ptr = ptr->next) {
       ptr->onflg = false;
@@ -721,24 +722,24 @@ __device__ static inline int get_warp_num ()
 
   warpId = threadId / WARPSIZE;
 
-  // nwarps_found is needed only by CPU code gptl.c
-  if (warpId+1 > nwarps_found)
-    nwarps_found = warpId+1;
+  // maxwarpid_found is needed only by CPU code gptl.c
+  if (warpId+1 > maxwarpid_found)
+    maxwarpid_found = warpId;
 
   if (warpId > maxwarps-1)
     return WARPID_GT_MAXWARPS;
 
   // if we get here we have a usable warpId
-  if (warpId+1 > nwarps_timed)
-    nwarps_timed = warpId+1;
+  if (warpId > maxwarpid_timed)
+    maxwarpid_timed = warpId;
 
   return warpId;
 }
 
-__global__ void GPTLget_gpusizes (int *nwarps_found_out, int *nwarps_timed_out)
+__global__ void GPTLget_gpusizes (int *maxwarpid_found_out, int *maxwarpid_timed_out)
 {
-  *nwarps_found_out = nwarps_found;
-  *nwarps_timed_out = nwarps_timed;
+  *maxwarpid_found_out = maxwarpid_found;
+  *maxwarpid_timed_out = maxwarpid_timed;
 }
 
 __device__ static Timer *get_new_timer (int w, const char *name, const char *caller)
@@ -787,7 +788,7 @@ __global__ void GPTLfill_gpustats (Gpustats *gpustats,
   // Step 0: initialize "beenprocessed" flag to false everywhere
   // Also: determine max_name_len
   *max_name_len_out = 0;
-  for (w = 0; w < nwarps_timed; ++w) {
+  for (w = 0; w <= maxwarpid_timed; ++w) {
     if (max_name_len[w] > *max_name_len_out)
       *max_name_len_out = max_name_len[w];
     wi = FLATTEN_TIMERS(w,0);
@@ -807,7 +808,7 @@ __global__ void GPTLfill_gpustats (Gpustats *gpustats,
     }
     w = 0;
     init_gpustats (&gpustats[n], ptr, w);
-    for (w = 1; w < nwarps_timed; ++w) {
+    for (w = 1; w <= maxwarpid_timed; ++w) {
       wi = FLATTEN_TIMERS(w,0);
       for (tptr = timers[wi].next; tptr && my_strcmp (ptr->name, tptr->name); 
 	   tptr = tptr->next);
@@ -819,7 +820,7 @@ __global__ void GPTLfill_gpustats (Gpustats *gpustats,
   }
 
   // Step 2: process entries which do not exist in warp 0
-  for (w = 1; w < nwarps_timed; ++w) {
+  for (w = 1; w <= maxwarpid_timed; ++w) {
     wi = FLATTEN_TIMERS(w,0);
     for (ptr = timers[wi].next; ptr; ptr = ptr->next) {
       if ( ! ptr->beenprocessed) {
@@ -833,7 +834,7 @@ __global__ void GPTLfill_gpustats (Gpustats *gpustats,
 	init_gpustats (&gpustats[n], ptr, w);
 	printf ("%s: Found non-root entry for name=%s at warp=%d\n", 
 		thisfunc, ptr->name, w);
-	for (ww = w+1; ww < nwarps_timed; ++w) {
+	for (ww = w+1; ww <= maxwarpid_timed; ++w) {
 	  wwi = FLATTEN_TIMERS(ww,0);
 	  for (tptr = timers[wwi].next; tptr && my_strcmp (ptr->name, tptr->name); 
 	       tptr = tptr->next);
@@ -855,7 +856,7 @@ __global__ void GPTLfill_gpustats (Gpustats *gpustats,
   }
 
   // Step 3: Verify all timers have been processed (if MAX_GPUTIMERS limit not exceeded)
-  for (w = 0; w < nwarps_timed; ++w) {
+  for (w = 0; w <= maxwarpid_timed; ++w) {
     wi = FLATTEN_TIMERS(w,0);
     for (ptr = timers[wi].next; ptr; ptr = ptr->next) {
       if ( ! ptr->beenprocessed) {
@@ -895,6 +896,9 @@ __device__ static void init_gpustats (Gpustats *gpustats, Timer *ptr, int w)
   gpustats->count_min = ptr->count;
   gpustats->count_min_warp = w;
 
+  gpustats->negcount_max = ptr->negcount;
+  gpustats->negcount_max_warp = w;
+
   ptr->beenprocessed = true;
 }
 
@@ -920,6 +924,11 @@ __device__ static void fill_gpustats (Gpustats *gpustats, Timer *ptr, int w)
   if (ptr->count < gpustats->count_min) {
     gpustats->count_min = ptr->count;
     gpustats->count_min_warp = w;
+  }
+
+  if (ptr->negcount > gpustats->negcount_max) {
+    gpustats->negcount_max = ptr->negcount;
+    gpustats->negcount_max_warp = w;
   }
 }
 

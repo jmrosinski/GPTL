@@ -28,9 +28,10 @@ typedef struct {
 } Wallstats;
 
 typedef struct TIMER {
+  struct TIMER *next;       /* next timer in linked list */
   Wallstats wall;           /* wallclock stats */
   unsigned long count;      /* number of start/stop calls */
-  struct TIMER *next;       /* next timer in linked list */
+  unsigned int negcount;    // number of times a stop time < start time
   unsigned int recurselvl;  /* recursion level */
   bool onflg;               /* timer currently on or off */
   bool beenprocessed;       // keep track of which timers in which warps have been processed

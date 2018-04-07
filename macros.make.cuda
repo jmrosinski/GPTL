@@ -25,7 +25,7 @@ DEBUG = no
 ifeq ($(DEBUG),yes)
   CUFLAGS = -DDEBUG $(UNDERSCORING) -g -O0 -G -lineinfo -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true
 else
-  CUFLAGS = -UDEBUG $(UNDERSCORING) -g -O0              -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true
+  CUFLAGS = -UDEBUG $(UNDERSCORING) -g -O2              -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true
 endif
 
 # Set compiler flags for non-default ABIs (e.g. 64-bit addressing). 
