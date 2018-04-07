@@ -79,7 +79,6 @@ __host__ int persist (int myrank, int mostwork, int maxwarps_gpu, int outerloopl
 
 __global__ void warmup (void)
 {
-  int ret;
 }
 
 __global__ void donothing (void)

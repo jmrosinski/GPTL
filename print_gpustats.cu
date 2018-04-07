@@ -29,6 +29,7 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   long long *get_thread_num_ohdgpu; /* Getting my thread index */
   long long *genhashidx_ohdgpu;     /* Generating hash index */
   long long *getentry_ohdgpu;       /* Finding entry in hash table */
+  char *getentry_ohdgpu_name; // name used for getentry test
   long long *utr_ohdgpu;            /* Underlying timing routine */
   long long *self_ohdgpu;           // Cost est. for timing this region
   long long *parent_ohdgpu;         // Cost est. to parent of this region
@@ -43,8 +44,11 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   double wallmax, wallmin;
   double self, parent;
   double tot_ohdgpu;
+#ifdef HAVE_MPI
   int myrank = 0;
   int mpi_active;
+#endif
+
 #define HOSTSIZE 32
   char hostname[HOSTSIZE];
   static const char *thisfunc = "GPTLprint_gpustats";
@@ -59,6 +63,7 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   gpuErrchk (cudaMallocManaged (&get_thread_num_ohdgpu, sizeof (long long)));
   gpuErrchk (cudaMallocManaged (&genhashidx_ohdgpu,     sizeof (long long)));
   gpuErrchk (cudaMallocManaged (&getentry_ohdgpu,       sizeof (long long)));
+  gpuErrchk (cudaMallocManaged (&getentry_ohdgpu_name,  MAX_CHARS+1));
   gpuErrchk (cudaMallocManaged (&utr_ohdgpu,            sizeof (long long)));
   gpuErrchk (cudaMallocManaged (&self_ohdgpu,           sizeof (long long)));
   gpuErrchk (cudaMallocManaged (&parent_ohdgpu,         sizeof (long long)));
@@ -101,6 +106,7 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
 				  get_thread_num_ohdgpu,
 				  genhashidx_ohdgpu,
 				  getentry_ohdgpu,
+				  getentry_ohdgpu_name,
 				  utr_ohdgpu,
 				  self_ohdgpu,
 				  parent_ohdgpu,
@@ -119,8 +125,8 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
 	   get_thread_num_ohdgpu[0] / gpu_hz, get_thread_num_ohdgpu[0] * 100. / (tot_ohdgpu * gpu_hz) );
   fprintf (fp, "Generate hash index:            %7.1e = %5.1f%% of total\n", 
 	   genhashidx_ohdgpu[0] / gpu_hz, genhashidx_ohdgpu[0] * 100. / (tot_ohdgpu * gpu_hz) );
-  fprintf (fp, "Find hashtable entry:           %7.1e = %5.1f%% of total\n", 
-	   getentry_ohdgpu[0] / gpu_hz, getentry_ohdgpu[0] * 100. / (tot_ohdgpu * gpu_hz) );
+  fprintf (fp, "Find hashtable entry:           %7.1e = %5.1f%% of total (name=%s)\n", 
+	   getentry_ohdgpu[0] / gpu_hz, getentry_ohdgpu[0] * 100. / (tot_ohdgpu * gpu_hz), getentry_ohdgpu_name );
   fprintf (fp, "Underlying timing routine:      %7.1e = %5.1f%% of total\n", 
 	   utr_ohdgpu[0] / gpu_hz, utr_ohdgpu[0] * 100. / (tot_ohdgpu * gpu_hz) );
   fprintf (fp, "\n");

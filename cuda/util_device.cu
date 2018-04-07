@@ -7,7 +7,7 @@
 
 #include "private.h"
 
-__device__ static int max_errors = 1; /* max number of error print msgs */
+__device__ static int max_errors = 2; /* max number of error print msgs */
 __device__ static int num_errors = 0; /* number of times GPTLerror was called */
 
 #define MAXSTR 256
@@ -91,6 +91,18 @@ __device__ int GPTLerror_2s1d (const char *fmt, const char *str1, const char *st
 
   (void) printf ("%s: GPTL error:", thisfunc);
   (void) printf (fmt, str1, str2, arg1);
+  if (num_errors == max_errors)
+    (void) printf ("Truncating further error print now after %d msgs\n", num_errors);
+  ++num_errors;
+  return -1;
+}
+
+__device__ int GPTLerror_2s2d (const char *fmt, const char *str1, const char *str2, const int arg1, const int arg2)
+{
+  static const char *thisfunc = "GPTLerror_2s1d";
+
+  (void) printf ("%s: GPTL error:", thisfunc);
+  (void) printf (fmt, str1, str2, arg1, arg2);
   if (num_errors == max_errors)
     (void) printf ("Truncating further error print now after %d msgs\n", num_errors);
   ++num_errors;

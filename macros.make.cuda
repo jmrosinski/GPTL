@@ -17,12 +17,15 @@ MANDIR =
 # C compiler
 CC = nvcc
 
+# CUDA compiler
+CU = nvcc
+
 # Whether to build debug lib or optimized lib, and associated flags
-DEBUG = yes
+DEBUG = no
 ifeq ($(DEBUG),yes)
-  CUFLAGS = -g -O0 -G -lineinfo -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true
+  CUFLAGS = -DDEBUG $(UNDERSCORING) -g -O0 -G -lineinfo -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true
 else
-  CUFLAGS = -g -O2 -G           -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true
+  CUFLAGS = -UDEBUG $(UNDERSCORING) -g -O0              -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true
 endif
 
 # Set compiler flags for non-default ABIs (e.g. 64-bit addressing). 

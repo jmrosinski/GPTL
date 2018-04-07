@@ -4,8 +4,9 @@ ifeq ($(FLAGS),fail)
   FFLAGS  = -g -O0 -I$(GPTL) -I$(GPTL)/cuda -acc -Minfo=accel -Minfo -Mcuda=cuda8 -ta=tesla:cc60
   LDFLAGS = -L$(GPTL) -lgptl -L$(GPTL)/cuda -lgptl_cuda -Mcuda=cuda8,rdc -ta=tesla:cc60
 else
-  FFLAGS  = -g -O0 -I$(GPTL) -I$(GPTL)/cuda -acc -Minfo=accel -Minfo              -ta=tesla:cc60,keepgpu
-  LDFLAGS = -L$(GPTL) -lgptl -L$(GPTL)/cuda -lgptl_cuda -Mcuda=cuda8     -ta=tesla:cc60
+# Using -Mcuda=cc60 instead of -Mcuda=cuda8 fixes the static memory address compiler bug
+  FFLAGS  = -g -O0 -I$(GPTL) -I$(GPTL)/cuda -acc -Minfo=accel -Minfo -Mcuda=cc60  -ta=tesla:cc60,keepgpu
+  LDFLAGS = -L$(GPTL) -lgptl -L$(GPTL)/cuda -lgptl_cuda -Mcuda=cc60      -ta=tesla:cc60
 endif
 
 # DO NOT ADD THIS FLAG: IT SCREWS UP THE OUTPUT!!!

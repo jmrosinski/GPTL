@@ -653,41 +653,21 @@ __global__ void GPTLreset_gpu (void)
 **
 ** Return value: hash value
 */
-#define NEWWAY
 __device__ static inline unsigned int genhashidx (const char *name)
 {
   const unsigned char *c;       /* pointer to elements of "name" */
   unsigned int indx;            /* return value of function */
-#ifdef NEWWAY
   unsigned int mididx, lastidx; /* mid and final index of name */
 
   lastidx = my_strlen (name) - 1;
   mididx = lastidx / 2;
-#else
-  int i;                        /* iterator (OLDWAY only) */
-#endif
   /* 
   ** Disallow a hash index of zero (by adding 1 at the end) since user input of an uninitialized 
   ** value, though an error, has a likelihood to be zero.
   */
-#ifdef NEWWAY
   c = (unsigned char *) name;
   indx = (MAX_CHARS*c[0] + (MAX_CHARS-mididx)*c[mididx] + 
 	  (MAX_CHARS-lastidx)*c[lastidx]) % tablesizem1 + 1;
-#ifdef DEBUG
-  printf ("name=%s hash=%d\n", name, indx);
-#endif
-#else
-  indx = 0;
-  i = MAX_CHARS;
-#pragma unroll(2)
-  for (c = (unsigned char *) name; *c && i > 0; ++c) {
-    indx += i*(*c);
-    --i;
-  }
-  indx = indx % tablesizem1 + 1;
-#endif
-
   return indx;
 }
 
@@ -774,22 +754,22 @@ __device__ static Timer *get_new_timer (int w, const char *name, const char *cal
     return ptr;
   }
 
-  if (ntimers_allocated[w] > maxtimers-1) {
-    (void) GPTLerror_1s2d ("%s: ntimers already allocated=%d exceeds maxtimers-1=%d\n", 
-			   caller, ntimers_allocated[w], maxtimers-1);
+  if (ntimers_allocated[w] > maxtimers-2) {
+    (void) GPTLerror_2s2d ("%s: name=%s warp=%d: ntimers allocated=%d exceeds maxtimers-2: CANT start new timer\n", 
+			   caller, name, w, ntimers_allocated[w]);
     return ptr;
   }
 
   ptr = lasttimer[w]++;
   ptr->next = lasttimer[w];
   ptr = ptr->next;
+  ptr->next = NULL;
   numchars = MIN (my_strlen (name), MAX_CHARS);
   memcpy (ptr->name, name, numchars);
   ptr->name[numchars] = '\0';
 #ifdef DEBUG
   printf ("%s: name=%s w=%d added at position %d\n", thisfunc, ptr->name, w, ntimers_allocated[w]);
 #endif
-  ptr->next = NULL;
   ++ntimers_allocated[w];
   return ptr;
 }
@@ -1009,6 +989,7 @@ __global__ void GPTLget_overhead_gpu (long long *ftn_ohd,
 				      long long *get_warp_num_ohd, // Getting my warp index
 				      long long *genhashidx_ohd,   // Generating hash index
 				      long long *getentry_ohd,     // Finding entry in hash table
+				      char *getentry_ohd_name,     // name used for getentry
 				      long long *utr_ohd,          // Underlying timing routine
 				      long long *self_ohd,
 				      long long *parent_ohd,
@@ -1016,23 +997,24 @@ __global__ void GPTLget_overhead_gpu (long long *ftn_ohd,
 				      long long *STRMATCH_ohd)
 {
   long long t1, t2;          /* Initial, final timer values */
-  int i, n;
-  int wi;
+  int i;
   int ret;
   int mywarp;                /* which warp are we */
   unsigned int hashidx;      /* Hash index */
+  long long nchars;
   Timer *entry;              /* placeholder for return from "getentry()" */
+  char name[MAX_CHARS+1];
   static char *timername = "timername";
-  static const char *thisfunc  = "GPTLget_overhead_gpu";
 
   /*
   ** Gather timings by running kernels 1000 times each
   ** First: Fortran wrapper overhead
   */
+  nchars = my_strlen (timername);
   t1 = clock64();
   for (i = 0; i < 1000; ++i) {
     /* 9 is the number of characters in "timername" */
-    ret = gptlstart_sim (timername, (long long) 9);
+    ret = gptlstart_sim (timername, nchars);
   }
   t2 = clock64();
   *ftn_ohd = (t2 - t1) / 1000;
@@ -1055,30 +1037,23 @@ __global__ void GPTLget_overhead_gpu (long long *ftn_ohd,
 
   /* 
   ** getentry overhead
-  ** Find the first hashtable entry with a valid name. 
-  ** Start at 1 because 0 is not a valid hash
+  ** Even if there are no user timers, GPTL_ROOT can be used
+  ** 
   */
-  for (n = 1; n < tablesize; ++n) {
-    char name[MAX_CHARS+1];
-    wi = FLATTEN_HASH(0,n);
-    if (hashtable[wi].entry) {
-      my_strcpy (name, hashtable[wi].entry->name);
-      hashidx = genhashidx (name);
-      t1 = clock64();
-      for (i = 0; i < 1000; ++i)
-	entry = getentry (0, name, hashidx);
-      t2 = clock64();
-      break;
-    }
-  }
+  if (timers[0].next)
+    my_strcpy (name, timers[0].next->name); // first user entry
+  else
+    my_strcpy (name, timers[0].name);       // GPTL_ROOT
 
-  if (n == tablesize) {
-    *getentry_ohd = 0.;
-    printf ("%s: No valid timer found in hashtable: cannot estimer getentry cost\n", 
-	    thisfunc);
-  } else {
-    *getentry_ohd = (t2 - t1) / 1000;
+  hashidx = genhashidx (name);
+  t1 = clock64();
+  for (i = 0; i < 1000; ++i) {
+    entry = getentry (0, name, hashidx);
   }
+  t2 = clock64();
+
+  *getentry_ohd = (t2 - t1) / 1000;
+  my_strcpy (getentry_ohd_name, name);
 
   /* utr overhead */
   t1 = clock64();
@@ -1103,7 +1078,7 @@ __global__ void GPTLget_overhead_gpu (long long *ftn_ohd,
   t1 = clock64();
   for (i = 0; i < 1000; ++i) {
     // Use wi computed above
-    ret = STRMATCH (hashtable[wi].entry->name, "ZZZ");
+    ret = STRMATCH (name, "ZZZ");
   }
   t2 = clock64();
   *STRMATCH_ohd = (t2 - t1) / 1000;

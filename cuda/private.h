@@ -51,6 +51,7 @@ __device__ extern int GPTLerror_2s (const char *, const char *, const char *);
 __device__ extern int GPTLerror_3s (const char *, const char *, const char *, const char *);
 __device__ extern int GPTLerror_1s1d (const char *, const char *, const int);
 __device__ extern int GPTLerror_2s1d (const char *, const char *, const char *, const int);
+__device__ extern int GPTLerror_2s2d (const char *, const char *, const char *, const int, const int);
 __device__ extern int GPTLerror_1s2d (const char *, const char *, const int, const int);
 __device__ extern int GPTLerror_1s1d1s (const char *, const char *, const int, const char *);
 __device__ extern void GPTLreset_errors_gpu (void);                  /* num_errors to zero */

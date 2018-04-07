@@ -18,8 +18,8 @@
 #define WARPSIZE 32
 // Pascal: 56 SMs 64 cuda cores each = 3584 cores
 #define DEFAULT_MAXWARPS_GPU 1792
-#define DEFAULT_TABLE_SIZE_GPU 63
-#define DEFAULT_MAXTIMERS_GPU 10
+#define DEFAULT_TABLE_SIZE_GPU 127
+#define DEFAULT_MAXTIMERS_GPU 30
 
 typedef struct {
   long long accum_max;
@@ -50,6 +50,7 @@ __global__ void GPTLget_overhead_gpu (long long *,            /* Fortran wrapper
 				      long long *,            /* Getting my thread index */
 				      long long *,            /* Generating hash index */
 				      long long *,            /* Finding entry in hash table */
+				      char *,                 // name used for getentry
 				      long long *,            /* Underlying timing routine */
 				      long long *,            /* self_ohd */
 				      long long *,            /* parent_ohd */

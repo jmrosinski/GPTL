@@ -1,0 +1,99 @@
+GPTL was built without threading
+HAVE_MPI was false
+ENABLE_NESTEDOMP was false
+Underlying timing routine was gettimeofday.
+GPTLget_overhead: using hash entry 192=all_gpuloops for getentry estimate
+Total overhead of 1 GPTL start or GPTLstop call=1.02e-07 seconds
+Components are as follows:
+Fortran layer:             2.1e-08 =  20.6% of total
+Get thread number:         3.0e-09 =   2.9% of total
+Generate hash index:       1.4e-08 =  13.7% of total
+Find hashtable entry:      1.0e-08 =   9.8% of total
+Underlying timing routine: 4.4e-08 =  43.1% of total
+Misc start/stop functions: 1.0e-08 =   9.8% of total
+
+NOTE: If GPTL is called from C not Fortran, the 'Fortran layer' overhead is zero
+NOTE: For calls to GPTLstart_handle()/GPTLstop_handle(), the 'Generate hash index' overhead is zero
+NOTE: For auto-instrumented calls, the cost of generating the hash index plus finding
+      the hashtable entry is 1.6e-08 not the 2.4e-08 portion taken by GPTLstart
+NOTE: Each hash collision roughly doubles the 'Find hashtable entry' cost of that timer
+
+If overhead stats are printed, they are the columns labeled self_OH and parent_OH
+self_OH is estimated as 2X the Fortran layer cost (start+stop) plust the cost of 
+a single call to the underlying timing routine.
+parent_OH is the overhead for the named timer which is subsumed into its parent.
+It is estimated as the cost of a single GPTLstart()/GPTLstop() pair.
+Print method was full_tree.
+
+If a '%_of' field is present, it is w.r.t. the first timer for thread 0.
+A '*' in column 1 below means the timer had multiple parents, though the
+values printed are for all calls.
+Further down the listing may be more detailed information about multiple
+parents. Look for 'Multiple parent info'
+
+Process size=70833 MB rss=219 MB
+
+Stats for thread 0:
+                            Called  Recurse Wallclock max       min       self_OH  parent_OH 
+  all_gpuloops                     2    -       1.083     1.010     0.074     0.000     0.000 
+    do_nothing_cpu                 1    -    1.62e-04  1.62e-04  1.62e-04     0.000     0.000 
+    doalot_cpu                     1    -       0.074     0.074     0.074     0.000     0.000 
+    sleep1ongpu                    1    -       1.010     1.010     1.010     0.000     0.000 
+  doalot_cpu_nogputimers           1    -       0.058     0.058     0.058     0.000     0.000 
+
+Overhead sum =  1.16e-06 wallclock seconds
+Total calls  = 6
+Size of hash table was 1023
+Mean hash index for thread 0 was 692.799988
+
+Total GPTL memory usage = 18.536 KB
+Components:
+Hashmem                 = 16.408 KB
+Regionmem               = 1.04 KB
+Parent/child arrays     = 0.064 KB
+Callstackmem            = 1.024 KB
+
+GPTLthreadid[0] = 0
+
+
+GPU Results:
+GPTLprint_gpustats: device number=0
+GPTLprint_gpustats: hostname=tg062
+Underlying timing routine was clock64()
+Total overhead of 1 GPTLstart_gpu or GPTLstop_gpu call=3.73353e-06 seconds
+Components are as follows:
+Fortran layer:                  3.2e-08 =   0.8% of total
+Get thread number:              1.9e-07 =   5.0% of total
+Generate hash index:            1.1e-06 =  28.5% of total
+Find hashtable entry:           2.4e-06 =  64.5% of total (name=all_gpucalls)
+Underlying timing routine:      4.1e-08 =   1.1% of total
+
+my_strlen (part of genhashidx): 1.1e-06
+STRMATCH (part of getentry):    2.0e-07
+
+
+GPU timing stats
+GPTL could handle up to 112 warps (3584 threads)
+This setting can be changed with: GPTLsetoption(GPTLmaxthreads_gpu,<number>)
+112 warps were found
+112 warps were timed
+Only warps which were timed are counted in the following stats
+Overhead estimates self_OH and parent_OH are for warp with 'maxcount' calls
+OHD estimate assumes Fortran, and non-handle routines used
+Actual overhead can be reduced by using 'handle' routines and '_c' Fortran routines
+                 name    calls  warps  wallmax  (warp) wallmin  (warp) maxcount (warp) mincount  (warp) self_OH parent_OH
+         all_gpucalls      336    112    1.066     81    1.066     86         3      0         3     0 1.22e-07  2.23e-05 
+       do_nothing_gpu      112    112 3.40e-06     87 2.50e-06      1         1      0         1     0 4.06e-08  7.43e-06 
+           doalot_log      112    112    0.012     23    0.012     44         1      0         1     0 4.06e-08  7.43e-06 
+     doalot_log_inner      112    112    0.014     40    0.014    103         1      0         1     0 4.06e-08  7.43e-06 
+doalot_log_inner_iter    11200    112    0.012    107    0.012     53       100      0       100     0 4.06e-06  7.43e-04 
+          doalot_sqrt      112    112    0.010     95    0.010     77         1      0         1     0 4.06e-08  7.43e-06 
+        doalot_sqrt_c      112    112 9.95e-03     44 9.94e-03     96         1      0         1     0 4.06e-08  7.43e-06 
+ doalot_handle_sqrt_c      112    112    0.010     49    0.010     93         1      0         1     0 4.06e-08  7.43e-06 
+                    a      112    112    0.010     70    0.010     53         1      0         1     0 4.06e-08  7.43e-06 
+               sleep1      112    112    1.000    110    1.000      8         1      0         1     0 4.06e-08  7.43e-06 
+
+Total GPTL GPU memory usage = 516.992 KB
+Components:
+Hashmem                     = 113.792 KB
+Regionmem                   = 403.2 KB

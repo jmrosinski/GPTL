@@ -444,7 +444,6 @@ __host__ static void get_threadstats (int iam,
 {
   int t;                /* thread index */
   Timer *ptr;
-  static const char *thisfunc = "get_threadstats";
 
   /* This memset fortuitiously initializes the process values to master (0) */
   memset (global, 0, sizeof (Global));

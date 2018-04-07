@@ -26,6 +26,7 @@ subroutine persist (myrank, mostwork, maxwarps_gpu, outerlooplen, innerlooplen, 
 !JR NOTE: gptlinitialize call increases mallocable memory size on GPU. That call will fail
 !JR if any GPU activity happens before the call to gptlinitialize
   ret = gptlsetoption (gptlmaxwarps_gpu, maxwarps_gpu)
+!  ret = gptlsetoption (gptlmaxtimers_gpu, 100)
 !  ret = gptlsetoption (gptltablesize_gpu, 32)   ! This setting gives 1 collision
   write(6,*)'persist: calling gptlinitialize'
   ret = gptlinitialize ()
@@ -42,6 +43,7 @@ subroutine persist (myrank, mostwork, maxwarps_gpu, outerlooplen, innerlooplen, 
 
   ret = gptlstart ('all_gpuloops')
   ret = gptlstart ('do_nothing_cpu')
+
 !$acc parallel loop copyin(balfact,handle,handle2) copyout(ret)
   do n=0,outerlooplen-1
     ret = gptlstart_gpu ('all_gpucalls')
@@ -53,7 +55,7 @@ subroutine persist (myrank, mostwork, maxwarps_gpu, outerlooplen, innerlooplen, 
   ret = gptlstop ('do_nothing_cpu')
 
   ret = gptlstart ('doalot_cpu')
-!$acc parallel loop private(niter,factor) copyin(balfact,handle,handle2) copyout(ret, vals)
+!$acc parallel loop private(niter,factor) copyin(mostwork,innerlooplen,balfact,handle,handle2) copyout(ret, vals)
   do n=0,outerlooplen-1
     ret = gptlstart_gpu ('all_gpucalls')
     factor = real(n) / real(outerlooplen-1)
@@ -96,7 +98,7 @@ subroutine persist (myrank, mostwork, maxwarps_gpu, outerlooplen, innerlooplen, 
   ret = gptlstop ('all_gpuloops')
   
   ret = gptlstart ('doalot_cpu_nogputimers')
-!$acc parallel loop private(niter,factor) copyin(balfact) copyout(vals)
+!$acc parallel loop private(niter,factor) copyin(mostwork,innerlooplen,balfact) copyout(vals)
   do n=0,outerlooplen-1
     factor = real(n) / real(outerlooplen-1)
     select case (balfact)
@@ -132,7 +134,6 @@ subroutine persist (myrank, mostwork, maxwarps_gpu, outerlooplen, innerlooplen, 
 
   ret = gptlstop ('sleep1ongpu')
   ret = gptlstop ('all_gpuloops')
-
   ret = gptlpr (myrank)
 end subroutine persist
 
