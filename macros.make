@@ -1,1 +1,1 @@
-macros.make.cuda
+macros.make.nvcc_old

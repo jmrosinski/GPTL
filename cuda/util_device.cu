@@ -27,7 +27,7 @@ extern "C" {
 
 __device__ int GPTLerror_1u1d (const char *fmt, const unsigned int arg1, const int arg2)
 {
-  static const char *thisfunc = "GPTLerror_1u1d";
+  STATIC_LOCAL const char *thisfunc = "GPTLerror_1u1d";
 
   (void) printf ("%s: GPTL error:", thisfunc);
   (void) printf (fmt, arg1, arg2);
@@ -39,7 +39,7 @@ __device__ int GPTLerror_1u1d (const char *fmt, const unsigned int arg1, const i
 
 __device__ int GPTLerror_1s (const char *fmt, const char *str)
 {
-  static const char *thisfunc = "GPTLerror_1s";
+  STATIC_LOCAL const char *thisfunc = "GPTLerror_1s";
 
   (void) printf ("%s: GPTL error:", thisfunc);
   (void) printf (fmt, str);
@@ -51,7 +51,7 @@ __device__ int GPTLerror_1s (const char *fmt, const char *str)
 
 __device__ int GPTLerror_2s (const char *fmt, const char *str1, const char *str2)
 {
-  static const char *thisfunc = "GPTLerror_2s";
+  STATIC_LOCAL const char *thisfunc = "GPTLerror_2s";
 
   (void) printf ("%s: GPTL error:", thisfunc);
   (void) printf (fmt, str1, str2);
@@ -63,7 +63,7 @@ __device__ int GPTLerror_2s (const char *fmt, const char *str1, const char *str2
 
 __device__ int GPTLerror_3s (const char *fmt, const char *str1, const char *str2, const char *str3)
 {
-  static const char *thisfunc = "GPTLerror_3s";
+  STATIC_LOCAL const char *thisfunc = "GPTLerror_3s";
 
   (void) printf ("%s: GPTL error:", thisfunc);
   (void) printf (fmt, str1, str2, str3);
@@ -75,7 +75,7 @@ __device__ int GPTLerror_3s (const char *fmt, const char *str1, const char *str2
 
 __device__ int GPTLerror_1s1d (const char *fmt, const char *str1, const int arg)
 {
-  static const char *thisfunc = "GPTLerror_1s1d";
+  STATIC_LOCAL const char *thisfunc = "GPTLerror_1s1d";
 
   (void) printf ("%s: GPTL error:", thisfunc);
   (void) printf (fmt, str1, arg);
@@ -87,7 +87,7 @@ __device__ int GPTLerror_1s1d (const char *fmt, const char *str1, const int arg)
 
 __device__ int GPTLerror_2s1d (const char *fmt, const char *str1, const char *str2, const int arg1)
 {
-  static const char *thisfunc = "GPTLerror_2s1d";
+  STATIC_LOCAL const char *thisfunc = "GPTLerror_2s1d";
 
   (void) printf ("%s: GPTL error:", thisfunc);
   (void) printf (fmt, str1, str2, arg1);
@@ -99,7 +99,7 @@ __device__ int GPTLerror_2s1d (const char *fmt, const char *str1, const char *st
 
 __device__ int GPTLerror_2s2d (const char *fmt, const char *str1, const char *str2, const int arg1, const int arg2)
 {
-  static const char *thisfunc = "GPTLerror_2s1d";
+  STATIC_LOCAL const char *thisfunc = "GPTLerror_2s1d";
 
   (void) printf ("%s: GPTL error:", thisfunc);
   (void) printf (fmt, str1, str2, arg1, arg2);
@@ -111,7 +111,7 @@ __device__ int GPTLerror_2s2d (const char *fmt, const char *str1, const char *st
 
 __device__ int GPTLerror_1s2d (const char *fmt, const char *str1, const int arg1, const int arg2)
 {
-  static const char *thisfunc = "GPTLerror_1s2d";
+  STATIC_LOCAL const char *thisfunc = "GPTLerror_1s2d";
 
   (void) printf ("%s: GPTL error:", thisfunc);
   (void) printf (fmt, str1, arg1, arg2);
@@ -123,7 +123,7 @@ __device__ int GPTLerror_1s2d (const char *fmt, const char *str1, const int arg1
 
 __device__ int GPTLerror_1s1d1s (const char *fmt, const char *str1, const int arg, const char *str2)
 {
-  static const char *thisfunc = "GPTLerror_1s1d1s";
+  STATIC_LOCAL const char *thisfunc = "GPTLerror_1s1d1s";
 
   (void) printf ("%s: GPTL error:", thisfunc);
   (void) printf (fmt, str1, arg, str2);

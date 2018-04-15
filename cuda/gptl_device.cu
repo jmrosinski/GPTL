@@ -123,7 +123,7 @@ __global__ static void initialize_gpu (const int verbose_in,
   int i, w;           // loop indices over timer, table, warp
   int wi;
   long long t1, t2;      /* returned from underlying timer */
-  static const char *thisfunc = "initialize_gpu";
+  STATIC_LOCAL const char *thisfunc = "initialize_gpu";
 
 #ifdef VERBOSE
   printf ("Entered %s\n", thisfunc);
@@ -196,7 +196,7 @@ __global__ static void initialize_gpu (const int verbose_in,
 */
 __global__ void GPTLfinalize_gpu (void)
 {
-  static const char *thisfunc = "GPTLfinalize_gpu";
+  STATIC_LOCAL const char *thisfunc = "GPTLfinalize_gpu";
 
   if ( ! initialized) {
     (void) GPTLerror_1s ("%s: initialization was not completed\n", thisfunc);
@@ -233,7 +233,7 @@ __device__ int GPTLstart_gpu (const char *name)               /* timer name */
   int w;             /* warp index (of this thread) */
   int wi;
   unsigned int indx; /* hash table index */
-  static const char *thisfunc = "GPTLstart_gpu";
+  STATIC_LOCAL const char *thisfunc = "GPTLstart_gpu";
 
   //JR: This is for debugging the CUDA bug in which static data reverts to initial values
   //  printf("%s: name=%s: maxwarps=%d hashtable addr=%p\n", thisfunc, name, maxwarps, hashtable);
@@ -319,7 +319,7 @@ __device__ int GPTLstart_handle_gpu (const char *name,  /* timer name */
   Timer *ptr;        /* linked list pointer */
   int w;             /* warp index (of this thread) */
   int wi;
-  static const char *thisfunc = "GPTLstart_handle_gpu";
+  STATIC_LOCAL const char *thisfunc = "GPTLstart_handle_gpu";
 
   if (disabled)
     return SUCCESS;
@@ -396,7 +396,7 @@ __device__ static int update_ll_hash (Timer *ptr, int w, unsigned int indx)
 {
   int nchars;      /* number of chars */
   int wi;
-  static const char *thisfunc = "update_ll_hash";
+  STATIC_LOCAL const char *thisfunc = "update_ll_hash";
 
   nchars = my_strlen (ptr->name);
   if (nchars > max_name_len[w])
@@ -430,7 +430,7 @@ __device__ static int update_ll_hash (Timer *ptr, int w, unsigned int indx)
 __device__ static inline int update_ptr (Timer *ptr, const int w)
 {
   long long tp2;    /* time stamp */
-  static const char *thisfunc = "update_ptr";
+  STATIC_LOCAL const char *thisfunc = "update_ptr";
 
 #ifdef DEBUG
   printf ("update_ptr: ptr=%p setting onflg=true\n", ptr);
@@ -465,7 +465,7 @@ __device__ int GPTLstop_gpu (const char *name)               /* timer name */
   Timer *ptr;                /* linked list pointer */
   int w;                     /* warp number for this process */
   unsigned int indx;         /* index into hash table */
-  static const char *thisfunc = "GPTLstop_gpu";
+  STATIC_LOCAL const char *thisfunc = "GPTLstop_gpu";
 
   if (disabled)
     return SUCCESS;
@@ -523,7 +523,7 @@ __device__ int GPTLstop_handle_gpu (const char *name,     /* timer name */
   Timer *ptr;                /* linked list pointer */
   int w;                     /* warp number for this process */
   unsigned int indx;
-  static const char *thisfunc = "GPTLstop_handle_gpu";
+  STATIC_LOCAL const char *thisfunc = "GPTLstop_handle_gpu";
 
   if (disabled)
     return SUCCESS;
@@ -584,7 +584,7 @@ __device__ static inline int update_stats (Timer *ptr,
 					   const int w)
 {
   long long delta;   /* difference */
-  static const char *thisfunc = "update_stats";
+  STATIC_LOCAL const char *thisfunc = "update_stats";
 #ifdef DEBUG
   printf ("%s: ptr=%p setting onflg=false\n", thisfunc, ptr);
 #endif
@@ -650,7 +650,7 @@ __global__ void GPTLreset_gpu (void)
   int w;             /* index over warps */
   int wi;
   Timer *ptr;        /* linked list index */
-  static const char *thisfunc = "GPTLreset_gpu";
+  STATIC_LOCAL const char *thisfunc = "GPTLreset_gpu";
 
   if ( ! initialized) {
     (void) GPTLerror_1s ("%s: GPTLinitialize_gpu has not been called\n", thisfunc);
@@ -772,7 +772,7 @@ __device__ static Timer *get_new_timer (int w, const char *name, const char *cal
   int numchars;
   Timer *ptr = NULL;
 #ifdef DEBUG
-  static const char *thisfunc = "get_new_timer";
+  STATIC_LOCAL const char *thisfunc = "get_new_timer";
 #endif
   
   if (w > maxwarps-1) {
@@ -808,7 +808,7 @@ __global__ void GPTLfill_gpustats (Gpustats *gpustats,
   int wi, wwi;
   int n;             // timer index
   Timer *ptr, *tptr; // loop through linked list
-  static const char *thisfunc = "GPTLfill_gpustats";
+  STATIC_LOCAL const char *thisfunc = "GPTLfill_gpustats";
 
   // Step 0: initialize "beenprocessed" flag to false everywhere
   // Also: determine max_name_len
@@ -1038,7 +1038,7 @@ __global__ void GPTLget_overhead_gpu (long long *ftn_ohd,
   long long nchars;
   Timer *entry;              /* placeholder for return from "getentry()" */
   char name[MAX_CHARS+1];
-  static char *timername = "timername";
+  STATIC_LOCAL char *timername = "timername";
 
   /*
   ** Gather timings by running kernels 1000 times each
@@ -1152,7 +1152,7 @@ __device__ int GPTLmy_sleep (float seconds)
   long long start, now;
   double delta;
   int warpId;
-  static const char *thisfunc = "GPTLmy_sleep";
+  STATIC_LOCAL const char *thisfunc = "GPTLmy_sleep";
 
   if (gpu_hz == 0.)
     return GPTLerror_1s ("%s: need to set gpu_hz via call to GPTLinitialize_gpu() first\n",
@@ -1183,7 +1183,7 @@ __device__ int GPTLmy_sleep (float seconds)
 __device__ void GPTLdummy_gpu (int num)
 {
   Hashentry x;
-  static const char *thisfunc = "GPTLdummy_gpu";
+  STATIC_LOCAL const char *thisfunc = "GPTLdummy_gpu";
   printf ("%s: num=%d hashtable=%p\n", thisfunc, num, hashtable);
   // If hashtable pointer has become bad, force a cuda error
   x = *hashtable;
