@@ -244,11 +244,10 @@ __device__ int GPTLstart_gpu (const char *name)               /* timer name */
   if ( ! initialized)
     return GPTLerror_2s ("%s name=%s: GPTLinitialize_gpu has not been called\n", thisfunc, name);
 
-  if ((w = get_warp_num ()) == -1)
-    return GPTLerror_1s ("%s: bad return from get_warp_num\n", thisfunc);
+  w = get_warp_num ();
 
-  // Return if not thread 0 of the warp
-  if (w < 0)
+  // Return if not thread 0 of the warp, or warpId is outside range of available timers
+  if (w == NOT_ROOT_OF_WARP || w == WARPID_GT_MAXWARPS)
     return SUCCESS;
 
   /* ptr will point to the requested timer in the current list, or NULL if this is a new entry */
@@ -285,7 +284,7 @@ __device__ int GPTLstart_gpu (const char *name)               /* timer name */
 }
 
 /*
-** GPTLinit_handle: Initialize a handle for further use by GPTLstart_handle() and GPTLstop_handle()
+** GPTLinit_handle_gpu: Initialize a handle for further use by GPTLstart_handle() and GPTLstop_handle()
 **
 ** Input arguments:
 **   name: timer name
@@ -329,11 +328,10 @@ __device__ int GPTLstart_handle_gpu (const char *name,  /* timer name */
     return GPTLerror_2s ("%s name=%s: GPTLinitialize_gpu has not been called\n", 
 			 thisfunc, name);
 
-  if ((w = get_warp_num ()) == -1)
-    return GPTLerror_1s ("%s: bad return from get_warp_num\n", thisfunc);
+  w = get_warp_num ();
 
-  // Return if not thread 0 of the warp
-  if (w < 0)
+  // Return if not thread 0 of the warp, or warpId is outside range of available timers
+  if (w == NOT_ROOT_OF_WARP || w == WARPID_GT_MAXWARPS)
     return SUCCESS;
 
   /*
@@ -398,9 +396,7 @@ __device__ static int update_ll_hash (Timer *ptr, int w, unsigned int indx)
 {
   int nchars;      /* number of chars */
   int wi;
-#ifdef DEBUG
   static const char *thisfunc = "update_ll_hash";
-#endif
 
   nchars = my_strlen (ptr->name);
   if (nchars > max_name_len[w])
@@ -408,6 +404,14 @@ __device__ static int update_ll_hash (Timer *ptr, int w, unsigned int indx)
 
   wi = FLATTEN_HASH(w,indx);
   hashtable[wi].entry = ptr;
+
+#ifdef CHECK_SM
+  uint smid;
+  asm ("mov.u32 %0, %smid;" : "=r"(smid));
+  //  printf ("%s: name=%s warp= %d sm= %d\n", thisfunc, ptr->name, w, smid);
+  ptr->smid = smid;
+#endif
+
 #ifdef DEBUG
   printf("%s: name=%s indx=%d wi=%d\n", thisfunc, ptr->name, indx, wi);
 #endif
@@ -426,6 +430,7 @@ __device__ static int update_ll_hash (Timer *ptr, int w, unsigned int indx)
 __device__ static inline int update_ptr (Timer *ptr, const int w)
 {
   long long tp2;    /* time stamp */
+  static const char *thisfunc = "update_ptr";
 
 #ifdef DEBUG
   printf ("update_ptr: ptr=%p setting onflg=true\n", ptr);
@@ -433,6 +438,16 @@ __device__ static inline int update_ptr (Timer *ptr, const int w)
   ptr->onflg = true;
   tp2 = clock64 ();
   ptr->wall.last = tp2;
+
+#ifdef CHECK_SM
+  uint smid;
+  asm ("mov.u32 %0, %smid;" : "=r"(smid));
+  if (smid != ptr->smid) {
+    //    printf ("%s: name=%s warp=%d sm changed from %d to %d\n", 
+    //	    thisfunc, ptr->name, w, ptr->smid, smid);
+    ptr->smid = smid;
+  }
+#endif
   return SUCCESS;
 }
 
@@ -461,11 +476,10 @@ __device__ int GPTLstop_gpu (const char *name)               /* timer name */
   /* Get the timestamp */
   tp1 = clock64 ();
 
-  if ((w = get_warp_num ()) == -1)
-    return GPTLerror_1s ("%s: bad return from get_warp_num\n", thisfunc);
+  w = get_warp_num ();
 
-  // Return if not thread 0 of the warp
-  if (w < 0)
+  // Return if not thread 0 of the warp, or warpId is outside range of available timers
+  if (w == NOT_ROOT_OF_WARP || w == WARPID_GT_MAXWARPS)
     return SUCCESS;
 
   indx = genhashidx (name);
@@ -520,11 +534,10 @@ __device__ int GPTLstop_handle_gpu (const char *name,     /* timer name */
   /* Get the timestamp */
   tp1 = clock64 ();
 
-  if ((w = get_warp_num ()) == -1)
-    return GPTLerror_1s ("%s: bad return from get_warp_num\n", thisfunc);
+  w = get_warp_num ();
 
-  // Return if not thread 0 of the warp
-  if (w < 0)
+  // Return if not thread 0 of the warp, or warpId is outside range of available timers
+  if (w == NOT_ROOT_OF_WARP || w == WARPID_GT_MAXWARPS)
     return SUCCESS;
 
   indx = (unsigned int) *handle;
@@ -597,6 +610,17 @@ __device__ static inline int update_stats (Timer *ptr,
     if (delta < ptr->wall.min)
       ptr->wall.min = delta;
   }
+
+#ifdef CHECK_SM
+  uint smid;
+  int wi;
+  asm ("mov.u32 %0, %smid;" : "=r"(smid));
+  if (smid != ptr->smid) {
+    printf ("%s: name=%s warp=%d sm changed from %d to %d\n", 
+	    thisfunc, ptr->name, w, ptr->smid, smid);
+    ptr->smid = smid;
+  }
+#endif
   return SUCCESS;
 }
 
@@ -717,12 +741,13 @@ __device__ static inline int get_warp_num ()
     + (threadIdx.y * blockDim.x)
     + threadIdx.x;
 
+  // Only thread 0 of the warp will be timed
   if (threadId % WARPSIZE != 0)
     return NOT_ROOT_OF_WARP;
 
   warpId = threadId / WARPSIZE;
 
-  // maxwarpid_found is needed only by CPU code gptl.c
+  // maxwarpid_found is needed only by CPU code when printing results
   if (warpId+1 > maxwarpid_found)
     maxwarpid_found = warpId;
 
@@ -1126,19 +1151,32 @@ __device__ int GPTLmy_sleep (float seconds)
 {
   long long start, now;
   double delta;
+  int warpId;
   static const char *thisfunc = "GPTLmy_sleep";
-  
+
   if (gpu_hz == 0.)
     return GPTLerror_1s ("%s: need to set gpu_hz via call to GPTLinitialize_gpu() first\n",
 			 thisfunc);
-  
+#if 1
   start = clock64();
   do {
     now = clock64();
     delta = (now - start) / gpu_hz;
   } while (delta < seconds);
-  
-  __syncthreads();
+#else
+  double sum = 0;
+  long long i;
+  for (i = 1; i < 132800000L; ++i) {
+    sum += log ((double) i);
+  }
+  if (threadIdx.x == 0)
+    printf ("i=%lld\n", i);
+  if (i < 0)
+    printf("sum=%f\n",sum);
+#endif
+  // For some reason, w/o syncthreads, ACC tests often sleep much less than 1 sec
+  // But CUDA tests all seem to work fine
+  // __syncthreads();
   return SUCCESS;
 }
 

@@ -33,13 +33,16 @@ typedef struct TIMER {
   unsigned long count;      /* number of start/stop calls */
   unsigned int negcount;    // number of times a stop time < start time
   unsigned int recurselvl;  /* recursion level */
+#ifdef CHECK_SM
+  unsigned int smid;  // sm the region is running on
+#endif
   bool onflg;               /* timer currently on or off */
   bool beenprocessed;       // keep track of which timers in which warps have been processed
   char name[MAX_CHARS+1];   /* timer name (user input) */
 } Timer;
 
 typedef struct {
-  Timer *entry;   // timer hash
+  Timer *entry;       // timer hash
 } Hashentry;
 
 /* Function prototypes */

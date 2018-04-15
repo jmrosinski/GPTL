@@ -58,9 +58,9 @@ module gptl_acc
 !$acc routine seq
      end function gptlstop_handle_gpu_c
 
-     integer function gptlmy_sleep (seconds) bind(C,name="GPTLmy_sleep")
+     integer function gptlmy_sleep (seconds)
        use iso_c_binding
-       real(c_float), intent(in), value :: seconds
+       real :: seconds
 !$acc routine seq                                                               
      end function gptlmy_sleep
 

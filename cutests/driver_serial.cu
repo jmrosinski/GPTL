@@ -13,13 +13,15 @@ int main ()
   int ok;
 
   do {
-    mostwork = getval_int ("mostwork",       1000);
+    printf ("'mostwork' ensures same work distribution regardless of warp count\n");
+    mostwork = getval_int ("mostwork", 1000);
     ok = mostwork > 0;
     if (! ok)
       printf ("mostwork must be > 0\n");
   } while (! ok);
 
   do {
+    printf ("'maxwarps_gpu' is the number of warps which will be timed\n");
     maxwarps_gpu = getval_int ("maxwarps_gpu", 112);
     ok = maxwarps_gpu > 0;
     if (! ok)
@@ -28,6 +30,7 @@ int main ()
   maxthreads_gpu = maxwarps_gpu * 32;
 
   do {
+    printf ("'outerlooplen' is the number iterations which will be run in parallel\n");
     outerlooplen   = getval_int ("outerlooplen",   maxthreads_gpu);
     ok = outerlooplen > 0;
     if (! ok)
@@ -36,6 +39,7 @@ int main ()
   printf ("outerlooplen=%d\n", outerlooplen);
 
   do {
+    printf ("'innerlooplen' sets the amount of work which will be done on a single cuda core\n");
     innerlooplen   = getval_int ("innerlooplen",   100);
     ok = innerlooplen > 0;
     if (! ok)
@@ -43,6 +47,7 @@ int main ()
   } while (! ok);
 
   do {
+    printf ("'balfact' defines load balance distribution from lowest thread to highest\n");
     balfact      = getval_int ("balfact: 0=LtoR 1=balanced 2=RtoL", 1);
     ok = balfact == 0 || balfact == 1 || balfact == 2;
     if (! ok)

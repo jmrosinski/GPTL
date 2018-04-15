@@ -7,6 +7,7 @@ integer, external :: gptlstop_gpu
 integer, external :: gptlstop_gpu_c
 integer, external :: gptlstop_handle_gpu
 integer, external :: gptlstop_handle_gpu_c
+integer, external :: gptlmy_sleep
 
 !$acc routine (gptlinit_handle_gpu) seq
 !$acc routine (gptlstart_gpu) seq
@@ -17,4 +18,5 @@ integer, external :: gptlstop_handle_gpu_c
 !$acc routine (gptlstop_gpu_c) seq
 !$acc routine (gptlstop_handle_gpu) seq
 !$acc routine (gptlstop_handle_gpu_c) seq
+!$acc routine (gptlmy_sleep) seq
 

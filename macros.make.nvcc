@@ -9,7 +9,7 @@
 # Where to install GPTL library and include files.
 # if "git" is not available, set REVNO by hand
 REVNO = $(shell git describe)
-INSTALLDIR = /contrib/gptl/gptl-testing/nvcc_flatten
+INSTALLDIR = $(HOME)/gptl_flatten
 
 # Where to install man pages (if blank, defaults to $INSTALLDIR)
 MANDIR = 
@@ -23,9 +23,9 @@ CU = nvcc
 # Whether to build debug lib or optimized lib, and associated flags
 DEBUG = no
 ifeq ($(DEBUG),yes)
-  CUFLAGS = -DDEBUG $(UNDERSCORING) -g -O0 -G -lineinfo -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true
+  CUFLAGS = -DDEBUG $(UNDERSCORING) -g -O0 -G -lineinfo -ftz=true -gencode arch=compute_53,code=compute_53 -rdc=true
 else
-  CUFLAGS = -UDEBUG $(UNDERSCORING) -g -O2              -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true
+  CUFLAGS = -UDEBUG $(UNDERSCORING) -g -O2              -ftz=true -gencode arch=compute_53,code=compute_53 -rdc=true
 endif
 
 # Set compiler flags for non-default ABIs (e.g. 64-bit addressing). 
@@ -83,9 +83,9 @@ ifeq ($(FORTRAN),yes)
 # Set Fortran compiler, flags, and OpenMP compiler flag. Note that Fortran
 # OpenMP tests are possible with OPENMP=no as long as PTHREADS=yes
 # These settings are only used by the Fortran test applications in ftests/.
-  FC     = pgfortran
+  FC     = gfortran
   FFLAGS = -g -O2
-  FOMPFLAG = -mp
+  FOMPFLAG = -fopenmp
 endif
 
 # Archiver: normally it's just ar
@@ -147,7 +147,7 @@ endif
 # Whether to enable wrappers (for user codes) and tests for OpenACC
 # If set to "no" then no wrappers will be built or installed, nor will tests requiring
 # OpenACC but built or run
-ENABLE_ACC = yes
+ENABLE_ACC = no
 
 # Name of the CUDA-enabled library (not a good idea to change this)
 GPULIB = gptl_cuda

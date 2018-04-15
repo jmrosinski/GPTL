@@ -21,6 +21,7 @@
 #define gptlstop_gpu_c gptlstop_gpu_c_
 #define gptlstop_handle_gpu gptlstop_handle_gpu_
 #define gptlstop_handle_gpu_c gptlstop_handle_gpu_c_
+#define gptlmy_sleep gptlmy_sleep_
 
 #elif ( defined FORTRANDOUBLEUNDERSCORE )
 
@@ -33,6 +34,7 @@
 #define gptlstop_gpu_c gptlstop_gpu_c__
 #define gptlstop_handle_gpu gptlstop_handle_gpu__
 #define gptlstop_handle_gpu_c gptlstop_handle_gpu_c__
+#define gptlmy_sleep gptlmy_sleep__
 
 #endif
 
@@ -44,6 +46,7 @@ __device__ int gptlinit_handle_gpu (const char *, int *, long long);
 __device__ int gptlstart_handle_gpu (const char *, int *, long long);
 __device__ int gptlstop_gpu (const char *, long long);
 __device__ int gptlstop_handle_gpu (const char *, const int *, long long);
+__device__ int gptlmy_sleep (float *);
 /* Fortran wrapper functions start here */
 
 //JR Cannot dimension local cname[nc] because nc is an input argument
@@ -122,6 +125,11 @@ __device__ int gptlstop_gpu_c (const char *name, long long nc)
 __device__ int gptlstop_handle_gpu_c (const char *name, const int *handle, long long nc)
 {
   return GPTLstop_handle_gpu (name, handle);
+}
+
+__device__ int gptlmy_sleep (float *seconds)
+{
+  return GPTLmy_sleep (*seconds);
 }
 
 }

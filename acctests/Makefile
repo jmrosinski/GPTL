@@ -6,6 +6,8 @@ ifeq ($(FLAGS),fail)
 else
 # Using -Mcuda=cc60 instead of -Mcuda=cuda8 fixes the static memory address compiler bug
   FFLAGS  = -g -O0 -I$(GPTL) -I$(GPTL)/cuda -acc -Minfo=accel -Minfo -Mcuda=cc60  -ta=tesla:cc60,keepgpu
+  CPPFLAGS = -I$(GPTL) -I$(GPTL)/cuda -D_OPENACC -DPAR_WRK=1 -DVEC_LEN=96 -DNZ=96
+  FFLAGS_VDM  = -g -O3 -I$(GPTL) -I$(GPTL)/cuda -traceback -Meh_frame -D_OPENACC -DPAR_WRK=1 -DVEC_LEN=96 -DNZ=96 -acc -Minfo=accel -Mcuda=cc60 -ta=tesla,cc60,ptxinfo,gvmode,maxregcount:96
   LDFLAGS = -L$(GPTL) -lgptl -L$(GPTL)/cuda -lgptl_cuda -Mcuda=cc60      -ta=tesla:cc60
 endif
 
@@ -16,12 +18,17 @@ COMMONOBJS = persist.o getval.o
 MPROG1 = driver_serial.o
 MPROG2 = driver_mpi.o
 OBJS1 = $(MPROG1) $(COMMONOBJS)
-OBJS2 = $(MPROG2)  $(COMMONOBJS)
+OBJS2 = $(MPROG2) $(COMMONOBJS)
+OBJS3 = driver_vdmints3.o vdmints3_sim.o getval.o
 
 %.o: %.F90
 	$(FC) -c $< $(FFLAGS)
 
-all: driver_serial driver_mpi
+all: driver_serial driver_mpi driver_vdmints3
+
+vdmints3_sim.o: vdmints3_sim.F90
+	gfortran -E $(CPPFLAGS) $< > vdmints3_sim.f90
+	$(FC) -c vdmints3_sim.f90 $(FFLAGS_VDM)
 
 driver_serial: $(OBJS1) ../libgptl.a ../cuda/libgptl_cuda.a
 	$(FC) -o $@ $(OBJS1) $(LDFLAGS)
@@ -29,8 +36,11 @@ driver_serial: $(OBJS1) ../libgptl.a ../cuda/libgptl_cuda.a
 driver_mpi: $(OBJS2) ../libgptl.a ../cuda/libgptl_cuda.a
 	$(FC) -o $@ $(OBJS2) $(LDFLAGS)
 
+driver_vdmints3: $(OBJS3) ../libgptl.a ../cuda/libgptl_cuda.a
+	$(FC) -o $@ $(OBJS3) $(LDFLAGS)
+
 clean:
-	$(RM) $(MPROG1) $(MPROG2) $(OBJS1) $(OBJS2) *.mod *.gpu driver_serial driver_mpi
+	$(RM) $(MPROG1) $(MPROG2) $(OBJS1) $(OBJS2) $(OBJS3) *.mod *.gpu driver_serial driver_mpi driver_vdmints3 vdmints3_sim.f90
 
 $(MPROG1): getval.o
 $(MPROG2): getval.o

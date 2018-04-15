@@ -152,15 +152,15 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
 
   fprintf (fp, "name            = region name\n");
   fprintf (fp, "calls           = number of invocations across all timed warps\n");
-  fprintf (fp, "warps           = number of timed warps for which region was invoked at least once\n");
-  fprintf (fp, "holes           = number of timed warps for which region was never invoked (maxwarpid_timed + 1 - nwarps(region)\n");
-  fprintf (fp, "wallmax (warp)  = max wall time taken by any timed warp for this region, followed by the warp number\n");
-  fprintf (fp, "wallmin (warp)  = min wall time taken by any timed warp for this region, followed by the warp number\n");
+  fprintf (fp, "warps           = number of timed warps for which region was timed at least once\n");
+  fprintf (fp, "holes           = number of timed warps for which region was never timed (maxwarpid_timed + 1 - nwarps(region)\n");
+  fprintf (fp, "wallmax (warp)  = max wall time (sec) taken by any timed warp for this region, followed by the warp number\n");
+  fprintf (fp, "wallmin (warp)  = min wall time (sec) taken by any timed warp for this region, followed by the warp number\n");
   fprintf (fp, "maxcount (warp) = max number of times region invoked by any timed warp, followed by the warp number\n");
   fprintf (fp, "mincount (warp) = min number of times region invoked by any timed warp, followed by the warp number\n");
   fprintf (fp, "negcntmx (warp) = if a region ever had a negative interval, the biggest count is printed along with the warp number responsible\n");
-  fprintf (fp, "self_OH         = estimate of GPTL overhead in the timer incurred by 'maxcount' invocations of it\n");
-  fprintf (fp, "parent_OH       = estimate of GPTL overhead in the parent of the timer incurred by 'maxcount' invocations of it\n\n");
+  fprintf (fp, "self_OH         = estimate of GPTL overhead (sec) in the timer incurred by 'maxcount' invocations of it\n");
+  fprintf (fp, "parent_OH       = estimate of GPTL overhead (sec) in the parent of the timer incurred by 'maxcount' invocations of it\n\n");
   // Print header, padding to length of longest name
   extraspace = max_name_len_gpu[0] - 4; // "name" is 4 chars
   for (i = 0; i < extraspace; ++i)
