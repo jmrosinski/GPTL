@@ -21,7 +21,6 @@ __device__ static Timer **lasttimer = 0;               /* last element in list *
 __device__ static int *max_name_len;              /* max length of timer name */
 __device__ static int *ntimers_allocated;
 __device__ static int maxwarps = -1;              /* max warps */
-#define USE_CONSTANT
 #ifdef USE_CONSTANT
 __device__ __constant__ static int maxtimers;                  /* max timers */
 __device__ __constant__ static int tablesize;                  // size of hash table

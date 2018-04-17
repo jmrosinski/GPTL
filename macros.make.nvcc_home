@@ -21,11 +21,11 @@ CC = nvcc
 CU = nvcc
 
 # Whether to build debug lib or optimized lib, and associated flags
-DEBUG = no
+DEBUG = yes
 ifeq ($(DEBUG),yes)
-  CUFLAGS = -DDEBUG $(UNDERSCORING) -g -O0 -G -lineinfo -ftz=true -gencode arch=compute_53,code=compute_53 -rdc=true
+  CUFLAGS = -DDEBUG -UUSE_CONSTANT $(UNDERSCORING) -g -O0 -G -lineinfo -ftz=true -gencode arch=compute_53,code=compute_53 -rdc=true
 else
-  CUFLAGS = -UDEBUG $(UNDERSCORING) -g -O2              -ftz=true -gencode arch=compute_53,code=compute_53 -rdc=true
+  CUFLAGS = -UDEBUG -UUSE_CONSTANT $(UNDERSCORING) -g -O2              -ftz=true -gencode arch=compute_53,code=compute_53 -rdc=true
 endif
 
 # Set compiler flags for non-default ABIs (e.g. 64-bit addressing). 
