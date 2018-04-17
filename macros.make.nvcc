@@ -159,4 +159,4 @@ ifeq ($(CHECK_SM),yes)
 endif
 
 # Newer nvcc allows static locals
-CUFLAGS += -D_FORCE_INLINES -DSTATIC_LOCAL
+CUFLAGS += -D_FORCE_INLINES -DSTATIC_LOCAL=

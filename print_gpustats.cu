@@ -172,7 +172,7 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
       fprintf (fp, " ");
     fprintf (fp, "%s ", gpustats[n].name);               // region name
     if (gpustats[n].count < 1000000)
-      fprintf (fp, "%8d ", gpustats[n].count);           // # start/stops of region
+      fprintf (fp, "%8lu ", gpustats[n].count);           // # start/stops of region
     else
       fprintf (fp, "%8.2e ", (float) gpustats[n].count); // # start/stops of region  
 
@@ -195,20 +195,20 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
     
     count_max = gpustats[n].count_max;
     if (count_max < PRTHRESH)
-      fprintf (fp, "%8lu ", count_max);                // max count for region "name"
+      fprintf (fp, "%8d ", count_max);                 // max count for region "name"
     else
       fprintf (fp, "%8.1e ", (float) count_max);
     fprintf (fp, "%6d ",gpustats[n].count_max_warp);   // warp which accounted for max times
     
     count_min = gpustats[n].count_min;                
     if (count_min < PRTHRESH)
-      fprintf (fp, "%8lu ", count_min);                // min count for region "name"
+      fprintf (fp, "%8d ", count_min);                  // min count for region "name"
     else
       fprintf (fp, "%8.1e ", (float) count_min);
-    fprintf (fp, "%6d ",gpustats[n].count_min_warp);   // warp which accounted for max times
+    fprintf (fp, "%6d ",gpustats[n].count_min_warp);    // warp which accounted for max times
 
     negcount_max = gpustats[n].negcount_max;
-    fprintf (fp, "%8lu ", negcount_max);                 // max negcount for region "name" (hope it's zero)
+    fprintf (fp, "%8d ", negcount_max);                  // max negcount for region "name" (hope it's zero)
     fprintf (fp, "%6d ", gpustats[n].negcount_max_warp); // warp which accounted for negcount_max
 
     self = gpustats[n].count_max * self_ohdgpu[0] / gpu_hz;     // self ohd est
