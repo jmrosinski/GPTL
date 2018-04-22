@@ -29,7 +29,7 @@ subroutine vdmints3_sim (ips, ipe, oversub)
     end do
   end if
 
-  do ipnn=ipn,ipe,chunksize
+  do ipnn=ips,ipe,chunksize
 !$acc parallel private(ret) num_workers(1) vector_length(NZ) copyin(ipnn,chunksize,ipe)
     ret = gptlstart_gpu_c ('vdmints3'//char(0))
 !$acc loop gang worker private(ipn,ret2,k,isn)
