@@ -157,6 +157,3 @@ CHECK_SM = yes
 ifeq ($(CHECK_SM),yes)
   CUFLAGS += -DCHECK_SM
 endif
-
-# Newer nvcc allows static locals
-CUFLAGS += -D_FORCE_INLINES -DSTATIC_LOCAL=
