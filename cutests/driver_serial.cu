@@ -9,6 +9,8 @@ int main ()
   int innerlooplen;
   int mostwork;
   int balfact;
+  int oversub;
+  
   int ret;
   int ok;
 
@@ -54,6 +56,14 @@ int main ()
       printf ("valid balfact values are 0, 1, or 2\n");
   } while (! ok);
 
+  do {
+    printf ("'oversub' defines oversubsubscription factor\n");
+    oversub      = getval_int ("oversub: ", 1);
+    ok = oversub > 0;
+    if (! ok)
+      printf ("oversub must be an integer > 0\n");
+  } while (! ok);
+
   ret = persist (0, mostwork, maxwarps_gpu, outerlooplen, 
-		 innerlooplen, balfact);
+		 innerlooplen, balfact, oversub);
 }

@@ -34,6 +34,17 @@
 #include "private.h"
 #include "gptl.h"
 
+// Cannot use this one because it is not (yet) in a standard place
+//#include <helper_cuda.h>   // provides _ConvertSMVer2Cores()
+// Instead use this horrible hack
+#ifdef HOMEPC
+const int GPTLcores_per_sm  = 128;
+const int GPTLcores_per_gpu = 640;
+#else
+const int GPTLcores_per_sm  = 64;
+const int GPTLcores_per_gpu = 3584;
+#endif
+
 static Timer **timers = 0;             /* linked list of timers */
 static Timer **last = 0;               /* last element in list */
 static int *max_depth;                 /* maximum indentation level encountered */
@@ -51,6 +62,7 @@ static bool dopr_threadsort = true;    /* whether to print sorted thread stats *
 static bool dopr_multparent = true;    /* whether to print multiple parent info */
 static bool dopr_collision = true;     /* whether to print hash collision info */
 static bool dopr_memusage = false;     /* whether to include memusage print when auto-profiling */
+static int SMcount = -1;               // SM count for each GPU
 
 static time_t ref_gettimeofday = -1;   /* ref start point for gettimeofday */
 static time_t ref_clock_gettime = -1;  /* ref start point for clock_gettime */
@@ -3063,10 +3075,14 @@ __host__ static int GPTLget_gpu_props (int *khz, int *warpsize, int *devnum)
 
   *khz      = prop.clockRate;
   *warpsize = prop.warpSize;
+  SMcount   = prop.multiProcessorCount;
+  // Use _ConvertSMVer2Cores when it is available from nvidia
+  //  cores_per_gpu = _ConvertSMVer2Cores (prop.major, prop.minor) * prop.multiProcessorCount);
+  printf ("%s: major.minor=%d.%d SM count=%d\n", thisfunc, prop.major, prop.minor, SMcount);
 
   err = cudaGetDevice (devnum);  // device number
   err = cudaDeviceGetLimit (&size, cudaLimitMallocHeapSize);
-  printf ("%s: default cudaLimitMallocHeapSize=%d MB\n", thisfunc, size / onemb);
+  printf ("%s: default cudaLimitMallocHeapSize=%d MB\n", thisfunc, (int) (size / onemb));
   // This stuff shouldn't be needed since malloc on GPU is gone
   /*
   if (size < heap_mb * onemb) {
@@ -3081,6 +3097,36 @@ __host__ static int GPTLget_gpu_props (int *khz, int *warpsize, int *devnum)
   }
   */
   return 0;
+}
+
+int GPTLcompute_chunksize (const int oversub, const int inner_iter_count)
+{
+  int chunksize;
+  float oversub_factor;
+  static const char *thisfunc = "GPTLget_chunksize";
+
+  if (! initialized)
+    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
+
+  if (SMcount < 1)
+    return GPTLerror ("%s: SMcount has not been initialized\n", thisfunc);
+
+  if (oversub < 1)
+    return GPTLerror ("%s: oversub=%d must be > 0\n", thisfunc, oversub);
+
+  chunksize = (oversub * GPTLcores_per_gpu) / inner_iter_count;
+  printf ("%s: chunksize=%d\n", thisfunc, chunksize);
+  if (chunksize < 1) {
+    chunksize = 1;
+    oversub_factor = (float) inner_iter_count / (float) GPTLcores_per_gpu;
+    printf ("%s: WARNING: chunksize=1 still results in an oversubscription factor=%f compared to request=%d\n",
+	    thisfunc, oversub_factor, oversub);
+  } else {
+    oversub_factor = ((float) chunksize * inner_iter_count) / (float) GPTLcores_per_gpu;
+    printf ("%s: chunksize=%d will fill the GPU to an oversubscription factor=%f\n",
+	    thisfunc, chunksize, oversub_factor);
+  }
+  return chunksize;
 }
 
 /*************************************************************************************/

@@ -7,140 +7,72 @@
 ! their counterparts in gptl.h. See that file or man pages
 ! or web-based documenation for descriptions of each value
 !
-      integer GPTLsync_mpi
-      integer GPTLwall
-      integer GPTLcpu
-      integer GPTLabort_on_error
-      integer GPTLoverhead
-      integer GPTLdepthlimit
-      integer GPTLverbose
-      integer GPTLpercent
-      integer GPTLdopr_preamble
-      integer GPTLdopr_threadsort
-      integer GPTLdopr_multparent
-      integer GPTLdopr_collision
-      integer GPTLdopr_memusage
-      integer GPTLprint_method
-      integer GPTLtablesize
-      integer GPTLmaxthreads
-      integer GPTLmaxwarps_gpu
-      integer GPTLtablesize_gpu
-      integer GPTLmaxtimers_gpu
+      integer, parameter :: GPTLsync_mpi        = 0
+      integer, parameter :: GPTLwall            = 1
+      integer, parameter :: GPTLcpu             = 2
+      integer, parameter :: GPTLabort_on_error  = 3
+      integer, parameter :: GPTLoverhead        = 4
+      integer, parameter :: GPTLdepthlimit      = 5
+      integer, parameter :: GPTLverbose         = 6
+      integer, parameter :: GPTLpercent         = 9
+      integer, parameter :: GPTLdopr_preamble   = 12
+      integer, parameter :: GPTLdopr_threadsort = 13
+      integer, parameter :: GPTLdopr_multparent = 14
+      integer, parameter :: GPTLdopr_collision  = 15
+      integer, parameter :: GPTLdopr_memusage   = 27
+      integer, parameter :: GPTLprint_method    = 16
+      integer, parameter :: GPTLtablesize       = 50
+      integer, parameter :: GPTLmaxthreads      = 51
+      integer, parameter :: GPTLmaxwarps_gpu    = 52
+      integer, parameter :: GPTLtablesize_gpu   = 53
+      integer, parameter :: GPTLmaxtimers_gpu   = 54
 
-      integer GPTLnanotime
-      integer GPTLmpiwtime
-      integer GPTLclockgettime
-      integer GPTLgettimeofday
-      integer GPTLplacebo
-      integer GPTLread_real_time
+      integer, parameter :: GPTLnanotime        = 2
+      integer, parameter :: GPTLmpiwtime        = 4
+      integer, parameter :: GPTLclockgettime    = 5
+      integer, parameter :: GPTLgettimeofday    = 1
+      integer, parameter :: GPTLplacebo         = 7
+      integer, parameter :: GPTLread_real_time  = 3
 
-      integer GPTLfirst_parent
-      integer GPTLlast_parent
-      integer GPTLmost_frequent
-      integer GPTLfull_tree
-
-      parameter (GPTLsync_mpi       = 0)
-      parameter (GPTLwall           = 1)
-      parameter (GPTLcpu            = 2)
-      parameter (GPTLabort_on_error = 3)
-      parameter (GPTLoverhead       = 4)
-      parameter (GPTLdepthlimit     = 5)
-      parameter (GPTLverbose        = 6)
-      parameter (GPTLpercent        = 9)
-      parameter (GPTLdopr_preamble  = 12)
-      parameter (GPTLdopr_threadsort= 13)
-      parameter (GPTLdopr_multparent= 14)
-      parameter (GPTLdopr_collision = 15)
-      parameter (GPTLdopr_memusage  = 27)
-      parameter (GPTLprint_method   = 16)
-      parameter (GPTLtablesize      = 50)
-      parameter (GPTLmaxthreads     = 51)
-      parameter (GPTLmaxwarps_gpu   = 52)
-      parameter (GPTLtablesize_gpu  = 53)
-      parameter (GPTLmaxtimers_gpu  = 54)
-
-      parameter (GPTLgettimeofday   = 1)
-      parameter (GPTLnanotime       = 2)
-      parameter (GPTLmpiwtime       = 4)
-      parameter (GPTLclockgettime   = 5)
-      parameter (GPTLplacebo        = 7)
-      parameter (GPTLread_real_time = 3)
-
-      parameter (GPTLfirst_parent   = 1)
-      parameter (GPTLlast_parent    = 2)
-      parameter (GPTLmost_frequent  = 3)
-      parameter (GPTLfull_tree      = 4)
+      integer, parameter :: GPTLfirst_parent    = 1
+      integer, parameter :: GPTLlast_parent     = 2
+      integer, parameter :: GPTLmost_frequent   = 3
+      integer, parameter :: GPTLfull_tree       = 4
 
 ! Externals
 
-      integer gptlsetoption
-      integer gptlinitialize
-      integer gptlstart
-      integer gptlstart_handle
-      integer gptlinit_handle
-      integer gptlstop
-      integer gptlstop_handle
-      integer gptlstamp 
-      integer gptlpr
-      integer gptlpr_file
-      integer gptlpr_summary
-      integer gptlpr_summary_file
-      integer gptlbarrier
-      integer gptlreset 
-      integer gptlreset_timer
-      integer gptlfinalize
-      integer gptlget_memusage
-      integer gptlprint_memusage
-      integer gptlprint_rusage
-      integer gptlenable
-      integer gptldisable
-      integer gptlsetutr
-      integer gptlquery
-      integer gptlget_wallclock
-      integer gptlget_wallclock_latest
-      integer gptlget_threadwork
-      integer gptlstartstop_val
-      integer gptlget_eventvalue
-      integer gptlget_nregions
-      integer gptlget_regionname
-      integer gptlevent_name_to_code
-      integer gptlevent_code_to_name
-      integer gptlnum_errors
-      integer gptlnum_warn
-      integer gptlget_count
-
-      external gptlsetoption
-      external gptlinitialize
-      external gptlstart
-      external gptlstart_handle
-      external gptlinit_handle
-      external gptlstop
-      external gptlstop_handle
-      external gptlstamp 
-      external gptlpr
-      external gptlpr_file
-      external gptlpr_summary
-      external gptlpr_summary_file
-      external gptlbarrier
-      external gptlreset 
-      external gptlreset_timer
-      external gptlfinalize
-      external gptlget_memusage
-      external gptlprint_memusage
-      external gptlprint_rusage
-      external gptlenable
-      external gptldisable
-      external gptlsetutr
-      external gptlquery
-      external gptlget_wallclock
-      external gptlget_wallclock_latest
-      external gptlget_threadwork
-      external gptlstartstop_val
-      external gptlget_eventvalue
-      external gptlget_nregions
-      external gptlget_regionname
-      external gptlevent_name_to_code
-      external gptlevent_code_to_name
-      external gptlnum_errors
-      external gptlnum_warn
-      external gptlget_count
+      integer, external :: gptlsetoption
+      integer, external :: gptlinitialize
+      integer, external :: gptlstart
+      integer, external :: gptlstart_handle
+      integer, external :: gptlinit_handle
+      integer, external :: gptlstop
+      integer, external :: gptlstop_handle
+      integer, external :: gptlstamp 
+      integer, external :: gptlpr
+      integer, external :: gptlpr_file
+      integer, external :: gptlpr_summary
+      integer, external :: gptlpr_summary_file
+      integer, external :: gptlbarrier
+      integer, external :: gptlreset 
+      integer, external :: gptlreset_timer
+      integer, external :: gptlfinalize
+      integer, external :: gptlget_memusage
+      integer, external :: gptlprint_memusage
+      integer, external :: gptlprint_rusage
+      integer, external :: gptlenable
+      integer, external :: gptldisable
+      integer, external :: gptlsetutr
+      integer, external :: gptlquery
+      integer, external :: gptlget_wallclock
+      integer, external :: gptlget_wallclock_latest
+      integer, external :: gptlget_threadwork
+      integer, external :: gptlstartstop_val
+      integer, external :: gptlget_eventvalue
+      integer, external :: gptlget_nregions
+      integer, external :: gptlget_regionname
+      integer, external :: gptlevent_name_to_code
+      integer, external :: gptlevent_code_to_name
+      integer, external :: gptlnum_errors
+      integer, external :: gptlnum_warn
+      integer, external :: gptlget_count

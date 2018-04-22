@@ -8,6 +8,15 @@ module gptl
 
 ! User-accessible integers 
 
+  ! This nasty wart is needed until there is a standard way to determine cores per SM
+#ifdef HOMEPC
+  integer, parameter :: GPTLcores_per_sm = 128
+  integer, parameter :: GPTLcores_per_gpu = 640
+#else
+  integer, parameter :: GPTLcores_per_sm = 64
+  integer, parameter :: GPTLcores_per_gpu = 3584
+#endif
+
   integer, parameter :: GPTLsync_mpi       = #GPTLsync_mpi
   integer, parameter :: GPTLwall           = #GPTLwall
   integer, parameter :: GPTLcpu            = #GPTLcpu
@@ -208,6 +217,11 @@ module gptl
        integer :: t
        integer :: count
      end function gptlget_count
+
+     integer function gptlcompute_chunksize (oversub, inner_iter_count)
+       integer, intent(in) :: oversub
+       integer, intent(in) :: inner_iter_count
+     end function gptlcompute_chunksize
   end interface
 
 contains

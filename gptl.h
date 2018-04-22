@@ -9,6 +9,9 @@
 #ifndef GPTL_H
 #define GPTL_H
 
+extern const int GPTLcores_per_sm;
+extern const int GPTLcores_per_gpu;
+
 /*
 ** Options settable by a call to GPTLsetoption() (default in parens)
 */
@@ -114,7 +117,7 @@ extern int GPTLevent_code_to_name (const int, char *);
 extern int GPTLnum_errors (void);
 extern int GPTLnum_warn (void);
 extern int GPTLget_count (const char *, int, int *);
-
+extern int GPTLcompute_chunksize (const int, const int);
 };
 
 #endif

@@ -7,8 +7,8 @@ else
 # Using -Mcuda=cc60 instead of -Mcuda=cuda8 fixes the static memory address compiler bug
   FFLAGS  = -g -O0 -I$(GPTL) -I$(GPTL)/cuda -acc -Minfo=accel -Minfo -Mcuda=cc60  -ta=tesla:cc60,keepgpu
   CPPFLAGS = -I$(GPTL) -I$(GPTL)/cuda -D_OPENACC -DPAR_WRK=1 -DVEC_LEN=96 -DNZ=96
-  FFLAGS_VDM  = -g -O3 -I$(GPTL) -I$(GPTL)/cuda -traceback -Meh_frame -D_OPENACC -DPAR_WRK=1 -DVEC_LEN=96 -DNZ=96 -acc -Minfo=accel -Mcuda=cc60 -ta=tesla,cc60,ptxinfo,gvmode,maxregcount:96
-  LDFLAGS = -L$(GPTL) -lgptl -L$(GPTL)/cuda -lgptl_cuda -Mcuda=cc60      -ta=tesla:cc60
+  FFLAGS_VDM  = -g -O0 -I$(GPTL) -I$(GPTL)/cuda -traceback -Meh_frame -D_OPENACC -DPAR_WRK=1 -DVEC_LEN=96 -DNZ=96 -acc -Minfo=accel -Mcuda=cc60 -ta=tesla,cc60,ptxinfo,gvmode,maxregcount:96
+  LDFLAGS = -L$(GPTL) -lgptl -L$(GPTL)/cuda -lgptl_cuda -Mcuda=cc60      -ta=tesla:cc60 -lstdc++
 endif
 
 # DO NOT ADD THIS FLAG: IT SCREWS UP THE OUTPUT!!!

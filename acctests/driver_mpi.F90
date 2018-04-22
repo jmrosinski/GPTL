@@ -2,6 +2,7 @@ program driver_mpi
   use mpi
   use openacc
   use getval, only: getval_int
+  
   implicit none
 
   integer :: maxwarps_gpu = 112

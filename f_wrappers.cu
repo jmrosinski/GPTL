@@ -50,6 +50,7 @@
 #define gptlnum_errors gptlnum_errors_
 #define gptlnum_warn gptlnum_warn_
 #define gptlget_count gptlget_count_
+#define gptlcompute_chunksize gptlcompute_chunksize_
 
 #elif ( defined FORTRANDOUBLEUNDERSCORE )
 
@@ -85,6 +86,7 @@
 #define gptlnum_errors gptlnum_errors__
 #define gptlnum_warn gptlnum_warn__
 #define gptlget_count gptlget_count__
+#define gptlcompute_chunksize gptlcompute_chunksize__
 
 #endif
 
@@ -130,6 +132,7 @@ int gptlprint_rusage (const char *str, int nc);
 int gptlnum_errors (void);
 int gptlnum_warn (void);
 int gptlget_count (char *, int *, int *, int);
+int gptlcompute_chunksize (int *, int *);
 
 /* Fortran wrapper functions start here */
 int gptlinitialize (void)
@@ -426,6 +429,11 @@ int gptlget_count (char *name, int *t, int *count, int nc)
   cname[nc] = '\0';
 
   return GPTLget_count (cname, *t, count);
+}
+
+int gptlcompute_chunksize (int *oversub, int *inner_iter_count)
+{
+  return GPTLcompute_chunksize (*oversub, *inner_iter_count);
 }
 
 }
