@@ -703,9 +703,9 @@ __device__ static inline unsigned int genhashidx (const char *name)
 **
 ** Return value: pointer to the entry, or NULL if not found
 */
-__device__ static __forceinline__ Timer *getentry (const int w, /* hash table */
-					  const char *name,           /* name to hash */
-					  const unsigned int indx)          /* hash index */
+__device__ static __forceinline__ Timer *getentry (const int w,             // warp number
+						   const char *name,        // name to hash
+						   const unsigned int indx) // hash index
 {
   Timer *ret = NULL;
   const int wi = FLATTEN_HASH(w,indx);
@@ -739,6 +739,16 @@ __device__ static inline int get_warp_num ()
     + (threadIdx.y * blockDim.x)
     + threadIdx.x;
 
+#if 0
+  printf ("gridDim= %d %d, blockDim= %d %d %d blockIdx= %d %d %d, threadIdx= %d %d %d "
+	  "myblockId= %d mythreadId= %d\n",	  
+	  gridDim.x, gridDim.y, 
+	  blockDim.x, blockDim.y, blockDim.z, 
+	  blockIdx.x, blockIdx.y, blockIdx.z, 
+	  threadIdx.x, threadIdx.y, threadIdx.z,
+	  blockId, threadId);
+#endif
+  
   // Only thread 0 of the warp will be timed
   if (threadId % WARPSIZE != 0)
     return NOT_ROOT_OF_WARP;
@@ -763,6 +773,35 @@ __global__ void GPTLget_gpusizes (int *maxwarpid_found_out, int *maxwarpid_timed
 {
   *maxwarpid_found_out = maxwarpid_found;
   *maxwarpid_timed_out = maxwarpid_timed;
+}
+
+__device__ int GPTLget_wallclock_gpu (const char *timername,
+				      double *accum, double *max, double *min)
+{
+  Timer *ptr;          // linked list pointer
+  int w;               // warp index
+  unsigned int indx;   // hash index returned from getentry (unused)
+  static const char *thisfunc = "GPTLget_wallclock_gpu";
+  
+  if ( ! initialized)
+    (void) GPTLerror_1s ("%s: GPTLinitialize_gpu has not been called\n", thisfunc);
+
+  if (gpu_hz == 0.)
+    (void) GPTLerror_1s ("%s: gpu_hz has not been set\n", thisfunc);
+
+  w = get_warp_num ();
+  if (w == NOT_ROOT_OF_WARP || w == WARPID_GT_MAXWARPS)
+    return SUCCESS;
+  
+  indx = genhashidx (timername);
+  ptr = getentry (w, timername, indx);
+  if ( ! ptr)
+    return GPTLerror_2s ("%s: requested timer %s does not exist\n", thisfunc, timername);
+
+  *accum = ptr->wall.accum / gpu_hz;
+  *max   = ptr->wall.max   / gpu_hz;
+  *min   = ptr->wall.min   / gpu_hz;
+  return 0;
 }
 
 __device__ static Timer *get_new_timer (int w, const char *name, const char *caller)
@@ -929,6 +968,7 @@ __device__ static void fill_gpustats (Gpustats *gpustats, Timer *ptr, int w)
 {
   gpustats->count += ptr->count;
   ++gpustats->nwarps;
+
   if (ptr->wall.accum > gpustats->accum_max) {
     gpustats->accum_max = ptr->wall.accum;
     gpustats->accum_max_warp = w;
@@ -1114,7 +1154,6 @@ __global__ void GPTLget_overhead_gpu (long long *ftn_ohd,
   }
   t2 = clock64();
   *STRMATCH_ohd = (t2 - t1) / 1000;
-
   return;
 }
 

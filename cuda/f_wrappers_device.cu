@@ -22,6 +22,7 @@
 #define gptlstop_handle_gpu gptlstop_handle_gpu_
 #define gptlstop_handle_gpu_c gptlstop_handle_gpu_c_
 #define gptlmy_sleep gptlmy_sleep_
+#define gptlget_wallclock_gpu gptlget_wallclock_gpu_
 
 #elif ( defined FORTRANDOUBLEUNDERSCORE )
 
@@ -35,6 +36,7 @@
 #define gptlstop_handle_gpu gptlstop_handle_gpu__
 #define gptlstop_handle_gpu_c gptlstop_handle_gpu_c__
 #define gptlmy_sleep gptlmy_sleep__
+#define gptlget_wallclock_gpu gptlget_wallclock_gpu__
 
 #endif
 
@@ -47,6 +49,7 @@ __device__ int gptlstart_handle_gpu (const char *, int *, long long);
 __device__ int gptlstop_gpu (const char *, long long);
 __device__ int gptlstop_handle_gpu (const char *, const int *, long long);
 __device__ int gptlmy_sleep (float *);
+__device__ int gptget_wallclock_gpu (const char *, double *, double *, double *, long long);
 /* Fortran wrapper functions start here */
 
 //JR Cannot dimension local cname[nc] because nc is an input argument
@@ -132,4 +135,17 @@ __device__ int gptlmy_sleep (float *seconds)
   return GPTLmy_sleep (*seconds);
 }
 
+__device__ int gptlget_wallclock_gpu (char *name, double *accum, double *maxval, double *minval, long long nc)
+{
+  register char cname[MAX_CHARS+1];
+  const char *thisfunc = "gptlget_wallclock_gpu";
+
+  if (nc > MAX_CHARS)
+    return GPTLerror_1s2d ("%s: %d exceeds MAX_CHARS=%d\n", thisfunc, nc, MAX_CHARS);
+
+  for (int n = 0; n < nc; ++n)
+    cname[n] = name[n];
+  cname[nc] = '\0';
+  return GPTLget_wallclock_gpu (cname, accum, maxval, minval);
+}
 }

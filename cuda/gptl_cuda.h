@@ -28,5 +28,7 @@ __device__ int GPTLstop_handle_gpu (const char *, const int *);
 __device__ void GPTLdummy_gpu (int);
 #pragma acc routine seq
 __device__ int GPTLmy_sleep (float);
+#pragma acc routine seq
+__device__ int GPTLget_wallclock_gpu (const char *, double *, double *, double *);
 };
 #endif

@@ -24,8 +24,11 @@ subroutine persist (myrank, mostwork, maxwarps_gpu, outerlooplen, innerlooplen, 
   integer :: handle, handle2
   real :: factor
 
-  real :: vals(outerlooplen)
-  real*8 :: dvals(outerlooplen)
+  real :: vals(0:outerlooplen-1)
+  real*8 :: dvals(0:outerlooplen-1)
+  real*8 :: maxval, maxsav(0:outerlooplen-1)
+  real*8 :: minval, minsav(0:outerlooplen-1)
+  real*8 :: accum
   real, external :: doalot_log, doalot_log_inner, doalot_sqrt
   real*8, external :: doalot_sqrt_double
 
@@ -130,22 +133,46 @@ subroutine persist (myrank, mostwork, maxwarps_gpu, outerlooplen, innerlooplen, 
   ret = gptlstop ('total_kerneltime')
   
   write(6,*)'Sleeping 1 second on GPU...'
+  maxsav(:) = 1.
+  minsav(:) = 1.
+!$acc data copy (maxsav,minsav)
+
   ret = gptlstart ('total_kerneltime')
   ret = gptlstart ('sleep1ongpu')
   do nn=0,outerlooplen-1,chunksize
-!$acc parallel loop private(ret) copyin(nn,chunksize)
+!$acc parallel loop private(ret,accum,maxval,minval) copyin(nn,chunksize)
     do n=nn,min(outerlooplen-1,nn+chunksize-1)
       ret = gptlstart_gpu ('total_gputime')
       ret = gptlstart_gpu ('sleep1')
       ret = gptlmy_sleep (1.)
       ret = gptlstop_gpu ('sleep1')
+      maxval = 1.
+      minval = 1.
+      ret = gptlget_wallclock_gpu ('sleep1', accum, maxval, minval)
+      if (maxval > 1.1) then
+        maxsav(n) = maxval
+      end if
+      if (minval < 0.9) then
+        minsav(n) = minval
+      end if
       ret = gptlstop_gpu ('total_gputime')
     end do
 !$acc end parallel
   end do
+!$acc end data
 
   ret = gptlstop ('sleep1ongpu')
   ret = gptlstop ('total_kerneltime')
+
+  do n=0,outerlooplen-1
+    if (maxsav(n) > 1.1) then
+      write(6,*)'maxsav(',n,')=',maxsav(n)
+    end if
+    if (minsav(n) < 0.9) then
+      write(6,*)'minsav(',n,')=',minsav(n)
+    end if
+  end do
+  
   ret = gptlpr (myrank)
 end subroutine persist
 

@@ -116,7 +116,7 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
 				  STRMATCH_ohdgpu);
   cudaDeviceSynchronize();
 
-  fprintf (fp, "Underlying timing routine was clock64()\n");
+  fprintf (fp, "Underlying timing routine was clock64() assumed @ %f Ghz\n", gpu_hz * 1.e-9);
   tot_ohdgpu = (ftn_ohdgpu[0] + get_thread_num_ohdgpu[0] + genhashidx_ohdgpu[0] + 
 		getentry_ohdgpu[0] + utr_ohdgpu[0]) / gpu_hz;
   fprintf (fp, "Total overhead of 1 GPTLstart_gpu or GPTLstop_gpu call=%g seconds\n", tot_ohdgpu);

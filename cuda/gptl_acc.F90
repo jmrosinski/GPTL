@@ -69,5 +69,13 @@ module gptl_acc
        integer(c_int), intent(in), value :: num
 !$acc routine seq
      end subroutine gptldummy_gpu
+
+     integer function gptlget_wallclock_gpu (name, accum, maxval, minval)
+       character(len=*) :: name
+       real*8 :: accum
+       real*8 :: maxval
+       real*8 :: minval
+!$acc routine seq
+     end function gptlget_wallclock_gpu
   end interface
 end module gptl_acc
