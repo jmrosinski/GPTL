@@ -1,4 +1,4 @@
-subroutine persist (myrank, mostwork, maxwarps_gpu, outerlooplen, innerlooplen, balfact, oversub)
+subroutine persist (mostwork, outerlooplen, innerlooplen, balfact, oversub)
   use gptl
   use gptl_acc
   implicit none
@@ -7,9 +7,7 @@ subroutine persist (myrank, mostwork, maxwarps_gpu, outerlooplen, innerlooplen, 
 !$acc routine (doalot_sqrt) seq
 !$acc routine (doalot_sqrt_double) seq
 
-  integer, intent(in) :: myrank
   integer, intent(in) :: mostwork
-  integer, intent(in) :: maxwarps_gpu
   integer, intent(in) :: outerlooplen
   integer, intent(in) :: innerlooplen
   integer, intent(in) :: balfact
@@ -32,13 +30,6 @@ subroutine persist (myrank, mostwork, maxwarps_gpu, outerlooplen, innerlooplen, 
   real, external :: doalot_log, doalot_log_inner, doalot_sqrt
   real*8, external :: doalot_sqrt_double
 
-!JR NOTE: gptlinitialize call increases mallocable memory size on GPU. That call will fail
-!JR if any GPU activity happens before the call to gptlinitialize
-  ret = gptlsetoption (gptlmaxwarps_gpu, maxwarps_gpu)
-!  ret = gptlsetoption (gptlmaxtimers_gpu, 100)
-!  ret = gptlsetoption (gptltablesize_gpu, 32)   ! This setting gives 1 collision
-  write(6,*)'persist: calling gptlinitialize'
-  ret = gptlinitialize ()
   write(6,*)'Calling gptldummy_gpu: CUDA will barf if hashtable is no longer a valid pointer'
 !$acc kernels
   call gptldummy_gpu (0)
@@ -172,8 +163,6 @@ subroutine persist (myrank, mostwork, maxwarps_gpu, outerlooplen, innerlooplen, 
       write(6,*)'minsav(',n,')=',minsav(n)
     end if
   end do
-  
-  ret = gptlpr (myrank)
 end subroutine persist
 
 real function doalot_log (n, innerlooplen) result (sum)

@@ -63,6 +63,8 @@ static bool dopr_multparent = true;    /* whether to print multiple parent info 
 static bool dopr_collision = true;     /* whether to print hash collision info */
 static bool dopr_memusage = false;     /* whether to include memusage print when auto-profiling */
 static int SMcount = -1;               // SM count for each GPU
+static int khz = -1;
+static int warpsize = -1;
 
 static time_t ref_gettimeofday = -1;   /* ref start point for gettimeofday */
 static time_t ref_clock_gettime = -1;  /* ref start point for clock_gettime */
@@ -139,7 +141,6 @@ __host__ static int get_max_depth (const Timer *, const int);
 __host__ static int is_descendant (const Timer *, const Timer *);
 __host__ static int is_onlist (const Timer *, const Timer *);
 __host__ static const char *methodstr (Method);
-__host__ static int GPTLget_gpu_props (int *, int *, int *);
 
 /* Prototypes from previously separate file threadutil.c */
 __host__ static int threadinit (void);                    /* initialize threading environment */
@@ -435,10 +436,8 @@ __host__ int GPTLinitialize (void)
     printf ("Per call overhead est. t2-t1=%g should be near zero\n", t2-t1);
     printf ("Underlying wallclock timing routine is %s\n", funclist[funcidx].name);
   }
-  int khz;
-  int warpsize;
 
-  ret = GPTLget_gpu_props (&khz, &warpsize, &devnum);
+  ret = GPTLget_gpu_props (&khz, &warpsize, &devnum, &SMcount);
   if (warpsize != WARPSIZE)
     return GPTLerror ("%s: warpsize=%d WARPSIZE=%d\n", thisfunc, warpsize, WARPSIZE);
   printf ("%s: device number=%d\n", thisfunc, devnum);
@@ -3058,7 +3057,7 @@ __host__ Timer **GPTLget_timersaddr ()
   return timers;
 }
 
-__host__ static int GPTLget_gpu_props (int *khz, int *warpsize, int *devnum)
+__host__ int GPTLget_gpu_props (int *khz, int *warpsize, int *devnum, int *SMcount)
 {
   cudaDeviceProp prop;
   size_t size;
@@ -3075,10 +3074,10 @@ __host__ static int GPTLget_gpu_props (int *khz, int *warpsize, int *devnum)
 
   *khz      = prop.clockRate;
   *warpsize = prop.warpSize;
-  SMcount   = prop.multiProcessorCount;
+  *SMcount   = prop.multiProcessorCount;
   // Use _ConvertSMVer2Cores when it is available from nvidia
   //  cores_per_gpu = _ConvertSMVer2Cores (prop.major, prop.minor) * prop.multiProcessorCount);
-  printf ("%s: major.minor=%d.%d SM count=%d\n", thisfunc, prop.major, prop.minor, SMcount);
+  printf ("%s: major.minor=%d.%d SM count=%d\n", thisfunc, prop.major, prop.minor, *SMcount);
 
   err = cudaGetDevice (devnum);  // device number
   err = cudaDeviceGetLimit (&size, cudaLimitMallocHeapSize);
@@ -3099,17 +3098,11 @@ __host__ static int GPTLget_gpu_props (int *khz, int *warpsize, int *devnum)
   return 0;
 }
 
-int GPTLcompute_chunksize (const int oversub, const int inner_iter_count)
+__host__ int GPTLcompute_chunksize (const int oversub, const int inner_iter_count)
 {
   int chunksize;
   float oversub_factor;
   static const char *thisfunc = "GPTLget_chunksize";
-
-  if (! initialized)
-    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
-
-  if (SMcount < 1)
-    return GPTLerror ("%s: SMcount has not been initialized\n", thisfunc);
 
   if (oversub < 1)
     return GPTLerror ("%s: oversub=%d must be > 0\n", thisfunc, oversub);

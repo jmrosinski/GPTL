@@ -51,6 +51,7 @@
 #define gptlnum_warn gptlnum_warn_
 #define gptlget_count gptlget_count_
 #define gptlcompute_chunksize gptlcompute_chunksize_
+#define gptlget_gpu_props gptlget_gpu_props_
 
 #elif ( defined FORTRANDOUBLEUNDERSCORE )
 
@@ -87,6 +88,7 @@
 #define gptlnum_warn gptlnum_warn__
 #define gptlget_count gptlget_count__
 #define gptlcompute_chunksize gptlcompute_chunksize__
+#define gptlget_gpu_props gptlget_gpu_props__
 
 #endif
 
@@ -133,6 +135,7 @@ int gptlnum_errors (void);
 int gptlnum_warn (void);
 int gptlget_count (char *, int *, int *, int);
 int gptlcompute_chunksize (int *, int *);
+int gptlget_gpu_props (int *, int *,int *, int *);
 
 /* Fortran wrapper functions start here */
 int gptlinitialize (void)
@@ -434,6 +437,11 @@ int gptlget_count (char *name, int *t, int *count, int nc)
 int gptlcompute_chunksize (int *oversub, int *inner_iter_count)
 {
   return GPTLcompute_chunksize (*oversub, *inner_iter_count);
+}
+
+int gptlget_gpu_props (int *khz, int *warpsize, int *devnum, int *SMcount)
+{
+  return GPTLget_gpu_props (khz, warpsize, devnum, SMcount);
 }
 
 }

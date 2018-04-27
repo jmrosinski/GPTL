@@ -5,6 +5,9 @@
 ** Main file contains most CUDA GPTL functions
 */
 
+#define CHECK_1SEC
+#undef USE_THREADS
+
 #include <stdio.h>
 #include <string.h>        /* memcpy */
 #include <cuda.h>
@@ -35,12 +38,27 @@ __device__ static bool disabled = false;          /* Timers disabled? */
 __device__ static bool initialized = false;       /* GPTLinitialize has been called */
 __device__ static bool verbose = false;           /* output verbosity */
 __device__ static double gpu_hz = 0.;             // clock freq
+#ifdef CHECK_1SEC
+typedef struct {
+  long long last;
+  long long current;
+  long long delta;
+  uint smid;
+  float diff;
+} Startstop;
+__device__ static volatile Startstop *startstop;
+#endif
 
 extern "C" {
 
 /* Local function prototypes */
+#ifdef CHECK_1SEC
+__global__ static void initialize_gpu (const int, const int, const int, const int, const double, 
+				       Timer *, Hashentry *, int *, int *, Startstop *, Timer **);
+#else
 __global__ static void initialize_gpu (const int, const int, const int, const int, const double, 
 				       Timer *, Hashentry *, int *, int *, Timer **);
+#endif
 __device__ static inline int get_warp_num (void);         /* get 0-based warp number */
 __device__ static inline unsigned int genhashidx (const char *);
 __device__ static __forceinline__ Timer *getentry (const int, const char *, const unsigned int);
@@ -70,6 +88,9 @@ __host__ int GPTLinitialize_gpu (const int verbose_in,
   static int *ntimers_allocated_cpu;              /* max length of timer name */
   static Timer *timers_cpu = 0;             /* linked list of timers */
   static Timer **lasttimer_cpu = 0;               /* last element in list */
+#ifdef CHECK_1SEC
+  static Startstop *startstop_cpu = 0;
+#endif
   //  static const char *thisfunc = "GPTLinitialize_gpu";
 
   nbytes = maxwarps_in * maxtimers_in * sizeof (Timer);
@@ -85,6 +106,11 @@ __host__ int GPTLinitialize_gpu (const int verbose_in,
   nbytes = maxwarps_in * sizeof (Timer *);
   gpuErrchk (cudaMalloc (&lasttimer_cpu, nbytes));
 
+#ifdef CHECK_1SEC
+  nbytes = maxwarps_in * sizeof (Startstop);
+  gpuErrchk (cudaMalloc (&startstop_cpu, nbytes));
+#endif
+
   // Using constant memory doesn't seem to help much if at all
   // First arg is pass by reference so no "&"
   // maxtimers_in and tablesize_in will be ignored if USE_CONSTANT is defined
@@ -98,7 +124,12 @@ __host__ int GPTLinitialize_gpu (const int verbose_in,
 			    hashtable_cpu, 
 			    max_name_len_cpu, 
 			    ntimers_allocated_cpu,
+#ifdef CHECK_1SEC
+			    startstop_cpu,
+#endif			    
 			    lasttimer_cpu);
+  // This should flush any existing print buffers
+  cudaDeviceSynchronize ();
   return 0;
 }
 
@@ -117,6 +148,9 @@ __global__ static void initialize_gpu (const int verbose_in,
 				       Hashentry *hashtable_cpu,
 				       int *max_name_len_cpu,
 				       int *ntimers_allocated_cpu,
+#ifdef CHECK_1SEC
+				       Startstop *startstop_cpu,
+#endif				       
 				       Timer **lasttimer_cpu)
 {
   int i, w;           // loop indices over timer, table, warp
@@ -145,6 +179,9 @@ __global__ static void initialize_gpu (const int verbose_in,
   hashtable = hashtable_cpu;
   max_name_len = max_name_len_cpu;
   ntimers_allocated = ntimers_allocated_cpu;
+#ifdef CHECK_1SEC
+  startstop = startstop_cpu;
+#endif
   lasttimer = lasttimer_cpu;
 
   // Initialize hashtable
@@ -428,7 +465,7 @@ __device__ static int update_ll_hash (Timer *ptr, int w, unsigned int indx)
 */
 __device__ static inline int update_ptr (Timer *ptr, const int w)
 {
-  long long tp2;    /* time stamp */
+  volatile long long tp2;    /* time stamp */
   static const char *thisfunc = "update_ptr";
 
 #ifdef DEBUG
@@ -460,7 +497,7 @@ __device__ static inline int update_ptr (Timer *ptr, const int w)
 */
 __device__ int GPTLstop_gpu (const char *name)               /* timer name */
 {
-  long long tp1 = 0;         /* time stamp */
+  volatile long long tp1;             /* time stamp */
   Timer *ptr;                /* linked list pointer */
   int w;                     /* warp number for this process */
   unsigned int indx;         /* index into hash table */
@@ -518,7 +555,7 @@ __device__ int GPTLstop_gpu (const char *name)               /* timer name */
 __device__ int GPTLstop_handle_gpu (const char *name,     /* timer name */
 				    const int *handle)    /* handle */
 {
-  long long tp1 = 0;         /* time stamp */
+  volatile long long tp1;         /* time stamp */
   Timer *ptr;                /* linked list pointer */
   int w;                     /* warp number for this process */
   unsigned int indx;
@@ -582,6 +619,7 @@ __device__ static inline int update_stats (Timer *ptr,
 					   const long long tp1, 
 					   const int w)
 {
+  uint smid;         // only needed when certain ifdefs defined
   long long delta;   /* difference */
   static const char *thisfunc = "update_stats";
 #ifdef DEBUG
@@ -610,8 +648,18 @@ __device__ static inline int update_stats (Timer *ptr,
       ptr->wall.min = delta;
   }
 
+#ifdef CHECK_1SEC
+  double diff =  delta / gpu_hz;
+  if (diff < 0.99) {
+    asm ("mov.u32 %0, %smid;" : "=r"(smid));
+    printf ("%s: w=%d smid=%u smid_sleep=%u\n", thisfunc, w, smid, startstop[w].smid);
+    printf ("start(gptl) %lld start(sleep) %lld stop(sleep) %lld stop(gptl) %lld\n",
+	    ptr->wall.last, startstop[w].last, startstop[w].current, tp1);
+    printf ("diff(gptl) %f diff(sleep) %f\n", delta/gpu_hz, startstop[w].diff);
+  }
+#endif
+
 #ifdef CHECK_SM
-  uint smid;
   asm ("mov.u32 %0, %smid;" : "=r"(smid));
   if (smid != ptr->smid) {
     printf ("%s: name=%s warp=%d sm changed from %d to %d\n", 
@@ -753,7 +801,12 @@ __device__ static inline int get_warp_num ()
   if (threadId % WARPSIZE != 0)
     return NOT_ROOT_OF_WARP;
 
+  // USE_THREADS means use threadId not warpId 
+#ifdef USE_THREADS
+  warpId = threadId;
+#else
   warpId = threadId / WARPSIZE;
+#endif
 
   // maxwarpid_found is needed only by CPU code when printing results
   if (warpId+1 > maxwarpid_found)
@@ -1186,29 +1239,47 @@ __global__ void GPTLget_memstats_gpu (float *hashmem, float *regionmem)
 
 __device__ int GPTLmy_sleep (float seconds)
 {
-  long long start, now;
-  double delta;
+#ifdef CHECK_1SEC
+  int warpId;
+  int blockId = blockIdx.x 
+    + blockIdx.y * gridDim.x 
+    + gridDim.x * gridDim.y * blockIdx.z; 
+  int threadId = blockId * (blockDim.x * blockDim.y * blockDim.z)
+    + (threadIdx.z * (blockDim.x * blockDim.y))
+    + (threadIdx.y * blockDim.x)
+    + threadIdx.x;
+  int w = threadId / WARPSIZE;
+#endif
+
+  volatile long long start, now;
+  volatile double delta;
   static const char *thisfunc = "GPTLmy_sleep";
 
   if (gpu_hz == 0.)
     return GPTLerror_1s ("%s: need to set gpu_hz via call to GPTLinitialize_gpu() first\n",
 			 thisfunc);
-#if 1
+
+  if (threadId % WARPSIZE != 0)
+    return SUCCESS;
+
   start = clock64();
   do {
     now = clock64();
     delta = (now - start) / gpu_hz;
   } while (delta < seconds);
-#else
-  double sum = 0;
-  long long i;
-  for (i = 1; i < 132800000L; ++i) {
-    sum += log ((double) i);
+
+#ifdef CHECK_1SEC
+  if (threadId % WARPSIZE == 0) {
+    uint smid;
+    startstop[w].last = start;
+    startstop[w].current = now;
+    startstop[w].delta = now - start;
+    asm ("mov.u32 %0, %smid;" : "=r"(smid));
+    startstop[w].smid = smid;
+    startstop[w].diff = (now - start) / gpu_hz;
+    if (startstop[w].diff < 0.99 || startstop[w].diff > 1.01)
+      printf ("%s: diff %f start %lld now %lld\n", thisfunc, startstop[w].diff, start, now);
   }
-  if (threadIdx.x == 0)
-    printf ("i=%lld\n", i);
-  if (i < 0)
-    printf("sum=%f\n",sum);
 #endif
   // For some reason, w/o syncthreads, ACC tests often sleep much less than 1 sec
   // But CUDA tests all seem to work fine

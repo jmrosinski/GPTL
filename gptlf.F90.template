@@ -222,6 +222,13 @@ module gptl
        integer, intent(in) :: oversub
        integer, intent(in) :: inner_iter_count
      end function gptlcompute_chunksize
+
+     integer function gptlget_gpu_props (khz, warpsize, devnum, smcount)
+       integer, intent(out) :: khz
+       integer, intent(out) :: warpsize
+       integer, intent(out) :: devnum
+       integer, intent(out) :: smcount
+     end function gptlget_gpu_props
   end interface
 
 contains

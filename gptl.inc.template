@@ -76,3 +76,4 @@
       integer, external :: gptlnum_errors
       integer, external :: gptlnum_warn
       integer, external :: gptlget_count
+      integer, external :: gptlget_gpu_props
