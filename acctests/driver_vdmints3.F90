@@ -5,22 +5,36 @@ program driver_vdmints3
 
   implicit none
 
+  integer :: maxwarps_gpu
   integer :: ips = 1
   integer :: ipe = 10242
-  integer :: oversub = 1
+  integer :: oversub
+  integer :: cores_per_gpu
+  integer :: khz, warpsize, devnum, smcount
   integer :: n
   integer :: ret
 
+  ret = gptlget_gpu_props (khz, warpsize, devnum, smcount)
+  cores_per_gpu = gptlcompute_chunksize (1, 1)
+  write(6,*)'cores_per_gpu=', cores_per_gpu
+
+  maxwarps_gpu = cores_per_gpu / warpsize
+  call getval_int (maxwarps_gpu, 'maxwarps_gpu')
+  write(6,*)'maxwarps_gpu=',maxwarps_gpu
+  ret = gptlsetoption (gptlmaxwarps_gpu, maxwarps_gpu)
+
   call getval_int (ips, 'ips')
   call getval_int (ipe, 'ipe')
+
+  oversub = (ipe - ips + 1 + (cores_per_gpu-1)) / cores_per_gpu
   call getval_int (oversub, 'oversub')
 
   ret = gptlsetoption (gptlverbose, 1)
 !ret = gptlsetoption (gptlmaxthreads_gpu, 262208)
 !ret = gptlsetoption (gptlmaxwarps_gpu, 448)   ! for flatten
 ! This one is the highest number that works
-  ret = gptlsetoption (gptlmaxwarps_gpu, 33600 / oversub)
-  ret = gptlsetoption (gptlmaxtimers_gpu, 10)
+
+  write(6,*)'Calling gptlinitialize'
   ret = gptlinitialize()
   do n=1,10
     ret = gptlstart('vdmints3_sim')

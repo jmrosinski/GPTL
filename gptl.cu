@@ -3102,22 +3102,17 @@ __host__ int GPTLcompute_chunksize (const int oversub, const int inner_iter_coun
 {
   int chunksize;
   float oversub_factor;
-  static const char *thisfunc = "GPTLget_chunksize";
+  static const char *thisfunc = "GPTLcompute_chunksize";
 
   if (oversub < 1)
     return GPTLerror ("%s: oversub=%d must be > 0\n", thisfunc, oversub);
 
   chunksize = (oversub * GPTLcores_per_gpu) / inner_iter_count;
-  printf ("%s: chunksize=%d\n", thisfunc, chunksize);
   if (chunksize < 1) {
     chunksize = 1;
     oversub_factor = (float) inner_iter_count / (float) GPTLcores_per_gpu;
     printf ("%s: WARNING: chunksize=1 still results in an oversubscription factor=%f compared to request=%d\n",
 	    thisfunc, oversub_factor, oversub);
-  } else {
-    oversub_factor = ((float) chunksize * inner_iter_count) / (float) GPTLcores_per_gpu;
-    printf ("%s: chunksize=%d will fill the GPU to an oversubscription factor=%f\n",
-	    thisfunc, chunksize, oversub_factor);
   }
   return chunksize;
 }
