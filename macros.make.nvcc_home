@@ -16,10 +16,10 @@ MANDIR =
 
 # Provide full path to C and CU compilers to avoid conflict with /usr/bin/nvcc
 # C compiler
-CC = /opt/pgi/linux86-64/2017/cuda/8.0/bin/nvcc
+CC = /opt/pgi/linux86-64/2018/cuda/8.0/bin/nvcc
 
 # CUDA compiler
-CU = /opt/pgi/linux86-64/2017/cuda/8.0/bin/nvcc
+CU = /opt/pgi/linux86-64/2018/cuda/8.0/bin/nvcc
 
 # Whether to build debug lib or optimized lib, and associated flags
 DEBUG = no

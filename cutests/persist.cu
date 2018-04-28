@@ -1,26 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <cuda.h>
 #include "../gptl.h"
 #include "../cuda/gptl_cuda.h"
 #include "./localproto.h"
-
-#ifndef MIN
-#define MIN(X,Y) ((X) < (Y) ? (X) : (Y))
-#endif
-
-#ifndef MAX
-#define MAX(X,Y) ((X) > (Y) ? (X) : (Y))
-#endif
 
 __global__ void dummy (int);
 __global__ void init_handles (int *, int *);
 __global__ void donothing (void);
 __global__ void doalot (int, int, int, int, int, 
 			float *, float *, double *, int *, int *);
-__global__ void sleep1 (int);
 
-
-__host__ int persist (int myrank, int mostwork, int maxwarps_gpu, int outerlooplen, 
+__host__ int persist (int mostwork, int outerlooplen, 
 		      int innerlooplen, int balfact, int oversub)
 {
   int blocksize, gridsize;
@@ -38,17 +29,15 @@ __host__ int persist (int myrank, int mostwork, int maxwarps_gpu, int outerloopl
   int nchunks;
   static const char *thisfunc = "persist";
 
-  ret = GPTLsetoption (GPTLmaxwarps_gpu, maxwarps_gpu);
-  printf ("%s: calling gptlinitialize\n", thisfunc);
-  ret = GPTLinitialize ();
-
-  chunksize = MIN (GPTLcompute_chunksize (oversub, inner_parallel), outerlooplen);
-  nchunks = (outerlooplen + (chunksize-1)) / chunksize;
-
   printf ("%s: running dummy kernel 0: CUDA barfs if hashtable is no longer a valid pointer\n",
 	  thisfunc);
   dummy <<<1,1>>> (0);
   cudaDeviceSynchronize();
+
+  chunksize = MIN (GPTLcompute_chunksize (oversub, inner_parallel), outerlooplen);
+  nchunks = (outerlooplen + (chunksize-1)) / chunksize;
+  printf ("outerlooplen=%d broken into %d kernels of chunksize=%d\n",
+	  outerlooplen, nchunks, chunksize);
 
   // GPU-specific init_handle routine needed because its tablesize likely differs from CPU
   cudaMalloc (&handle, sizeof (int));
@@ -64,9 +53,6 @@ __host__ int persist (int myrank, int mostwork, int maxwarps_gpu, int outerloopl
   cudaMalloc (&logvals, outerlooplen * sizeof (float));
   cudaMalloc (&sqrtvals, outerlooplen * sizeof (float));
   cudaMalloc (&dsqrtvals, outerlooplen * sizeof (double));
-  printf ("%s: outerlooplen=%d broken into %d kernels of max chunksize=%d\n",
-	  thisfunc, outerlooplen, nchunks, chunksize);
-  printf ("%s: inner parallelism multiplier=%d\n", thisfunc, inner_parallel);
   n = 0;
   for (nn = 0; nn < outerlooplen; nn += chunksize) {
     printf ("chunk=%d totalwork=%d\n", n, MIN (chunksize, outerlooplen - nn));
@@ -112,7 +98,7 @@ __host__ int persist (int myrank, int mostwork, int maxwarps_gpu, int outerloopl
     totalwork = MIN (chunksize, outerlooplen - nn);
     blocksize = MIN (GPTLcores_per_sm, totalwork);
     gridsize = (totalwork-1) / blocksize + 1;
-    sleep1 <<<gridsize, blocksize>>> (outerlooplen);
+    sleep <<<gridsize, blocksize>>> (1.f, outerlooplen);
     cudaDeviceSynchronize();
   }
   ret = GPTLstop ("sleep1ongpu");
@@ -123,21 +109,10 @@ __host__ int persist (int myrank, int mostwork, int maxwarps_gpu, int outerloopl
   cudaEventElapsedTime(&dt, tstart, tstop); // time in ms
   printf ("Stream timer for sleep=%f seconds\n", dt*0.001);
 
-  ret = GPTLpr (myrank);
   cudaEventDestroy (tstart);
   cudaEventDestroy (tstop);
 
   return 0;
-}
-
-__global__ void donothing (void)
-{
-  int ret;
-
-  ret = GPTLstart_gpu ("total_gputime");
-  ret = GPTLstart_gpu ("donothing");
-  ret = GPTLstop_gpu ("donothing");
-  ret = GPTLstop_gpu ("total_gputime");
 }
 
 __global__ void doalot (int nn, int outerlooplen, int innerlooplen, int balfact, int mostwork, 
@@ -205,98 +180,6 @@ __global__ void doalot (int nn, int outerlooplen, int innerlooplen, int balfact,
     ret = GPTLstart_handle_gpu ("a", handle2);
     sqrtvals[nnn] = doalot_sqrt (niter, innerlooplen);
     ret = GPTLstop_handle_gpu ("a", handle2);
-  }
-  ret = GPTLstop_gpu ("total_gputime");
-}
-
-__device__ float doalot_log (int n, int innerlooplen)
-{
-  int i, iter;
-  float sum;
-
-  sum = 0.;
-  for (iter = 0; iter < innerlooplen; ++iter) {
-    for (i = 0; i < n; ++i) {
-      sum += log ((iter*i) + 1.);
-    }
-  }
-  return sum;
-}
-
-__device__ float doalot_log_inner (int n, int innerlooplen)
-{
-  int i, iter;
-  int ret;
-  float sum;
-
-  sum = 0.;
-  for (iter = 0; iter < innerlooplen; ++iter) {
-    ret = GPTLstart_gpu ("doalot_log_inner");
-    for (i = 0; i < n; ++i) {
-      sum += log ((iter*i) + 1.);
-    }
-    ret = GPTLstop_gpu ("doalot_log_inner");
-  }
-  return sum;
-}
-
-__device__ float doalot_sqrt (int n, int innerlooplen)
-{
-  int i, iter;
-  float sum;
-
-  sum = 0.;
-  for (iter = 0; iter < innerlooplen; ++iter) {
-    for (i = 0; i < n; ++i) {
-      sum += sqrtf ((float) iter*i);
-    }
-  }
-  // Add bogus never-execute printf to force compiler not to optimize out
-  // due to multiple calls from doalot
-  if (sum < 0.00001)
-    printf ("sum=%f\n", sum);
-  return sum;
-}
-
-__device__ double doalot_sqrt_double (int n, int innerlooplen)
-{
-  int i, iter;
-  double sum;
-
-  sum = 0.;
-  for (iter = 0; iter < innerlooplen; ++iter) {
-    for (i = 0; i < n; ++i) {
-      sum += sqrt ((double) iter*i);
-    }
-  }
-  // Add bogus never-execute printf to force compiler not to optimize out
-  // due to multiple calls from doalot
-  if (sum < 0.00001)
-    printf ("sum=%f\n", sum);
-  return sum;
-}
-
-__global__ void sleep1 (int outerlooplen)
-{
-  int ret;
-  int blockId;
-  int n;
-
-  ret = GPTLstart_gpu ("total_gputime");
-
-  blockId = blockIdx.x 
-    + blockIdx.y * gridDim.x 
-    + gridDim.x * gridDim.y * blockIdx.z; 
-
-  n = blockId * (blockDim.x * blockDim.y * blockDim.z)
-    + (threadIdx.z * (blockDim.x * blockDim.y))
-    + (threadIdx.y * blockDim.x)
-    + threadIdx.x;
-
-  if (n < outerlooplen) {
-    ret = GPTLstart_gpu ("sleep1");
-    ret = GPTLmy_sleep (1.);
-    ret = GPTLstop_gpu ("sleep1");
   }
   ret = GPTLstop_gpu ("total_gputime");
 }

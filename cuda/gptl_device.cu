@@ -5,7 +5,7 @@
 ** Main file contains most CUDA GPTL functions
 */
 
-#define CHECK_1SEC
+#undef CHECK_1SEC
 #undef USE_THREADS
 
 #include <stdio.h>
@@ -1258,9 +1258,6 @@ __device__ int GPTLmy_sleep (float seconds)
   if (gpu_hz == 0.)
     return GPTLerror_1s ("%s: need to set gpu_hz via call to GPTLinitialize_gpu() first\n",
 			 thisfunc);
-
-  if (threadId % WARPSIZE != 0)
-    return SUCCESS;
 
   start = clock64();
   do {

@@ -3,7 +3,7 @@ program driver_serial
   use getval, only: getval_int
   implicit none
 
-  integer :: maxwarps_gpu = 112
+  integer :: maxwarps_gpu
   integer :: outerlooplen
   integer :: innerlooplen = 100
   integer :: mostwork = 1000

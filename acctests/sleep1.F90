@@ -11,9 +11,6 @@ subroutine sleep1 (outerlooplen, oversub)
   integer :: chunksize, nchunks
   integer, parameter :: veclen = 1  ! parallel iteration count per outermost kernel iterator
 
-  real :: factor
-  real, parameter :: one = 1.
-
   real*8 :: maxval, maxsav(0:outerlooplen-1)
   real*8 :: minval, minsav(0:outerlooplen-1)
   real*8 :: accum
@@ -41,7 +38,7 @@ subroutine sleep1 (outerlooplen, oversub)
     do n=nn,min(outerlooplen-1,nn+chunksize-1)
 !      ret = gptlstart_gpu ('total_gputime')
       ret = gptlstart_gpu ('sleep1')
-      ret = gptlmy_sleep (one)
+      ret = gptlmy_sleep (1.)
       ret = gptlstop_gpu ('sleep1')
       maxval = 1.
       minval = 1.

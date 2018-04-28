@@ -1,11 +1,9 @@
 subroutine persist (mostwork, outerlooplen, innerlooplen, balfact, oversub)
   use gptl
   use gptl_acc
+  use subs
+  
   implicit none
-!$acc routine (doalot_log) seq
-!$acc routine (doalot_log_inner) seq
-!$acc routine (doalot_sqrt) seq
-!$acc routine (doalot_sqrt_double) seq
 
   integer, intent(in) :: mostwork
   integer, intent(in) :: outerlooplen
@@ -27,8 +25,6 @@ subroutine persist (mostwork, outerlooplen, innerlooplen, balfact, oversub)
   real*8 :: maxval, maxsav(0:outerlooplen-1)
   real*8 :: minval, minsav(0:outerlooplen-1)
   real*8 :: accum
-  real, external :: doalot_log, doalot_log_inner, doalot_sqrt
-  real*8, external :: doalot_sqrt_double
 
   write(6,*)'Calling gptldummy_gpu: CUDA will barf if hashtable is no longer a valid pointer'
 !$acc kernels
@@ -164,69 +160,4 @@ subroutine persist (mostwork, outerlooplen, innerlooplen, balfact, oversub)
     end if
   end do
 end subroutine persist
-
-real function doalot_log (n, innerlooplen) result (sum)
-  implicit none
-  integer, intent(in) :: n, innerlooplen
-  integer :: i, iter
-  real :: sum
-!$acc routine seq
-
-  sum = 0.
-  do iter=1,innerlooplen
-    do i=1,n
-      sum = sum + log (real (iter*i))
-    end do
-  end do
-end function doalot_log
-
-! doalot_log_inner: Same computations as doalot_log, but add a timer inside "innerlooplen"
-real function doalot_log_inner (n, innerlooplen) result (sum)
-  use gptl_acc
-  implicit none
-  integer, intent(in) :: n, innerlooplen
-  integer :: i, iter
-  integer :: ret
-  real :: sum
-!$acc routine seq
-
-  sum = 0.
-  do iter=1,innerlooplen
-    ret = gptlstart_gpu ('doalot_log_inner')
-    do i=1,n
-      sum = sum + log (real (iter*i))
-    end do
-    ret = gptlstop_gpu ('doalot_log_inner')
-  end do
-end function doalot_log_inner
-
-real function doalot_sqrt (n, innerlooplen) result (sum)
-  implicit none
-  integer, intent(in) :: n, innerlooplen
-  integer :: i, iter
-  real :: sum
-!$acc routine seq
-
-  sum = 0.
-  do iter=1,innerlooplen
-    do i=1,n
-      sum = sum + sqrt (float (iter*i))
-    end do
-  end do
-end function doalot_sqrt
-
-real*8 function doalot_sqrt_double (n, innerlooplen) result (sum)
-  implicit none
-  integer, intent(in) :: n, innerlooplen
-  integer :: i, iter
-  real*8 :: sum
-!$acc routine seq
-
-  sum = 0.
-  do iter=1,innerlooplen
-    do i=1,n
-      sum = sum + sqrt (dble (iter*i))
-    end do
-  end do
-end function doalot_sqrt_double
 

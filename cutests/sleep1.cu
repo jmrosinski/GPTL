@@ -1,16 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "../gptl.h"
-#include "../cuda/gptl_cuda.h"
 #include "./localproto.h"
-
-#ifndef MIN
-#define MIN(X,Y) ((X) < (Y) ? (X) : (Y))
-#endif
-
-#ifndef MAX
-#define MAX(X,Y) ((X) > (Y) ? (X) : (Y))
-#endif
 
 __host__ int sleep1 (int outerlooplen, int oversub)
 {

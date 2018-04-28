@@ -14,7 +14,7 @@ endif
 # DO NOT ADD THIS FLAG: IT SCREWS UP THE OUTPUT!!!
 #FFLAGS += -Mcuda
 
-COMMONOBJS = persist.o sleep1.o getval.o
+COMMONOBJS = persist.o sleep1.o getval.o subs.o
 MPROG1 = driver_serial.o
 MPROG2 = driver_mpi.o
 OBJS1 = $(MPROG1) $(COMMONOBJS)
@@ -44,3 +44,4 @@ clean:
 
 $(MPROG1): getval.o
 $(MPROG2): getval.o
+persist.o: subs.o

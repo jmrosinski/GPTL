@@ -3,19 +3,19 @@ HAVE_MPI was false
 ENABLE_NESTEDOMP was false
 Underlying timing routine was gettimeofday.
 GPTLget_overhead: using hash entry 414=donothing for getentry estimate
-Total overhead of 1 GPTL start or GPTLstop call=5.7e-08 seconds
+Total overhead of 1 GPTL start or GPTLstop call=6e-08 seconds
 Components are as follows:
-Fortran layer:             1.0e-09 =   1.8% of total
-Get thread number:         2.0e-09 =   3.5% of total
-Generate hash index:       8.0e-09 =  14.0% of total
-Find hashtable entry:      7.0e-09 =  12.3% of total
-Underlying timing routine: 3.5e-08 =  61.4% of total
-Misc start/stop functions: 4.0e-09 =   7.0% of total
+Fortran layer:             0.0e+00 =   0.0% of total
+Get thread number:         3.0e-09 =   5.0% of total
+Generate hash index:       1.0e-08 =  16.7% of total
+Find hashtable entry:      8.0e-09 =  13.3% of total
+Underlying timing routine: 3.5e-08 =  58.3% of total
+Misc start/stop functions: 4.0e-09 =   6.7% of total
 
 NOTE: If GPTL is called from C not Fortran, the 'Fortran layer' overhead is zero
 NOTE: For calls to GPTLstart_handle()/GPTLstop_handle(), the 'Generate hash index' overhead is zero
 NOTE: For auto-instrumented calls, the cost of generating the hash index plus finding
-      the hashtable entry is 0.0e+00 not the 1.5e-08 portion taken by GPTLstart
+      the hashtable entry is 0.0e+00 not the 1.8e-08 portion taken by GPTLstart
 NOTE: Each hash collision roughly doubles the 'Find hashtable entry' cost of that timer
 
 If overhead stats are printed, they are the columns labeled self_OH and parent_OH
@@ -31,16 +31,16 @@ values printed are for all calls.
 Further down the listing may be more detailed information about multiple
 parents. Look for 'Multiple parent info'
 
-Process size=12691 MB rss=99 MB
+Process size=13082 MB rss=242 MB
 
 Stats for thread 0:
                       Called  Recurse Wallclock max       min       self_OH  parent_OH 
-  total_kerneltime           3    -       1.226     0.903  7.80e-05     0.000     0.000 
-    donothing                1    -    7.60e-05  7.60e-05  7.60e-05     0.000     0.000 
-    doalot                   1    -       0.323     0.323     0.323     0.000     0.000 
-    sleep1ongpu              1    -       0.903     0.903     0.903     0.000     0.000 
+  total_kerneltime           3    -       0.980     0.892  1.52e-04     0.000     0.000 
+    donothing                1    -    1.47e-04  1.47e-04  1.47e-04     0.000     0.000 
+    doalot                   1    -       0.088     0.088     0.088     0.000     0.000 
+    sleep1ongpu              1    -       0.892     0.892     0.892     0.000     0.000 
 
-Overhead sum =   6.6e-07 wallclock seconds
+Overhead sum =  6.96e-07 wallclock seconds
 Total calls  = 6
 Size of hash table was 1023
 Mean hash index for thread 0 was 590.500000
@@ -59,16 +59,16 @@ GPU Results:
 GPTLprint_gpustats: device number=0
 GPTLprint_gpustats: hostname=laptop2018
 Underlying timing routine was clock64() assumed @ 1.493000 Ghz
-Total overhead of 1 GPTLstart_gpu or GPTLstop_gpu call=5.38446e-06 seconds
+Total overhead of 1 GPTLstart_gpu or GPTLstop_gpu call=5.6497e-06 seconds
 Components are as follows:
 Fortran layer:                  5.4e-09 =   0.1% of total
-Get thread number:              3.4e-07 =   6.3% of total
-Generate hash index:            1.8e-06 =  32.6% of total
-Find hashtable entry:           3.2e-06 =  60.3% of total (name=total_gputime)
-Underlying timing routine:      3.5e-08 =   0.7% of total
+Get thread number:              3.4e-07 =   6.0% of total
+Generate hash index:            1.8e-06 =  32.5% of total
+Find hashtable entry:           3.4e-06 =  60.8% of total (name=total_gputime)
+Underlying timing routine:      3.5e-08 =   0.6% of total
 
 my_strlen (part of genhashidx): 1.8e-06
-STRMATCH (part of getentry):    2.6e-07
+STRMATCH (part of getentry):    2.7e-07
 
 
 GPU timing stats
@@ -94,16 +94,16 @@ self_OH         = estimate of GPTL overhead (sec) in the timer incurred by 'maxc
 parent_OH       = estimate of GPTL overhead (sec) in the parent of the timer incurred by 'maxcount' invocations of it
 
                 name    calls  warps  holes  wallmax  (warp) wallmin (warp) maxcount (warp) mincount (warp) negcntmx (warp)  self_OH parent_OH
-       total_gputime       60     20      0    1.300      3    1.298     12        3      0        3      0        0      0 1.06e-07  3.22e-05 
-           donothing       20     20      0 1.18e-06      1 8.72e-07     10        1      0        1      0        0      0 3.55e-08  1.07e-05 
-          doalot_log       20     20      0    0.115     10    0.114     15        1      0        1      0        0      0 3.55e-08  1.07e-05 
-    doalot_log_inner     2000     20      0    0.110     18    0.110     19      100      0      100      0        0      0 3.55e-06  1.07e-03 
-         doalot_sqrt       20     20      0 8.70e-03     11 8.70e-03      6        1      0        1      0        0      0 3.55e-08  1.07e-05 
-  doalot_sqrt_double       20     20      0    0.038     13    0.037     10        1      0        1      0        0      0 3.55e-08  1.07e-05 
-       doalot_sqrt_c       20     20      0 8.70e-03     11 8.70e-03      6        1      0        1      0        0      0 3.55e-08  1.07e-05 
-doalot_handle_sqrt_c       20     20      0 8.70e-03     15 8.70e-03      9        1      0        1      0        0      0 3.55e-08  1.07e-05 
-                   a       20     20      0 8.70e-03      8 8.70e-03      5        1      0        1      0        0      0 3.55e-08  1.07e-05 
-              sleep1       20     20      0    1.000      2    1.000     15        1      0        1      0        0      0 3.55e-08  1.07e-05 
+       total_gputime       60     20      0    1.099      1    0.367      3        3      0        3      0        0      0 1.04e-07  3.38e-05 
+           donothing       20     20      0 3.82e-06      5 3.23e-06     19        1      0        1      0        0      0 3.48e-08  1.13e-05 
+          doalot_log       20     20      0    0.014      2    0.014     12        1      0        1      0        0      0 3.48e-08  1.13e-05 
+    doalot_log_inner     2000     20      0    0.011     16    0.011      1      100      0      100      0        0      0 3.48e-06  1.13e-03 
+         doalot_sqrt       20     20      0 9.11e-03      2 9.11e-03      4        1      0        1      0        0      0 3.48e-08  1.13e-05 
+  doalot_sqrt_double       20     20      0    0.036      1    0.035      5        1      0        1      0        0      0 3.48e-08  1.13e-05 
+       doalot_sqrt_c       20     20      0 8.72e-03      3 8.72e-03     14        1      0        1      0        0      0 3.48e-08  1.13e-05 
+doalot_handle_sqrt_c       20     20      0 8.72e-03      0 8.72e-03      4        1      0        1      0        0      0 3.48e-08  1.13e-05 
+                   a       20     20      0 8.72e-03      0 8.72e-03      8        1      0        1      0        0      0 3.48e-08  1.13e-05 
+              sleep1       20     20      0    1.000      2    0.270      3        1      0        1      0        0      0 3.48e-08  1.13e-05 
 
 Total GPTL GPU memory usage = 97.12 KB
 Components:
