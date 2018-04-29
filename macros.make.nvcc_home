@@ -85,7 +85,7 @@ ifeq ($(FORTRAN),yes)
 # OpenMP tests are possible with OPENMP=no as long as PTHREADS=yes
 # These settings are only used by the Fortran test applications in ftests/.
   FC     = pgfortran
-  FFLAGS = -g -O2
+  FFLAGS = -g -O2 -m64
   FOMPFLAG = -mp
 endif
 

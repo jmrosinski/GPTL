@@ -18,8 +18,10 @@
 #define FLATTEN_TIMERS(SUB1,SUB2) (SUB1)*maxtimers + (SUB2)
 #define FLATTEN_HASH(SUB1,SUB2) (SUB1)*tablesize + (SUB2)
 
+__device__ static int *badderef = 0;       // dereferencing this should should crash
 __device__ static Hashentry *hashtable;
 __device__ static Timer *timers = 0;             /* linked list of timers */
+__device__ static void *timersaddr;         // For verifying address of timers stays put
 __device__ static Timer **lasttimer = 0;               /* last element in list */
 __device__ static int *max_name_len;              /* max length of timer name */
 __device__ static int *ntimers_allocated;
@@ -176,6 +178,7 @@ __global__ static void initialize_gpu (const int verbose_in,
   maxwarps    = maxwarps_in;
   gpu_hz = gpu_hz_in;
   timers = timers_cpu;
+  timersaddr = (void *) &timers;
   hashtable = hashtable_cpu;
   max_name_len = max_name_len_cpu;
   ntimers_allocated = ntimers_allocated_cpu;
@@ -243,7 +246,7 @@ __global__ void GPTLfinalize_gpu (void)
   cudaFree (timers);
   cudaFree (lasttimer);
   cudaFree (max_name_len);
-
+  
   GPTLreset_errors_gpu ();
 
   /* Reset initial values */
@@ -465,15 +468,13 @@ __device__ static int update_ll_hash (Timer *ptr, int w, unsigned int indx)
 */
 __device__ static inline int update_ptr (Timer *ptr, const int w)
 {
-  volatile long long tp2;    /* time stamp */
+  long long tp2;    /* time stamp */
+  long long delta;
   static const char *thisfunc = "update_ptr";
 
 #ifdef DEBUG
-  printf ("update_ptr: ptr=%p setting onflg=true\n", ptr);
+  printf ("%s: ptr=%p setting onflg=true\n", thisfunc, ptr);
 #endif
-  ptr->onflg = true;
-  tp2 = clock64 ();
-  ptr->wall.last = tp2;
 
 #ifdef CHECK_SM
   uint smid;
@@ -484,6 +485,24 @@ __device__ static inline int update_ptr (Timer *ptr, const int w)
     ptr->smid = smid;
   }
 #endif
+  
+  ptr->onflg = true;
+  tp2 = clock64 ();
+  delta = (tp2 - ptr->wall.last);
+  if (delta < 0) {
+    ++ptr->negcount;
+    printf ("GPTL: %s name=%s w=%d WARNING: backward by %g sec: resetting anyway \n",
+	    thisfunc, ptr->name, w, delta/-gpu_hz);
+    if ((void *) &timers != timersaddr) {
+      printf ("%s: timers changed address!!!! old=%p new=%p\n", thisfunc, &timers, timersaddr);
+      return *badderef;
+    }
+    if (my_strcmp (timers[0].name, "GPTL_ROOT") != 0) {
+      printf ("%s: timers[0].name=%s should=GPTL_ROOT\n", thisfunc, timers[0].name);
+      return *badderef;
+    }
+  }
+  ptr->wall.last = tp2;
   return SUCCESS;
 }
 
@@ -630,9 +649,20 @@ __device__ static inline int update_stats (Timer *ptr,
   delta = tp1 - ptr->wall.last;
 
   if (delta < 0) {
-    printf ("GPTL: %s: w=%d negative delta: %lld-%lld=%lld: IGNORING\n", 
-	    thisfunc, w, tp1, ptr->wall.last, delta);
     ++ptr->negcount;
+    printf ("GPTL: %s name=%s w=%d WARNING NEGATIVE DELTA ENCOUNTERED: %lld-%lld=%lld: IGNORING\n", 
+	    thisfunc, ptr->name, w, tp1, ptr->wall.last, delta);
+
+    // If either of these tests fail, need to abort
+    if ((void *) &timers != timersaddr) {
+      printf ("%s: timers changed address!!!! old=%p new=%p\n", thisfunc, &timers, timersaddr);
+      return *badderef;
+    }
+    if (my_strcmp (timers[0].name, "GPTL_ROOT") != 0) {
+      printf ("%s: timers[0].name=%s should=GPTL_ROOT\n", thisfunc, timers[0].name);
+      return *badderef;
+    }
+    return SUCCESS;  // Return without adding the bad delta
   }
 
   ++ptr->count;

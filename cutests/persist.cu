@@ -7,7 +7,6 @@
 
 __global__ void dummy (int);
 __global__ void init_handles (int *, int *);
-__global__ void donothing (void);
 __global__ void doalot (int, int, int, int, int, 
 			float *, float *, double *, int *, int *);
 

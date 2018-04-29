@@ -1,7 +1,8 @@
 include ../macros.make
 
 FC      = pgfortran
-FFLAGS  = -acc -Minfo=accel -Minfo -Mcuda=cc60 -ta=tesla:cc60
+#FFLAGS  = -acc -Minfo=accel -Minfo -Mcuda=cc60 -ta=tesla:cc60
+FFLAGS  = -acc -Minfo=accel -Minfo -ta=tesla:cc60
 ARFLAGS = ruv
 
 OBJS = gptl_device.o util_device.o f_wrappers_device.o
