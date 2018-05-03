@@ -41,7 +41,6 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   float *regionmem;
 
   int count_max, count_min;
-  int negcount_max;
   double wallmax, wallmin;
   double self, parent;
   double tot_ohdgpu;
@@ -86,7 +85,8 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   printf ("%s: max_name_len_gpu=%d\n", thisfunc, *max_name_len_gpu);
   for (n = 0; n < *ngputimers; ++n) {
     printf ("%s: timer=%s accum_max=%lld accum_min=%lld count_max=%d nwarps=%d\n", 
-	    thisfunc, gpustats[n].name, gpustats[n].accum_max, gpustats[n].accum_min, gpustats[n].count_max, gpustats[n].nwarps);
+	    thisfunc, gpustats[n].name, gpustats[n].accum_max, gpustats[n].accum_min, 
+	    gpustats[n].count_max, gpustats[n].nwarps);
   }
 #endif
 
@@ -158,14 +158,15 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   fprintf (fp, "wallmin (warp)  = min wall time (sec) taken by any timed warp for this region, followed by the warp number\n");
   fprintf (fp, "maxcount (warp) = max number of times region invoked by any timed warp, followed by the warp number\n");
   fprintf (fp, "mincount (warp) = min number of times region invoked by any timed warp, followed by the warp number\n");
-  fprintf (fp, "negcntmx (warp) = if a region ever had a negative interval, the biggest count is printed along with the warp number responsible\n");
+  fprintf (fp, "negmxstrt(warp) = if a start region had a neg intrvl, biggest count is printed along with the warp number responsible\n");
+  fprintf (fp, "negmxstop(warp) = if a stop region had a neg intrvl, biggest count is printed along with the warp number responsible\n");
   fprintf (fp, "self_OH         = estimate of GPTL overhead (sec) in the timer incurred by 'maxcount' invocations of it\n");
   fprintf (fp, "parent_OH       = estimate of GPTL overhead (sec) in the parent of the timer incurred by 'maxcount' invocations of it\n\n");
   // Print header, padding to length of longest name
   extraspace = max_name_len_gpu[0] - 4; // "name" is 4 chars
   for (i = 0; i < extraspace; ++i)
     fprintf (fp, " ");
-  fprintf (fp, "name    calls  warps  holes  wallmax  (warp) wallmin (warp) maxcount (warp) mincount (warp) negcntmx (warp)  self_OH parent_OH\n");
+  fprintf (fp, "name    calls  warps  holes  wallmax  (warp) wallmin (warp) maxcount (warp) mincount (warp) negmxstrt(warp) negmxstop(warp)  self_OH parent_OH\n");
   for (n = 0; n < ngputimers[0]; ++n) {
     extraspace = max_name_len_gpu[0] - strlen (gpustats[n].name);
     for (i = 0; i < extraspace; ++i)
@@ -207,11 +208,13 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
       fprintf (fp, "%8.1e ", (float) count_min);
     fprintf (fp, "%6d ",gpustats[n].count_min_warp);    // warp which accounted for max times
 
-    negcount_max = gpustats[n].negcount_max;
-    fprintf (fp, "%8d ", negcount_max);                  // max negcount for region "name" (hope it's zero)
-    fprintf (fp, "%6d ", gpustats[n].negcount_max_warp); // warp which accounted for negcount_max
+    fprintf (fp, "%8d ", gpustats[n].negcount_start_max);      // max negcount for "start" region "name" (hope it's zero)
+    fprintf (fp, "%6d ", gpustats[n].negcount_start_max_warp); // warp which accounted for negcount_start_max
 
-    self = gpustats[n].count_max * self_ohdgpu[0] / gpu_hz;     // self ohd est
+    fprintf (fp, "%8d ", gpustats[n].negcount_stop_max);       // max negcount for "stop" region "name" (hope it's zero)
+    fprintf (fp, "%6d ", gpustats[n].negcount_stop_max_warp);  // warp which accounted for negcount_stop_max
+
+    self = gpustats[n].count_max * self_ohdgpu[0] / gpu_hz;    // self ohd est
     if (self < 0.01)
       fprintf (fp, "%8.2e  ", self);
     else

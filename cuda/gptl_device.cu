@@ -490,9 +490,9 @@ __device__ static inline int update_ptr (Timer *ptr, const int w)
   tp2 = clock64 ();
   delta = (tp2 - ptr->wall.last);
   if (delta < 0) {
-    ++ptr->negcount;
-    printf ("GPTL: %s name=%s w=%d WARNING: backward by %g sec: resetting anyway \n",
-	    thisfunc, ptr->name, w, delta/-gpu_hz);
+    ++ptr->negcount_start;
+    //    printf ("GPTL: %s name=%s w=%d WARNING: backward by %g sec: resetting anyway \n",
+    //	    thisfunc, ptr->name, w, delta/-gpu_hz);
     if ((void *) &timers != timersaddr) {
       printf ("%s: timers changed address!!!! old=%p new=%p\n", thisfunc, &timers, timersaddr);
       return *badderef;
@@ -649,9 +649,9 @@ __device__ static inline int update_stats (Timer *ptr,
   delta = tp1 - ptr->wall.last;
 
   if (delta < 0) {
-    ++ptr->negcount;
-    printf ("GPTL: %s name=%s w=%d WARNING NEGATIVE DELTA ENCOUNTERED: %lld-%lld=%lld: IGNORING\n", 
-	    thisfunc, ptr->name, w, tp1, ptr->wall.last, delta);
+    ++ptr->negcount_stop;
+    printf ("GPTL: %s name=%s w=%d WARNING NEGATIVE DELTA ENCOUNTERED: %lld-%lld=%lld=%g seconds: IGNORING\n", 
+	    thisfunc, ptr->name, w, tp1, ptr->wall.last, delta, delta / (-gpu_hz));
 
     // If either of these tests fail, need to abort
     if ((void *) &timers != timersaddr) {
@@ -1029,20 +1029,23 @@ __device__ static void init_gpustats (Gpustats *gpustats, Timer *ptr, int w)
   gpustats->count  = ptr->count;
   gpustats->nwarps = 1;
 
-  gpustats->accum_max = ptr->wall.accum;
+  gpustats->accum_max      = ptr->wall.accum;
   gpustats->accum_max_warp = w;
 
-  gpustats->accum_min = ptr->wall.accum;
+  gpustats->accum_min      = ptr->wall.accum;
   gpustats->accum_min_warp = w;
 
-  gpustats->count_max = ptr->count;
+  gpustats->count_max      = ptr->count;
   gpustats->count_max_warp = w;
 
-  gpustats->count_min = ptr->count;
+  gpustats->count_min      = ptr->count;
   gpustats->count_min_warp = w;
 
-  gpustats->negcount_max = ptr->negcount;
-  gpustats->negcount_max_warp = w;
+  gpustats->negcount_start_max      = ptr->negcount_start;
+  gpustats->negcount_start_max_warp = w;
+
+  gpustats->negcount_stop_max       = ptr->negcount_stop;
+  gpustats->negcount_stop_max_warp  = w;
 
   ptr->beenprocessed = true;
 }
@@ -1053,28 +1056,33 @@ __device__ static void fill_gpustats (Gpustats *gpustats, Timer *ptr, int w)
   ++gpustats->nwarps;
 
   if (ptr->wall.accum > gpustats->accum_max) {
-    gpustats->accum_max = ptr->wall.accum;
+    gpustats->accum_max      = ptr->wall.accum;
     gpustats->accum_max_warp = w;
   }
 
   if (ptr->wall.accum < gpustats->accum_min) {
-    gpustats->accum_min = ptr->wall.accum;
+    gpustats->accum_min      = ptr->wall.accum;
     gpustats->accum_min_warp = w;
   }
   
   if (ptr->count > gpustats->count_max) {
-    gpustats->count_max = ptr->count;
+    gpustats->count_max      = ptr->count;
     gpustats->count_max_warp = w;
   }
 	
   if (ptr->count < gpustats->count_min) {
-    gpustats->count_min = ptr->count;
+    gpustats->count_min      = ptr->count;
     gpustats->count_min_warp = w;
   }
 
-  if (ptr->negcount > gpustats->negcount_max) {
-    gpustats->negcount_max = ptr->negcount;
-    gpustats->negcount_max_warp = w;
+  if (ptr->negcount_start > gpustats->negcount_start_max) {
+    gpustats->negcount_start_max      = ptr->negcount_start;
+    gpustats->negcount_start_max_warp = w;
+  }
+
+  if (ptr->negcount_stop > gpustats->negcount_stop_max) {
+    gpustats->negcount_stop_max      = ptr->negcount_stop;
+    gpustats->negcount_stop_max_warp = w;
   }
 }
 

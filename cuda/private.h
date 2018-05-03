@@ -31,7 +31,8 @@ typedef struct TIMER {
   struct TIMER *next;       /* next timer in linked list */
   Wallstats wall;           /* wallclock stats */
   unsigned long count;      /* number of start/stop calls */
-  unsigned int negcount;    // number of times a stop time < start time
+  unsigned int negcount_start; // number of times a stop time < start time
+  unsigned int negcount_stop;  // number of times a stop time < start time
   unsigned int recurselvl;  /* recursion level */
 #ifdef CHECK_SM
   unsigned int smid;  // sm the region is running on
