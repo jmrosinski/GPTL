@@ -1,3 +1,4 @@
+#include <unistd.h> // for sleep
 #include <stdio.h>
 #include <stdlib.h>
 #include <cuda.h>
@@ -63,15 +64,18 @@ __host__ int persist (int mostwork, int outerlooplen,
     blocksize = MIN (GPTLcores_per_sm, totalwork);
     gridsize = (totalwork-1) / blocksize + 1;
 
-    printf ("%s: block=%d blocksize=%d gridsize=%d totalwork=%d\n",
-	    thisfunc, nn, blocksize, gridsize, totalwork);
-  
     ret = GPTLstart ("total_kerneltime");
     ret = GPTLstart ("donothing");
     donothing <<<gridsize, blocksize>>> ();
     cudaDeviceSynchronize();
     ret = GPTLstop ("donothing");
     ret = GPTLstop ("total_kerneltime");
+  }
+
+  for (nn = 0; nn < outerlooplen; nn += chunksize) {
+    totalwork = MIN (chunksize, outerlooplen - nn);
+    blocksize = MIN (GPTLcores_per_sm, totalwork);
+    gridsize = (totalwork-1) / blocksize + 1;
 
     printf ("Invoking doalot gridsize=%d blocksize=%d\n", gridsize, blocksize);
 
@@ -123,8 +127,6 @@ __global__ void doalot (int nn, int outerlooplen, int innerlooplen, int balfact,
   int n, nnn;
   int niter;
 
-  ret = GPTLstart_gpu ("total_gputime");
-
   blockId = blockIdx.x 
     + blockIdx.y * gridDim.x 
     + gridDim.x * gridDim.y * blockIdx.z; 
@@ -151,6 +153,7 @@ __global__ void doalot (int nn, int outerlooplen, int innerlooplen, int balfact,
     return;
   }
     
+  ret = GPTLstart_gpu ("total_gputime");
   if (nnn < outerlooplen) {
     ret = GPTLstart_gpu ("doalot_log");
     logvals[nnn] = doalot_log (niter, innerlooplen);

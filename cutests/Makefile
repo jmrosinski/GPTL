@@ -1,6 +1,6 @@
 include ../macros.make
 GPTL    = ..
-LDFLAGS = $(CUFLAGS) -L$(GPTL) -lgptl -L$(GPTL)/cuda -lgptl_cuda
+LDFLAGS = $(CUFLAGS) -L$(GPTL) -lgptl -L$(GPTL)/cuda -lgptl_cuda -lstdc++
 OBJS    = getval.o driver_serial.o persist.o sleep1.o sleep.o subs.o
 
 %.o: %.cu

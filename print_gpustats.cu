@@ -80,7 +80,7 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
     printf( "%s: Error from GPTLfill_gpustats\n", thisfunc);
   cudaDeviceSynchronize();
 
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
   printf ("%s: ngputimers=%d\n",       thisfunc, *ngputimers);
   printf ("%s: max_name_len_gpu=%d\n", thisfunc, *max_name_len_gpu);
   for (n = 0; n < *ngputimers; ++n) {

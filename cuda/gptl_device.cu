@@ -64,9 +64,9 @@ __global__ static void initialize_gpu (const int, const int, const int, const in
 __device__ static inline int get_warp_num (void);         /* get 0-based warp number */
 __device__ static inline unsigned int genhashidx (const char *);
 __device__ static __forceinline__ Timer *getentry (const int, const char *, const unsigned int);
-__device__ static inline int update_stats (Timer *, const long long, const int);
-__device__ static int update_ll_hash (Timer *, int, unsigned int);
-__device__ static inline int update_ptr (Timer *, const int);
+__device__ static inline int update_stats_gpu (Timer *, const long long, const int);
+__device__ static int update_ll_hash_gpu (Timer *, int, unsigned int);
+__device__ static inline int update_ptr_gpu (Timer *, const int);
 __device__ static __forceinline__ int my_strlen (const char *);
 __device__ static inline char *my_strcpy (char *, const char *);
 __device__ static __forceinline__ int my_strcmp (const char *, const char *);
@@ -312,12 +312,12 @@ __device__ int GPTLstart_gpu (const char *name)               /* timer name */
     if ((ptr = get_new_timer (w, name, thisfunc)) == NULL)
       return GPTLerror_2s ("%s: get_new_timer failure for timer %s\n", thisfunc, name);
 
-    if (update_ll_hash (ptr, w, indx) != 0)
-      return GPTLerror_1s ("%s: update_ll_hash error\n", thisfunc);
+    if (update_ll_hash_gpu (ptr, w, indx) != 0)
+      return GPTLerror_1s ("%s: update_ll_hash_gpu error\n", thisfunc);
   }
 
-  if (update_ptr (ptr, w) != 0)
-    return GPTLerror_1s ("%s: update_ptr error\n", thisfunc);
+  if (update_ptr_gpu (ptr, w) != 0)
+    return GPTLerror_1s ("%s: update_ptr_gpu error\n", thisfunc);
 
   return SUCCESS;
 }
@@ -410,12 +410,12 @@ __device__ int GPTLstart_handle_gpu (const char *name,  /* timer name */
     if ((ptr = get_new_timer (w, name, thisfunc)) == NULL)
       return GPTLerror_2s ("%s: get_new_timer failure for timer %s\n", thisfunc, name);
 
-    if (update_ll_hash (ptr, w, (unsigned int) *handle) != 0)
-      return GPTLerror_1s ("%s: update_ll_hash error\n", thisfunc);
+    if (update_ll_hash_gpu (ptr, w, (unsigned int) *handle) != 0)
+      return GPTLerror_1s ("%s: update_ll_hash_gpu error\n", thisfunc);
   }
 
-  if (update_ptr (ptr, w) != 0)
-    return GPTLerror_1s ("%s: update_ptr error\n", thisfunc);
+  if (update_ptr_gpu (ptr, w) != 0)
+    return GPTLerror_1s ("%s: update_ptr_gpu error\n", thisfunc);
 
   return SUCCESS;
 }
@@ -431,11 +431,11 @@ __device__ int GPTLstart_handle_gpu (const char *name,  /* timer name */
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-__device__ static int update_ll_hash (Timer *ptr, int w, unsigned int indx)
+__device__ static int update_ll_hash_gpu (Timer *ptr, int w, unsigned int indx)
 {
   int nchars;      /* number of chars */
   int wi;
-  static const char *thisfunc = "update_ll_hash";
+  static const char *thisfunc = "update_ll_hash_gpu";
 
   nchars = my_strlen (ptr->name);
   if (nchars > max_name_len[w])
@@ -451,7 +451,7 @@ __device__ static int update_ll_hash (Timer *ptr, int w, unsigned int indx)
   ptr->smid = smid;
 #endif
 
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
   printf("%s: name=%s indx=%d wi=%d\n", thisfunc, ptr->name, indx, wi);
 #endif
   return SUCCESS;
@@ -466,13 +466,13 @@ __device__ static int update_ll_hash (Timer *ptr, int w, unsigned int indx)
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-__device__ static inline int update_ptr (Timer *ptr, const int w)
+__device__ static inline int update_ptr_gpu (Timer *ptr, const int w)
 {
   long long tp2;    /* time stamp */
   long long delta;
-  static const char *thisfunc = "update_ptr";
+  static const char *thisfunc = "update_ptr_gpu";
 
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
   printf ("%s: ptr=%p setting onflg=true\n", thisfunc, ptr);
 #endif
 
@@ -556,8 +556,8 @@ __device__ int GPTLstop_gpu (const char *name)               /* timer name */
     return SUCCESS;
   }
 
-  if (update_stats (ptr, tp1, w) != 0)
-    return GPTLerror_1s ("%s: error from update_stats\n", thisfunc);
+  if (update_stats_gpu (ptr, tp1, w) != 0)
+    return GPTLerror_1s ("%s: error from update_stats_gpu\n", thisfunc);
 
   return SUCCESS;
 }
@@ -618,8 +618,8 @@ __device__ int GPTLstop_handle_gpu (const char *name,     /* timer name */
     return SUCCESS;
   }
 
-  if (update_stats (ptr, tp1, w) != 0)
-    return GPTLerror_1s ("%s: error from update_stats\n", thisfunc);
+  if (update_stats_gpu (ptr, tp1, w) != 0)
+    return GPTLerror_1s ("%s: error from update_stats_gpu\n", thisfunc);
 
   return SUCCESS;
 }
@@ -634,14 +634,14 @@ __device__ int GPTLstop_handle_gpu (const char *name,     /* timer name */
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-__device__ static inline int update_stats (Timer *ptr, 
-					   const long long tp1, 
-					   const int w)
+__device__ static inline int update_stats_gpu (Timer *ptr, 
+					       const long long tp1, 
+					       const int w)
 {
   uint smid;         // only needed when certain ifdefs defined
   long long delta;   /* difference */
-  static const char *thisfunc = "update_stats";
-#ifdef DEBUG
+  static const char *thisfunc = "update_stats_gpu";
+#ifdef DEBUG_PRINT
   printf ("%s: ptr=%p setting onflg=false\n", thisfunc, ptr);
 #endif
 
@@ -891,7 +891,7 @@ __device__ static Timer *get_new_timer (int w, const char *name, const char *cal
 {
   int numchars;
   Timer *ptr = NULL;
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
   static const char *thisfunc = "get_new_timer";
 #endif
   
@@ -913,7 +913,7 @@ __device__ static Timer *get_new_timer (int w, const char *name, const char *cal
   numchars = MIN (my_strlen (name), MAX_CHARS);
   memcpy (ptr->name, name, numchars);
   ptr->name[numchars] = '\0';
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
   printf ("%s: name=%s w=%d added at position %d\n", thisfunc, ptr->name, w, ntimers_allocated[w]);
 #endif
   ++ntimers_allocated[w];
@@ -1013,7 +1013,7 @@ __global__ void GPTLfill_gpustats (Gpustats *gpustats,
 
   *ngputimers = n;
 
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
   printf ("%s: ngputimers=%d\n", thisfunc, n);
   for (n = 0; n < *ngputimers; ++n) {
     printf ("%s: timer=%s accum_max=%lld accum_min=%lld count_max=%d nwarps=%d\n", 
