@@ -7,6 +7,7 @@ __global__ void sleep (float seconds, int outerlooplen)
   int n;
 
   ret = GPTLstart_gpu ("total_gputime");
+  ret = GPTLstart_gpu ("total_gputime2");
   blockId = blockIdx.x 
     + blockIdx.y * gridDim.x 
     + gridDim.x * gridDim.y * blockIdx.z; 
@@ -21,5 +22,6 @@ __global__ void sleep (float seconds, int outerlooplen)
     ret = GPTLmy_sleep (seconds);
     ret = GPTLstop_gpu ("sleep1");
   }
+  ret = GPTLstop_gpu ("total_gputime2");
   ret = GPTLstop_gpu ("total_gputime");
 }

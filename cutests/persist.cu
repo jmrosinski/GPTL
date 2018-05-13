@@ -154,6 +154,7 @@ __global__ void doalot (int nn, int outerlooplen, int innerlooplen, int balfact,
   }
     
   ret = GPTLstart_gpu ("total_gputime");
+  ret = GPTLstart_gpu ("total_gputime2");
   if (nnn < outerlooplen) {
     ret = GPTLstart_gpu ("doalot_log");
     logvals[nnn] = doalot_log (niter, innerlooplen);
@@ -183,6 +184,7 @@ __global__ void doalot (int nn, int outerlooplen, int innerlooplen, int balfact,
     sqrtvals[nnn] = doalot_sqrt (niter, innerlooplen);
     ret = GPTLstop_handle_gpu ("a", handle2);
   }
+  ret = GPTLstop_gpu ("total_gputime2");
   ret = GPTLstop_gpu ("total_gputime");
 }
 

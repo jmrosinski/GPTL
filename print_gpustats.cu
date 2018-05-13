@@ -166,7 +166,7 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   extraspace = max_name_len_gpu[0] - 4; // "name" is 4 chars
   for (i = 0; i < extraspace; ++i)
     fprintf (fp, " ");
-  fprintf (fp, "name    calls  warps  holes  wallmax  (warp) wallmin (warp) maxcount (warp) mincount (warp) negmxstrt(warp) negmxstop(warp)  self_OH parent_OH\n");
+  fprintf (fp, "name    calls  warps  holes  wallmax  (warp) wallmin (warp) maxcount (warp) mincount (warp) negmxstrt(warp) nwarps negmxstop(warp) nwarps  self_OH parent_OH\n");
   for (n = 0; n < ngputimers[0]; ++n) {
     extraspace = max_name_len_gpu[0] - strlen (gpustats[n].name);
     for (i = 0; i < extraspace; ++i)
@@ -210,9 +210,11 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
 
     fprintf (fp, "%8d ", gpustats[n].negcount_start_max);      // max negcount for "start" region "name" (hope it's zero)
     fprintf (fp, "%6d ", gpustats[n].negcount_start_max_warp); // warp which accounted for negcount_start_max
+    fprintf (fp, "%6d ", gpustats[n].negstart_nwarps);         // number of warps which had > 0 negative starts
 
     fprintf (fp, "%8d ", gpustats[n].negcount_stop_max);       // max negcount for "stop" region "name" (hope it's zero)
     fprintf (fp, "%6d ", gpustats[n].negcount_stop_max_warp);  // warp which accounted for negcount_stop_max
+    fprintf (fp, "%6d ", gpustats[n].negstop_nwarps);          // number of warps which had > 0 negative stops
 
     self = gpustats[n].count_max * self_ohdgpu[0] / gpu_hz;    // self ohd est
     if (self < 0.01)

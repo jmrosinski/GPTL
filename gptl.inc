@@ -77,3 +77,4 @@
       integer, external :: gptlnum_warn
       integer, external :: gptlget_count
       integer, external :: gptlget_gpu_props
+      integer, external :: gptlcudadevsync

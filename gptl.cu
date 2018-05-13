@@ -3117,6 +3117,12 @@ __host__ int GPTLcompute_chunksize (const int oversub, const int inner_iter_coun
   return chunksize;
 }
 
+__host__ int GPTLcudadevsync (void)
+{
+  cudaDeviceSynchronize ();
+  return 0;
+}
+
 /*************************************************************************************/
 
 /*

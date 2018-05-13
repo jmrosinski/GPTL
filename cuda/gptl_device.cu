@@ -1047,6 +1047,9 @@ __device__ static void init_gpustats (Gpustats *gpustats, Timer *ptr, int w)
   gpustats->negcount_stop_max       = ptr->negcount_stop;
   gpustats->negcount_stop_max_warp  = w;
 
+  gpustats->negstart_nwarps = ptr->negcount_start > 0 ? 1 : 0;
+  gpustats->negstop_nwarps  = ptr->negcount_stop  > 0 ? 1 : 0;
+
   ptr->beenprocessed = true;
 }
 
@@ -1084,6 +1087,12 @@ __device__ static void fill_gpustats (Gpustats *gpustats, Timer *ptr, int w)
     gpustats->negcount_stop_max      = ptr->negcount_stop;
     gpustats->negcount_stop_max_warp = w;
   }
+
+  if (ptr->negcount_start > 0)
+    ++gpustats->negstart_nwarps;
+
+  if (ptr->negcount_stop > 0)
+    ++gpustats->negstop_nwarps;
 }
 
 __device__ static __forceinline__ int my_strlen (const char *str)

@@ -65,6 +65,7 @@ subroutine persist (mostwork, outerlooplen, innerlooplen, balfact, oversub)
       ret = gptlstop_gpu ('total_gputime')
     end do
 !$acc end parallel
+    ret = gptlcudadevsync ();
   end do
   ret = gptlstop ('donothing')
   ret = gptlstop ('total_kerneltime')
@@ -115,6 +116,7 @@ subroutine persist (mostwork, outerlooplen, innerlooplen, balfact, oversub)
       ret = gptlstop_gpu ('total_gputime')
     end do
 !$acc end parallel
+    ret = gptlcudadevsync ();
   end do
   ret = gptlstop ('doalot')
   ret = gptlstop ('total_kerneltime')
@@ -145,6 +147,7 @@ subroutine persist (mostwork, outerlooplen, innerlooplen, balfact, oversub)
       ret = gptlstop_gpu ('total_gputime')
     end do
 !$acc end parallel
+    ret = gptlcudadevsync ();
   end do
 !$acc end data
 

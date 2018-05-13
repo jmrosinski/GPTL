@@ -119,6 +119,7 @@ extern int GPTLnum_warn (void);
 extern int GPTLget_count (const char *, int, int *);
 extern __host__ int GPTLcompute_chunksize (const int, const int);
 extern __host__ int GPTLget_gpu_props (int *, int *, int *, int *);
+extern __host__ int GPTLcudadevsync (void);
 };
 
 #endif

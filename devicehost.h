@@ -31,6 +31,8 @@ typedef struct {
   unsigned int negcount_stop_max;
   int negcount_start_max_warp;
   int negcount_stop_max_warp;
+  unsigned int negstart_nwarps;
+  unsigned int negstop_nwarps;
   int accum_max_warp;
   int accum_min_warp;
   int nwarps;

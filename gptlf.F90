@@ -229,6 +229,9 @@ module gptl
        integer, intent(out) :: devnum
        integer, intent(out) :: smcount
      end function gptlget_gpu_props
+
+     integer function gptlcudadevsync ()
+     end function gptlcudadevsync
   end interface
 
 contains

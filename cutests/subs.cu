@@ -67,7 +67,9 @@ __global__ void donothing (void)
   int ret;
 
   ret = GPTLstart_gpu ("total_gputime");
+  ret = GPTLstart_gpu ("total_gputime2");
   ret = GPTLstart_gpu ("donothing");
   ret = GPTLstop_gpu ("donothing");
+  ret = GPTLstop_gpu ("total_gputime2");
   ret = GPTLstop_gpu ("total_gputime");
 }
