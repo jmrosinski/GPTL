@@ -82,6 +82,7 @@ dnl fi
 
 AC_CONFIG_FILES([Makefile
                  include/Makefile
+                 test/Makefile
                  src/Makefile
                  src/clib/Makefile
 		 ])
