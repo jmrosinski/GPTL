@@ -30,9 +30,10 @@ LT_INIT()
 # The config.h file will be created when configure script is run.
 AC_CONFIG_HEADERS([config.h])
 
-AC_LANG(C)
-#AC_PROG_MAKE_SET
+# Find the C compiler.
 AC_PROG_CC()
+
+# Find the Fortran compiler.
 #AC_PROG_FC()
 
 dnl dnl This barfs when CC is pgcc and F77 pgf90
@@ -47,16 +48,9 @@ dnl esac
 dnl For proper handling of const and inline
 AC_C_INLINE
 
-dnl dnl AC_FUNC_VPRINTF
-
 # Check for papi library.
 AC_CHECK_LIB([papi], [PAPI_library_init],
                      [AC_DEFINE([HAVE_PAPI], [1], [PAPI library is present])])
-
-dnl unset usempich;
-dnl unset usempi;
-dnl AC_CHECK_LIB(mpich,MPI_Init,[echo "libmpich.a found: OK to set HAVE_MPI=yes";usempich=yes],
-dnl 	     AC_CHECK_LIB(mpi,MPI_Init,[echo "libmpi.a found: OK to set HAVE_MPI=yes OK";usempi=yes],[echo "MPI library not found: HAVE_MPI=no"]))
 
 # Check for existance of proc file.
 AC_CHECK_FILE([/proc],
@@ -70,25 +64,19 @@ AC_CHECK_LIB([pthread], [pthread_mutex_init],
 AC_CHECK_FUNC([backtrace_symbols],
         [AC_DEFINE([HAVE_BACKTRACE], [1], [backtrace_symbols function is present])])
 
+# Do we have MPI?
+AC_CHECK_FUNC([MPI_Init],
+        [AC_DEFINE([HAVE_MPI], [1], [MPI is present])])
+
 # Check for function iargc, which may be part of MPI.
 AC_CHECK_FUNC([iargc],
         [AC_DEFINE([HAVE_IARGCGETARG], [1], [backtrace_symbols function is present])])
 
-dnl if test -n "${usempich}" ; then
-dnl AC_CHECK_LIB(mpich,iargc,[echo "iargc found in libmpich.a: OK to set HAVE_IARGCGETARG=yes"],	                   [echo "iargc not found in libmpich.a: HAVE_IARGCGETARG=no"])
-dnl fi
-
-dnl if test -n "${usempi}" ; then
-dnl AC_CHECK_LIB(mpi,iargc,[echo "iargc found in libmpi.a: OK to set HAVE_IARGCGETARG=yes"],
-dnl 		       [echo "iargc not found in libmpi.a: HAVE_IARGCGETARG=no"])
-dnl fi
-
-dnl AC_CHECK_SIZEOF([void *])
-dnl if test "$ac_cv_sizeof_void_p" = 8; then
-dnl   echo "Pointer size = 8 so BIT64=yes";
-dnl elif test "$ac_cv_sizeof_void_p" = 4; then
-dnl   echo "Pointer size = 4 so BIT64=no";
-dnl fi
+# Check the size of a void pointer.
+AC_CHECK_SIZEOF([void *])
+if test "x$ac_cv_sizeof_void_p" = x8; then
+   AC_DEFINE([BIT64], [1], [void pointer is 8 bytes])
+fi   
 
 # This is a list of files to be built.
 AC_CONFIG_FILES([Makefile
