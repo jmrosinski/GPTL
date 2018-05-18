@@ -6,6 +6,9 @@
 ** Contains definitions private to GPTL and inaccessible to invoking user environment
 */
 
+#ifndef _GPTL_PRIVATE_
+#define _GPTL_PRIVATE_
+
 #include <stdio.h>
 #include <sys/time.h>
 
@@ -184,3 +187,5 @@ extern Timer *GPTLgetentry (const char *);
 extern int GPTLpmpi_setoption (const int, const int);
 extern int GPTLpr_has_been_called (void);      /* needed by MPI_Finalize wrapper*/
 #endif
+
+#endif /* _GPTL_PRIVATE_ */

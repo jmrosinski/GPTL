@@ -1,3 +1,5 @@
+#include "config.h" /* Must be first include. */
+
 #include "private.h"
 #include <stdio.h>
 

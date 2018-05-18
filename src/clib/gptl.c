@@ -5,6 +5,8 @@
 ** Main file contains most user-accessible GPTL functions
 */
 
+#include "config.h" /* Must be first include. */
+
 #ifdef HAVE_MPI
 #include <mpi.h>
 #endif

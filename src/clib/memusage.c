@@ -15,6 +15,7 @@
 **                 -1 = failure
 */
 
+#include "config.h" /* Must be first include. */
 #include <sys/resource.h>
 #include <stdio.h>
 #include <unistd.h>

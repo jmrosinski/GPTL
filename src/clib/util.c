@@ -2,6 +2,7 @@
 ** $Id: util.c,v 1.13 2010-01-01 01:34:07 rosinski Exp $
 */
 
+#include "config.h" /* Must be first include. */
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>

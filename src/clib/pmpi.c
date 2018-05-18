@@ -6,6 +6,7 @@
 ** Wrappers to MPI routines
 */
  
+#include "config.h" /* Must be first include. */
 #include "private.h"
 #include "gptl.h"
 
