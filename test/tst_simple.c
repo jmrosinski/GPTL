@@ -24,10 +24,10 @@ main(int argc, char **argv)
    printf("\n*** Testing GPTL.\n");
    printf("*** testing setting options and initialization/finalization...");
    {
+      if (GPTLsetoption(GPTLverbose, 1)) ERR;
       if (GPTLsetoption(GPTLwall, 1)) ERR;
       if (GPTLsetoption(GPTLoverhead, 1)) ERR;
       if (GPTLsetoption(GPTLdepthlimit, 1)) ERR;
-      if (GPTLsetoption(GPTLverbose, 1)) ERR;
       if (GPTLsetoption(GPTLpercent, 1)) ERR;
       if (GPTLsetoption(GPTLdopr_preamble, 1)) ERR;
       if (GPTLsetoption(GPTLdopr_threadsort, 1)) ERR;
