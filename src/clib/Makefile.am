@@ -1,4 +1,4 @@
-# This is part of Unidata's GPTL package.  Copyright 2018, see
+# This is part of NOAAs GPTL package.  Copyright 2018, see
 # the COPYRIGHT file for more information.
 
 # This automake file generates the Makefile to build the GPTL C library.
