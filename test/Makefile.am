@@ -4,13 +4,17 @@
 # This is the automake file for GPTL source code directories.
 # Ed Hartnett, 5/18/18
 
-AM_CPPFLAGS = -I$(top_srcdir)/include 
+# Find include directory.
+AM_CPPFLAGS = -I$(top_srcdir)/include
+
+# Link to GPTL library.
+AM_LDFLAGS = ${top_builddir}/src/clib/libgptl.la
 
 # Test programs to be built.
-#check_PROGRAMS = ???.c
+check_PROGRAMS = tst_simple
 
 # Tests to be run.
-#TESTS = ???
+TESTS = tst_simple
 
 # Test output to be deleted.
 #CLEANFILES = ???

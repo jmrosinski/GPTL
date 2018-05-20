@@ -46,13 +46,14 @@ dnl     *)          echo "Fortran name mangling: UNDERSCORING=" ;;
 dnl esac
 
 dnl For proper handling of const and inline
+AC_C_CONST
 AC_C_INLINE
 
 # Check for papi library.
 AC_CHECK_LIB([papi], [PAPI_library_init],
                      [AC_DEFINE([HAVE_PAPI], [1], [PAPI library is present])])
 
-# Check for existance of proc file.
+# Check for existance of procfs, the proc file system.
 AC_CHECK_FILE([/proc],
         [AC_DEFINE([HAVE_SLASHPROC], [1], [some comment])])
 
