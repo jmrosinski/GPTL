@@ -22,11 +22,32 @@ int
 main(int argc, char **argv)
 {
    printf("\n*** Testing GPTL.\n");
-   printf("*** testing initialization/finalization...");
+   printf("*** testing setting options and initialization/finalization...");
    {
-      if (GPTLsetoption(0, 0)) ERR;
+      if (GPTLsetoption(GPTLwall, 1)) ERR;
+      if (GPTLsetoption(GPTLoverhead, 1)) ERR;
+      if (GPTLsetoption(GPTLdepthlimit, 1)) ERR;
+      if (GPTLsetoption(GPTLverbose, 1)) ERR;
+      if (GPTLsetoption(GPTLpercent, 1)) ERR;
+      if (GPTLsetoption(GPTLdopr_preamble, 1)) ERR;
+      if (GPTLsetoption(GPTLdopr_threadsort, 1)) ERR;
+      if (GPTLsetoption(GPTLdopr_multparent, 1)) ERR;
+      if (GPTLsetoption(GPTLdopr_collision, 1)) ERR;
+      if (GPTLsetoption(GPTLdopr_memusage, 1)) ERR;
+      if (GPTLsetoption(GPTLprint_method, 1)) ERR;
+      if (GPTLsetoption(GPTLtablesize, 1)) ERR;
+      if (GPTLsetoption(GPTLsync_mpi, 1)) ERR;
+      if (GPTLsetoption(GPTLmaxthreads, 1)) ERR;
+#ifdef HAVE_PAPI
+      if (GPTLsetoption(GPTLmultiplex, 1)) ERR;
+#else
+      if (GPTLsetoption(GPTLmultiplex, 1) != -1) ERR;
+#endif /* HAVE_PAPI */
       if (GPTLinitialize()) ERR;
-      if (GPTLsetoption(0, 0) != -1) ERR;
+
+      /* This will not work. */
+      if (GPTLsetoption(GPTLwall, 0) != -1) ERR;
+      
       if (GPTLfinalize()) ERR;
    }
    printf("\n*** SUCCESS!\n");

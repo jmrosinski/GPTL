@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 ## Process this file with autoconf to produce a configure script.
 
-# This is part of Unidata's GPTL package. See the COPYRIGHT file for
+# This is part of Unidata's GPTL package. See the COPYING file for
 # more information.
 # Ed Hartnett, 5/18/18
 
