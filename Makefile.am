@@ -1,5 +1,5 @@
 ## This is a automake file, part of the GPTL package.
-# Copyright 2018, see the COPYRIGHT file for more information.
+# Copyright 2018, see the COPYING file for more information.
 
 # This is the main automake file for GPTL.
 # Ed Hartnett, 5/18/18

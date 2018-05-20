@@ -1,5 +1,4 @@
-# This is part of NOAAs GPTL package.  Copyright 2018, see
-# the COPYRIGHT file for more information.
+# This is part of NOAAs GPTL package.
 
 # This automake file generates the Makefile to build the GPTL C library.
 # Ed Hartnett 5/18/18
