@@ -91,6 +91,7 @@ AC_CONFIG_FILES([Makefile
                  test/Makefile
                  src/Makefile
                  src/clib/Makefile
+                 bin/Makefile
 		 ])
 
 # Build the files listed above.
