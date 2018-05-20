@@ -1,9 +1,10 @@
+#include "config.h"
 #include <stdio.h>
 #include <unistd.h>
 #ifdef THREADED_OMP
 #include <omp.h>
 #endif
-#include "../gptl.h"
+#include "gptl.h"
 
 int main ()
 {

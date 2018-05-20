@@ -1,7 +1,8 @@
+#include "config.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <mpi.h>
-#include "../gptl.h"
+#include "gptl.h"
 
 static const MPI_Comm comm = MPI_COMM_WORLD;
 static int iam;

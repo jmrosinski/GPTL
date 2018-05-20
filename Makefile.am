@@ -12,7 +12,7 @@ EXTRA_DIST = COPYING INSTALL README
 
 # This is the list of subdirs for which Makefiles will be constructed
 # and run.
-SUBDIRS = include src test bin
+SUBDIRS = include src ctests bin
 
 install-data-hook:
 

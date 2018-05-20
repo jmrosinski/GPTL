@@ -1,3 +1,4 @@
+#include "config.h"
 #include <unistd.h>  /* getopt */
 #include <string.h>
 #include <stdlib.h>

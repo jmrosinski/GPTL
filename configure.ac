@@ -49,9 +49,34 @@ dnl For proper handling of const and inline
 AC_C_CONST
 AC_C_INLINE
 
+# Does the user want to turn on nested OMP?
+AC_MSG_CHECKING([whether nested OMP is to be enabled])
+AC_ARG_ENABLE([nestedomp], [AS_HELP_STRING([--enable-nestedomp],
+              [build with nested OMP capability])])
+test "x$enable_nestedomp" = xyes || enable_nestedomp=no
+AM_CONDITIONAL(ENABLE_NESTEDOMP, [test x$enable_nestedomp = xyes])
+AC_MSG_RESULT($enable_nestedomp)
+
+# Does the user want to turn on PMPI?
+AC_MSG_CHECKING([whether PMPI is to be enabled])
+AC_ARG_ENABLE([pmpi], [AS_HELP_STRING([--enable-pmpi],
+              [build with PMPI capability])])
+test "x$enable_pmpi" = xyes || enable_pmpi=no
+AM_CONDITIONAL(ENABLE_PMPI, [test x$enable_pmpi = xyes])
+AC_MSG_RESULT($enable_pmpi)
+
+# Does the user want to test autoprofiling?
+AC_MSG_CHECKING([whether autoprofile testing is to be enabled])
+AC_ARG_ENABLE([autoprofile-testing], [AS_HELP_STRING([--enable-autoprofile-testing],
+              [test autoprofileing])])
+test "x$enable_autoprofile_testing" = xyes || enable_autoprofile_testing=no
+AM_CONDITIONAL(TEST_AUTOPROFILE, [test x$enable_autoprofile_testing = xyes])
+AC_MSG_RESULT($enable_autoprofile_testing)
+
 # Check for papi library.
 AC_CHECK_LIB([papi], [PAPI_library_init],
                      [AC_DEFINE([HAVE_PAPI], [1], [PAPI library is present])])
+AM_CONDITIONAL([HAVE_PAPI], [test "x$ac_cv_lib_papi_PAPI_library_init" = xyes])
 
 # Check for existance of procfs, the proc file system.
 AC_CHECK_FILE([/proc],
@@ -61,6 +86,10 @@ AC_CHECK_FILE([/proc],
 AC_CHECK_LIB([pthread], [pthread_mutex_init],
                         [AC_DEFINE([PTHREADS], [1], [pthreads library is present])])
 
+# We need the math library for some tests.
+AC_CHECK_LIB([m], [floor], [],
+                  [AC_MSG_ERROR([Can't find or link to the math library.])])
+
 # Check for function backtrace_symbols.
 AC_CHECK_FUNC([backtrace_symbols],
         [AC_DEFINE([HAVE_BACKTRACE], [1], [backtrace_symbols function is present])])
@@ -68,6 +97,7 @@ AC_CHECK_FUNC([backtrace_symbols],
 # Do we have MPI?
 AC_CHECK_FUNC([MPI_Init],
         [AC_DEFINE([HAVE_MPI], [1], [MPI is present])])
+AM_CONDITIONAL([HAVE_MPI], [test "x$ac_cv_func_MPI_Init" = xyes])
 
 # Check for function iargc, which may be part of MPI.
 AC_CHECK_FUNC([iargc],
@@ -88,7 +118,7 @@ fi
 # This is a list of files to be built.
 AC_CONFIG_FILES([Makefile
                  include/Makefile
-                 test/Makefile
+                 ctests/Makefile
                  src/Makefile
                  src/clib/Makefile
                  bin/Makefile

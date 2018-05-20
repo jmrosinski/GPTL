@@ -1,9 +1,7 @@
-/*
-** gptl.c
-** Author: Jim Rosinski
-**
-** Main file contains most user-accessible GPTL functions
-*/
+/**
+ * @file Main file contains most user-accessible GPTL functions.
+ * @Author Jim Rosinski
+ */
 
 #include "config.h" /* Must be first include. */
 
@@ -209,15 +207,14 @@ static bool imperfect_nest;                 /* e.g. start(A),start(B),stop(A) */
 /* VERBOSE is a debugging ifdef local to the rest of this file */
 #undef VERBOSE
 
-/*
-** GPTLsetoption: set option value to true or false.
-**
-** Input arguments:
-**   option: option to be set
-**   val:    value to which option should be set (nonzero=true, zero=false)
-**
-** Return value: 0 (success) or GPTLerror (failure)
-*/
+/**
+ * Set option value to true or false.
+ *
+ * @param option option to be set
+ * @param val value to which option should be set (nonzero=true, zero=false)
+ *
+ * @return: 0 (success) or GPTLerror (failure)
+ */
 int GPTLsetoption (const int option,  /* option */
                    const int val)     /* value */
 {

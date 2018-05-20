@@ -1,4 +1,5 @@
-#include "../gptl.h"
+#include "config.h"
+#include "gptl.h"
 #include <stdio.h>
 
 int main (int argc, char **argv)
