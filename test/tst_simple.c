@@ -24,7 +24,9 @@ main(int argc, char **argv)
    printf("\n*** Testing GPTL.\n");
    printf("*** testing initialization/finalization...");
    {
+      if (GPTLsetoption(0, 0)) ERR;
       if (GPTLinitialize()) ERR;
+      if (GPTLsetoption(0, 0) != -1) ERR;
       if (GPTLfinalize()) ERR;
    }
    printf("\n*** SUCCESS!\n");
