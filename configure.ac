@@ -77,7 +77,13 @@ AC_CHECK_FUNC([iargc],
 AC_CHECK_SIZEOF([void *])
 if test "x$ac_cv_sizeof_void_p" = x8; then
    AC_DEFINE([BIT64], [1], [void pointer is 8 bytes])
-fi   
+fi
+
+# Is doxygen installed? If so, have configure construct the Doxyfile.
+AC_CHECK_PROGS([DOXYGEN], [doxygen])
+if test -z "$DOXYGEN"; then
+   AC_MSG_WARN([Doxygen not found - documentation will not be built])
+fi
 
 # This is a list of files to be built.
 AC_CONFIG_FILES([Makefile
