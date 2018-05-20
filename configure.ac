@@ -9,7 +9,7 @@
 AC_PREREQ([2.59])
 
 # Initialize autoconf.
-AC_INIT([GPTL], [2.0.0], [james.rosinski@noaa.gov])
+AC_INIT([GPTL], [5.6.0], [james.rosinski@noaa.gov])
 
 # Keep libtool macros in an m4 directory.
 AC_CONFIG_MACRO_DIR([m4])
@@ -79,7 +79,7 @@ if test "x$ac_cv_sizeof_void_p" = x8; then
    AC_DEFINE([BIT64], [1], [void pointer is 8 bytes])
 fi
 
-# Is doxygen installed? If so, have configure construct the Doxyfile.
+# Is doxygen installed?
 AC_CHECK_PROGS([DOXYGEN], [doxygen])
 if test -z "$DOXYGEN"; then
    AC_MSG_WARN([Doxygen not found - documentation will not be built])
