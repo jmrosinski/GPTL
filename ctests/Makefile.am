@@ -42,4 +42,4 @@ TESTS += nestedomp
 endif
 
 # Test output to be deleted.
-#CLEANFILES = ???
+CLEANFILES = timing.*
