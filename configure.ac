@@ -74,17 +74,21 @@ AM_CONDITIONAL(TEST_AUTOPROFILE, [test x$enable_autoprofile_testing = xyes])
 AC_MSG_RESULT($enable_autoprofile_testing)
 
 # Check for papi library.
-AC_CHECK_LIB([papi], [PAPI_library_init],
-                     [AC_DEFINE([HAVE_PAPI], [1], [PAPI library is present])])
+AC_CHECK_LIB([papi], [PAPI_library_init])
 AM_CONDITIONAL([HAVE_PAPI], [test "x$ac_cv_lib_papi_PAPI_library_init" = xyes])
+if test "x$ac_cv_lib_papi_PAPI_library_init" = xyes; then
+   AC_DEFINE([HAVE_PAPI], [1], [PAPI library is present])
+fi
 
 # Check for existance of procfs, the proc file system.
 AC_CHECK_FILE([/proc],
         [AC_DEFINE([HAVE_SLASHPROC], [1], [some comment])])
 
 # Check for pthread lirbary.
-AC_CHECK_LIB([pthread], [pthread_mutex_init],
-                        [AC_DEFINE([PTHREADS], [1], [pthreads library is present])])
+AC_CHECK_LIB([pthread], [pthread_mutex_init])
+if test "x$ac_cv_lib_pthread_pthread_mutex_init" = xyes; then
+   AC_DEFINE([PTHREADS], [1], [pthreads library is present])
+fi
 
 # We need the math library for some tests.
 AC_CHECK_LIB([m], [floor], [],
