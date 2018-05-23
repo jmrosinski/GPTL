@@ -98,6 +98,14 @@ AC_CHECK_LIB([m], [floor], [],
 AC_CHECK_FUNC([backtrace_symbols],
         [AC_DEFINE([HAVE_BACKTRACE], [1], [backtrace_symbols function is present])])
 
+# Check for vfprintf.
+AC_CHECK_FUNC([vfprintf],
+        [AC_DEFINE([HAVE_VPRINTF], [1], [vfprint function is available])])
+
+# Check for gettimeofday.
+AC_CHECK_FUNC([gettimeofday],
+        [AC_DEFINE([HAVE_GETTIMEOFDAY], [1], [gettimeofday function is available])])
+
 # Do we have MPI?
 AC_CHECK_FUNC([MPI_Init],
         [have_mpi=yes])
