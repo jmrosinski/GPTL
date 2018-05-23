@@ -33,23 +33,14 @@ AC_CONFIG_HEADERS([config.h])
 # Find the C compiler.
 AC_PROG_CC()
 
-# Find the Fortran compiler.
-#AC_PROG_FC()
-
-dnl dnl This barfs when CC is pgcc and F77 pgf90
-dnl AC_FC_FUNC(z_zz,z_zz)
-dnl case $z_zz in
-dnl     z_zz__)     echo "Fortran name mangling: UNDERSCORING=-DFORTRANDOUBLEUNDERSCORE" ;;
-dnl     z_zz_)      echo "Fortran name mangling: UNDERSCORING=-DFORTRANUNDERSCORE" ;;
-dnl     Z_ZZ)       echo "Fortran name mangling: UNDERSCORING=-DFORTRANCAPS" ;;
-dnl     *)          echo "Fortran name mangling: UNDERSCORING=" ;;
-dnl esac
-
 dnl For proper handling of const and inline
 AC_C_CONST
 AC_C_INLINE
 
-# Does the user want to turn on nested OMP?
+# Does the user want to turn on nested OMP? Enable only if you will be
+# profiling code regions inside of doubly-nested OpenMP regions. Using
+# --enable-nestedomp can increase the cost of getting the thread
+# number by about 50% even in regions which are not doubly-nested.
 AC_MSG_CHECKING([whether nested OMP is to be enabled])
 AC_ARG_ENABLE([nestedomp], [AS_HELP_STRING([--enable-nestedomp],
               [build with nested OMP capability])])
@@ -65,7 +56,10 @@ test "x$enable_pmpi" = xyes || enable_pmpi=no
 AM_CONDITIONAL(ENABLE_PMPI, [test x$enable_pmpi = xyes])
 AC_MSG_RESULT($enable_pmpi)
 
-# Does the user want to test autoprofiling?
+# Does the user want to test autoprofiling? (adds 2 tests to "make
+# test"). If compiler is gcc or pathscale or intel, set INSTRFLAG to
+# -finstrument-functions. PGI 8.0.2 and later provide
+# -Minstrument:functions.
 AC_MSG_CHECKING([whether autoprofile testing is to be enabled])
 AC_ARG_ENABLE([autoprofile-testing], [AS_HELP_STRING([--enable-autoprofile-testing],
               [test autoprofileing])])
@@ -79,6 +73,14 @@ AM_CONDITIONAL([HAVE_PAPI], [test "x$ac_cv_lib_papi_PAPI_library_init" = xyes])
 if test "x$ac_cv_lib_papi_PAPI_library_init" = xyes; then
    AC_DEFINE([HAVE_PAPI], [1], [PAPI library is present])
 fi
+
+# Only define HAVE_NANOTIME if this is a x86. It provides by far the finest grained,
+# lowest overhead wallclock timer on that architecture.
+# If HAVE_NANOTIME=yes, set BIT64=yes if this is an x86_64
+dnl HAVE_NANOTIME = yes
+dnl ifeq ($(HAVE_NANOTIME),yes)
+dnl   BIT64 = yes
+dnl endif
 
 # Check for existance of procfs, the proc file system.
 AC_CHECK_FILE([/proc],
@@ -94,13 +96,23 @@ fi
 AC_CHECK_LIB([m], [floor], [],
                   [AC_MSG_ERROR([Can't find or link to the math library.])])
 
-# Check for function backtrace_symbols.
+# Check for function backtrace_symbols. If HAVE_BACKTRACE=yes will
+# enable auto-generation of function name when auto-profiling and
+# GPTLdopr_memusage has been enabled at run-time. If
+# HAVE_BACKTRACE=no, function address will be printed instead.  GNU
+# compilers: compile application code with -finstrument-functions
+# -rdynamic Intel compilers: compile application code with
+# -finstrument-functions -rdynamic -g
 AC_CHECK_FUNC([backtrace_symbols],
         [AC_DEFINE([HAVE_BACKTRACE], [1], [backtrace_symbols function is present])])
 
 # Check for vfprintf.
 AC_CHECK_FUNC([vfprintf],
         [AC_DEFINE([HAVE_VPRINTF], [1], [vfprint function is available])])
+
+# Check for times.
+AC_CHECK_FUNC([times],
+        [AC_DEFINE([HAVE_TIMES], [1], [vfprint function is available])])
 
 # Check for gettimeofday.
 AC_CHECK_FUNC([gettimeofday],
@@ -113,6 +125,13 @@ if test "x$have_mpi" = xyes; then
    AC_DEFINE([HAVE_MPI], [1], [MPI is present])
 fi
 AM_CONDITIONAL([HAVE_MPI], [test "x$have_mpi" = xyes])
+
+AC_DEFINE([MPI_CONST], [], [Description])
+
+# clock_gettime() in librt.a is an option for gathering wallclock time stats
+# on some machines. Setting HAVE_LIBRT=yes enables this, but will probably
+# require linking applications with -lrt 
+AC_DEFINE([HAVE_LIBRT], [1], [desc])
 
 # Check for function iargc, which may be part of MPI.
 AC_CHECK_FUNC([iargc],
