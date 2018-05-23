@@ -25,8 +25,12 @@ endif
 
 # Build these tests if MPI is present.
 if HAVE_MPI
-check_PROGRAMS += summary pmpi
+check_PROGRAMS += summary
 TESTS += run_par_test.sh
+if ENABLE_PMPI
+check_PROGRAMS += pmpi
+TESTS += run_par_pmpi_test.sh
+endif
 endif
 
 # Build these if the user selected --enable-autoprofile-tests during configure.
