@@ -100,8 +100,11 @@ AC_CHECK_FUNC([backtrace_symbols],
 
 # Do we have MPI?
 AC_CHECK_FUNC([MPI_Init],
-        [AC_DEFINE([HAVE_MPI], [1], [MPI is present])])
-AM_CONDITIONAL([HAVE_MPI], [test "x$ac_cv_func_MPI_Init" = xyes])
+        [have_mpi=yes])
+if test "x$have_mpi" = xyes; then
+   AC_DEFINE([HAVE_MPI], [1], [MPI is present])
+fi
+AM_CONDITIONAL([HAVE_MPI], [test "x$have_mpi" = xyes])
 
 # Check for function iargc, which may be part of MPI.
 AC_CHECK_FUNC([iargc],
