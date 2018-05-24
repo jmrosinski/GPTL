@@ -67,6 +67,18 @@ test "x$enable_autoprofile_testing" = xyes || enable_autoprofile_testing=no
 AM_CONDITIONAL(TEST_AUTOPROFILE, [test x$enable_autoprofile_testing = xyes])
 AC_MSG_RESULT($enable_autoprofile_testing)
 
+# Does the user want to use double underscores for fortran wrappers?
+AC_MSG_CHECKING([whether double underscore for Fortran wrappers should be enabled])
+AC_ARG_ENABLE([double-underscore], [AS_HELP_STRING([--enable-double-underscore],
+              [use double underscore for Fortran wrappers])])
+test "x$enable_double_underscore" = xyes || enable_double_underscore=no
+AC_MSG_RESULT($enable_pmpi)
+if test $enable_double_underscore = yes; then
+   AC_DEFINE([FORTRANDOUBLEUNDERSCORE], [1], [use double underscore for Fortran wrappers])
+else
+   AC_DEFINE([FORTRANUNDERSCORE], [1], [use single underscore for Fortran wrappers])
+fi
+
 # Check for papi library.
 AC_CHECK_LIB([papi], [PAPI_library_init])
 AM_CONDITIONAL([HAVE_PAPI], [test "x$ac_cv_lib_papi_PAPI_library_init" = xyes])
