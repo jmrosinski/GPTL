@@ -56,7 +56,7 @@ test "x$enable_pmpi" = xyes || enable_pmpi=no
 AM_CONDITIONAL(ENABLE_PMPI, [test x$enable_pmpi = xyes])
 if test $enable_pmpi = yes; then
    AC_DEFINE([ENABLE_PMPI], [1], [enable pmpi])
-else
+fi
 AC_MSG_RESULT($enable_pmpi)
 
 # Does the user want to test autoprofiling? (adds 2 tests to "make
