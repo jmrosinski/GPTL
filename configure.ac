@@ -54,6 +54,9 @@ AC_ARG_ENABLE([pmpi], [AS_HELP_STRING([--enable-pmpi],
               [build with PMPI capability])])
 test "x$enable_pmpi" = xyes || enable_pmpi=no
 AM_CONDITIONAL(ENABLE_PMPI, [test x$enable_pmpi = xyes])
+if test $enable_pmpi = yes; then
+   AC_DEFINE([ENABLE_PMPI], [1], [enable pmpi])
+else
 AC_MSG_RESULT($enable_pmpi)
 
 # Does the user want to test autoprofiling? (adds 2 tests to "make
@@ -131,8 +134,7 @@ AC_CHECK_FUNC([gettimeofday],
         [AC_DEFINE([HAVE_GETTIMEOFDAY], [1], [gettimeofday function is available])])
 
 # Do we have MPI?
-AC_CHECK_FUNC([MPI_Init],
-        [have_mpi=yes])
+AC_CHECK_FUNC([MPI_Init], [have_mpi=yes])
 if test "x$have_mpi" = xyes; then
    AC_DEFINE([HAVE_MPI], [1], [MPI is present])
 fi
