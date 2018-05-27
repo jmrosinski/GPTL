@@ -69,7 +69,7 @@ AC_MSG_CHECKING([whether autoprofile testing is to be enabled])
 AC_ARG_ENABLE([autoprofile-testing], [AS_HELP_STRING([--enable-autoprofile-testing],
               [test autoprofileing])])
 test "x$enable_autoprofile_testing" = xyes || enable_autoprofile_testing=no
-AM_CONDITIONAL(TEST_AUTOPROFILE, [test x$enable_autoprofile_testing = xyes])
+AM_CONDITIONAL(TEST_AUTOPROFILE, [test $enable_autoprofile_testing = yes])
 AC_MSG_RESULT($enable_autoprofile_testing)
 
 # Does the user want to use double underscores for fortran wrappers?
