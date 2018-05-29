@@ -56,7 +56,6 @@ if test $enable_pmpi = yes; then
 fi
 AC_MSG_RESULT($enable_pmpi)
 AC_DEFINE([MPI_STATUS_SIZE_IN_INTS], [5], [size of status in MPI])
-AC_DEFINE([CONST], [const], [const])
 
 # Does the user want to test autoprofiling? (adds 2 tests to "make
 # test"). If compiler is gcc or pathscale or intel, set INSTRFLAG to
