@@ -1,5 +1,3 @@
-## This is an automake file, part of the GPTL package.
-
 # This is the automake file for GPTL C tests.
 # Ed Hartnett, 5/18/18
 

@@ -1,7 +1,4 @@
-#                                               -*- Autoconf -*-
-## Process this file with autoconf to produce a configure script.
-
-# This is part of Unidata's GPTL package. See the COPYING file for
+# This is part of the GPTL package. See the COPYING file for
 # more information.
 # Ed Hartnett, 5/18/18
 
@@ -11,9 +8,6 @@ AC_PREREQ([2.59])
 # Initialize autoconf.
 AC_INIT([GPTL], [5.6.0], [james.rosinski@noaa.gov])
 
-# Keep libtool macros in an m4 directory.
-AC_CONFIG_MACRO_DIR([m4])
-
 # Find out about the host we're building on.
 AC_CANONICAL_HOST
 
@@ -22,6 +16,9 @@ AC_CANONICAL_TARGET
 
 # Initialize automake.
 AM_INIT_AUTOMAKE([foreign subdir-objects])
+
+# Keep libtool macros in an m4 directory.
+AC_CONFIG_MACRO_DIR([m4])
 
 # Set up libtool.
 LT_PREREQ([2.4])
@@ -33,7 +30,7 @@ AC_CONFIG_HEADERS([config.h])
 # Find the C compiler.
 AC_PROG_CC()
 
-dnl For proper handling of const and inline
+# These ensure proper handling of const and inline.
 AC_C_CONST
 AC_C_INLINE
 
@@ -91,6 +88,12 @@ if test "x$ac_cv_lib_papi_PAPI_library_init" = xyes; then
    AC_DEFINE([HAVE_PAPI], [1], [PAPI library is present])
 fi
 
+# Check for rt library. clock_gettime() in librt.a is an option for
+# gathering wallclock time stats on some machines. Setting
+# HAVE_LIBRT=yes enables this, but will probably require linking
+# applications with -lrt
+AC_CHECK_LIB([rt], [clock_gettime])
+
 # Only define HAVE_NANOTIME if this is a x86. It provides by far the finest grained,
 # lowest overhead wallclock timer on that architecture.
 # If HAVE_NANOTIME=yes, set BIT64=yes if this is an x86_64
@@ -142,12 +145,8 @@ if test "x$have_mpi" = xyes; then
 fi
 AM_CONDITIONAL([HAVE_MPI], [test "x$have_mpi" = xyes])
 
+# Not sure what this is about.
 AC_DEFINE([MPI_CONST], [], [Description])
-
-# clock_gettime() in librt.a is an option for gathering wallclock time stats
-# on some machines. Setting HAVE_LIBRT=yes enables this, but will probably
-# require linking applications with -lrt 
-AC_DEFINE([HAVE_LIBRT], [1], [desc])
 
 # Check for function iargc, which may be part of MPI.
 AC_CHECK_FUNC([iargc],
