@@ -145,6 +145,12 @@ if test "x$have_mpi" = xyes; then
 fi
 AM_CONDITIONAL([HAVE_MPI], [test "x$have_mpi" = xyes])
 
+# Do we have function MPI_Comm_f2c?
+AC_CHECK_FUNC([MPI_Comm_f2c], [have_mpi_comm_f2c=yes])
+if test "x$have_mpi_comm_f2c" = xyes; then
+   AC_DEFINE([HAVE_COMM_F2C], [1], [MPI_Comm_f2c is present])
+fi
+
 # Check for function iargc, which may be part of MPI.
 AC_CHECK_FUNC([iargc],
         [AC_DEFINE([HAVE_IARGCGETARG], [1], [backtrace_symbols function is present])])
