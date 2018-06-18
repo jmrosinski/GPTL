@@ -1,6 +1,7 @@
+#include "config.h"
 #include <stdio.h>
 #include <unistd.h>  /* sleep, usleep */
-#include "../gptl.h"
+#include "gptl.h"
 
 #ifdef HAVE_MPI
 #include <mpi.h>
@@ -27,7 +28,7 @@ int main (int argc, char **argv)
   int sub (int, int);
 #endif
 
-  ret = GPTLsetoption (GPTLabort_on_error, 1);
+  /* ret = GPTLsetoption (GPTLabort_on_error, 1); */
 #ifdef HAVE_PAPI
   ret = GPTLevent_name_to_code ("PAPI_FP_OPS", &code);
   if (ret == 0) {

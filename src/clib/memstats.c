@@ -1,3 +1,5 @@
+#include "config.h" /* Must be first include. */
+
 #include "private.h"
 
 static void print_threadmapping (FILE *, int); /* print mapping of thread ids */

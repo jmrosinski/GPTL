@@ -6,6 +6,7 @@
 ** Wrappers to MPI routines
 */
  
+#include "config.h" /* Must be first include. */
 #include "private.h"
 #include "gptl.h"
 
@@ -62,7 +63,7 @@ int MPI_Init_thread (int *argc, char ***argv, int required, int *provided)
   return ret;
 }
 
-int MPI_Send (CONST void *buf, int count, MPI_Datatype datatype, int dest, int tag, 
+int MPI_Send (const void *buf, int count, MPI_Datatype datatype, int dest, int tag, 
 	      MPI_Comm comm)
 {
   int ret;
@@ -105,7 +106,7 @@ int MPI_Recv (void *buf, int count, MPI_Datatype datatype, int source, int tag,
   return ret;
 }
 
-int MPI_Sendrecv (CONST void *sendbuf, int sendcount, MPI_Datatype sendtype, int dest, int sendtag, 
+int MPI_Sendrecv (const void *sendbuf, int sendcount, MPI_Datatype sendtype, int dest, int sendtag, 
                   void *recvbuf, int recvcount, MPI_Datatype recvtype, int source, int recvtag, 
 		  MPI_Comm comm, MPI_Status *status )
 {
@@ -127,7 +128,7 @@ int MPI_Sendrecv (CONST void *sendbuf, int sendcount, MPI_Datatype sendtype, int
   return ret;
 }
 
-int MPI_Isend (CONST void *buf, int count, MPI_Datatype datatype, int dest, int tag, 
+int MPI_Isend (const void *buf, int count, MPI_Datatype datatype, int dest, int tag, 
 	       MPI_Comm comm, MPI_Request *request)
 {
   int ret;
@@ -145,7 +146,7 @@ int MPI_Isend (CONST void *buf, int count, MPI_Datatype datatype, int dest, int 
   return ret;
 }
 
-int MPI_Issend (CONST void *buf, int count, MPI_Datatype datatype, int dest, int tag, 
+int MPI_Issend (const void *buf, int count, MPI_Datatype datatype, int dest, int tag, 
 		MPI_Comm comm, MPI_Request *request)
 {
   int ret;
@@ -240,7 +241,7 @@ int MPI_Bcast (void *buffer, int count, MPI_Datatype datatype, int root,
   return ret;
 }
 
-int MPI_Allreduce (CONST void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, 
+int MPI_Allreduce (const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, 
 		   MPI_Op op, MPI_Comm comm)
 {
   int ret;
@@ -265,7 +266,7 @@ int MPI_Allreduce (CONST void *sendbuf, void *recvbuf, int count, MPI_Datatype d
   return ret;
 }
 
-int MPI_Gather (CONST void *sendbuf, int sendcount, MPI_Datatype sendtype, 
+int MPI_Gather (const void *sendbuf, int sendcount, MPI_Datatype sendtype, 
                 void *recvbuf, int recvcount, MPI_Datatype recvtype, 
                 int root, MPI_Comm comm)
 {
@@ -300,8 +301,8 @@ int MPI_Gather (CONST void *sendbuf, int sendcount, MPI_Datatype sendtype,
   return ret;
 }
 
-int MPI_Gatherv (CONST void *sendbuf, int sendcount, MPI_Datatype sendtype, 
-		 void *recvbuf, CONST int *recvcounts, CONST int *displs, 
+int MPI_Gatherv (const void *sendbuf, int sendcount, MPI_Datatype sendtype, 
+		 void *recvbuf, const int *recvcounts, const int *displs, 
                  MPI_Datatype recvtype, int root, MPI_Comm comm )
 {
   int ret;
@@ -340,7 +341,7 @@ int MPI_Gatherv (CONST void *sendbuf, int sendcount, MPI_Datatype sendtype,
   return ret;
 }
 
-int MPI_Scatter (CONST void *sendbuf, int sendcount, MPI_Datatype sendtype, 
+int MPI_Scatter (const void *sendbuf, int sendcount, MPI_Datatype sendtype, 
 		 void *recvbuf, int recvcount, MPI_Datatype recvtype, 
 		 int root, MPI_Comm comm)
 {
@@ -372,7 +373,7 @@ int MPI_Scatter (CONST void *sendbuf, int sendcount, MPI_Datatype sendtype,
   return ret;
 }
 
-int MPI_Alltoall (CONST void *sendbuf, int sendcount, MPI_Datatype sendtype, 
+int MPI_Alltoall (const void *sendbuf, int sendcount, MPI_Datatype sendtype, 
                   void *recvbuf, int recvcount, MPI_Datatype recvtype, 
 		  MPI_Comm comm)
 {
@@ -403,7 +404,7 @@ int MPI_Alltoall (CONST void *sendbuf, int sendcount, MPI_Datatype sendtype,
   return ret;
 }
 
-int MPI_Reduce (CONST void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, 
+int MPI_Reduce (const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, 
                 MPI_Op op, int root, MPI_Comm comm )
 {
   int ret;
@@ -450,7 +451,7 @@ int MPI_Finalize (void)
   return ret;
 }
 
-int MPI_Allgather (CONST void *sendbuf, int sendcount, MPI_Datatype sendtype, 
+int MPI_Allgather (const void *sendbuf, int sendcount, MPI_Datatype sendtype, 
                    void *recvbuf, int recvcount, MPI_Datatype recvtype, 
                    MPI_Comm comm)
 {
@@ -481,8 +482,8 @@ int MPI_Allgather (CONST void *sendbuf, int sendcount, MPI_Datatype sendtype,
   return ret;
 }
 
-int MPI_Allgatherv (CONST void *sendbuf, int sendcount, MPI_Datatype sendtype, 
-                    void *recvbuf, CONST int *recvcounts, CONST int *displs, 
+int MPI_Allgatherv (const void *sendbuf, int sendcount, MPI_Datatype sendtype, 
+                    void *recvbuf, const int *recvcounts, const int *displs, 
                     MPI_Datatype recvtype, MPI_Comm comm )
 {
   int ret;
@@ -541,7 +542,7 @@ int MPI_Probe (int source, int tag, MPI_Comm comm, MPI_Status *status)
   return ret;
 }
 
-int MPI_Ssend (CONST void *buf, int count, MPI_Datatype datatype,
+int MPI_Ssend (const void *buf, int count, MPI_Datatype datatype,
 	       int dest, int tag, MPI_Comm comm)
 {
   int ret;
@@ -559,9 +560,9 @@ int MPI_Ssend (CONST void *buf, int count, MPI_Datatype datatype,
   return ret;
 }
 
-int MPI_Alltoallv (CONST void *sendbuf, CONST int *sendcounts, CONST int *sdispls,
-		   MPI_Datatype sendtype, void *recvbuf, CONST int *recvcounts,
-		   CONST int *rdispls, MPI_Datatype recvtype, MPI_Comm comm)
+int MPI_Alltoallv (const void *sendbuf, const int *sendcounts, const int *sdispls,
+		   MPI_Datatype sendtype, void *recvbuf, const int *recvcounts,
+		   const int *rdispls, MPI_Datatype recvtype, MPI_Comm comm)
 {
   int ret;
   int iam;
@@ -598,7 +599,7 @@ int MPI_Alltoallv (CONST void *sendbuf, CONST int *sendcounts, CONST int *sdispl
   return ret;
 }
 
-int MPI_Scatterv (CONST void *sendbuf, CONST int *sendcounts, CONST int *displs,
+int MPI_Scatterv (const void *sendbuf, const int *sendcounts, const int *displs,
 		  MPI_Datatype sendtype, void *recvbuf, int recvcount,
 		  MPI_Datatype recvtype, int root, MPI_Comm comm)
 {

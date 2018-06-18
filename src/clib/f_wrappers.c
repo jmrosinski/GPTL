@@ -6,6 +6,8 @@
 ** Fortran wrappers for timing library routines
 */
 
+#include "config.h" /* Must be first include. */
+
 #ifdef HAVE_MPI
 #include <mpi.h>
 #endif

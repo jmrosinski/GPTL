@@ -1,3 +1,4 @@
+#include "config.h"
 #include <mpi.h>
 
 #include <stdio.h>
@@ -5,7 +6,7 @@
 #include <unistd.h>  /* getopt */
 #include <string.h>  /* memset */
 
-#include "../gptl.h"
+#include "gptl.h"
 
 #ifdef THREADED_OMP
 #include <omp.h>

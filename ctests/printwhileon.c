@@ -1,3 +1,4 @@
+#include "config.h"
 #include <stdio.h>
 #include <unistd.h>
 #ifdef HAVE_MPI
@@ -6,7 +7,7 @@
 #ifdef THREADED_OMP
 #include <omp.h>
 #endif
-#include "../gptl.h"
+#include "gptl.h"
 
 int main (int argc, char **argv)
 {

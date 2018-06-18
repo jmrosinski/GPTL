@@ -1,4 +1,10 @@
-#include "../gptl.h"
+/** 
+ * This is a test of the GPTL. This test will only be run if the PAPI
+ * library is present at build-time.
+ */
+
+#include "config.h"
+#include "gptl.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,11 +13,6 @@
 int main ()
 {
   int ret;
-
-#ifndef HAVE_PAPI
-  printf ("gptl_avail: GPTL was compiled without HAVE_PAPI so doing nothing\n");
-  return 0;
-#endif
 
   if ((ret = PAPI_library_init (PAPI_VER_CURRENT)) != PAPI_VER_CURRENT) {
     printf ("%s\n", PAPI_strerror (ret));

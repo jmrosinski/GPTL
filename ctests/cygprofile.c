@@ -1,6 +1,7 @@
+#include "config.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include "../gptl.h"
+#include "gptl.h"
 
 extern void callsubs (int);
 

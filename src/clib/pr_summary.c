@@ -1,3 +1,4 @@
+#include "config.h" /* Must be first include. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

@@ -1,3 +1,4 @@
+#include "config.h"
 #include <stdio.h>
 #include <stdlib.h>  /* atoi,exit */
 #include <unistd.h>  /* getopt */
@@ -6,7 +7,7 @@
 #include <omp.h>
 #endif
 
-#include "../gptl.h"
+#include "gptl.h"
 
 double add (int, double);
 double multiply (int, int, double);
