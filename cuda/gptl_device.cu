@@ -9,7 +9,8 @@
 #undef USE_THREADS
 
 #include <stdio.h>
-#include <string.h>        /* memcpy */
+#include <string.h>        // memcpy
+#include <stdint.h>        // uint types
 #include <cuda.h>
 
 #include "./private.h"
@@ -75,6 +76,7 @@ __device__ static void init_gpustats (Gpustats *, Timer *, int);
 __device__ static void fill_gpustats (Gpustats *, Timer *, int);
 __device__ static int gptlstart_sim (const char *, long long);
 __device__ static Timer *get_new_timer (int, const char *, const char *);
+__device__ static void prbits8 (uint64_t);
 
 /* VERBOSE is a debugging ifdef local to the rest of this file */
 #define VERBOSE
@@ -713,6 +715,11 @@ __device__ static inline int update_stats_gpu (Timer *ptr,
     ++ptr->negcount_stop;
     printf ("GPTL: %s name=%s w=%d WARNING NEGATIVE DELTA ENCOUNTERED: %lld-%lld=%lld=%g seconds: IGNORING\n", 
 	    thisfunc, ptr->name, w, tp1, ptr->wall.last, delta, delta / (-gpu_hz));
+    printf ("Bit pattern old:");
+    prbits8 ((uint64_t) ptr->wall.last);
+
+    printf ("Bit pattern new:");
+    prbits8 ((uint64_t) tp1);
 
     // If either of these tests fail, need to abort
     if ((void *) &timers != timersaddr) {
@@ -1397,4 +1404,27 @@ __device__ void GPTLdummy_gpu (int num)
   return;
 }
 
+__device__ static void prbits8 (uint64_t val)
+{
+  uint64_t mask = 1;
+  char chars[64];
+  
+  int i;
+
+  for (i = 0; i < 64; ++i) {
+    if ((val & mask) == 0) 
+      chars[i] = '0';
+    else
+      chars[i] = '1';
+    val >>= 1;
+  }
+  
+  for (i = 0; i < 64; ++i) {
+    printf ("%c", chars[63-i]);
+    if ((i+1) % 8 == 0)
+      printf (" ");
+  }
+  printf ("\n");
+}
+  
 }
