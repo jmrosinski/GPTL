@@ -36,6 +36,9 @@ typedef struct TIMER {
   unsigned int recurselvl;  /* recursion level */
 #ifdef CHECK_SM
   unsigned int smid;  // sm the region is running on
+  uint warpid;
+  bool badsmid;
+  bool badwarpid;
 #endif
   bool onflg;               /* timer currently on or off */
   bool beenprocessed;       // keep track of which timers in which warps have been processed

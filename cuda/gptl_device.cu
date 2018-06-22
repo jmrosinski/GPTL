@@ -17,6 +17,7 @@
 
 #define FLATTEN_TIMERS(SUB1,SUB2) (SUB1)*maxtimers + (SUB2)
 #define FLATTEN_HASH(SUB1,SUB2) (SUB1)*tablesize + (SUB2)
+#define CLOCK64_BUGFIX
 
 __device__ static int *badderef = 0;       // dereferencing this should should crash
 __device__ static Hashentry *hashtable;
@@ -219,7 +220,7 @@ __global__ static void initialize_gpu (const int verbose_in,
     t1 = clock64 ();
     t2 = clock64 ();
     if (t1 > t2)
-      printf ("%s: negative delta-t=%lld\n", thisfunc, t2-t1);
+      printf ("GPTL %s: negative delta-t=%lld\n", thisfunc, t2-t1);
 
     printf ("Per call overhead est. t2-t1=%g should be near zero\n", t2-t1);
     printf ("Underlying wallclock timing routine is clock64\n");
@@ -273,9 +274,6 @@ __device__ int GPTLstart_gpu (const char *name)               /* timer name */
   int wi;
   unsigned int indx; /* hash table index */
   static const char *thisfunc = "GPTLstart_gpu";
-
-  //JR: This is for debugging the CUDA bug in which static data reverts to initial values
-  //  printf("%s: name=%s: maxwarps=%d hashtable addr=%p\n", thisfunc, name, maxwarps, hashtable);
 
   if (disabled)
     return SUCCESS;
@@ -445,10 +443,15 @@ __device__ static int update_ll_hash_gpu (Timer *ptr, int w, unsigned int indx)
   hashtable[wi].entry = ptr;
 
 #ifdef CHECK_SM
-  uint smid;
-  asm ("mov.u32 %0, %smid;" : "=r"(smid));
+  volatile uint smid;
+  volatile uint warpid;
+  asm volatile ("mov.u32 %0, %smid;" : "=r"(smid));
+  asm volatile ("mov.u32 %0, %warpid;" : "=r"(warpid));
   //  printf ("%s: name=%s warp= %d sm= %d\n", thisfunc, ptr->name, w, smid);
   ptr->smid = smid;
+  ptr->warpid = warpid;
+  ptr->badsmid = false;
+  ptr->badwarpid = false;
 #endif
 
 #ifdef DEBUG_PRINT
@@ -477,18 +480,38 @@ __device__ static inline int update_ptr_gpu (Timer *ptr, const int w)
 #endif
 
 #ifdef CHECK_SM
-  uint smid;
-  asm ("mov.u32 %0, %smid;" : "=r"(smid));
+  volatile uint smid;
+  volatile uint warpid;
+  asm volatile ("mov.u32 %0, %smid;" : "=r"(smid));
+  asm volatile ("mov.u32 %0, %warpid;" : "=r"(warpid));
+
+#undef PRINT_START_CHANGE
   if (smid != ptr->smid) {
-    //    printf ("%s: name=%s warp=%d sm changed from %d to %d\n", 
-    //	    thisfunc, ptr->name, w, ptr->smid, smid);
+#ifdef PRINT_START_CHANGE
+    printf ("GPTL %s: name=%s w=%d sm changed from %d to %d\n", 
+    	    thisfunc, ptr->name, w, ptr->smid, smid);
+#endif
     ptr->smid = smid;
   }
+
+  if (warpid != ptr->warpid) {
+#ifdef PRINT_START_CHANGE
+    printf ("GPTL %s: name=%s w=%d warpid changed from %d to %d\n", 
+    	    thisfunc, ptr->name, w, ptr->warpid, warpid);
+#endif
+    ptr->warpid = warpid;
+  }
+  ptr->badsmid = false;
+  ptr->badwarpid = false;
 #endif
   
   ptr->onflg = true;
   tp2 = clock64 ();
+#ifdef CLOCK64_BUGFIX
+  tp2 = clock64 ();
+#endif
   delta = (tp2 - ptr->wall.last);
+
   if (delta < 0) {
     ++ptr->negcount_start;
     //    printf ("GPTL: %s name=%s w=%d WARNING: backward by %g sec: resetting anyway \n",
@@ -502,6 +525,7 @@ __device__ static inline int update_ptr_gpu (Timer *ptr, const int w)
       return *badderef;
     }
   }
+
   ptr->wall.last = tp2;
   return SUCCESS;
 }
@@ -530,7 +554,9 @@ __device__ int GPTLstop_gpu (const char *name)               /* timer name */
 
   /* Get the timestamp */
   tp1 = clock64 ();
-
+#ifdef CLOCK64_BUGFIX
+  tp1 = clock64 ();
+#endif
   w = get_warp_num ();
 
   // Return if not thread 0 of the warp, or warpId is outside range of available timers
@@ -539,12 +565,11 @@ __device__ int GPTLstop_gpu (const char *name)               /* timer name */
 
   indx = genhashidx (name);
   if (! (ptr = getentry (w, name, indx)))
-    return GPTLerror_1s1d1s ("%s warp %d: timer for %s had not been started.\n",
-			     thisfunc, w, name);
+    return GPTLerror_1s1d1s ("%s warp %d: timer for %s had not been started.\n", thisfunc, w, name);
 
   if ( ! ptr->onflg )
-    return GPTLerror_2s ("%s: timer %s was already off.\n", 
-			 thisfunc, ptr->name);
+    return GPTLerror_2s ("%s: timer %s was already off.\n", thisfunc, ptr->name);
+			 
   /* 
   ** Recursion => decrement depth in recursion and return.  We need to return
   ** because we don't want to stop the timer.  We want the reported time for
@@ -588,7 +613,9 @@ __device__ int GPTLstop_handle_gpu (const char *name,     /* timer name */
 
   /* Get the timestamp */
   tp1 = clock64 ();
-
+#ifdef CLOCK64_BUGFIX
+  tp1 = clock64 ();
+#endif
   w = get_warp_num ();
 
   // Return if not thread 0 of the warp, or warpId is outside range of available timers
@@ -638,7 +665,9 @@ __device__ static inline int update_stats_gpu (Timer *ptr,
 					       const long long tp1, 
 					       const int w)
 {
-  uint smid;         // only needed when certain ifdefs defined
+  int ret = SUCCESS;
+  volatile uint smid;         // only needed when certain ifdefs defined
+  volatile uint warpid;
   long long delta;   /* difference */
   static const char *thisfunc = "update_stats_gpu";
 #ifdef DEBUG_PRINT
@@ -648,6 +677,38 @@ __device__ static inline int update_stats_gpu (Timer *ptr,
   ptr->onflg = false;
   delta = tp1 - ptr->wall.last;
 
+#ifdef CHECK_1SEC
+  double diff =  delta / gpu_hz;
+  if (diff < 0.99) {
+    asm volatile ("mov.u32 %0, %smid;" : "=r"(smid));
+    printf ("%s: w=%d smid=%u smid_sleep=%u\n", thisfunc, w, smid, startstop[w].smid);
+    printf ("start(gptl) %lld start(sleep) %lld stop(sleep) %lld stop(gptl) %lld\n",
+	    ptr->wall.last, startstop[w].last, startstop[w].current, tp1);
+    printf ("diff(gptl) %f diff(sleep) %f\n", delta/gpu_hz, startstop[w].diff);
+  }
+#endif
+
+#ifdef CHECK_SM
+  asm volatile ("mov.u32 %0, %smid;" : "=r"(smid));
+  asm volatile ("mov.u32 %0, %warpid;" : "=r"(warpid));
+
+  if (smid != ptr->smid) {
+    printf ("GPTL %s: name=%s w=%d sm changed from %d to %d\n", 
+	    thisfunc, ptr->name, w, ptr->smid, smid);
+    ptr->smid = smid;
+    ptr->badsmid = true;
+  }
+
+  if (warpid != ptr->warpid) {
+    printf ("GPTL %s: name=%s w=%d warpid changed from %d to %d\n", 
+	    thisfunc, ptr->name, w, ptr->warpid, warpid);
+    ptr->warpid = warpid;
+    ptr->badwarpid = true;
+  }
+#endif
+
+#define LEAVE_EARLY -1
+#undef DISCARD_BAD_SM_WARP
   if (delta < 0) {
     ++ptr->negcount_stop;
     printf ("GPTL: %s name=%s w=%d WARNING NEGATIVE DELTA ENCOUNTERED: %lld-%lld=%lld=%g seconds: IGNORING\n", 
@@ -662,8 +723,19 @@ __device__ static inline int update_stats_gpu (Timer *ptr,
       printf ("%s: timers[0].name=%s should=GPTL_ROOT\n", thisfunc, timers[0].name);
       return *badderef;
     }
-    return SUCCESS;  // Return without adding the bad delta
+    ret = LEAVE_EARLY;  // Return without adding the bad delta
   }
+
+  if (ptr->badsmid || ptr->badwarpid) {
+#ifdef DISCARD_BAD_SM_WARP
+    ret = LEAVE_EARLY;  // Return without adding the bad delta
+#else
+    ret = SUCCESS;
+#endif
+  }
+
+  if (ret == LEAVE_EARLY)
+    return SUCCESS;
 
   ++ptr->count;
   ptr->wall.accum += delta;
@@ -678,25 +750,6 @@ __device__ static inline int update_stats_gpu (Timer *ptr,
       ptr->wall.min = delta;
   }
 
-#ifdef CHECK_1SEC
-  double diff =  delta / gpu_hz;
-  if (diff < 0.99) {
-    asm ("mov.u32 %0, %smid;" : "=r"(smid));
-    printf ("%s: w=%d smid=%u smid_sleep=%u\n", thisfunc, w, smid, startstop[w].smid);
-    printf ("start(gptl) %lld start(sleep) %lld stop(sleep) %lld stop(gptl) %lld\n",
-	    ptr->wall.last, startstop[w].last, startstop[w].current, tp1);
-    printf ("diff(gptl) %f diff(sleep) %f\n", delta/gpu_hz, startstop[w].diff);
-  }
-#endif
-
-#ifdef CHECK_SM
-  asm ("mov.u32 %0, %smid;" : "=r"(smid));
-  if (smid != ptr->smid) {
-    printf ("%s: name=%s warp=%d sm changed from %d to %d\n", 
-	    thisfunc, ptr->name, w, ptr->smid, smid);
-    ptr->smid = smid;
-  }
-#endif
   return SUCCESS;
 }
 
@@ -1307,6 +1360,9 @@ __device__ int GPTLmy_sleep (float seconds)
 			 thisfunc);
 
   start = clock64();
+#ifdef CLOCK64_BUGFIX
+  start = clock64 ();
+#endif
   do {
     now = clock64();
     delta = (now - start) / gpu_hz;
@@ -1314,11 +1370,11 @@ __device__ int GPTLmy_sleep (float seconds)
 
 #ifdef CHECK_1SEC
   if (threadId % WARPSIZE == 0) {
-    uint smid;
+    volatile uint smid;
     startstop[w].last = start;
     startstop[w].current = now;
     startstop[w].delta = now - start;
-    asm ("mov.u32 %0, %smid;" : "=r"(smid));
+    asm volatile ("mov.u32 %0, %smid;" : "=r"(smid));
     startstop[w].smid = smid;
     startstop[w].diff = (now - start) / gpu_hz;
     if (startstop[w].diff < 0.99 || startstop[w].diff > 1.01)
