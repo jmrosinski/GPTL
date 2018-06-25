@@ -42,6 +42,7 @@ __device__ static bool disabled = false;          /* Timers disabled? */
 __device__ static bool initialized = false;       /* GPTLinitialize has been called */
 __device__ static bool verbose = false;           /* output verbosity */
 __device__ static double gpu_hz = 0.;             // clock freq
+__device__ static int mutex = 0;
 #ifdef CHECK_1SEC
 typedef struct {
   long long last;
@@ -323,7 +324,8 @@ __device__ int GPTLstart_gpu (const char *name)               /* timer name */
 }
 
 /*
-** GPTLinit_handle_gpu: Initialize a handle for further use by GPTLstart_handle() and GPTLstop_handle()
+** GPTLinit_handle_gpu: Initialize a handle for further use by GPTLstart_handle_gpu() and 
+**                      GPTLstop_handle_gpu()
 **
 ** Input arguments:
 **   name: timer name
@@ -333,8 +335,8 @@ __device__ int GPTLstart_gpu (const char *name)               /* timer name */
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-__device__ int GPTLinit_handle_gpu (const char *name,     /* timer name */
-				    int *handle)          /* handle (output if input value is zero) */
+__device__ int GPTLinit_handle_gpu (const char *name,     // timer name
+				    int *handle)          // handle (output if input value is zero)
 {
   if (disabled)
     return SUCCESS;
@@ -352,8 +354,8 @@ __device__ int GPTLinit_handle_gpu (const char *name,     /* timer name */
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-__device__ int GPTLstart_handle_gpu (const char *name,  /* timer name */
-                                     int *handle)       /* handle (output if input value is zero) */
+__device__ int GPTLstart_handle_gpu (const char *name,  // timer name
+                                     int *handle)       // handle (output if input value is zero)
 {
   Timer *ptr;        /* linked list pointer */
   int w;             /* warp index (of this thread) */
@@ -421,8 +423,8 @@ __device__ int GPTLstart_handle_gpu (const char *name,  /* timer name */
 }
 
 /*
-** update_ll_hash: Update linked list and hash table.
-**                 Called by all GPTLstart* routines when there is a new entry
+** update_ll_hash_gpu: Update linked list and hash table.
+**                     Called by all GPTLstart*gpu routines when there is a new entry
 **
 ** Input arguments:
 **   ptr:  pointer to timer
@@ -463,7 +465,7 @@ __device__ static int update_ll_hash_gpu (Timer *ptr, int w, unsigned int indx)
 }
 
 /*
-** update_ptr: Update timer contents. Called by GPTLstart and GPTLstart_handle
+** update_ptr_gpu: Update timer contents. Called by GPTLstart and GPTLstart_handle
 **
 ** Input arguments:
 **   ptr:  pointer to timer
@@ -516,8 +518,26 @@ __device__ static inline int update_ptr_gpu (Timer *ptr, const int w)
 
   if (delta < 0) {
     ++ptr->negcount_start;
-    //    printf ("GPTL: %s name=%s w=%d WARNING: backward by %g sec: resetting anyway \n",
-    //	    thisfunc, ptr->name, w, delta/-gpu_hz);
+#define PR_NEGSTART
+#ifdef PR_NEGSTART
+    bool isSet; 
+    do {
+      // If mutex is 0, grab by setting = 1
+      // If mutex is 1, it stays 1 and isSet will be false
+      isSet = atomicCAS (&mutex, 0, 1) == 0; 
+      if (isSet) {  // critical section starts here
+	printf ("GPTL: %s name=%s w=%d WARNING: backward by %g sec: resetting anyway \n",
+		thisfunc, ptr->name, w, delta/-gpu_hz);
+	printf ("Bit pattern old:");
+	prbits8 ((uint64_t) ptr->wall.last);
+	
+	printf ("Bit pattern new:");
+	prbits8 ((uint64_t) tp2);
+
+	mutex = 0;     // end critical section by releasing the mutex
+      }
+    } while ( !isSet); // break out of the loop after I've executed critical section
+#endif
     if ((void *) &timers != timersaddr) {
       printf ("%s: timers changed address!!!! old=%p new=%p\n", thisfunc, &timers, timersaddr);
       return *badderef;
@@ -533,19 +553,19 @@ __device__ static inline int update_ptr_gpu (Timer *ptr, const int w)
 }
 
 /*
-** GPTLstop: stop a timer
+** GPTLstop_gpu: stop a timer
 **
 ** Input arguments:
 **   name: timer name
 **
 ** Return value: 0 (success) or -1 (failure)
 */
-__device__ int GPTLstop_gpu (const char *name)               /* timer name */
+__device__ int GPTLstop_gpu (const char *name)  // timer name
 {
-  volatile long long tp1;             /* time stamp */
-  Timer *ptr;                /* linked list pointer */
-  int w;                     /* warp number for this process */
-  unsigned int indx;         /* index into hash table */
+  volatile long long tp1;    // time stamp
+  Timer *ptr;                // linked list pointer
+  int w;                     // warp number for this process
+  unsigned int indx;         // index into hash table
   static const char *thisfunc = "GPTLstop_gpu";
 
   if (disabled)
