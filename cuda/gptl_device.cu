@@ -42,7 +42,7 @@ __device__ static bool disabled = false;          /* Timers disabled? */
 __device__ static bool initialized = false;       /* GPTLinitialize has been called */
 __device__ static bool verbose = false;           /* output verbosity */
 __device__ static double gpu_hz = 0.;             // clock freq
-__device__ static int mutex = 0;
+__device__ static volatile int mutex = 0;         // critical section unscrambles printf output
 #ifdef CHECK_1SEC
 typedef struct {
   long long last;
@@ -518,13 +518,15 @@ __device__ static inline int update_ptr_gpu (Timer *ptr, const int w)
 
   if (delta < 0) {
     ++ptr->negcount_start;
-#define PR_NEGSTART
+    // In practice there are tons of negative start events, so disable print
+#undef PR_NEGSTART
 #ifdef PR_NEGSTART
     bool isSet; 
+    // Use critical section so printf from multiple SMs don't get scrambled
     do {
       // If mutex is 0, grab by setting = 1
       // If mutex is 1, it stays 1 and isSet will be false
-      isSet = atomicCAS (&mutex, 0, 1) == 0; 
+      isSet = atomicCAS ((int *) &mutex, 0, 1) == 0; 
       if (isSet) {  // critical section starts here
 	printf ("GPTL: %s name=%s w=%d WARNING: backward by %g sec: resetting anyway \n",
 		thisfunc, ptr->name, w, delta/-gpu_hz);
@@ -536,7 +538,7 @@ __device__ static inline int update_ptr_gpu (Timer *ptr, const int w)
 
 	mutex = 0;     // end critical section by releasing the mutex
       }
-    } while ( !isSet); // break out of the loop after I've executed critical section
+    } while ( !isSet); // exit the loop after critical section executed
 #endif
     if ((void *) &timers != timersaddr) {
       printf ("%s: timers changed address!!!! old=%p new=%p\n", thisfunc, &timers, timersaddr);
@@ -721,9 +723,12 @@ __device__ static inline int update_stats_gpu (Timer *ptr,
     ptr->badsmid = true;
   }
 
+#undef PRINT_STOP_CHANGE
   if (warpid != ptr->warpid) {
+#ifdef PRINT_STOP_CHANGE
     printf ("GPTL %s: name=%s w=%d warpid changed from %d to %d\n", 
 	    thisfunc, ptr->name, w, ptr->warpid, warpid);
+#endif
     ptr->warpid = warpid;
     ptr->badwarpid = true;
   }
@@ -732,14 +737,24 @@ __device__ static inline int update_stats_gpu (Timer *ptr,
 #define LEAVE_EARLY -1
 #undef DISCARD_BAD_SM_WARP
   if (delta < 0) {
+    bool isSet; 
     ++ptr->negcount_stop;
-    printf ("GPTL: %s name=%s w=%d WARNING NEGATIVE DELTA ENCOUNTERED: %lld-%lld=%lld=%g seconds: IGNORING\n", 
-	    thisfunc, ptr->name, w, tp1, ptr->wall.last, delta, delta / (-gpu_hz));
-    printf ("Bit pattern old:");
-    prbits8 ((uint64_t) ptr->wall.last);
+    // Use critical section so printf from multiple SMs don't get scrambled
+    do {
+      // If mutex is 0, grab by setting = 1
+      // If mutex is 1, it stays 1 and isSet will be false
+      isSet = atomicCAS ((int *) &mutex, 0, 1) == 0; 
+      if (isSet) {  // critical section starts here
+	printf ("GPTL: %s name=%s w=%d WARNING NEGATIVE DELTA ENCOUNTERED: %lld-%lld=%lld=%g seconds: IGNORING\n", 
+		thisfunc, ptr->name, w, tp1, ptr->wall.last, delta, delta / (-gpu_hz));
+	printf ("Bit pattern old:");
+	prbits8 ((uint64_t) ptr->wall.last);
 
-    printf ("Bit pattern new:");
-    prbits8 ((uint64_t) tp1);
+	printf ("Bit pattern new:");
+	prbits8 ((uint64_t) tp1);
+	mutex = 0;     // end critical section by releasing the mutex
+      }
+    } while ( !isSet); // exit the loop after critical section executed
 
     // If either of these tests fail, need to abort
     if ((void *) &timers != timersaddr) {
