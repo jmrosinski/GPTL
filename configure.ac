@@ -93,6 +93,11 @@ AC_CHECK_LIB([papi], [PAPI_library_init])
 AM_CONDITIONAL([HAVE_PAPI], [test "x$ac_cv_lib_papi_PAPI_library_init" = xyes])
 if test "x$ac_cv_lib_papi_PAPI_library_init" = xyes; then
    AC_DEFINE([HAVE_PAPI], [1], [PAPI library is present])
+   # If we have PAPI library, check /proc/sys/kernel/perf_event_paranoid
+   # to see if we have permissions.
+   if test `cat /proc/sys/kernel/perf_event_paranoid` != 1; then
+      AC_MSG_ERROR([PAPI library found, but /proc/sys/kernel/perf_event_paranoid != 1])
+   fi
 fi
 
 # Check for rt library. clock_gettime() in librt.a is an option for
