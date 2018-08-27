@@ -454,7 +454,6 @@ __device__ static int update_ll_hash_gpu (Timer *ptr, int w, unsigned int indx)
   //  printf ("%s: name=%s warp= %d sm= %d\n", thisfunc, ptr->name, w, smid);
   ptr->smid = smid;
   ptr->warpid = warpid;
-  ptr->badsmid = false;
   ptr->badwarpid = false;
 #endif
 
@@ -495,6 +494,7 @@ __device__ static inline int update_ptr_gpu (Timer *ptr, const int w)
     printf ("GPTL %s: name=%s w=%d sm changed from %d to %d\n", 
     	    thisfunc, ptr->name, w, ptr->smid, smid);
 #endif
+    ++ptr->badsmid_start_count;
     ptr->smid = smid;
   }
 
@@ -505,7 +505,6 @@ __device__ static inline int update_ptr_gpu (Timer *ptr, const int w)
 #endif
     ptr->warpid = warpid;
   }
-  ptr->badsmid = false;
   ptr->badwarpid = false;
 #endif
   
@@ -693,6 +692,7 @@ __device__ static inline int update_stats_gpu (Timer *ptr,
   volatile uint smid;         // only needed when certain ifdefs defined
   volatile uint warpid;
   long long delta;   /* difference */
+  bool badsmid_stop = false;
   static const char *thisfunc = "update_stats_gpu";
 #ifdef DEBUG_PRINT
   printf ("%s: ptr=%p setting onflg=false\n", thisfunc, ptr);
@@ -719,8 +719,9 @@ __device__ static inline int update_stats_gpu (Timer *ptr,
   if (smid != ptr->smid) {
     printf ("GPTL %s: name=%s w=%d sm changed from %d to %d\n", 
 	    thisfunc, ptr->name, w, ptr->smid, smid);
+    badsmid_stop = true;
+    ++ptr->badsmid_stop_count;
     ptr->smid = smid;
-    ptr->badsmid = true;
   }
 
 #undef PRINT_STOP_CHANGE
@@ -768,7 +769,7 @@ __device__ static inline int update_stats_gpu (Timer *ptr,
     ret = LEAVE_EARLY;  // Return without adding the bad delta
   }
 
-  if (ptr->badsmid || ptr->badwarpid) {
+  if (badsmid_stop || ptr->badwarpid) {
 #ifdef DISCARD_BAD_SM_WARP
     ret = LEAVE_EARLY;  // Return without adding the bad delta
 #else
@@ -1145,6 +1146,11 @@ __device__ static void init_gpustats (Gpustats *gpustats, Timer *ptr, int w)
   gpustats->negstart_nwarps = ptr->negcount_start > 0 ? 1 : 0;
   gpustats->negstop_nwarps  = ptr->negcount_stop  > 0 ? 1 : 0;
 
+#ifdef CHECK_SM
+  gpustats->badsmid_start_count = ptr->badsmid_start_count;
+  gpustats->badsmid_stop_count  = ptr->badsmid_stop_count;
+#endif
+
   ptr->beenprocessed = true;
 }
 
@@ -1188,6 +1194,12 @@ __device__ static void fill_gpustats (Gpustats *gpustats, Timer *ptr, int w)
 
   if (ptr->negcount_stop > 0)
     ++gpustats->negstop_nwarps;
+
+#ifdef CHECK_SM
+  gpustats->badsmid_start_count += ptr->badsmid_start_count;
+  gpustats->badsmid_stop_count  += ptr->badsmid_stop_count;
+#endif
+
 }
 
 __device__ static __forceinline__ int my_strlen (const char *str)

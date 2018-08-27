@@ -6,10 +6,13 @@ OBJS    = getval.o driver_serial.o persist.o sleep1.o sleep.o subs.o
 %.o: %.cu
 	$(CU) -c $< $(CUFLAGS)
 
-all: driver_serial
+all: driver_serial test1
 
 driver_serial: $(OBJS) ../libgptl.a ../cuda/libgptl_cuda.a
 	$(CU) -o $@ $(OBJS) $(LDFLAGS)
+
+test1: test1.cu ../libgptl.a ../cuda/libgptl_cuda.a
+	$(CU) -o $@ test1.cu $(LDFLAGS)
 
 clean:
 	$(RM) $(OBJS) $(OBJS) driver_serial

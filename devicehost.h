@@ -40,6 +40,10 @@ typedef struct {
   int count_max_warp;
   int count_min;
   int count_min_warp;
+#ifdef CHECK_SM
+  uint badsmid_start_count;
+  uint badsmid_stop_count;
+#endif
   char name[MAX_CHARS+1];
 } Gpustats;
 

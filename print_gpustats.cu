@@ -159,14 +159,24 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   fprintf (fp, "maxcount (warp) = max number of times region invoked by any timed warp, followed by the warp number\n");
   fprintf (fp, "mincount (warp) = min number of times region invoked by any timed warp, followed by the warp number\n");
   fprintf (fp, "negmxstrt(warp) = if a start region had a neg intrvl, biggest count is printed along with the warp number responsible\n");
+  fprintf (fp, "nwarps          = number of warps encountering negmxstrt > 0\n");
   fprintf (fp, "negmxstop(warp) = if a stop region had a neg intrvl, biggest count is printed along with the warp number responsible\n");
+  fprintf (fp, "nwarps          = number of warps encountering negmxstop > 0\n");
+#ifdef CHECK_SM
+  fprintf (fp, "smstrt          = number of warps encountering change of smid on start\n");
+  fprintf (fp, "smstop          = number of warps encountering change of smid on stop\n");
+#endif
   fprintf (fp, "self_OH         = estimate of GPTL overhead (sec) in the timer incurred by 'maxcount' invocations of it\n");
   fprintf (fp, "parent_OH       = estimate of GPTL overhead (sec) in the parent of the timer incurred by 'maxcount' invocations of it\n\n");
   // Print header, padding to length of longest name
   extraspace = max_name_len_gpu[0] - 4; // "name" is 4 chars
   for (i = 0; i < extraspace; ++i)
     fprintf (fp, " ");
+#ifdef CHECK_SM
+  fprintf (fp, "name    calls  warps  holes  wallmax  (warp) wallmin (warp) maxcount (warp) mincount (warp) negmxstrt(warp) nwarps negmxstop(warp) nwarps   smstrt   smstop  self_OH parent_OH\n");
+#else
   fprintf (fp, "name    calls  warps  holes  wallmax  (warp) wallmin (warp) maxcount (warp) mincount (warp) negmxstrt(warp) nwarps negmxstop(warp) nwarps  self_OH parent_OH\n");
+#endif
   for (n = 0; n < ngputimers[0]; ++n) {
     extraspace = max_name_len_gpu[0] - strlen (gpustats[n].name);
     for (i = 0; i < extraspace; ++i)
@@ -215,6 +225,18 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
     fprintf (fp, "%8d ", gpustats[n].negcount_stop_max);       // max negcount for "stop" region "name" (hope it's zero)
     fprintf (fp, "%6d ", gpustats[n].negcount_stop_max_warp);  // warp which accounted for negcount_stop_max
     fprintf (fp, "%6d ", gpustats[n].negstop_nwarps);          // number of warps which had > 0 negative stops
+
+#ifdef CHECK_SM
+    if (gpustats[n].badsmid_start_count < PRTHRESH)
+      fprintf (fp, "%8d ", gpustats[n].badsmid_start_count);     // number of times SM changed on "start" call
+    else
+      fprintf (fp, "%8.1e ", (float) gpustats[n].badsmid_start_count);
+
+    if (gpustats[n].badsmid_stop_count < PRTHRESH)
+      fprintf (fp, "%8d ", gpustats[n].badsmid_stop_count);      // number of times SM changed on "stop" call
+    else
+      fprintf (fp, "%8.1e ", (float) gpustats[n].badsmid_stop_count);
+#endif
 
     self = gpustats[n].count_max * self_ohdgpu[0] / gpu_hz;    // self ohd est
     if (self < 0.01)

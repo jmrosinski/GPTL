@@ -21,6 +21,8 @@ int main ()
 
   ret = GPTLget_gpu_props (&khz, &warpsize, &devnum, &smcount);
   cores_per_gpu = GPTLcompute_chunksize (1, 1);
+  printf ("smcount=%d\n", smcount);
+  printf ("warpsize=%d\n", warpsize);
   printf ("cores_per_gpu=%d\n", cores_per_gpu);
 
   do {

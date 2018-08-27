@@ -37,7 +37,8 @@ typedef struct TIMER {
 #ifdef CHECK_SM
   unsigned int smid;  // sm the region is running on
   uint warpid;
-  bool badsmid;
+  uint badsmid_start_count;
+  uint badsmid_stop_count;
   bool badwarpid;
 #endif
   bool onflg;               /* timer currently on or off */
