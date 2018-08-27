@@ -90,15 +90,20 @@ fi
 
 # Check for papi library.
 AC_CHECK_LIB([papi], [PAPI_library_init])
-AM_CONDITIONAL([HAVE_PAPI], [test "x$ac_cv_lib_papi_PAPI_library_init" = xyes])
+AC_MSG_CHECKING([whether system can support PAPI])
 if test "x$ac_cv_lib_papi_PAPI_library_init" = xyes; then
-   AC_DEFINE([HAVE_PAPI], [1], [PAPI library is present])
    # If we have PAPI library, check /proc/sys/kernel/perf_event_paranoid
    # to see if we have permissions.
-   if test `cat /proc/sys/kernel/perf_event_paranoid` != 1; then
-      AC_MSG_ERROR([PAPI library found, but /proc/sys/kernel/perf_event_paranoid != 1])
+   if test -f /proc/sys/kernel/perf_event_paranoid; then
+      if test `cat /proc/sys/kernel/perf_event_paranoid` != 1; then
+         AC_MSG_ERROR([PAPI library found, but /proc/sys/kernel/perf_event_paranoid != 1])
+      fi
    fi
+   AC_DEFINE([HAVE_PAPI], [1], [PAPI library is present and usable])
+   AM_CONDITIONAL([HAVE_PAPI], [test "x$ac_cv_lib_papi_PAPI_library_init" = xyes])
+   have_papi=yes
 fi
+AC_MSG_RESULT($have_papi)
 
 # Check for rt library. clock_gettime() in librt.a is an option for
 # gathering wallclock time stats on some machines. Setting
