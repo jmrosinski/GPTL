@@ -143,9 +143,6 @@ AC_CHECK_FUNC([gettimeofday],
 
 # Do we have MPI?
 AC_CHECK_FUNC([MPI_Init], [have_mpi=yes])
-if test "x$have_mpi" = xyes; then
-   AC_DEFINE([HAVE_MPI], [1], [MPI is present])
-fi
 AM_CONDITIONAL([HAVE_MPI], [test "x$have_mpi" = xyes])
 
 # Do we have function MPI_Comm_f2c?

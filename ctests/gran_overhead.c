@@ -1,6 +1,6 @@
 #include "config.h"
 #include "gptl.h"
-#ifdef HAVE_MPI
+#ifdef HAVE_LIBMPI
 #include <mpi.h>
 #endif
 #include <stdio.h>
