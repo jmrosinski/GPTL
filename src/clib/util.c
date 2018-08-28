@@ -32,12 +32,8 @@ int GPTLerror (const char *fmt, ...)
   va_start (args, fmt);
   
   if (fmt != NULL && num_errors < max_errors) {
-#ifdef HAVE_VPRINTF
     (void) fprintf (stderr, "GPTL error:");
     (void) vfprintf (stderr, fmt, args);
-#else
-    (void) fprintf (stderr, "GPTLerror: no vfprintf: fmt is %s\n", fmt);
-#endif
     if (num_errors == max_errors)
       (void) fprintf (stderr, "Truncating further error print now after %d msgs",
 		      num_errors);
@@ -67,12 +63,8 @@ void GPTLwarn (const char *fmt, ...)
   va_start (args, fmt);
   
   if (fmt != NULL && num_warn < max_warn) {
-#ifdef HAVE_VPRINTF
     (void) fprintf (stderr, "GPTL warning:");
     (void) vfprintf (stderr, fmt, args);
-#else
-    (void) fprintf (stderr, "GPTLwarning: no vfprintf: fmt is %s\n", fmt);
-#endif
     if (num_warn == max_warn)
       (void) fprintf (stderr, "Truncating further warning print now after %d msgs",
 		      num_warn);
@@ -97,12 +89,8 @@ void GPTLnote (const char *fmt, ...)
   va_start (args, fmt);
   
   if (fmt != NULL) {
-#ifdef HAVE_VPRINTF
     (void) fprintf (stderr, "GPTL note:");
     (void) vfprintf (stderr, fmt, args);
-#else
-    (void) fprintf (stderr, "GPTLnote: no vfprintf: fmt is %s\n", fmt);
-#endif
   }
   
   va_end (args);

@@ -133,10 +133,6 @@ AC_CHECK_LIB([m], [floor], [],
 AC_CHECK_FUNC([backtrace_symbols],
         [AC_DEFINE([HAVE_BACKTRACE], [1], [backtrace_symbols function is present])])
 
-# Check for vfprintf.
-AC_CHECK_FUNC([vfprintf],
-        [AC_DEFINE([HAVE_VPRINTF], [1], [vfprint function is available])])
-
 # Check for times.
 AC_CHECK_FUNC([times],
         [AC_DEFINE([HAVE_TIMES], [1], [vfprint function is available])])
