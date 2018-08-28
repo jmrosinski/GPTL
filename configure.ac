@@ -96,7 +96,8 @@ if test "x$ac_cv_lib_papi_PAPI_library_init" = xyes; then
    # to see if we have permissions.
    if test -f /proc/sys/kernel/perf_event_paranoid; then
       if test `cat /proc/sys/kernel/perf_event_paranoid` != 1; then
-         AC_MSG_ERROR([PAPI library found, but /proc/sys/kernel/perf_event_paranoid != 1])
+         AC_MSG_ERROR([PAPI library found, but /proc/sys/kernel/perf_event_paranoid != 1
+                            try sudo sh -c 'echo 1 >/proc/sys/kernel/perf_event_paranoid'])
       fi
    fi
    AC_DEFINE([HAVE_PAPI], [1], [PAPI library is present and usable])
