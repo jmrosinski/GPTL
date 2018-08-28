@@ -8,7 +8,7 @@
 
 #include "config.h" /* Must be first include. */
 
-#ifdef HAVE_MPI
+#ifdef HAVE_LIBMPI
 #include <mpi.h>
 #endif
 
@@ -104,7 +104,7 @@ int gptlinitialize (void);
 int gptlfinalize (void);
 int gptlpr (int *procid);
 int gptlpr_file (char *file, int nc);
-#ifdef HAVE_MPI
+#ifdef HAVE_LIBMPI
 int gptlpr_summary (int *fcomm);
 int gptlpr_summary_file (int *fcomm, char *name, int nc);
 int gptlbarrier (int *fcomm, char *name, int nc);
@@ -176,7 +176,7 @@ int gptlpr_file (char *file, int nc)
   return ret;
 }
 
-#ifdef HAVE_MPI
+#ifdef HAVE_LIBMPI
 
 int gptlpr_summary (int *fcomm)
 {
@@ -243,7 +243,7 @@ int gptlpr_summary_file (char *outfile, int nc)
 
 int gptlbarrier (void)
 {
-  return GPTLerror ("gptlbarrier: Need to build GPTL with #define HAVE_MPI to enable this routine\n");
+  return GPTLerror ("gptlbarrier: Need to build GPTL with #define HAVE_LIBMPI to enable this routine\n");
 }
 
 #endif

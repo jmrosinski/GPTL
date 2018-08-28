@@ -96,7 +96,8 @@ if test "x$ac_cv_lib_papi_PAPI_library_init" = xyes; then
    # to see if we have permissions.
    if test -f /proc/sys/kernel/perf_event_paranoid; then
       if test `cat /proc/sys/kernel/perf_event_paranoid` != 1; then
-         AC_MSG_ERROR([PAPI library found, but /proc/sys/kernel/perf_event_paranoid != 1])
+         AC_MSG_ERROR([PAPI library found, but /proc/sys/kernel/perf_event_paranoid != 1
+                            try sudo sh -c 'echo 1 >/proc/sys/kernel/perf_event_paranoid'])
       fi
    fi
    AC_DEFINE([HAVE_PAPI], [1], [PAPI library is present and usable])
@@ -143,10 +144,6 @@ AC_CHECK_LIB([m], [floor], [],
 AC_CHECK_FUNC([backtrace_symbols],
         [AC_DEFINE([HAVE_BACKTRACE], [1], [backtrace_symbols function is present])])
 
-# Check for vfprintf.
-AC_CHECK_FUNC([vfprintf],
-        [AC_DEFINE([HAVE_VPRINTF], [1], [vfprint function is available])])
-
 # Check for times.
 AC_CHECK_FUNC([times],
         [AC_DEFINE([HAVE_TIMES], [1], [vfprint function is available])])
@@ -157,9 +154,6 @@ AC_CHECK_FUNC([gettimeofday],
 
 # Do we have MPI?
 AC_CHECK_FUNC([MPI_Init], [have_mpi=yes])
-if test "x$have_mpi" = xyes; then
-   AC_DEFINE([HAVE_MPI], [1], [MPI is present])
-fi
 AM_CONDITIONAL([HAVE_MPI], [test "x$have_mpi" = xyes])
 
 # Do we have function MPI_Comm_f2c?

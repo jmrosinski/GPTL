@@ -5,7 +5,7 @@
 
 #include "config.h" /* Must be first include. */
 
-#ifdef HAVE_MPI
+#ifdef HAVE_LIBMPI
 #include <mpi.h>
 #endif
 
@@ -1447,8 +1447,8 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   fprintf (fp, "GPTL was built without threading\n");
 #endif
 
-#ifdef HAVE_MPI
-  fprintf (fp, "HAVE_MPI was true\n");
+#ifdef HAVE_LIBMPI
+  fprintf (fp, "HAVE_LIBMPI was true\n");
 
 #ifdef HAVE_COMM_F2C
   fprintf (fp, "  HAVE_COMM_F2C was true\n");
@@ -1463,7 +1463,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 #endif
 
 #else
-  fprintf (fp, "HAVE_MPI was false\n");
+  fprintf (fp, "HAVE_LIBMPI was false\n");
 #endif
 
 #ifdef HAVE_PAPI
@@ -2122,7 +2122,7 @@ static void add (Timer *tout,
 #endif
 }
 
-#ifdef HAVE_MPI
+#ifdef HAVE_LIBMPI
 
 /* 
 ** GPTLbarrier: When MPI enabled, set and time an MPI barrier
@@ -2144,7 +2144,7 @@ int GPTLbarrier (MPI_Comm comm, const char *name)
   ret = GPTLstop (name);
   return 0;
 }
-#endif    /* HAVE_MPI */
+#endif    /* HAVE_LIBMPI */
 
 /*
 ** get_cpustamp: Invoke the proper system timer and return stats.
@@ -2839,7 +2839,7 @@ void __func_trace_enter (const char *function_name,
   char msg[MSGSIZ];
   int size, rss, share, text, datastack;
   int world_iam;
-#ifdef HAVE_MPI
+#ifdef HAVE_LIBMPI
   int flag = 0;
   int ret;
 #endif
@@ -2849,7 +2849,7 @@ void __func_trace_enter (const char *function_name,
     if (rss > rssmax) {
       rssmax = rss;
       world_iam = 0;
-#ifdef HAVE_MPI
+#ifdef HAVE_LIBMPI
       ret = MPI_Initialized (&flag);
       if (ret == MPI_SUCCESS && flag) 
 	ret = MPI_Comm_rank (MPI_COMM_WORLD, &world_iam);
@@ -2869,7 +2869,7 @@ void __func_trace_exit (const char *function_name,
   char msg[MSGSIZ];
   int size, rss, share, text, datastack;
   int world_iam;
-#ifdef HAVE_MPI
+#ifdef HAVE_LIBMPI
   int flag = 0;
   int ret;
 #endif
@@ -2881,7 +2881,7 @@ void __func_trace_exit (const char *function_name,
     if (rss > rssmax) {
       rssmax = rss;
       world_iam = 0;
-#ifdef HAVE_MPI
+#ifdef HAVE_LIBMPI
       ret = MPI_Initialized (&flag);
       if (ret == MPI_SUCCESS && flag) 
 	ret = MPI_Comm_rank (MPI_COMM_WORLD, &world_iam);
@@ -2906,7 +2906,7 @@ void __cyg_profile_func_enter (void *this_fn,
   char msg[MSGSIZ];
   int size, rss, share, text, datastack;
   int world_iam;
-#ifdef HAVE_MPI
+#ifdef HAVE_LIBMPI
   int flag = 0;
   int ret;
 #endif
@@ -2916,7 +2916,7 @@ void __cyg_profile_func_enter (void *this_fn,
     if (rss > rssmax) {
       rssmax = rss;
       world_iam = 0;
-#ifdef HAVE_MPI
+#ifdef HAVE_LIBMPI
       ret = MPI_Initialized (&flag);
       if (ret == MPI_SUCCESS && flag) 
 	ret = MPI_Comm_rank (MPI_COMM_WORLD, &world_iam);
@@ -2947,7 +2947,7 @@ void __cyg_profile_func_exit (void *this_fn,
   char msg[MSGSIZ];
   int size, rss, share, text, datastack;
   int world_iam;
-#ifdef HAVE_MPI
+#ifdef HAVE_LIBMPI
   int flag = 0;
   int ret;
 #endif
@@ -2959,7 +2959,7 @@ void __cyg_profile_func_exit (void *this_fn,
     if (rss > rssmax) {
       rssmax = rss;
       world_iam = 0;
-#ifdef HAVE_MPI
+#ifdef HAVE_LIBMPI
       ret = MPI_Initialized (&flag);
       if (ret == MPI_SUCCESS && flag) 
 	ret = MPI_Comm_rank (MPI_COMM_WORLD, &world_iam);
@@ -3097,7 +3097,7 @@ static inline double utr_nanotime ()
 */
 static int init_mpiwtime ()
 {
-#ifdef HAVE_MPI
+#ifdef HAVE_LIBMPI
   return 0;
 #else
   static const char *thisfunc = "init_mpiwtime";
@@ -3107,7 +3107,7 @@ static int init_mpiwtime ()
 
 static inline double utr_mpiwtime ()
 {
-#ifdef HAVE_MPI
+#ifdef HAVE_LIBMPI
   return MPI_Wtime ();
 #else
   static const char *thisfunc = "utr_mpiwtime";

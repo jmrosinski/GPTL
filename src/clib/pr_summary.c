@@ -52,7 +52,7 @@ static int nthreads;  /* Used by both GPTLpr_summary() and get_threadstats() */
 **   outfile: name of file to be written
 */
 
-#ifdef HAVE_MPI
+#ifdef HAVE_LIBMPI
 #include <mpi.h>
 int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)       /* communicator */
 {
@@ -497,7 +497,7 @@ int GPTLpr_summary ()       /* communicator */
   return GPTLpr_summary_file (outfile);
 }
 
-#endif  /* False branch of HAVE_MPI */
+#endif  /* False branch of HAVE_LIBMPI */
 
 
 

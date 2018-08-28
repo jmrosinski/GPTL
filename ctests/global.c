@@ -3,7 +3,7 @@
 #include <unistd.h>  /* sleep, usleep */
 #include "gptl.h"
 
-#ifdef HAVE_MPI
+#ifdef HAVE_LIBMPI
 #include <mpi.h>
 #endif
 
@@ -39,7 +39,7 @@ int main (int argc, char **argv)
   }
 #endif
 
-#ifdef HAVE_MPI
+#ifdef HAVE_LIBMPI
   if (MPI_Init (&argc, &argv) != MPI_SUCCESS) {
     printf ("Failure from MPI_Init\n");
     return 1;
@@ -87,7 +87,7 @@ int main (int argc, char **argv)
   if (iam == 0)
     printf ("global: testing GPTLpr_summary...\n");
 
-#ifdef HAVE_MPI
+#ifdef HAVE_LIBMPI
   if (GPTLpr_summary (MPI_COMM_WORLD) != 0)
     return 1;
   ret = MPI_Finalize ();

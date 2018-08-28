@@ -1,7 +1,7 @@
 #include "config.h"
 #include <stdio.h>
 #include <unistd.h>
-#ifdef HAVE_MPI
+#ifdef HAVE_LIBMPI
 #include <mpi.h>
 #endif
 #ifdef THREADED_OMP
@@ -18,7 +18,7 @@ int main (int argc, char **argv)
   int n;
   int ret;
 
-#ifdef HAVE_MPI
+#ifdef HAVE_LIBMPI
   int resultlen;                      /* returned length of string from MPI routine */
   char string[MPI_MAX_ERROR_STRING];  /* character string returned from MPI routine */
 
@@ -36,7 +36,7 @@ int main (int argc, char **argv)
   if (iam == 0) {
     printf ("%s: testing GPTLpr() and GPTLpr_summary() with some timers ON\n", argv[0]);
     printf ("Check timing.* files: 1st and last ranks, 1st and last threads should print error\n");
-#ifdef HAVE_MPI
+#ifdef HAVE_LIBMPI
     switch (provided) {
     case MPI_THREAD_SINGLE:
       printf ("MPI support level is MPI_THREAD_SINGLE\n");
@@ -90,7 +90,7 @@ int main (int argc, char **argv)
   ret = GPTLstop ("sub");
   ret = GPTLstop ("total");
   ret = GPTLpr (iam);
-#ifdef HAVE_MPI
+#ifdef HAVE_LIBMPI
   ret = GPTLpr_summary (MPI_COMM_WORLD);
   ret = MPI_Finalize ();
 #else

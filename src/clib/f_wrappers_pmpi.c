@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#ifdef HAVE_MPI
+#ifdef HAVE_LIBMPI
 #include <mpi.h>
 #endif
 
@@ -77,7 +77,7 @@ void mpi_init (MPI_Fint *ierr);
 void mpi_finalize (MPI_Fint *ierr);
 #endif
 
-#ifdef HAVE_MPI
+#ifdef HAVE_LIBMPI
 #ifdef ENABLE_PMPI
 
 /*
@@ -560,4 +560,4 @@ void mpi_test (MPI_Fint *request, MPI_Fint *flag, MPI_Fint *status,
   }
 }
 #endif   /* ENABLE_PMPI */
-#endif   /* HAVE_MPI */
+#endif   /* HAVE_LIBMPI */
