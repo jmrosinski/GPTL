@@ -173,7 +173,6 @@ int gptlpr_file (char *file, int nc)
   snprintf (locfile, nc+1, "%s", file);
 
   ret = GPTLpr_file (locfile);
-  free (locfile);
   return ret;
 }
 
@@ -206,7 +205,6 @@ int gptlpr_summary_file (int *fcomm, char *outfile, int nc)
   ccomm = (MPI_Comm) *fcomm;
 #endif
   ret = GPTLpr_summary_file (ccomm, locfile);
-  free (locfile);
   return ret;
 }
 
@@ -240,7 +238,6 @@ int gptlpr_summary_file (char *outfile, int nc)
 
   snprintf (locfile, nc+1, "%s", outfile);
   ret = GPTLpr_summary_file (locfile);
-  free (locfile);
   return ret;
 }
 
