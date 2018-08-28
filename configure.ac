@@ -100,10 +100,10 @@ if test "x$ac_cv_lib_papi_PAPI_library_init" = xyes; then
       fi
    fi
    AC_DEFINE([HAVE_PAPI], [1], [PAPI library is present and usable])
-   AM_CONDITIONAL([HAVE_PAPI], [test "x$ac_cv_lib_papi_PAPI_library_init" = xyes])
    have_papi=yes
 fi
 AC_MSG_RESULT($have_papi)
+AM_CONDITIONAL([HAVE_PAPI], [test "x$have_papi" = xyes])
 
 # Check for rt library. clock_gettime() in librt.a is an option for
 # gathering wallclock time stats on some machines. Setting
