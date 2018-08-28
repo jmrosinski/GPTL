@@ -23,6 +23,21 @@ are based on PAPI counters. See gptl.h for a list of available derived events.
 Of course these events can only be enabled if the PAPI counters they require
 are available on the target architecture.
 
+Installing GPTL
+---------------
+
+To see all the available configure options:
+
+./configure --help
+
+To build and install GPTL:
+
+./configure --prefix=/use/local
+make check
+make install
+
+Set environmental variables CPPFLAGS and LDFLAGS to any additional
+directories you wish to check for include files or library files.
 
 Using GPTL 
 ----------
