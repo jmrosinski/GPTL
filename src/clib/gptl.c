@@ -5,7 +5,7 @@
 
 #include "config.h" /* Must be first include. */
 
-#ifdef HAVE_MPI
+#ifdef HAVE_LIBMPI
 #include <mpi.h>
 #endif
 
