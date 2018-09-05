@@ -183,7 +183,6 @@ AC_CONFIG_FILES([Makefile
                  include/Makefile
                  ctests/Makefile
                  src/Makefile
-                 src/clib/Makefile
                  bin/Makefile
 		 ])
 

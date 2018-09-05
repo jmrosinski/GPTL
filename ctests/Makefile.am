@@ -5,7 +5,7 @@
 AM_CPPFLAGS = -I$(top_srcdir)/include
 
 # Link to GPTL library.
-AM_LDFLAGS = ${top_builddir}/src/clib/libgptl.la
+AM_LDFLAGS = ${top_builddir}/src/libgptl.la
 
 # These programs will be built but not installed.
 noinst_PROGRAMS = gran_overhead printwhileon
