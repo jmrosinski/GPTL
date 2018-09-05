@@ -181,9 +181,8 @@ fi
 # This is a list of files to be built.
 AC_CONFIG_FILES([Makefile
                  include/Makefile
-                 ctests/Makefile
+                 test/Makefile
                  src/Makefile
-                 src/clib/Makefile
                  bin/Makefile
 		 ])
 
