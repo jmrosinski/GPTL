@@ -19,21 +19,29 @@ TESTS = tst_simple global
 
 # Test autoprofiling if either HAVE_LIBUNWIND or HAVE_BACKTRACE
 if HAVE_LIBUNWIND
-  AM_LDFLAGS += -rdynamic -lunwind
-  check_PROGRAMS += cygprofile
-  TESTS += cygprofile
-  cygprofile_SOURCES = cygprofile.c cygprofilesubs.c
-  cygprofile_CFLAGS = -fno-inline -finstrument-functions -finstrument-functions-exclude-function-list=main -g -O0
-  noinst_PROGRAMS += cygprofile
+  AM_LDFLAGS        += -rdynamic -lunwind
+  check_PROGRAMS    += cygprofile
+  TESTS             += cygprofile
+  noinst_PROGRAMS   += cygprofile
+# Hack found online to compile cygprofilesubs.c differently than cygprofile.c: Use a lib
+  noinst_LIBRARIES   = libcyg.a
+  cygprofile_LDADD   = libcyg.a
+  cygprofile_SOURCES = cygprofile.c
+  libcyg_a_SOURCES   = cygprofilesubs.c
+  libcyg_a_CFLAGS    = -fno-inline -finstrument-functions
 else
-  if HAVE_BACKTRACE
-    AM_LDFLAGS += -rdynamic
-    check_PROGRAMS += cygprofile
-    TESTS += cygprofile
-    cygprofile_SOURCES = cygprofile.c cygprofilesubs.c
-    cygprofile_CFLAGS = -fno-inline -finstrument-functions -finstrument-functions-exclude-function-list=main
-    noinst_PROGRAMS += cygprofile
-  endif
+if HAVE_BACKTRACE
+  AM_LDFLAGS        += -rdynamic
+  check_PROGRAMS    += cygprofile
+  TESTS             += cygprofile
+  noinst_PROGRAMS   += cygprofile
+# Hack found online to compile cygprofilesubs.c differently than cygprofile.c: Use a lib
+  noinst_LIBRARIES   = libcyg.a
+  cygprofile_LDADD   = libcyg.a
+  cygprofile_SOURCES = cygprofile.c
+  libcyg_a_SOURCES   = cygprofilesubs.c
+  libcyg_a_CFLAGS    = -fno-inline -finstrument-functions
+endif
 endif
 
 

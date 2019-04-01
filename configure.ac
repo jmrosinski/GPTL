@@ -42,17 +42,17 @@ if test "x$have_nanotime" = xyes; then
 fi
 AC_MSG_RESULT($have_nanotime)
 
-dnl Example of default-enabled feature
+dnl OpenMP. Default is enabled
+enable_openmp=yes;
 AC_ARG_ENABLE([openmp],
 	AS_HELP_STRING([--disable-openmp], [Disable openMP capability]))
-useomp=no;
-AS_IF([test "x$enable_openmp" != xno], [
+if test "x$enable_openmp" != xno]; then
   dnl Do the stuff needed for enabling the feature
   AC_OPENMP
   if test "$ac_cv_prog_c_openmp" = unsupported; then
     AC_MSG_ERROR([OpenMP not supported])
   else
-    useomp=yes;
+    enable_openmp=yes;
     AC_DEFINE([THREADED_OPENMP], [1], [openmp support is present])
 # Does the user want to turn on nested OMP? Enable only if you will be
 # profiling code regions inside of doubly-nested OpenMP regions. Using
@@ -62,28 +62,33 @@ AS_IF([test "x$enable_openmp" != xno], [
     AC_ARG_ENABLE([nestedomp], [AS_HELP_STRING([--enable-nestedomp],
                   [build with nested OMP capability])])
     test "x$enable_nestedomp" = xyes || enable_nestedomp=no
+    if test "x$enable_nestedomp" = xyes; then
+     AC_DEFINE([ENABLE_NESTEDOMP], [1], [nested omp capability enabled])
+    fi
     AC_MSG_RESULT($enable_nestedomp)
   fi
-])
+fi
 AM_CONDITIONAL(ENABLE_NESTEDOMP, [test x$enable_nestedomp = xyes])
 
-# Check for pthread library only if --disable-openmp was specified
-AS_IF([test "$useomp" = no], [
-dnl Example of default-disabled feature
-  AC_ARG_ENABLE([pthread],
-      AS_HELP_STRING([--enable-pthread], [Enable pthread capability]))
+# pthread library. default disabled
+AC_ARG_ENABLE([pthread],
+    AS_HELP_STRING([--enable-pthread], [Enable pthread capability]))
 
-  AS_IF([test "x$enable_pthread" = "xyes"], [
-    dnl Do the stuff needed for enabling the feature
-    AC_MSG_CHECKING([for pthread support])
-    AC_CHECK_LIB([pthread], [pthread_mutex_init])
-    if test "x$ac_cv_lib_pthread_pthread_mutex_init" = xyes; then
-       AC_DEFINE([THREADED_PTHREADS], [1], [pthreads library is present])
-    fi
-    AC_MSG_RESULT([$enable_pthread])
-  ])
-  
-])
+if test "x$enable_pthread" = xyes; then
+  dnl Do the stuff needed for enabling the feature
+  AC_MSG_CHECKING([for pthread support])
+  AC_CHECK_LIB([pthread], [pthread_mutex_init])
+  if test "x$ac_cv_lib_pthread_pthread_mutex_init" = xyes; then
+     AC_DEFINE([THREADED_PTHREADS], [1], [pthreads library is present])
+  fi
+fi
+
+# GPTL only works with EITHER OpenMP OR pthread lib. Barf on attempts to enable both
+if test "$enable_omp" = yes; then
+  if test "x$ac_cv_lib_pthread_pthread_mutex_init" = xyes; then
+    AC_MSG_ERROR([OpenMP and pthreads cannot both be enabled: For pthreads use --disable-openmp --enable-pthread])
+  fi
+fi
 
 # Does the user want to turn on PMPI?
 AC_MSG_CHECKING([whether PMPI is to be enabled])
@@ -153,52 +158,71 @@ dnl endif
 
 # Check for existance of procfs, the proc file system.
 AC_CHECK_FILE([/proc],
-        [AC_DEFINE([HAVE_SLASHPROC], [1], [some comment])])
+        [AC_DEFINE([HAVE_SLASHPROC], [1], [/proc exists. Will use that for memory checking])])
 
 # We need the math library for some tests.
 AC_CHECK_LIB([m], [floor], [],
                   [AC_MSG_ERROR([Can't find or link to the math library.])])
+
+dnl auto-profiling capability. Default is disabled because it will require extra link flags
+AC_MSG_CHECKING([whether auto-profiling capability is to be enabled])
+AC_ARG_ENABLE([autoprofile],
+    AS_HELP_STRING([--enable-autoprofile], [Enable auto-profiling capability]))
+AC_MSG_RESULT([$enable_autoprofile])
 
 # For auto-profiling, libunwind is the preferred method to recover current function name.
 # If not available, try backtrace. If neither are available, auto-profiling will not be
 # possible. To use auto auto-profiling with GNU or Intel compilers:
 # Compile application code with -g -finstrument-functions -rdynamic
 #
-# AC_CHECK_LIB doesn't work for libunwind due to funkiness in the lib
-AC_CHECK_HEADER(libunwind.h, [haveunwind=yes; AC_DEFINE([HAVE_LIBUNWIND], [1], [using libunwind])],[])
+# AC_CHECK_LIB doesn't work for libunwind due to funkiness in the lib so use AC_CHECK_HEADER
+if test "x$enable_autoprofile" = xyes; then
+  AC_CHECK_HEADER(libunwind.h, [haveunwind=yes; AC_DEFINE([HAVE_LIBUNWIND], [1], [using libunwind])],[])
 
 # If libunwind not available, try backtrace
-if test "x$haveunwind" != xyes; then
-  AC_MSG_CHECKING([for backtrace])
-  AC_CHECK_FUNC([backtrace_symbols],
-	      [havebacktrace=yes; AC_MSG_RESULT([yes]); AC_DEFINE([HAVE_BACKTRACE], [1], [using backtrace])],
-	      [AC_MSG_RESULT([no])])
+  if test "x$haveunwind" = xyes; then
+    AC_MSG_NOTICE([libunwind will be used for auto-profiling: Make sure to add -rdynamic -lunwind to LDFLAGS!!!])
+  else
+    AC_MSG_CHECKING([for backtrace])
+    AC_CHECK_FUNC([backtrace_symbols],
+  	        [havebacktrace=yes; AC_MSG_RESULT([yes]); AC_DEFINE([HAVE_BACKTRACE], [1], [using backtrace])],
+	        [AC_MSG_RESULT([no])])
+    if test "x$havebacktrace = xyes"; then
+      AC_MSG_NOTICE([backtrace will be used for auto-profiling: Make sure to add -rdynamic to LDFLAGS!!!])
+    else
+      AC_MSG_ERROR([--enable-autoprofile set but neither libunwind nor backtrace found. Pls rerun w/o --enable-autoprofile])
+    fi
+  fi
 fi
 
-AM_CONDITIONAL([HAVE_LIBUNWIND], [haveunwind=yes])
-AM_CONDITIONAL([HAVE_BACKTRACE], [havebacktrace=yes])
+# Above logic ensures that both haveunwind and havebacktrace cannot both = yes
+AM_CONDITIONAL([HAVE_LIBUNWIND], [test x$haveunwind = xyes])
+AM_CONDITIONAL([HAVE_BACKTRACE], [test x$havebacktrace = xyes])
 
 # Check for times.
 AC_CHECK_FUNC([times],
-        [AC_DEFINE([HAVE_TIMES], [1], [vfprint function is available])])
+        [AC_DEFINE([HAVE_TIMES], [1], [times function is available])])
 
 # Check for gettimeofday.
 AC_CHECK_FUNC([gettimeofday],
         [AC_DEFINE([HAVE_GETTIMEOFDAY], [1], [gettimeofday function is available])])
 
 # Do we have MPI?
-AC_CHECK_FUNC([MPI_Init], [have_mpi=yes])
+AC_CHECK_FUNC([MPI_Init], [have_mpi=yes], [have_mpi=no])
+if test "x$have_mpi_comm_f2c" = xyes; then
+  AC_DEFINE([HAVE_MPI], [1], [found MPI])
+fi
 AM_CONDITIONAL([HAVE_MPI], [test "x$have_mpi" = xyes])
 
 # Do we have function MPI_Comm_f2c?
-AC_CHECK_FUNC([MPI_Comm_f2c], [have_mpi_comm_f2c=yes])
+AC_CHECK_FUNC([MPI_Comm_f2c], [have_mpi_comm_f2c=yes], [have_mpi_comm_f2c=no])
 if test "x$have_mpi_comm_f2c" = xyes; then
-   AC_DEFINE([HAVE_COMM_F2C], [1], [MPI_Comm_f2c is present])
+  AC_DEFINE([HAVE_COMM_F2C], [1], [MPI_Comm_f2c is present])
 fi
 
 # Check for function iargc, which may be part of MPI.
 AC_CHECK_FUNC([iargc],
-        [AC_DEFINE([HAVE_IARGCGETARG], [1], [backtrace_symbols function is present])])
+  [have_iargc=yes; AC_DEFINE([HAVE_IARGCGETARG], [1], [iargc is present])], [have_iargc=no])
 
 # Check the size of a void pointer.
 AC_CHECK_SIZEOF([void *])
@@ -218,7 +242,7 @@ AC_CONFIG_FILES([Makefile
                  test/Makefile
                  src/Makefile
                  bin/Makefile
-		 ])
+	       ])
 
 # Build the files listed above.
 AC_OUTPUT()
