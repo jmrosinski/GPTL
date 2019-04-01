@@ -31,6 +31,11 @@
 #include <sys/systemcfg.h>
 #endif
 
+#ifdef HAVE_LIBUNWIND
+#define UNW_LOCAL_ONLY
+#include <libunwind.h>
+#endif
+
 #ifdef HAVE_BACKTRACE
 #include <execinfo.h>
 #endif
@@ -157,7 +162,6 @@ static int init_gettimeofday (void);
 static int init_placebo (void);
 
 static inline unsigned int genhashidx (const char *);
-static inline Timer *getentry_instr (const Hashentry *, void *, unsigned int *);
 static inline Timer *getentry (const Hashentry *, const char *, unsigned int);
 static void printself_andchildren (const Timer *, FILE *, int, int, double, double);
 static inline int update_parent_info (Timer *, Timer **, int);
@@ -558,79 +562,6 @@ int GPTLfinalize (void)
 }
 
 /*
-** GPTLstart_instr: start a timer (auto-instrumented)
-**
-** Input arguments:
-**   self: function address
-**
-** Return value: 0 (success) or GPTLerror (failure)
-*/
-int GPTLstart_instr (void *self)
-{
-  Timer *ptr;              /* linked list pointer */
-  int t;                   /* thread index (of this thread) */
-  unsigned int indx;       /* hash table index */
-  static const char *thisfunc = "GPTLstart_instr";
-
-  if (disabled)
-    return 0;
-
-  if ( ! initialized)
-    return GPTLerror ("%s self=%p: GPTLinitialize has not been called\n", thisfunc, self);
-
-  if ((t = get_thread_num ()) < 0)
-    return GPTLerror ("%s: bad return from get_thread_num\n", thisfunc);
-
-  /* If current depth exceeds a user-specified limit for print, just increment and return */
-  if (stackidx[t].val >= depthlimit) {
-    ++stackidx[t].val;
-    return 0;
-  }
-
-  ptr = getentry_instr (hashtable[t], self, &indx);
-
-  /* 
-  ** Recursion => increment depth in recursion and return.  We need to return 
-  ** because we don't want to restart the timer.  We want the reported time for
-  ** the timer to reflect the outermost layer of recursion.
-  */
-  if (ptr && ptr->onflg) {
-    ++ptr->recurselvl;
-    return 0;
-  }
-
-  /*
-  ** Increment stackidx[t] unconditionally. This is necessary to ensure the correct
-  ** behavior when GPTLstop_instr decrements stackidx[t] unconditionally.
-  */
-  if (++stackidx[t].val > MAX_STACK-1)
-    return GPTLerror ("%s: stack too big\n", thisfunc);
-
-  if ( ! ptr) {     /* Add a new entry and initialize */
-    ptr = (Timer *) GPTLallocate (sizeof (Timer), thisfunc);
-    memset (ptr, 0, sizeof (Timer));
-
-    /*
-    ** Need to save the address string for later conversion back to a real
-    ** name by an offline tool.
-    */
-    snprintf (ptr->name, MAX_CHARS+1, "%lx", (unsigned long) self);
-    ptr->address = self;
-
-    if (update_ll_hash (ptr, t, indx) != 0)
-      return GPTLerror ("%s: update_ll_hash error\n", thisfunc);
-  }
-
-  if (update_parent_info (ptr, callstack[t], stackidx[t].val) != 0)
-    return GPTLerror ("%s: update_parent_info error\n", thisfunc);
-
-  if (update_ptr (ptr, t) != 0)
-    return GPTLerror ("%s: update_ptr error\n", thisfunc);
-
-  return (0);
-}  
-
-/*
 ** GPTLstart: start a timer
 **
 ** Input arguments:
@@ -852,7 +783,7 @@ static int update_ll_hash (Timer *ptr, int t, unsigned int indx)
 }
 
 /*
-** update_ptr: Update timer contents. Called by GPTLstart, GPTLstart_instr and GPTLstart_handle
+** update_ptr: Update timer contents. Called by GPTLstart and GPTLstart_handle
 **
 ** Input arguments:
 **   ptr:  pointer to timer
@@ -944,74 +875,6 @@ static inline int update_parent_info (Timer *ptr,
     ptr->parent_count = parent_count;
     ptr->parent_count[nparent-1] = 1;
   }
-
-  return 0;
-}
-
-/*
-** GPTLstop_instr: stop a timer (auto-instrumented)
-**
-** Input arguments:
-**   self: function address
-**
-** Return value: 0 (success) or GPTLerror (failure)
-*/
-int GPTLstop_instr (void *self)
-{
-  double tp1 = 0.0;          /* time stamp */
-  Timer *ptr;                /* linked list pointer */
-  int t;                     /* thread number for this process */
-  unsigned int indx;         /* index into hash table */
-  long usr = 0;              /* user time (returned from get_cpustamp) */
-  long sys = 0;              /* system time (returned from get_cpustamp) */
-  static const char *thisfunc = "GPTLstop_instr";
-
-  if (disabled)
-    return 0;
-
-  if ( ! initialized)
-    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
-
-  /* Get the timestamp */    
-  if (wallstats.enabled) {
-    tp1 = (*ptr2wtimefunc) ();
-  }
-
-  if (cpustats.enabled && get_cpustamp (&usr, &sys) < 0)
-    return GPTLerror ("%s: bad return from get_cpustamp\n", thisfunc);
-
-  if ((t = get_thread_num ()) < 0)
-    return GPTLerror ("%s: bad return from get_thread_num\n", thisfunc);
-
-  /* If current depth exceeds a user-specified limit for print, just decrement and return */
-  if (stackidx[t].val > depthlimit) {
-    --stackidx[t].val;
-    return 0;
-  }
-
-  ptr = getentry_instr (hashtable[t], self, &indx);
-
-  if ( ! ptr) 
-    return GPTLerror ("%s: timer for %p had not been started.\n", thisfunc, self);
-
-  if ( ! ptr->onflg )
-    return GPTLerror ("%s: timer %s was already off.\n", thisfunc, ptr->name);
-
-  ++ptr->count;
-
-  /* 
-  ** Recursion => decrement depth in recursion and return.  We need to return
-  ** because we don't want to stop the timer.  We want the reported time for
-  ** the timer to reflect the outermost layer of recursion.
-  */
-  if (ptr->recurselvl > 0) {
-    ++ptr->nrecurse;
-    --ptr->recurselvl;
-    return 0;
-  }
-
-  if (update_stats (ptr, tp1, usr, sys, t) != 0)
-    return GPTLerror ("%s: error from update_stats\n", thisfunc);
 
   return 0;
 }
@@ -1158,8 +1021,7 @@ int GPTLstop_handle (const char *name,     /* timer name */
 }
 
 /*
-** update_stats: update stats inside ptr. Called by GPTLstop, GPTLstop_instr, 
-**               GPTLstop_handle
+** update_stats: update stats inside ptr. Called by GPTLstop, GPTLstop_handle
 **
 ** Input arguments:
 **   ptr: pointer to timer
@@ -1484,6 +1346,14 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 #else
   fprintf (fp, "ENABLE_NESTEDOMP was false\n");
 #endif
+
+#ifdef HAVE_LIBUNWIND
+  fprintf (fp, "Autoprofiling capability was enabled with libunwind\n");
+#elif defined HAVE_BACKTRACE	  
+  fprintf (fp, "Autoprofiling capability was enabled with backtrace\n");
+#else
+  fprintf (fp, "Autoprofiling capability was NOT enabled\n");
+#endif	   
 
   fprintf (fp, "Underlying timing routine was %s.\n", funclist[funcidx].name);
   (void) GPTLget_overhead (fp, ptr2wtimefunc, getentry, genhashidx, get_thread_num, 
@@ -2289,7 +2159,6 @@ int GPTLget_wallclock (const char *timername,
                       int t,
                       double *value)
 {
-  void *self;          /* timer address when hash entry generated with *_instr */
   Timer *ptr;          /* linked list pointer */
   unsigned int indx;   /* hash index returned from getentry (unused) */
   static const char *thisfunc = "GPTLget_wallclock";
@@ -2309,19 +2178,10 @@ int GPTLget_wallclock (const char *timername,
       return GPTLerror ("%s: requested thread %d is too big\n", thisfunc, t);
   }
   
-  /* 
-  ** Don't know whether hashtable entry for timername was generated with 
-  ** *_instr() or not, so try both possibilities
-  */
   indx = genhashidx (timername);
   ptr = getentry (hashtable[t], timername, indx);
-  if ( !ptr) {
-    if (sscanf (timername, "%lx", (unsigned long *) &self) < 1)
-      return GPTLerror ("%s: requested timer %s does not exist\n", thisfunc, timername);
-    ptr = getentry_instr (hashtable[t], self, &indx);
-    if ( !ptr)
-      return GPTLerror ("%s: requested timer %s does not exist\n", thisfunc, timername);
-  }
+  if ( !ptr)
+    return GPTLerror ("%s: requested timer %s does not exist\n", thisfunc, timername);
   *value = ptr->wall.accum;
   return 0;
 }
@@ -2523,7 +2383,6 @@ int GPTLget_count (const char *timername,
 		   int t,
 		   int *count)
 {
-  void *self;          /* timer address when hash entry generated with *_instr */
   Timer *ptr;          /* linked list pointer */
   unsigned int indx;   /* hash index returned from getentry (unused) */
   static const char *thisfunc = "GPTLget_count";
@@ -2540,19 +2399,10 @@ int GPTLget_count (const char *timername,
       return GPTLerror ("%s: requested thread %d is too big\n", thisfunc, t);
   }
   
-  /* 
-  ** Don't know whether hashtable entry for timername was generated with 
-  ** *_instr() or not, so try both possibilities
-  */
   indx = genhashidx (timername);
   ptr = getentry (hashtable[t], timername, indx);
-  if ( !ptr) {
-    if (sscanf (timername, "%lx", (unsigned long *) &self) < 1)
-      return GPTLerror ("%s: requested timer %s does not exist\n", thisfunc, timername);
-    ptr = getentry_instr (hashtable[t], self, &indx);
-    if ( !ptr)
-      return GPTLerror ("%s: requested timer %s does not exist\n", thisfunc, timername);
-  }
+  if ( !ptr)
+    return GPTLerror ("%s: requested timer %s does not exist\n", thisfunc, timername);
   *count = ptr->count;
   return 0;
 }
@@ -2574,7 +2424,6 @@ int GPTLget_eventvalue (const char *timername,
                         int t,
                         double *value)
 {
-  void *self;          /* timer address when hash entry generated with *_instr */
   Timer *ptr;          /* linked list pointer */
   unsigned int indx;   /* hash index returned from getentry (unused) */
   static const char *thisfunc = "GPTLget_eventvalue";
@@ -2591,19 +2440,10 @@ int GPTLget_eventvalue (const char *timername,
       return GPTLerror ("%s: requested thread %d is too big\n", thisfunc, t);
   }
   
-  /* 
-  ** Don't know whether hashtable entry for timername was generated with 
-  ** *_instr() or not, so try both possibilities
-  */
   indx = genhashidx (timername);
   ptr = getentry (hashtable[t], timername, indx);
-  if ( !ptr) {
-    if (sscanf (timername, "%lx", (unsigned long *) &self) < 1)
-      return GPTLerror ("%s: requested timer %s does not exist\n", thisfunc, timername);
-    ptr = getentry_instr (hashtable[t], self, &indx);
-    if ( !ptr)
-      return GPTLerror ("%s: requested timer %s does not exist\n", thisfunc, timername);
-  }
+  if ( !ptr)
+    return GPTLerror ("%s: requested timer %s does not exist\n", thisfunc, timername);
 
 #ifdef HAVE_PAPI
   return GPTL_PAPIget_eventvalue (eventname, &ptr->aux, value);
@@ -2711,39 +2551,6 @@ int GPTLget_regionname (int t,      /* thread number */
 int GPTLis_initialized (void)
 {
   return (int) initialized;
-}
-
-/*
-** getentry_instr: find hash table entry and return a pointer to it
-**
-** Input args:
-**   hashtable: the hashtable (array)
-**   self:      input address (from -finstrument-functions)
-** Output args:
-**   indx:      hashtable index
-**
-** Return value: pointer to the entry, or NULL if not found
-*/
-static inline Timer *getentry_instr (const Hashentry *hashtable, /* hash table */
-                                     void *self,                 /* address */
-                                     unsigned int *indx)         /* hash index */
-{
-  int i;
-  Timer *ptr = 0;  /* return value when entry not found */
-
-  /*
-  ** Hash index is timer address modulo the table size
-  ** On most machines, right-shifting the address helps because linkers often
-  ** align functions on even boundaries
-  */
-  *indx = (((unsigned long) self) >> 4) % tablesize;
-  for (i = 0; i < hashtable[*indx].nument; ++i) {
-    if (hashtable[*indx].entries[i]->address == self) {
-      ptr = hashtable[*indx].entries[i];
-      break;
-    }
-  }
-  return ptr;
 }
 
 /*
@@ -2894,21 +2701,58 @@ void __func_trace_exit (const char *function_name,
   
 #else
 //_AIX not defined
-  
+
+#if ( defined HAVE_LIBUNWIND || defined HAVE_BACKTRACE )
 void __cyg_profile_func_enter (void *this_fn,
                                void *call_site)
 {
-#ifdef HAVE_BACKTRACE
-  void *buffer[2];
-  int nptrs;
-  char **strings;
-#endif
   char msg[MSGSIZ];
   int size, rss, share, text, datastack;
   int world_iam;
+  char *symnam;   // symbol name whether using unwind or backtrace
+  static const char *thisfunc = "__cyg_profile_func_enter";
+
 #ifdef HAVE_LIBMPI
   int flag = 0;
   int ret;
+#endif
+
+#ifdef HAVE_LIBUNWIND
+  unw_cursor_t cursor;
+  unw_context_t context;
+  unw_word_t offset, pc;
+  char symbol[MAX_CHARS];
+
+  // Initialize cursor to current frame for local unwinding.
+  unw_getcontext (&context);
+  unw_init_local (&cursor, &context);
+
+  if (unw_step (&cursor) <= 0) { // unw_step failed: give up
+    GPTLwarn ("%s: unw_step failed\n", thisfunc);
+    return;
+  }
+
+  unw_get_reg (&cursor, UNW_REG_IP, &pc);
+  if (unw_get_proc_name (&cursor, symbol, sizeof(symbol), &offset) != 0) {
+    // Symbol not found: give up
+    GPTLwarn ("%s unwind pgm counter=0x%lx symbol name not found\n", thisfunc, pc);
+    return;
+  }
+  symnam = symbol;
+
+#elif defined HAVE_BACKTRACE
+
+  void *buffer[2];
+  int nptrs;
+  char **strings;
+
+  nptrs = backtrace (buffer, 2);
+  strings = backtrace_symbols (buffer, nptrs);
+  if (nptrs < 2) {
+    GPTLwarn ("%s backtrace failed\n", thisfunc);
+    return;
+  }
+  symnam = strings[1];
 #endif
 
   if (dopr_memusage && get_thread_num() == 0) {
@@ -2921,38 +2765,70 @@ void __cyg_profile_func_enter (void *this_fn,
       if (ret == MPI_SUCCESS && flag) 
 	ret = MPI_Comm_rank (MPI_COMM_WORLD, &world_iam);
 #endif
-
-#ifdef HAVE_BACKTRACE
-      nptrs = backtrace (buffer, 2);
-      strings = backtrace_symbols (buffer, nptrs);
-      snprintf (msg, MSGSIZ, "world_iam=%d begin %s rss grew", world_iam, strings[1]);
-      free (strings);  /* needed because backtrace_symbols allocated the space */
-#else
-      snprintf (msg, MSGSIZ, "world_iam=%d begin %lx rss grew", world_iam, (unsigned long) this_fn);
-#endif
+      snprintf (msg, MSGSIZ, "world_iam=%d begin %s rss grew", world_iam, symnam);
       (void) GPTLprint_memusage (msg);
     }
   }
-  (void) GPTLstart_instr (this_fn);
+
+  (void) GPTLstart (symnam);
+#ifdef HAVE_BACKTRACE
+  free (strings);
+#endif
 }
 
 void __cyg_profile_func_exit (void *this_fn,
                               void *call_site)
 {
-#ifdef HAVE_BACKTRACE
-  void *buffer[2];
-  int nptrs;
-  char **strings;
-#endif
   char msg[MSGSIZ];
   int size, rss, share, text, datastack;
   int world_iam;
+  char *symnam;   // symbol name whether using unwind or backtrace
+  static const char *thisfunc = "__cyg_profile_func_exit";
+
 #ifdef HAVE_LIBMPI
   int flag = 0;
   int ret;
 #endif
 
-  (void) GPTLstop_instr (this_fn);
+#ifdef HAVE_LIBUNWIND
+  unw_cursor_t cursor;
+  unw_context_t context;
+  unw_word_t offset, pc;
+  char symbol[MAX_CHARS];
+
+  // Initialize cursor to current frame for local unwinding.
+  unw_getcontext (&context);
+  unw_init_local (&cursor, &context);
+
+  if (unw_step (&cursor) <= 0) { // unw_step failed: give up
+    GPTLwarn ("%s: unw_step failed\n", thisfunc);
+    return;
+  }
+
+  unw_get_reg (&cursor, UNW_REG_IP, &pc);
+  if (unw_get_proc_name (&cursor, symbol, sizeof(symbol), &offset) != 0) {
+    // Symbol not found: give up
+    GPTLwarn ("%s unwind pgm counter=0x%lx symbol name not found\n", thisfunc, pc);
+    return;
+  }
+  symnam = symbol;
+
+#elif defined HAVE_BACKTRACE
+
+  void *buffer[2];
+  int nptrs;
+  char **strings;
+
+  nptrs = backtrace (buffer, 2);
+  strings = backtrace_symbols (buffer, nptrs);
+  if (nptrs < 2) {
+    GPTLwarn ("%s backtrace failed\n", thisfunc);
+    return;
+  }
+  symnam = strings[1];
+#endif
+
+  (void) GPTLstop (symnam);
 
   if (dopr_memusage && get_thread_num() == 0) {
     (void) GPTLget_memusage (&size, &rss, &share, &text, &datastack);
@@ -2964,20 +2840,17 @@ void __cyg_profile_func_exit (void *this_fn,
       if (ret == MPI_SUCCESS && flag) 
 	ret = MPI_Comm_rank (MPI_COMM_WORLD, &world_iam);
 #endif
-#ifdef HAVE_BACKTRACE
-      nptrs = backtrace (buffer, 2);
-      strings = backtrace_symbols (buffer, nptrs);
-      snprintf (msg, MSGSIZ, "world_iam=%d end %s rss grew", world_iam, (char *) strings[1]);
-      free (strings);  /* needed because backtrace_symbols allocated the space */
-#else
-      snprintf (msg, MSGSIZ, "world_iam=%d end %lx rss grew", world_iam, (unsigned long) this_fn);
-#endif
+      snprintf (msg, MSGSIZ, "world_iam=%d end %s rss grew", world_iam, symnam);
       (void) GPTLprint_memusage (msg);
     }
   }
-}
+#ifdef HAVE_BACKTRACE
+  free (strings);
 #endif
-// _AIX false branch
+
+}
+#endif // HAVE_LIBUNWIND || HAVE_BACKTRACE
+#endif // _AIX false branch
 
 #ifdef __cplusplus
 };

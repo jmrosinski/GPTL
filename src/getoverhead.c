@@ -5,7 +5,6 @@
 #include "private.h"
 
 static int gptlstart_sim (char *, int);
-static Timer *getentry_instr_sim (const Hashentry *,void *, unsigned int *, const int);
 static void misc_sim (Nofalse *, Timer ***, int);
 static bool initialized = true;
 static bool disabled = false;
@@ -54,7 +53,6 @@ int GPTLget_overhead (FILE *fp,
   double utr_ohd;            /* Underlying timing routine */
   double papi_ohd;           /* Reading PAPI counters */
   double total_ohd;          /* Sum of overheads */
-  double getentry_instr_ohd; /* Finding entry in hash tabe for auto-instrumented calls */
   double misc_ohd;           /* misc. calcs within start/stop */
   int i, n;
   int ret;
@@ -143,15 +141,6 @@ int GPTLget_overhead (FILE *fp,
   papi_ohd = 0.;
 #endif
 
-  /* getentry_instr overhead */
-  t1 = (*ptr2wtimefunc)();
-#pragma unroll(10)
-  for (i = 0; i < 1000; ++i) {
-    entry = getentry_instr_sim (hashtable, &randomvar, &hashidx, tablesize);
-  }
-  t2 = (*ptr2wtimefunc)();
-  getentry_instr_ohd = 0.001 * (t2 - t1);
-
   /* misc start/stop overhead */
   if (imperfect_nest) {
     fprintf (fp, "Imperfect nesting detected: setting misc_ohd=0\n");
@@ -191,9 +180,6 @@ int GPTLget_overhead (FILE *fp,
   fprintf (fp, "\n");
   fprintf (fp, "NOTE: If GPTL is called from C not Fortran, the 'Fortran layer' overhead is zero\n");
   fprintf (fp, "NOTE: For calls to GPTLstart_handle()/GPTLstop_handle(), the 'Generate hash index' overhead is zero\n");
-  fprintf (fp, "NOTE: For auto-instrumented calls, the cost of generating the hash index plus finding\n"
-	  "      the hashtable entry is %7.1e not the %7.1e portion taken by GPTLstart\n", 
-	  getentry_instr_ohd, genhashidx_ohd + getentry_ohd);
   fprintf (fp, "NOTE: Each hash collision roughly doubles the 'Find hashtable entry' cost of that timer\n");
   *self_ohd   = ftn_ohd + utr_ohd; /* In GPTLstop() ftn wrapper is called before utr */
   *parent_ohd = ftn_ohd + utr_ohd + misc_ohd +
@@ -215,30 +201,6 @@ static int gptlstart_sim (char *name, int nc)
   strncpy (cname, name, nc);
   cname[nc] = '\0';
   return 0;
-}
-
-/*
-** getentry_instr_sim: Simulate the cost of getentry_instr(), which is invoked only when
-** auto-instrumentation is enabled on non-AIX platforms
-** 
-** Input args:
-**   hashtable: hashtable for thread 0
-**   self:      address of function
-**   indx:      hashtable index
-**   tablesize: size of hashtable
-*/
-static Timer *getentry_instr_sim (const Hashentry *hashtable,
-				  void *self, 
-				  unsigned int *indx,
-				  const int tablesize)
-{
-  Timer *ptr = 0;
-
-  *indx = (((unsigned long) self) >> 4) % tablesize;
-  if (hashtable[*indx].nument > 0 && hashtable[*indx].entries[0]->address == self) {
-    ptr = hashtable[*indx].entries[0];
-  }
-  return ptr;
 }
 
 /*

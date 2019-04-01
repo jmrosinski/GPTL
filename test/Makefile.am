@@ -4,6 +4,9 @@
 # Find include directory.
 AM_CPPFLAGS = -I$(top_srcdir)/include
 
+# Need optimization disabled for correct behavior of some tests
+CFLAGS += -g -O0
+
 # Link to GPTL library.
 AM_LDFLAGS = ${top_builddir}/src/libgptl.la
 
@@ -13,6 +16,26 @@ noinst_PROGRAMS = gran_overhead printwhileon
 # Test programs that will be built for all configurations.
 check_PROGRAMS = tst_simple global
 TESTS = tst_simple global
+
+# Test autoprofiling if either HAVE_LIBUNWIND or HAVE_BACKTRACE
+if HAVE_LIBUNWIND
+  AM_LDFLAGS += -rdynamic -lunwind
+  check_PROGRAMS += cygprofile
+  TESTS += cygprofile
+  cygprofile_SOURCES = cygprofile.c cygprofilesubs.c
+  cygprofile_CFLAGS = -fno-inline -finstrument-functions -finstrument-functions-exclude-function-list=main -g -O0
+  noinst_PROGRAMS += cygprofile
+else
+  if HAVE_BACKTRACE
+    AM_LDFLAGS += -rdynamic
+    check_PROGRAMS += cygprofile
+    TESTS += cygprofile
+    cygprofile_SOURCES = cygprofile.c cygprofilesubs.c
+    cygprofile_CFLAGS = -fno-inline -finstrument-functions -finstrument-functions-exclude-function-list=main
+    noinst_PROGRAMS += cygprofile
+  endif
+endif
+
 
 # Build these tests if PAPI is present.
 if HAVE_PAPI
@@ -29,12 +52,6 @@ if ENABLE_PMPI
 check_PROGRAMS += pmpi
 TESTS += run_par_pmpi_test.sh
 endif
-endif
-
-# Build these if the user selected --enable-autoprofile-tests during configure.
-if TEST_AUTOPROFILE
-check_PROGRAMS += cygprofile cygprofilesubs
-TESTS += cygprofile cygprofilesubs
 endif
 
 # Build these if the user selected --enable-nestedomp during configure.

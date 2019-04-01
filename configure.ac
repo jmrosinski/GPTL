@@ -6,7 +6,7 @@
 AC_PREREQ([2.59])
 
 # Initialize autoconf.
-AC_INIT([GPTL], [5.6.0], [james.rosinski@noaa.gov])
+AC_INIT([GPTL], [5.6.0], [rosinski@ucar.edu])
 
 # Find out about the host we're building on.
 AC_CANONICAL_HOST
@@ -42,16 +42,48 @@ if test "x$have_nanotime" = xyes; then
 fi
 AC_MSG_RESULT($have_nanotime)
 
+dnl Example of default-enabled feature
+AC_ARG_ENABLE([openmp],
+	AS_HELP_STRING([--disable-openmp], [Disable openMP capability]))
+useomp=no;
+AS_IF([test "x$enable_openmp" != xno], [
+  dnl Do the stuff needed for enabling the feature
+  AC_OPENMP
+  if test "$ac_cv_prog_c_openmp" = unsupported; then
+    AC_MSG_ERROR([OpenMP not supported])
+  else
+    useomp=yes;
+    AC_DEFINE([THREADED_OPENMP], [1], [openmp support is present])
 # Does the user want to turn on nested OMP? Enable only if you will be
 # profiling code regions inside of doubly-nested OpenMP regions. Using
 # --enable-nestedomp can increase the cost of getting the thread
 # number by about 50% even in regions which are not doubly-nested.
-AC_MSG_CHECKING([whether nested OMP is to be enabled])
-AC_ARG_ENABLE([nestedomp], [AS_HELP_STRING([--enable-nestedomp],
-              [build with nested OMP capability])])
-test "x$enable_nestedomp" = xyes || enable_nestedomp=no
+    AC_MSG_CHECKING([whether nested OMP is to be enabled])
+    AC_ARG_ENABLE([nestedomp], [AS_HELP_STRING([--enable-nestedomp],
+                  [build with nested OMP capability])])
+    test "x$enable_nestedomp" = xyes || enable_nestedomp=no
+    AC_MSG_RESULT($enable_nestedomp)
+  fi
+])
 AM_CONDITIONAL(ENABLE_NESTEDOMP, [test x$enable_nestedomp = xyes])
-AC_MSG_RESULT($enable_nestedomp)
+
+# Check for pthread library only if --disable-openmp was specified
+AS_IF([test "$useomp" = no], [
+dnl Example of default-disabled feature
+  AC_ARG_ENABLE([pthread],
+      AS_HELP_STRING([--enable-pthread], [Enable pthread capability]))
+
+  AS_IF([test "x$enable_pthread" = "xyes"], [
+    dnl Do the stuff needed for enabling the feature
+    AC_MSG_CHECKING([for pthread support])
+    AC_CHECK_LIB([pthread], [pthread_mutex_init])
+    if test "x$ac_cv_lib_pthread_pthread_mutex_init" = xyes; then
+       AC_DEFINE([THREADED_PTHREADS], [1], [pthreads library is present])
+    fi
+    AC_MSG_RESULT([$enable_pthread])
+  ])
+  
+])
 
 # Does the user want to turn on PMPI?
 AC_MSG_CHECKING([whether PMPI is to be enabled])
@@ -65,17 +97,6 @@ fi
 AC_MSG_RESULT($enable_pmpi)
 AC_DEFINE([MPI_STATUS_SIZE_IN_INTS], [5], [size of status in MPI])
 
-# Does the user want to test autoprofiling? (adds 2 tests to "make
-# test"). If compiler is gcc or pathscale or intel, set INSTRFLAG to
-# -finstrument-functions. PGI 8.0.2 and later provide
-# -Minstrument:functions.
-AC_MSG_CHECKING([whether autoprofile testing is to be enabled])
-AC_ARG_ENABLE([autoprofile-testing], [AS_HELP_STRING([--enable-autoprofile-testing],
-              [test autoprofileing])])
-test "x$enable_autoprofile_testing" = xyes || enable_autoprofile_testing=no
-AM_CONDITIONAL(TEST_AUTOPROFILE, [test $enable_autoprofile_testing = yes])
-AC_MSG_RESULT($enable_autoprofile_testing)
-
 # Does the user want to use double underscores for fortran wrappers?
 AC_MSG_CHECKING([whether double underscore for Fortran wrappers should be enabled])
 AC_ARG_ENABLE([double-underscore], [AS_HELP_STRING([--enable-double-underscore],
@@ -88,22 +109,32 @@ else
    AC_DEFINE([FORTRANUNDERSCORE], [1], [use single underscore for Fortran wrappers])
 fi
 
+AC_MSG_CHECKING([whether PAPI is to be enabled])
+AC_ARG_ENABLE([papi], [AS_HELP_STRING([--enable-papi],
+              [enable papi])])
+test "x$enable_papi" = xyes || enable_papi=no
+AC_MSG_RESULT($enable_papi)
+
+if test x$enable_papi = xyes; then
 # Check for papi library.
-AC_CHECK_LIB([papi], [PAPI_library_init])
-AC_MSG_CHECKING([whether system can support PAPI])
-if test "x$ac_cv_lib_papi_PAPI_library_init" = xyes; then
-   # If we have PAPI library, check /proc/sys/kernel/perf_event_paranoid
-   # to see if we have permissions.
-   if test -f /proc/sys/kernel/perf_event_paranoid; then
+  AC_CHECK_LIB([papi], [PAPI_library_init])
+  AC_MSG_CHECKING([whether system can support PAPI])
+  if test "x$ac_cv_lib_papi_PAPI_library_init" = xyes; then
+    # If we have PAPI library, check /proc/sys/kernel/perf_event_paranoid
+    # to see if we have permissions.
+    if test -f /proc/sys/kernel/perf_event_paranoid; then
       if test `cat /proc/sys/kernel/perf_event_paranoid` != 1; then
          AC_MSG_ERROR([PAPI library found, but /proc/sys/kernel/perf_event_paranoid != 1
                             try sudo sh -c 'echo 1 >/proc/sys/kernel/perf_event_paranoid'])
       fi
-   fi
-   AC_DEFINE([HAVE_PAPI], [1], [PAPI library is present and usable])
-   have_papi=yes
+    fi
+    AC_DEFINE([HAVE_PAPI], [1], [PAPI library is present and usable])
+    have_papi=yes
+  else
+    have_papi=no
+  fi
+  AC_MSG_RESULT($have_papi)
 fi
-AC_MSG_RESULT($have_papi)
 AM_CONDITIONAL([HAVE_PAPI], [test "x$have_papi" = xyes])
 
 # Check for rt library. clock_gettime() in librt.a is an option for
@@ -124,25 +155,28 @@ dnl endif
 AC_CHECK_FILE([/proc],
         [AC_DEFINE([HAVE_SLASHPROC], [1], [some comment])])
 
-# Check for pthread lirbary.
-AC_CHECK_LIB([pthread], [pthread_mutex_init])
-if test "x$ac_cv_lib_pthread_pthread_mutex_init" = xyes; then
-   AC_DEFINE([PTHREADS], [1], [pthreads library is present])
-fi
-
 # We need the math library for some tests.
 AC_CHECK_LIB([m], [floor], [],
                   [AC_MSG_ERROR([Can't find or link to the math library.])])
 
-# Check for function backtrace_symbols. If HAVE_BACKTRACE=yes will
-# enable auto-generation of function name when auto-profiling and
-# GPTLdopr_memusage has been enabled at run-time. If
-# HAVE_BACKTRACE=no, function address will be printed instead.  GNU
-# compilers: compile application code with -finstrument-functions
-# -rdynamic Intel compilers: compile application code with
-# -finstrument-functions -rdynamic -g
-AC_CHECK_FUNC([backtrace_symbols],
-        [AC_DEFINE([HAVE_BACKTRACE], [1], [backtrace_symbols function is present])])
+# For auto-profiling, libunwind is the preferred method to recover current function name.
+# If not available, try backtrace. If neither are available, auto-profiling will not be
+# possible. To use auto auto-profiling with GNU or Intel compilers:
+# Compile application code with -g -finstrument-functions -rdynamic
+#
+# AC_CHECK_LIB doesn't work for libunwind due to funkiness in the lib
+AC_CHECK_HEADER(libunwind.h, [haveunwind=yes; AC_DEFINE([HAVE_LIBUNWIND], [1], [using libunwind])],[])
+
+# If libunwind not available, try backtrace
+if test "x$haveunwind" != xyes; then
+  AC_MSG_CHECKING([for backtrace])
+  AC_CHECK_FUNC([backtrace_symbols],
+	      [havebacktrace=yes; AC_MSG_RESULT([yes]); AC_DEFINE([HAVE_BACKTRACE], [1], [using backtrace])],
+	      [AC_MSG_RESULT([no])])
+fi
+
+AM_CONDITIONAL([HAVE_LIBUNWIND], [haveunwind=yes])
+AM_CONDITIONAL([HAVE_BACKTRACE], [havebacktrace=yes])
 
 # Check for times.
 AC_CHECK_FUNC([times],
