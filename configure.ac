@@ -44,8 +44,8 @@ AC_MSG_RESULT($have_nanotime)
 
 dnl OpenMP. Default is enabled
 enable_openmp=yes;
-AC_ARG_ENABLE([openmp],
-	AS_HELP_STRING([--disable-openmp], [Disable openMP capability]))
+# AC_OPENMP below will print enable/disable message so just simple AC_ARG_ENABLE usage here
+AC_ARG_ENABLE([openmp])
 if test "x$enable_openmp" != xno]; then
   dnl Do the stuff needed for enabling the feature
   AC_OPENMP
@@ -54,20 +54,26 @@ if test "x$enable_openmp" != xno]; then
   else
     enable_openmp=yes;
     AC_DEFINE([THREADED_OPENMP], [1], [openmp support is present])
+  fi
+fi
+
 # Does the user want to turn on nested OMP? Enable only if you will be
 # profiling code regions inside of doubly-nested OpenMP regions. Using
 # --enable-nestedomp can increase the cost of getting the thread
 # number by about 50% even in regions which are not doubly-nested.
-    AC_MSG_CHECKING([whether nested OMP is to be enabled])
-    AC_ARG_ENABLE([nestedomp], [AS_HELP_STRING([--enable-nestedomp],
-                  [build with nested OMP capability])])
-    test "x$enable_nestedomp" = xyes || enable_nestedomp=no
-    if test "x$enable_nestedomp" = xyes; then
-     AC_DEFINE([ENABLE_NESTEDOMP], [1], [nested omp capability enabled])
-    fi
-    AC_MSG_RESULT($enable_nestedomp)
+AC_MSG_CHECKING([whether nested OMP is to be enabled])
+AC_ARG_ENABLE([nestedomp], [AS_HELP_STRING([--enable-nestedomp],
+              [build with nested OMP capability])])
+
+test "x$enable_nestedomp" = xyes || enable_nestedomp=no
+# If nestedomp requested, verify basic OpenMP capability was there
+if test "x$enable_nestedomp" = xyes; then
+  if test "x$enable_openmp" != xyes; then
+    AC_MSG_ERROR([Nested OMP capability requested but OpenMP disabled or not available])
   fi
+  AC_DEFINE([ENABLE_NESTEDOMP], [1], [nested omp capability enabled])
 fi
+AC_MSG_RESULT($enable_nestedomp)
 AM_CONDITIONAL(ENABLE_NESTEDOMP, [test x$enable_nestedomp = xyes])
 
 # pthread library. default disabled
