@@ -20,7 +20,7 @@ TESTS = tst_simple global
 # Test autoprofiling if either HAVE_LIBUNWIND or HAVE_BACKTRACE
 if HAVE_LIBUNWIND
   AM_LDFLAGS        += -rdynamic -lunwind
-  check_PROGRAMS    += cygprofile
+#  check_PROGRAMS    += cygprofile
   TESTS             += cygprofile
   noinst_PROGRAMS   += cygprofile
 # Hack found online to compile cygprofilesubs.c differently than cygprofile.c: Use a lib
@@ -32,7 +32,7 @@ if HAVE_LIBUNWIND
 else
 if HAVE_BACKTRACE
   AM_LDFLAGS        += -rdynamic
-  check_PROGRAMS    += cygprofile
+#  check_PROGRAMS    += cygprofile
   TESTS             += cygprofile
   noinst_PROGRAMS   += cygprofile
 # Hack found online to compile cygprofilesubs.c differently than cygprofile.c: Use a lib
@@ -43,7 +43,6 @@ if HAVE_BACKTRACE
   libcyg_a_CFLAGS    = -fno-inline -finstrument-functions
 endif
 endif
-
 
 # Build these tests if PAPI is present.
 if HAVE_PAPI

@@ -120,6 +120,13 @@ else
    AC_DEFINE([FORTRANUNDERSCORE], [1], [use single underscore for Fortran wrappers])
 fi
 
+AC_ARG_ENABLE([debug], [AS_HELP_STRING([--enable-debug],
+              [enable DEBUG ifdef])])
+test "x$enable_debug" = xyes || enable_debug=no
+if test $enable_debug = yes; then
+   AC_DEFINE([DEBUG], [1], [set debug ifdef])
+fi
+
 AC_MSG_CHECKING([whether PAPI is to be enabled])
 AC_ARG_ENABLE([papi], [AS_HELP_STRING([--enable-papi],
               [enable papi])])
@@ -170,40 +177,54 @@ AC_CHECK_FILE([/proc],
 AC_CHECK_LIB([m], [floor], [],
                   [AC_MSG_ERROR([Can't find or link to the math library.])])
 
-dnl auto-profiling capability. Default is disabled because it will require extra link flags
-AC_MSG_CHECKING([whether auto-profiling capability is to be enabled])
-AC_ARG_ENABLE([autoprofile],
-    AS_HELP_STRING([--enable-autoprofile], [Enable auto-profiling capability]))
-AC_MSG_RESULT([$enable_autoprofile])
+# AC_CHECK_LIB doesn't work for libunwind due to funkiness in the lib so use AC_CHECK_HEADER
+AC_MSG_CHECKING([for libunwind])
+AC_CHECK_HEADER([libunwind.h], found_libunwind=yes;)
+AC_MSG_RESULT([$ac_cv_libunwind_h])
+
+AC_MSG_CHECKING([for backtrace])
+AC_CHECK_FUNC([backtrace_symbols], found_backtrace=yes;)
+AC_MSG_RESULT([$ac_cv_func_backtrace_symbols])
 
 # For auto-profiling, libunwind is the preferred method to recover current function name.
 # If not available, try backtrace. If neither are available, auto-profiling will not be
 # possible. To use auto auto-profiling with GNU or Intel compilers:
 # Compile application code with -g -finstrument-functions -rdynamic
 #
-# AC_CHECK_LIB doesn't work for libunwind due to funkiness in the lib so use AC_CHECK_HEADER
-if test "x$enable_autoprofile" = xyes; then
-  AC_CHECK_HEADER(libunwind.h, [haveunwind=yes; AC_DEFINE([HAVE_LIBUNWIND], [1], [using libunwind])],[])
+dnl auto-profiling capability. Default is disabled because it will require extra link flags
+AC_ARG_ENABLE([libunwind],
+    AS_HELP_STRING([--enable-libunwind], [Enable auto-profiling capability via libunwind]))
 
-# If libunwind not available, try backtrace
-  if test "x$haveunwind" = xyes; then
-    AC_MSG_NOTICE([libunwind will be used for auto-profiling: Make sure to add -rdynamic -lunwind to LDFLAGS!!!])
-  else
-    AC_MSG_CHECKING([for backtrace])
-    AC_CHECK_FUNC([backtrace_symbols],
-  	        [havebacktrace=yes; AC_MSG_RESULT([yes]); AC_DEFINE([HAVE_BACKTRACE], [1], [using backtrace])],
-	        [AC_MSG_RESULT([no])])
-    if test "x$havebacktrace = xyes"; then
-      AC_MSG_NOTICE([backtrace will be used for auto-profiling: Make sure to add -rdynamic to LDFLAGS!!!])
-    else
-      AC_MSG_ERROR([--enable-autoprofile set but neither libunwind nor backtrace found. Pls rerun w/o --enable-autoprofile])
-    fi
+AC_ARG_ENABLE([backtrace],
+    AS_HELP_STRING([--enable-backtrace], [Enable auto-profiling capability via backtrace]))
+
+# Default is to enable auto-profiling capability via libunwind.
+# Default is to disable auto-profiling capability via backtrace
+# Cannot have both methods enabled at once
+if test "x$enable_libunwind" != xno; then
+  if test "x$enable_backtrace" = xyes; then
+    AC_MSG_ERROR([--enable-backtrace requires --disable-libunwind])
+  fi
+# Set define for LIBUNWIND if user didn't say no and libunwind found
+  if test "x$found_libunwind" = xyes; then
+    useunwind=yes;
+    AC_DEFINE([HAVE_LIBUNWIND], [1], [libunwind will be used])
+    AC_MSG_NOTICE([libunwind enabled for auto-profiling: Ensure LDFLAGS+= -rdynamic -lunwind in profiled apps!!!])
+  fi
+fi
+
+# Set define for BACKTRACE if user said yes and backtrace found
+if test "x$enable_backtrace" = xyes; then
+  if test "x$found_backtrace" = xyes; then
+    usebacktrace=yes;
+    AC_DEFINE([HAVE_BACKTRACE], [1], [backtrace will be used])
+    AC_MSG_NOTICE([backtrace enabled for auto-profiling: Ensure LDFLAGS+= -rdynamic in profiled apps!!!])
   fi
 fi
 
 # Above logic ensures that both haveunwind and havebacktrace cannot both = yes
-AM_CONDITIONAL([HAVE_LIBUNWIND], [test x$haveunwind = xyes])
-AM_CONDITIONAL([HAVE_BACKTRACE], [test x$havebacktrace = xyes])
+AM_CONDITIONAL([HAVE_LIBUNWIND], [test x$useunwind = xyes])
+AM_CONDITIONAL([HAVE_BACKTRACE], [test x$usebacktrace = xyes])
 
 # Check for times.
 AC_CHECK_FUNC([times],

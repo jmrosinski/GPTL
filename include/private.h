@@ -29,7 +29,10 @@
 #define MAX_STACK 128
 
 /* longest timer name allowed (probably safe to just change) */
-#define MAX_CHARS 63
+#define MAX_CHARS 127
+
+// Longest allowed symbol name for libunwind
+#define MAX_SYMBOL_NAME 255
 
 /* 
 ** max allowable number of PAPI counters, or derived events. For convenience,
@@ -92,6 +95,7 @@ typedef struct TIMER {
   Wallstats wall;           /* wallclock stats */
   unsigned long count;      /* number of start/stop calls */
   unsigned long nrecurse;   /* number of recursive start/stop calls */
+  void *address;            /* address of timer: used only by _instr routines */
   struct TIMER *next;       /* next timer in linked list */
   struct TIMER **parent;    /* array of parents */
   struct TIMER **children;  /* array of children */
