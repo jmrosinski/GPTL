@@ -53,7 +53,8 @@ if test "x$enable_openmp" != xno]; then
     AC_MSG_ERROR([OpenMP not supported])
   else
     enable_openmp=yes;
-    AC_DEFINE([THREADED_OPENMP], [1], [openmp support is present])
+    AC_DEFINE([THREADED_OMP], [1], [openmp support is present])
+    CFLAGS="$CFLAGS $OPENMP_CFLAGS"
   fi
 fi
 

@@ -66,7 +66,6 @@ int GPTLget_overhead (FILE *fp,
   double total_ohd;          /* Sum of overheads */
   double getentry_instr_ohd; /* Finding entry in hash table for auto-instrumented calls */
   double addr2name_ohd;      // Invoking libunwind or backtrace routines from __cyg_profile_func_enter
-  double backtrace_ohd;      // Invoking backtrace routines from __cyg_profile_func_enter
   double misc_ohd;           /* misc. calcs within start/stop */
   int i, n;
   int ret;
@@ -81,7 +80,6 @@ int GPTLget_overhead (FILE *fp,
   ** First: Fortran wrapper overhead
   */
   t1 = (*ptr2wtimefunc)();
-#pragma unroll(10)
   for (i = 0; i < 1000; ++i) {
     /* 9 is the number of characters in "timername" */
     ret = gptlstart_sim ("timername", 9);
@@ -91,7 +89,6 @@ int GPTLget_overhead (FILE *fp,
 
   /* get_thread_num() overhead */
   t1 = (*ptr2wtimefunc)();
-#pragma unroll(10)
   for (i = 0; i < 1000; ++i) {
     mythread = get_thread_num ();
   }
@@ -100,7 +97,6 @@ int GPTLget_overhead (FILE *fp,
 
   /* genhashidx overhead */
   t1 = (*ptr2wtimefunc)();
-#pragma unroll(10)
   for (i = 0; i < 1000; ++i) {
     hashidx = genhashidx ("timername");
   }
@@ -134,7 +130,6 @@ int GPTLget_overhead (FILE *fp,
 
   /* utr overhead */
   t1 = (*ptr2wtimefunc)();
-#pragma unroll(10)
   for (i = 0; i < 1000; ++i) {
     t2 = (*ptr2wtimefunc)();
   }
@@ -163,7 +158,6 @@ int GPTLget_overhead (FILE *fp,
   char symbol[MAX_SYMBOL_NAME+1];
 
   t1 = (*ptr2wtimefunc)();
-#pragma unroll(10)
   for (i = 0; i < 1000; ++i) {
     // Initialize cursor to current frame for local unwinding.
     unw_getcontext (&context);
@@ -183,7 +177,6 @@ int GPTLget_overhead (FILE *fp,
   char **strings;
 
   t1 = (*ptr2wtimefunc)();
-#pragma unroll(10)
   for (i = 0; i < 1000; ++i) {
     nptrs = backtrace (buffer, 2);
     strings = backtrace_symbols (buffer, nptrs);
@@ -195,7 +188,6 @@ int GPTLget_overhead (FILE *fp,
 
   /* getentry_instr overhead */
   t1 = (*ptr2wtimefunc)();
-#pragma unroll(10)
   for (i = 0; i < 1000; ++i) {
     entry = getentry_instr_sim (hashtable, &randomvar, &hashidx, tablesize);
   }
@@ -208,7 +200,6 @@ int GPTLget_overhead (FILE *fp,
     misc_ohd = 0.;
   } else {
     t1 = (*ptr2wtimefunc)();
-#pragma unroll(10)
     for (i = 0; i < 1000; ++i) {
       misc_sim (stackidx, callstack, 0);
     }

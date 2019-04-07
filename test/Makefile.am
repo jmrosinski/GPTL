@@ -5,13 +5,13 @@
 AM_CPPFLAGS = -I$(top_srcdir)/include
 
 # Need optimization disabled for correct behavior of some tests
-CFLAGS += -g -O0
+CFLAGS += -g -O0 $(OPENMP_CFLAGS)
 
 # Link to GPTL library.
 AM_LDFLAGS = ${top_builddir}/src/libgptl.la
 
 # These programs will be built but not installed.
-noinst_PROGRAMS = gran_overhead printwhileon
+noinst_PROGRAMS = gran_overhead printwhileon imperfect_nest omptest
 
 # Test programs that will be built for all configurations.
 check_PROGRAMS = tst_simple global

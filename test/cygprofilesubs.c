@@ -1,5 +1,6 @@
 #include "config.h"
 #include <stdio.h>
+#include <omp.h>
 
 extern void A (void);
 extern void B (void);
@@ -12,7 +13,12 @@ void callsubs (int niter)
 
 void A (void)
 {
-  B ();
+  int n;
+  
+#pragma omp parallel for private(n)
+  for (n = 0; n < 2; ++n) {
+    B ();
+  }
 }
 
 void B (void)

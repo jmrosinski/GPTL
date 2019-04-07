@@ -1,6 +1,7 @@
 #include "config.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <omp.h>
 #include "gptl.h"
 
 extern void callsubs (int);
@@ -9,9 +10,7 @@ int main (int argc, char **argv)
 {
   int niter = 1000;
   int ret;
-  int n, nregions;
-  char name[64];
-  double wallclock;
+  int nregions;
   
   if (argc == 2) {
     niter = atoi (argv[1]);

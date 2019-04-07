@@ -45,8 +45,6 @@
 
 static Timer **timers = 0;             /* linked list of timers */
 static Timer **last = 0;               /* last element in list */
-static int *max_depth;                 /* maximum indentation level encountered */
-static int *max_name_len;              /* max length of timer name */
 static volatile int nthreads = -1;     /* num threads. Init to bad value */
 /* 
 ** For THREADED_PTHREADS case, default maxthreads to a big number.
@@ -116,9 +114,9 @@ typedef struct {
 } Settings;
 
 /* Options, print strings, and default enable flags */
-static Settings cpustats =      {GPTLcpu,      "Usr       sys       usr+sys   ", false};
-static Settings wallstats =     {GPTLwall,     "Wallclock max       min       ", true };
-static Settings overheadstats = {GPTLoverhead, "self_OH  parent_OH "           , true };
+static Settings cpustats =      {GPTLcpu,      "     usr       sys  usr+sys", false};
+static Settings wallstats =     {GPTLwall,     "     Wall      max      min", true };
+static Settings overheadstats = {GPTLoverhead, "   selfOH parentOH"         , true };
 
 static Hashentry **hashtable;    /* table of entries */
 static long ticks_per_sec;       /* clock ticks per second */
@@ -127,14 +125,24 @@ static Nofalse *stackidx;        /* index into callstack: */
 
 static Method method = GPTLfull_tree;  /* default parent/child printing mechanism */
 
-/* Local function prototypes */
-static void print_titles (int, FILE *fp);
-static void printstats (const Timer *, FILE *, int, int, bool, double, double);
+// Local function prototypes
+
+typedef struct {
+  int max_depth;
+  int max_namelen;
+  int max_chars2pr;
+} Outputfmt;
+
+static int get_longest_omp_namelen (void);
+static int get_outputfmt (const Timer *, const int, const int, Outputfmt *);
+static void fill_output (int, int, int, Outputfmt *);
+static void printstats (const Timer *, FILE *, int, int, bool, double, double, const Outputfmt);
+static void print_titles (int, FILE *, Outputfmt *);
 static void add (Timer *, const Timer *);
 static void print_multparentinfo (FILE *, Timer *);
 static inline int get_cpustamp (long *, long *);
 static int newchild (Timer *, Timer *);
-static int get_max_depth (const Timer *, const int);
+static int get_max_namelen (Timer *);
 static int is_descendant (const Timer *, const Timer *);
 static int is_onlist (const Timer *, const Timer *);
 static char *methodstr (Method);
@@ -165,13 +173,12 @@ static int init_placebo (void);
 static inline unsigned int genhashidx (const char *);
 static inline Timer *getentry_instr (const Hashentry *, void *, unsigned int *);
 static inline Timer *getentry (const Hashentry *, const char *, unsigned int);
-static void printself_andchildren (const Timer *, FILE *, int, int, double, double);
+static void printself_andchildren (const Timer *, FILE *, int, int, double, double, Outputfmt);
 static inline int update_parent_info (Timer *, Timer **, int);
 static inline int update_stats (Timer *, const double, const long, const long, const int);
 static int update_ll_hash (Timer *, int, unsigned int);
 static inline int update_ptr (Timer *, const int);
 static int construct_tree (Timer *, Method);
-static int get_max_depth (const Timer *, const int);
 
 typedef struct {
   const Funcoption option;
@@ -210,6 +217,7 @@ static int tablesizem1 = DEFAULT_TABLE_SIZE - 1;
 static int rssmax = 0;                      /* max rss of the process */
 static bool imperfect_nest;                 /* e.g. start(A),start(B),stop(A) */
 static char *unknown = "unknown";
+static const int indent_chars = 2;          // Number of chars to indent
 
 /* VERBOSE is a debugging ifdef local to the rest of this file */
 #undef VERBOSE
@@ -413,18 +421,14 @@ int GPTLinitialize (void)
     return GPTLerror ("%s: failure from sysconf (_SC_CLK_TCK)\n", thisfunc);
 
   /* Allocate space for global arrays */
-  callstack     = (Timer ***)    GPTLallocate (maxthreads * sizeof (Timer **), thisfunc);
-  stackidx      = (Nofalse *)    GPTLallocate (maxthreads * sizeof (Nofalse), thisfunc);
-  timers        = (Timer **)     GPTLallocate (maxthreads * sizeof (Timer *), thisfunc);
-  last          = (Timer **)     GPTLallocate (maxthreads * sizeof (Timer *), thisfunc);
-  max_depth     = (int *)        GPTLallocate (maxthreads * sizeof (int), thisfunc);
-  max_name_len  = (int *)        GPTLallocate (maxthreads * sizeof (int), thisfunc);
-  hashtable     = (Hashentry **) GPTLallocate (maxthreads * sizeof (Hashentry *), thisfunc);
+  callstack       = (Timer ***)    GPTLallocate (maxthreads * sizeof (Timer **), thisfunc);
+  stackidx        = (Nofalse *)    GPTLallocate (maxthreads * sizeof (Nofalse), thisfunc);
+  timers          = (Timer **)     GPTLallocate (maxthreads * sizeof (Timer *), thisfunc);
+  last            = (Timer **)     GPTLallocate (maxthreads * sizeof (Timer *), thisfunc);
+  hashtable       = (Hashentry **) GPTLallocate (maxthreads * sizeof (Hashentry *), thisfunc);
 
   /* Initialize array values */
   for (t = 0; t < maxthreads; t++) {
-    max_depth[t]    = -1;
-    max_name_len[t] = 0;
     callstack[t] = (Timer **) GPTLallocate (MAX_STACK * sizeof (Timer *), thisfunc);
     hashtable[t] = (Hashentry *) GPTLallocate (tablesize * sizeof (Hashentry), thisfunc);
     for (i = 0; i < tablesize; i++) {
@@ -514,8 +518,6 @@ int GPTLfinalize (void)
   free (stackidx);
   free (timers);
   free (last);
-  free (max_depth);
-  free (max_name_len);
   free (hashtable);
 
   threadfinalize ();
@@ -528,8 +530,6 @@ int GPTLfinalize (void)
   /* Reset initial values */
   timers = 0;
   last = 0;
-  max_depth = 0;
-  max_name_len = 0;
   nthreads = -1;
 #ifdef THREADED_PTHREADS
   maxthreads = MAX_THREADS;
@@ -762,13 +762,8 @@ int GPTLstart_handle (const char *name,  /* timer name */
 */
 static int update_ll_hash (Timer *ptr, int t, unsigned int indx)
 {
-  int nchars;      /* number of chars */
   int nument;      /* number of entries */
   Timer **eptr;    /* for realloc */
-
-  nchars = strlen (ptr->name);
-  if (nchars > max_name_len[t])
-    max_name_len[t] = nchars;
 
   last[t]->next = ptr;
   last[t] = ptr;
@@ -1080,17 +1075,25 @@ static inline int update_stats (Timer *ptr,
     ptr->cpu.last_stime   = sys;
   }
 
-  /* Verify that the timer being stopped is at the bottom of the call stack */
-  bidx = stackidx[t].val;
-  bptr = callstack[t][bidx];
-  if (ptr != bptr) {
-    imperfect_nest = true;
-#ifdef DEBUG
-    fprintf (stderr, "GPTL update_stats: ptr=%p ptr->name=%s\n", ptr, ptr->name);
-    fprintf (stderr, "GPTL update_stats: bptr=%p bptr->name=%s\n", bptr, bptr->name);
-#endif
-    GPTLwarn ("%s: Got timer=%s expected btm of call stack=%s\n",
-	      thisfunc, ptr->name, bptr->name);
+  // Verify that the timer being stopped is at the bottom of the call stack
+  if ( ! imperfect_nest) {
+    bidx = stackidx[t].val;
+    bptr = callstack[t][bidx];
+    if (ptr != bptr) {
+      imperfect_nest = true;
+      printf ("%s: Imperfect nest detected at ptr=%p\n", thisfunc, ptr);
+      printf ("%s: Got timer=%s\n", thisfunc, ptr->name);
+      if (bptr) {
+	if (bptr->name) {
+	  printf ("%s Expected btm of call stack=%s\n", thisfunc, bptr->name);
+	} else {
+	  printf ("%s Cannot dereference bptr->name\n", thisfunc);
+	}
+      } else {
+	printf ("%s Cannot dereference bptr\n", thisfunc);
+      }
+      print_callstack (t, thisfunc);
+    }
   }
 
   --stackidx[t].val;           /* Pop the callstack */
@@ -1259,12 +1262,13 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   Timer *ptr;               /* walk through master thread linked list */
   Timer *tptr;              /* walk through slave threads linked lists */
   Timer sumstats;           /* sum of same timer stats over threads */
+  Outputfmt outputfmt;      // max depth, namelen, chars2pr
   int n, t;                 /* indices */
   unsigned long totcount;   /* total timer invocations */
   float *sum;               /* sum of overhead values (per thread) */
   float osum;               /* sum of overhead over threads */
-  bool found;               /* jump out of loop when name found */
-  bool foundany;            /* whether summation print necessary */
+  bool found;               // matching name found: exit linked list traversal
+  bool foundany;            // multiple threads with matching name => print across-threads results
   bool first;               /* flag 1st time entry found */
   double self_ohd;          /* estimated library overhead in self timer */
   double parent_ohd;        /* estimated library overhead due to self in parent timer */
@@ -1395,7 +1399,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   sum = (float *) GPTLallocate (nthreads * sizeof (float), thisfunc);
   
   for (t = 0; t < nthreads; ++t) {
-    print_titles (t, fp);
+    print_titles (t, fp, &outputfmt);
     /*
     ** Print timing stats. If imperfect nesting was detected, print stats by going through
     ** the linked list and do not indent anything due to the possibility of error.
@@ -1404,10 +1408,10 @@ int GPTLpr_file (const char *outfile) /* output file to write */
     */
     if (imperfect_nest) {
       for (ptr = timers[t]->next; ptr; ptr = ptr->next) {
-	printstats (ptr, fp, t, 0, false, self_ohd, parent_ohd);
+	printstats (ptr, fp, t, 0, false, self_ohd, parent_ohd, outputfmt);
       }
     } else {
-      printself_andchildren (timers[t], fp, t, -1, self_ohd, parent_ohd);
+      printself_andchildren (timers[t], fp, t, -1, self_ohd, parent_ohd, outputfmt);
     }
 
     /* 
@@ -1421,7 +1425,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
     }
     if (wallstats.enabled && overheadstats.enabled)
       fprintf (fp, "\n");
-      fprintf (fp, "Overhead sum = %9.3g wallclock seconds\n", sum[t]);
+    fprintf (fp, "Overhead sum = %9.3g wallclock seconds\n", sum[t]);
     if (totcount < PRTHRESH)
       fprintf (fp, "Total calls  = %lu\n", totcount);
     else
@@ -1430,22 +1434,28 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   /* Print per-name stats for all threads */
   if (dopr_threadsort && nthreads > 1) {
+    int nblankchars;
     fprintf (fp, "\nSame stats sorted by timer for threaded regions:\n");
     fprintf (fp, "Thd ");
 
-    for (n = 0; n < max_name_len[0]; ++n) /* longest timer name */
+    // Reset outputfmt contents for multi-threads
+    outputfmt.max_depth    = 0;
+    outputfmt.max_namelen  = get_longest_omp_namelen ();
+    outputfmt.max_chars2pr = outputfmt.max_namelen;
+    nblankchars            = outputfmt.max_chars2pr + 1; // + 1 ensures a blank after name
+    for (n = 0; n < nblankchars; ++n)  // length of longest multithreaded timer name
       fprintf (fp, " ");
 
-    fprintf (fp, "Called  Recurse ");
+    fprintf (fp, "  Called  Recurse");
 
     if (cpustats.enabled)
-      fprintf (fp, "%s", cpustats.str);
+      fprintf (fp, "%9s", cpustats.str);
     if (wallstats.enabled) {
-      fprintf (fp, "%s", wallstats.str);
+      fprintf (fp, "%9s", wallstats.str);
       if (percent && timers[0]->next)
-        fprintf (fp, "%%_of_%5.5s ", timers[0]->next->name);
+        fprintf (fp, " %%_of_%4.4s ", timers[0]->next->name);
       if (overheadstats.enabled)
-        fprintf (fp, "%s", overheadstats.str);
+        fprintf (fp, "%9s", overheadstats.str);
     }
 
 #ifdef HAVE_PAPI
@@ -1454,7 +1464,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
     fprintf (fp, "\n");
 
-    /* Start at next to skip dummy */
+    // Start at next to skip GPTL_ROOT
     for (ptr = timers[0]->next; ptr; ptr = ptr->next) {      
       /* 
       ** To print sum stats, first create a new timer then copy thread 0
@@ -1472,13 +1482,13 @@ int GPTLpr_file (const char *outfile) /* output file to write */
             if (first) {
               first = false;
               fprintf (fp, "%3.3d ", 0);
-              printstats (ptr, fp, 0, 0, false, self_ohd, parent_ohd);
+              printstats (ptr, fp, 0, 0, false, self_ohd, parent_ohd, outputfmt);
             }
 
             found = true;
             foundany = true;
             fprintf (fp, "%3.3d ", t);
-            printstats (tptr, fp, 0, 0, false, self_ohd, parent_ohd);
+            printstats (tptr, fp, 0, 0, false, self_ohd, parent_ohd, outputfmt);
             add (&sumstats, tptr);
           }
         }
@@ -1486,7 +1496,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
       if (foundany) {
         fprintf (fp, "SUM ");
-        printstats (&sumstats, fp, 0, 0, false, self_ohd, parent_ohd);
+        printstats (&sumstats, fp, 0, 0, false, self_ohd, parent_ohd, outputfmt);
         fprintf (fp, "\n");
       }
     }
@@ -1549,52 +1559,100 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   return 0;
 }
 
+/*
+** get_longest_omp_namelen: Discover longest name shared across threads
+*/
+
+static int get_longest_omp_namelen (void)
+{
+  Timer *ptr;
+  Timer *tptr;
+  bool found;
+  int t;
+  int longest = 0;
+
+  for (ptr = timers[0]->next; ptr; ptr = ptr->next) {
+    for (t = 1; t < nthreads; ++t) {
+      found = false;
+      for (tptr = timers[t]->next; tptr && ! found; tptr = tptr->next) {
+	if (STRMATCH (tptr->name, ptr->name)) {
+	  found = true;
+	  longest = MAX (longest, strlen (ptr->name));
+	}
+	if (found) // Found matching name: done with this thread
+	  break;
+      }
+      if (found)   // No need to check other threads for the same name
+	break;
+    }
+  }
+  return longest;
+}
+
 /* 
 ** print_titles: Print headings to output file. If imperfect nesting was detected, print simply by
-**               following the linked list. Otherwise, indent use parent-child relationships.
+**               following the linked list. Otherwise, indent using parent-child relationships.
 **
 ** Input arguments:
-**   t: thread number
+**   t:         thread number
+**   fp:        file pointer to write to
+**   outputfmt: max depth, namelen, chars2pr
 */
-static void print_titles (int t, FILE *fp)
+static void print_titles (int t, FILE *fp, Outputfmt *outputfmt)
 {
   int n;
+  int ret;
+  int nblankchars;
   static const char *thisfunc = "print_titles";
+
   /*
-  ** Construct tree for printing timers in parent/child form. get_max_depth() must be called 
+  ** Construct tree for printing timers in parent/child form. get_outputfmt() must be called 
   ** AFTER construct_tree() because it relies on the per-parent children arrays being complete.
   */
+    // Initialize outputfmt, then call recursive routine to fill its contents
+  outputfmt->max_depth    = 0;
+  outputfmt->max_namelen  = 0;
+  outputfmt->max_chars2pr = 0;
+
   if (imperfect_nest) {
-    max_depth[t] = 0;   /* No nesting will be printed since imperfect nesting was detected */
+    outputfmt->max_namelen  = get_max_namelen (timers[t]);
+    outputfmt->max_chars2pr = outputfmt->max_namelen;
+    nblankchars             = outputfmt->max_namelen + 1;
   } else {
     if (construct_tree (timers[t], method) != 0)
       printf ("GPTL: %s: failure from construct_tree: output will be incomplete\n", thisfunc);
-    max_depth[t] = get_max_depth (timers[t], 0);
+
+    // Start at GPTL_ROOT because that is the parent of all timers => guarantee travers full tree
+    ret = get_outputfmt (timers[t], -1, indent_chars, outputfmt);  // -1 is initial call tree depth
+#ifdef DEBUG
+    printf ("%s t=%d got outputfmt=%d %d %d\n",
+	    thisfunc, t, outputfmt->max_depth, outputfmt->max_namelen, outputfmt->max_chars2pr);
+#endif
+    nblankchars = indent_chars + outputfmt->max_chars2pr + 1;
   }
 
   if (t > 0)
     fprintf (fp, "\n");
   fprintf (fp, "Stats for thread %d:\n", t);
 
-  for (n = 0; n < max_depth[t]+1; ++n)    /* +1 to always indent timer name */
-    fprintf (fp, "  ");
-  for (n = 0; n < max_name_len[t]; ++n) /* longest timer name */
+  // Start title printing after longest (indent_chars + name) + 1
+  for (n = 0; n < nblankchars; ++n)
     fprintf (fp, " ");
-  fprintf (fp, "Called  Recurse ");
+  fprintf (fp, "  Called  Recurse");
 
-  /* Print strings for enabled timer types */
+  // Print strings for enabled timer types
   if (cpustats.enabled)
-    fprintf (fp, "%s", cpustats.str);
+    fprintf (fp, "%9s", cpustats.str);
   if (wallstats.enabled) {
-    fprintf (fp, "%s", wallstats.str);
+    fprintf (fp, "%9s", wallstats.str);
     if (percent && timers[0]->next)
-      fprintf (fp, "%%_of_%5.5s ", timers[0]->next->name);
+      fprintf (fp, " %%_of_%4.4s", timers[0]->next->name);
     if (overheadstats.enabled)
-      fprintf (fp, "%s", overheadstats.str);
+      fprintf (fp, "%9s", overheadstats.str);
   }
 
 #ifdef ENABLE_PMPI
-  fprintf (fp, "AVG_MPI_BYTES ");
+  fprintf (fp, " AVG_MPI_BYTES");
 #endif
 
 #ifdef HAVE_PAPI
@@ -1619,7 +1677,7 @@ static void print_titles (int t, FILE *fp)
 */
 int construct_tree (Timer *timerst, Method method)
 {
-  Timer *ptr;       /* loop through linked list */
+  Timer *ptr;       // traverse linked list
   Timer *pptr = 0;  /* parent (init to NULL to avoid compiler warning) */
   int nparent;      /* number of parents */
   int maxcount;     /* max calls by a single parent */
@@ -1687,7 +1745,7 @@ static char *methodstr (Method method)
   else if (method == GPTLfull_tree)
     return "full_tree";
   else
-    return "Unknown";
+    return unknown;
 }
 
 /* 
@@ -1739,31 +1797,72 @@ static int newchild (Timer *parent, Timer *child)
 }
 
 /* 
-** get_max_depth: Determine the maximum call tree depth by traversing the
-**   tree recursively
+** get_outputfmt: Determine max depth, name length, and chars to be printed prior to data by 
+**   traversing tree recursively
 **
 ** Input arguments:
-**   ptr:        Starting timer
-**   startdepth: current depth when function invoked 
+**   ptr:   Starting timer
+**   depth: current depth when function invoked 
 **
-** Return value: maximum depth
+** Return value: maximum characters to be printed prior to data
 */
-static int get_max_depth (const Timer *ptr, const int startdepth)
+static int get_outputfmt (const Timer *ptr,
+			  const int depth,      // depth in call tree
+			  const int indent,     // number of chars to indent (normally 2)
+			  Outputfmt *outputfmt) // max depth, namelen, chars2pr
 {
-  int maxdepth = startdepth;
-  int depth;
-  int n;
+  int ret;
+  int namelen  = strlen (ptr->name);
+  int chars2pr = namelen + indent*depth;
 
-  for (n = 0; n < ptr->nchildren; ++n)
-    if ((depth = get_max_depth (ptr->children[n], startdepth+1)) > maxdepth)
-      maxdepth = depth;
+  if (ptr->nchildren == 0) {
+    fill_output (depth, namelen, chars2pr, outputfmt);
+    return 0;
+  }
 
-  return maxdepth;
+  for (int n = 0; n < ptr->nchildren; ++n) {
+    ret = get_outputfmt (ptr->children[n], depth+1, indent, outputfmt);
+    fill_output (depth, namelen, chars2pr, outputfmt);
+  }
+  return 0;
+}
+
+static void fill_output (int depth, int namelen, int chars2pr, Outputfmt *outputfmt)
+{
+  if (depth > outputfmt->max_depth)
+    outputfmt->max_depth = depth;
+
+  if (namelen > outputfmt->max_namelen)
+    outputfmt->max_namelen = namelen;
+
+  if (chars2pr > outputfmt->max_chars2pr)
+    outputfmt->max_chars2pr = chars2pr;
+}
+
+/*
+** get_max_namelen: Discover maximum name length. Called only when imperfect_nest is true
+** Input arguments:
+**   ptr: Starting timer
+**
+** Return value:
+**   max name length
+*/
+static int get_max_namelen (Timer *timers)
+{
+  Timer *ptr;            // traverse linked list
+  int namelen;           // name length for individual timer
+  int max_namelen = 0;   // return value
+
+  for (ptr = timers; ptr; ptr = ptr->next) {
+    namelen = strlen (ptr->name);
+    if (namelen > max_namelen)
+      max_namelen = namelen;
+  }
+  return max_namelen;
 }
 
 /* 
-** is_descendant: Determine whether node2 is in the descendant list for
-**   node1
+** is_descendant: Determine whether node2 is in the descendant list for node1
 **
 ** Input arguments:
 **   node1: starting node for recursive search
@@ -1798,13 +1897,10 @@ static int is_descendant (const Timer *node1, const Timer *node2)
 */
 static int is_onlist (const Timer *child, const Timer *parent)
 {
-  int n;
-
-  for (n = 0; n < parent->nchildren; ++n) {
+  for (int n = 0; n < parent->nchildren; ++n) {
     if (child == parent->children[n])
       return 1;
   }
-
   return 0;
 }
 
@@ -1825,7 +1921,8 @@ static void printstats (const Timer *timer,
                         int depth,
                         bool doindent,
                         double self_ohd,
-			double parent_ohd)
+			double parent_ohd,
+			const Outputfmt outputfmt)
 {
   int i;               /* index */
   int indent;          /* index for indenting */
@@ -1843,30 +1940,26 @@ static void printstats (const Timer *timer,
     fprintf (stderr, "GPTL: %s: timer %s had not been turned off\n", thisfunc, timer->name);
 
   /* Flag regions having multiple parents with a "*" in column 1 */
+  // TODO: The following ASSUMES indent_chars=2!!!
   if (doindent) {
     if (timer->nparent > 1)
       fprintf (fp, "* ");
     else
       fprintf (fp, "  ");
 
-    /* Indent to depth of this timer */
-    for (indent = 0; indent < depth; ++indent)
-      fprintf (fp, "  ");
+    // Indent to depth of this timer
+    for (indent = 0; indent < depth*indent_chars; ++indent)
+      fprintf (fp, " ");
   }
 
   fprintf (fp, "%s", timer->name);
 
-  /* Pad to length of longest name */
-  extraspace = max_name_len[t] - strlen (timer->name);
+  // Pad to most chars to print
+  extraspace = outputfmt.max_chars2pr - (depth*indent_chars + strlen (timer->name));
   for (i = 0; i < extraspace; ++i)
     fprintf (fp, " ");
 
-  /* Pad to max indent level */
-  if (doindent)
-    for (indent = depth; indent < max_depth[t]; ++indent)
-      fprintf (fp, "  ");
-
-    /* 
+  /* 
   ** Don't print stats if the timer is currently on: too dangerous since the timer needs 
   ** to be stopped to have currently accurate timings
   */
@@ -1877,21 +1970,21 @@ static void printstats (const Timer *timer,
 
 if (timer->count < PRTHRESH) {
     if (timer->nrecurse > 0)
-      fprintf (fp, "%8lu %6lu ", timer->count, timer->nrecurse);
+      fprintf (fp, " %8lu %8lu", timer->count, timer->nrecurse);
     else
-      fprintf (fp, "%8lu    -   ", timer->count);
+      fprintf (fp, " %8lu     -   ", timer->count);
   } else {
     if (timer->nrecurse > 0)
-      fprintf (fp, "%8.1e %6.0e ", (float) timer->count, (float) timer->nrecurse);
+      fprintf (fp, " %8.1e %8.0e",    (float) timer->count, (float) timer->nrecurse);
     else
-      fprintf (fp, "%8.1e    -   ", (float) timer->count);
+      fprintf (fp, " %8.1e     -   ", (float) timer->count);
   }
 
   if (cpustats.enabled) {
     fusr = timer->cpu.accum_utime / (float) ticks_per_sec;
     fsys = timer->cpu.accum_stime / (float) ticks_per_sec;
     usrsys = fusr + fsys;
-    fprintf (fp, "%9.3f %9.3f %9.3f ", fusr, fsys, usrsys);
+    fprintf (fp, " %8.1e %8.1e %8.1e", fusr, fsys, usrsys);
   }
 
   if (wallstats.enabled) {
@@ -1900,35 +1993,35 @@ if (timer->count < PRTHRESH) {
     wallmin = timer->wall.min;
 
     if (elapse < 0.01)
-      fprintf (fp, "%9.2e ", elapse);
+      fprintf (fp, " %8.2e", elapse);
     else
-      fprintf (fp, "%9.3f ", elapse);
+      fprintf (fp, " %8.3f", elapse);
 
     if (wallmax < 0.01)
-      fprintf (fp, "%9.2e ", wallmax);
+      fprintf (fp, " %8.2e", wallmax);
     else
-      fprintf (fp, "%9.3f ", wallmax);
+      fprintf (fp, " %8.3f", wallmax);
 
     if (wallmin < 0.01)
-      fprintf (fp, "%9.2e ", wallmin);
+      fprintf (fp, " %8.2e", wallmin);
     else
-      fprintf (fp, "%9.3f ", wallmin);
+      fprintf (fp, " %8.3f", wallmin);
 
     if (percent && timers[0]->next) {
       ratio = 0.;
       if (timers[0]->next->wall.accum > 0.)
         ratio = (timer->wall.accum * 100.) / timers[0]->next->wall.accum;
-      fprintf (fp, " %9.2f ", ratio);
+      fprintf (fp, " %8.2f", ratio);
     }
 
     if (overheadstats.enabled) {
-      fprintf (fp, "%9.3f %9.3f ", timer->count*self_ohd, timer->count*parent_ohd);
+      fprintf (fp, " %8.3f %8.3f", timer->count*self_ohd, timer->count*parent_ohd);
     }
   }
 
 #ifdef ENABLE_PMPI
   if (timer->nbytes == 0.)
-    fprintf (fp, "      -       ");
+    fprintf (fp, "       -      ");
   else
     fprintf (fp, "%13.3e ", timer->nbytes / timer->count);
 #endif
@@ -2660,7 +2753,6 @@ static inline Timer *getentry (const Hashentry *hashtable, /* hash table */
   ** If nument exceeds 1 there was one or more hash collisions and we must search
   ** linearly through the array of names with the same hash for a match
   */
-#pragma novector
   for (i = 0; i < hashtable[indx].nument; i++) {
     if (STRMATCH (name, hashtable[indx].entries[i]->name)) {
       ptr = hashtable[indx].entries[i];
@@ -2785,13 +2877,8 @@ void __cyg_profile_func_enter (void *this_fn,
     return;
 
   if ( ! initialized) {
-    GPTLwarn ("%s this_fn=%p: Calling GPTLinitialize manually\n", thisfunc, this_fn);
-    GPTLwarn ("%s As a result, calls to GPTLsetutr or GPTLsetoption will not be honored\n", thisfunc);
-    // When auto-profiling, fulltree normally prints too much data so use most_frequent
-    (void) GPTLsetoption (GPTLprint_method, GPTLmost_frequent);
-    
-    if (GPTLinitialize () < 0)
-      GPTLwarn ("GPTLinitialize from %s returned non-zero status\n", thisfunc);
+    GPTLwarn ("%s this_fn=%p: GPTLinitialize() has not been called\n", thisfunc, this_fn);
+    return;
   }
 
   if ((t = get_thread_num ()) < 0) {
@@ -2929,12 +3016,17 @@ char *extract_name (char *str)
   for (cstart = str; *cstart != '(' && *cstart != '\0'; ++cstart);
   if (*cstart == '\0') {
     cend = cstart;
+#ifdef DEBUG
     fprintf(stderr, "extract_name 1 returning unknown for str=%s\n", str);
+#endif
   } else {
     ++cstart;
     for (cend = cstart; *cend != '+' && *cend != '\0'; ++cend);
-    if (cend == cstart)
+    if (cend == cstart) {
+#ifdef DEBUG
       fprintf(stderr, "extract_name 2 returning unknown for str=%s\n", str);
+#endif
+    }
     *cend = '\0';
   }
   if (cend == cstart)
@@ -3321,15 +3413,16 @@ static void printself_andchildren (const Timer *ptr,
                                    int t,
                                    int depth,
                                    double self_ohd,
-				   double parent_ohd)
+				   double parent_ohd,
+				   Outputfmt outputfmt)
 {
   int n;
 
   if (depth > -1)     /* -1 flag is to avoid printing stats for dummy outer timer */
-    printstats (ptr, fp, t, depth, true, self_ohd, parent_ohd);
+    printstats (ptr, fp, t, depth, true, self_ohd, parent_ohd, outputfmt);
 
   for (n = 0; n < ptr->nchildren; n++)
-    printself_andchildren (ptr->children[n], fp, t, depth+1, self_ohd, parent_ohd);
+    printself_andchildren (ptr->children[n], fp, t, depth+1, self_ohd, parent_ohd, outputfmt);
 }
 
 static void print_callstack (int t, const char *caller)
@@ -3386,9 +3479,9 @@ Timer *GPTLgetentry (const char *name)
 }
 
 /*
-** GPTLpr_file_has_been_called: Called ONLY from pmpi.c (i.e. not a public entry point). Return 
-**                              whether GPTLpr_file has been called. MPI_Finalize wrapper needs
-**                              to know whether it needs to call GPTLpr.
+** GPTLpr_has_been_called: Called ONLY from pmpi.c (i.e. not a public entry point). Return 
+**                         whether GPTLpr_file has been called. MPI_Finalize wrapper needs
+**                         to know whether it needs to call GPTLpr.
 */
 int GPTLpr_has_been_called (void)
 {
