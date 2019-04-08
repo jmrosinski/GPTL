@@ -11,7 +11,7 @@ CFLAGS += -g -O0 $(OPENMP_CFLAGS)
 AM_LDFLAGS = ${top_builddir}/src/libgptl.la
 
 # These programs will be built but not installed.
-noinst_PROGRAMS = gran_overhead printwhileon imperfect_nest omptest
+noinst_PROGRAMS = gran_overhead printwhileon imperfect_nest
 
 # Test programs that will be built for all configurations.
 check_PROGRAMS = tst_simple global
@@ -44,11 +44,18 @@ if HAVE_BACKTRACE
 endif
 endif
 
+if HAVE_OPENMP
+noinst_PROGRAMS += omptest
+endif
+
 # Build these tests if PAPI is present.
 if HAVE_PAPI
 check_PROGRAMS += avail testpapi
 TESTS += avail testpapi
-noinst_PROGRAMS += papiomptest knownflopcount
+noinst_PROGRAMS += knownflopcount
+if HAVE_OPENMP
+noinst_PROGRAMS += papiomptest
+endif
 endif
 
 # Build these tests if MPI is present.

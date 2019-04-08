@@ -43,20 +43,19 @@ fi
 AC_MSG_RESULT($have_nanotime)
 
 dnl OpenMP. Default is enabled
-enable_openmp=yes;
+useomp=no;
 # AC_OPENMP below will print enable/disable message so just simple AC_ARG_ENABLE usage here
-AC_ARG_ENABLE([openmp])
-if test "x$enable_openmp" != xno]; then
-  dnl Do the stuff needed for enabling the feature
-  AC_OPENMP
-  if test "$ac_cv_prog_c_openmp" = unsupported; then
-    AC_MSG_ERROR([OpenMP not supported])
-  else
-    enable_openmp=yes;
-    AC_DEFINE([THREADED_OMP], [1], [openmp support is present])
-    CFLAGS="$CFLAGS $OPENMP_CFLAGS"
-  fi
+useomp=no;
+AC_OPENMP
+if test "x$ac_cv_prog_c_openmp" != xunsupported; then
+  useomp=yes;
+  AC_DEFINE([THREADED_OMP], [1], [openmp support is present])
+  CFLAGS="$CFLAGS $OPENMP_CFLAGS"
 fi
+AM_CONDITIONAL([HAVE_OPENMP], [test x$useomp = xyes])
+
+# for C++ only:
+# CFLAGS="$CFLAGS -fpermissive"
 
 # Does the user want to turn on nested OMP? Enable only if you will be
 # profiling code regions inside of doubly-nested OpenMP regions. Using
