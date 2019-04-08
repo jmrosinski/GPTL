@@ -104,15 +104,9 @@ int gptlinitialize (void);
 int gptlfinalize (void);
 int gptlpr (int *procid);
 int gptlpr_file (char *file, int nc);
-#ifdef HAVE_LIBMPI
 int gptlpr_summary (int *fcomm);
 int gptlpr_summary_file (int *fcomm, char *name, int nc);
 int gptlbarrier (int *fcomm, char *name, int nc);
-#else
-int gptlpr_summary (void);
-int gptlpr_summary_file (char *name, int nc);
-int gptlbarrier (void);
-#endif
 int gptlreset (void);
 int gptlreset_timer (char *name, int nc);
 int gptlstamp (double *wall, double *usr, double *sys);
@@ -176,8 +170,6 @@ int gptlpr_file (char *file, int nc)
   return ret;
 }
 
-#ifdef HAVE_LIBMPI
-
 int gptlpr_summary (int *fcomm)
 {
   MPI_Comm ccomm;
@@ -223,31 +215,6 @@ int gptlbarrier (int *fcomm, char *name, int nc)
 #endif
   return GPTLbarrier (ccomm, cname);
 }
-
-#else
-
-int gptlpr_summary (void)
-{
-  return GPTLpr_summary ();
-}
-
-int gptlpr_summary_file (char *outfile, int nc)
-{
-  char locfile[nc+1];
-  int ret;
-
-  snprintf (locfile, nc+1, "%s", outfile);
-  ret = GPTLpr_summary_file (locfile);
-  return ret;
-}
-
-int gptlbarrier (void)
-{
-  return GPTLerror ("gptlbarrier: Need to build GPTL with #define HAVE_LIBMPI to enable this routine\n");
-}
-
-#endif
-
 
 int gptlreset (void)
 {

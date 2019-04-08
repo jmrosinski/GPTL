@@ -94,7 +94,7 @@ int main (int argc, char **argv)
   ret = GPTLpr_summary (MPI_COMM_WORLD);
   ret = MPI_Finalize ();
 #else
-  ret = GPTLpr_summary ();
+  ret = GPTLpr_summary (0);
 #endif
   return 0;
 }

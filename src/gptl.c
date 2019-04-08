@@ -201,12 +201,13 @@ static const int nfuncentries = sizeof (funclist) / sizeof (Funcentry);
 static double (*ptr2wtimefunc)() = 0; /* init to invalid */
 static int funcidx = 0;               /* default timer is gettimeofday */
 
+static char unknown[] = "unknown";
 #ifdef HAVE_NANOTIME
 static float cpumhz = -1.;                        /* init to bad value */
 static double cyc2sec = -1;                       /* init to bad value */
 static inline long long nanotime (void);          /* read counter (assembler) */
 static float get_clockfreq (void);                /* cycles/sec */
-static char *clock_source = "UNKNOWN";            /* where clock found */
+static char *clock_source = unknown;              // where clock found
 #endif
 
 #define DEFAULT_TABLE_SIZE 1023
@@ -216,7 +217,6 @@ static int tablesizem1 = DEFAULT_TABLE_SIZE - 1;
 #define MSGSIZ MAX_CHARS+40                 /* max size of msg printed when dopr_memusage=true */
 static int rssmax = 0;                      /* max rss of the process */
 static bool imperfect_nest;                 /* e.g. start(A),start(B),stop(A) */
-static char *unknown = "unknown";
 static const int indent_chars = 2;          // Number of chars to indent
 
 /* VERBOSE is a debugging ifdef local to the rest of this file */
@@ -1736,14 +1736,19 @@ int construct_tree (Timer *timerst, Method method)
 */
 static char *methodstr (Method method)
 {
+  static char first_parent[]  = "first_parent";
+  static char last_parent[]   = "last_parent";
+  static char most_frequent[] = "most_frequent";
+  static char full_tree[]     = "full_tree";
+
   if (method == GPTLfirst_parent)
-    return "first_parent";
+    return first_parent;
   else if (method == GPTLlast_parent)
-    return "last_parent";
+    return last_parent;
   else if (method == GPTLmost_frequent)
-    return "most_frequent";
+    return most_frequent;
   else if (method == GPTLfull_tree)
-    return "full_tree";
+    return full_tree;
   else
     return unknown;
 }
@@ -2092,30 +2097,6 @@ static void add (Timer *tout,
   GPTL_PAPIadd (&tout->aux, &tin->aux);
 #endif
 }
-
-#ifdef HAVE_LIBMPI
-
-/* 
-** GPTLbarrier: When MPI enabled, set and time an MPI barrier
-**
-** Input arguments:
-**   comm: commuicator (e.g. MPI_COMM_WORLD). If zero, use MPI_COMM_WORLD
-**   name: region name
-**
-** Return value: 0 (success)
-*/
-int GPTLbarrier (MPI_Comm comm, const char *name)
-{
-  int ret;
-  static const char *thisfunc = "GPTLbarrier";
-
-  ret = GPTLstart (name);
-  if ((ret = MPI_Barrier (comm)) != MPI_SUCCESS)
-    return GPTLerror ("%s: Bad return from MPI_Barrier=%d", thisfunc, ret);
-  ret = GPTLstop (name);
-  return 0;
-}
-#endif    /* HAVE_LIBMPI */
 
 /*
 ** get_cpustamp: Invoke the proper system timer and return stats.
