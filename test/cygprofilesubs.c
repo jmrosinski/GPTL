@@ -1,6 +1,5 @@
 #include "config.h"
 #include <stdio.h>
-#include <omp.h>
 
 extern void A (void);
 extern void B (void);

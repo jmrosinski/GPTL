@@ -1083,15 +1083,12 @@ static inline int update_stats (Timer *ptr,
       imperfect_nest = true;
       printf ("%s: Imperfect nest detected at ptr=%p\n", thisfunc, ptr);
       printf ("%s: Got timer=%s\n", thisfunc, ptr->name);
-      if (bptr) {
-	if (bptr->name) {
+
+      if (bptr)
 	  printf ("%s Expected btm of call stack=%s\n", thisfunc, bptr->name);
-	} else {
-	  printf ("%s Cannot dereference bptr->name\n", thisfunc);
-	}
-      } else {
+      else
 	printf ("%s Cannot dereference bptr\n", thisfunc);
-      }
+
       print_callstack (t, thisfunc);
     }
   }
