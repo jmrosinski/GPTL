@@ -186,8 +186,8 @@ AC_MSG_CHECKING([for backtrace])
 AC_CHECK_FUNC([backtrace_symbols], found_backtrace=yes;)
 AC_MSG_RESULT([$ac_cv_func_backtrace_symbols])
 
-# For auto-profiling, libunwind is the preferred method to recover current function name.
-# If not available, try backtrace. If neither are available, auto-profiling will not be
+# For auto-profiling, backtrace is the default method to recover current function name.
+# If not available, try libunwind. If neither are available, auto-profiling will not be
 # possible. To use auto auto-profiling with GNU or Intel compilers:
 # Compile application code with -g -finstrument-functions -rdynamic
 #
@@ -201,24 +201,24 @@ AC_ARG_ENABLE([backtrace],
 # Default is to enable auto-profiling capability via libunwind.
 # Default is to disable auto-profiling capability via backtrace
 # Cannot have both methods enabled at once
-if test "x$enable_libunwind" != xno; then
-  if test "x$enable_backtrace" = xyes; then
-    AC_MSG_ERROR([--enable-backtrace requires --disable-libunwind])
+if test "x$enable_backtrace" != xno; then
+  if test "x$enable_libunwind" = xyes; then
+    AC_MSG_ERROR([--enable-libunwind requires --disable-backtrace])
   fi
-# Set define for LIBUNWIND if user didn't say no and libunwind found
-  if test "x$found_libunwind" = xyes; then
-    useunwind=yes;
-    AC_DEFINE([HAVE_LIBUNWIND], [1], [libunwind will be used])
-    AC_MSG_NOTICE([libunwind enabled for auto-profiling: Ensure LDFLAGS+= -rdynamic -lunwind in profiled apps!!!])
-  fi
-fi
-
-# Set define for BACKTRACE if user said yes and backtrace found
-if test "x$enable_backtrace" = xyes; then
+# Set define for LIBUNWIND if user didn't say no and backtrace found
   if test "x$found_backtrace" = xyes; then
     usebacktrace=yes;
     AC_DEFINE([HAVE_BACKTRACE], [1], [backtrace will be used])
     AC_MSG_NOTICE([backtrace enabled for auto-profiling: Ensure LDFLAGS+= -rdynamic in profiled apps!!!])
+  fi
+fi
+
+# Set define for BACKTRACE if user said yes and backtrace found
+if test "x$enable_libunwind" = xyes; then
+  if test "x$found_libunwind" = xyes; then
+    useunwind=yes;
+    AC_DEFINE([HAVE_LIBUNWIND], [1], [libunwind will be used])
+    AC_MSG_NOTICE([libunwind enabled for auto-profiling: Ensure LDFLAGS+= -rdynamic -lunwind in profiled apps!!!])
   fi
 fi
 
