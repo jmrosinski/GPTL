@@ -34,6 +34,8 @@ AC_PROG_CC()
 AC_C_CONST
 AC_C_INLINE
 
+# Only define HAVE_NANOTIME if this is a x86. It provides by far the finest grained,
+# lowest overhead wallclock timer on that architecture.
 # Set HAVE_NANOTIME on x86 systems only.
 AC_MSG_CHECKING([whether x86 nanotime is available])
 AS_CASE([$host], [*86*], [have_nanotime=yes], [have_nanotime=no])
@@ -42,9 +44,13 @@ if test "x$have_nanotime" = xyes; then
 fi
 AC_MSG_RESULT($have_nanotime)
 
-dnl OpenMP. Default is enabled
-useomp=no;
-# AC_OPENMP below will print enable/disable message so just simple AC_ARG_ENABLE usage here
+# Check the size of a void pointer to determine how to enable NANOTIME
+AC_CHECK_SIZEOF([void *])
+if test "x$ac_cv_sizeof_void_p" = x8; then
+   AC_DEFINE([BIT64], [1], [void pointer is 8 bytes])
+fi
+
+# Enable OpenMP support if compiler supports it
 useomp=no;
 AC_OPENMP
 if test "x$ac_cv_prog_c_openmp" != xunsupported; then
@@ -161,14 +167,6 @@ AM_CONDITIONAL([HAVE_PAPI], [test "x$have_papi" = xyes])
 # applications with -lrt
 AC_CHECK_LIB([rt], [clock_gettime])
 
-# Only define HAVE_NANOTIME if this is a x86. It provides by far the finest grained,
-# lowest overhead wallclock timer on that architecture.
-# If HAVE_NANOTIME=yes, set BIT64=yes if this is an x86_64
-dnl HAVE_NANOTIME = yes
-dnl ifeq ($(HAVE_NANOTIME),yes)
-dnl   BIT64 = yes
-dnl endif
-
 # Check for existance of procfs, the proc file system.
 AC_CHECK_FILE([/proc],
         [AC_DEFINE([HAVE_SLASHPROC], [1], [/proc exists. Will use that for memory checking])])
@@ -250,12 +248,6 @@ fi
 # Check for function iargc, which may be part of MPI.
 AC_CHECK_FUNC([iargc],
   [have_iargc=yes; AC_DEFINE([HAVE_IARGCGETARG], [1], [iargc is present])], [have_iargc=no])
-
-# Check the size of a void pointer.
-AC_CHECK_SIZEOF([void *])
-if test "x$ac_cv_sizeof_void_p" = x8; then
-   AC_DEFINE([BIT64], [1], [void pointer is 8 bytes])
-fi
 
 # Is doxygen installed?
 AC_CHECK_PROGS([DOXYGEN], [doxygen])

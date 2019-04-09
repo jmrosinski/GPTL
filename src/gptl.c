@@ -199,8 +199,11 @@ static Funcentry funclist[] = {
 static const int nfuncentries = sizeof (funclist) / sizeof (Funcentry);
 
 static double (*ptr2wtimefunc)() = 0; /* init to invalid */
-static int funcidx = 0;               /* default timer is gettimeofday */
-
+#ifdef HAVE_NANOTIME
+static int funcidx = 1;               // default timer is x86 register read (nanotime)
+#else
+static int funcidx = 0;               // default timer is gettimeofday
+#endif
 static char unknown[] = "unknown";
 #ifdef HAVE_NANOTIME
 static float cpumhz = -1.;                        /* init to bad value */
