@@ -6,7 +6,7 @@
 AC_PREREQ([2.59])
 
 # Initialize autoconf.
-AC_INIT([GPTL], [5.6.0], [james.rosinski@noaa.gov])
+AC_INIT([GPTL], [5.6.0_experimental], [rosinski@ucar.edu])
 
 # Find out about the host we're building on.
 AC_CANONICAL_HOST
@@ -34,6 +34,8 @@ AC_PROG_CC()
 AC_C_CONST
 AC_C_INLINE
 
+# Only define HAVE_NANOTIME if this is a x86. It provides by far the finest grained,
+# lowest overhead wallclock timer on that architecture.
 # Set HAVE_NANOTIME on x86 systems only.
 AC_MSG_CHECKING([whether x86 nanotime is available])
 AS_CASE([$host], [*86*], [have_nanotime=yes], [have_nanotime=no])
@@ -42,6 +44,25 @@ if test "x$have_nanotime" = xyes; then
 fi
 AC_MSG_RESULT($have_nanotime)
 
+# Check the size of a void pointer to determine how to enable NANOTIME
+AC_CHECK_SIZEOF([void *])
+if test "x$ac_cv_sizeof_void_p" = x8; then
+   AC_DEFINE([BIT64], [1], [void pointer is 8 bytes])
+fi
+
+# Enable OpenMP support if compiler supports it
+useomp=no;
+AC_OPENMP
+if test "x$ac_cv_prog_c_openmp" != xunsupported; then
+  useomp=yes;
+  AC_DEFINE([THREADED_OMP], [1], [openmp support is present])
+  CFLAGS="$CFLAGS $OPENMP_CFLAGS"
+fi
+AM_CONDITIONAL([HAVE_OPENMP], [test x$useomp = xyes])
+
+# for C++ only:
+# CFLAGS="$CFLAGS -fpermissive"
+
 # Does the user want to turn on nested OMP? Enable only if you will be
 # profiling code regions inside of doubly-nested OpenMP regions. Using
 # --enable-nestedomp can increase the cost of getting the thread
@@ -49,9 +70,37 @@ AC_MSG_RESULT($have_nanotime)
 AC_MSG_CHECKING([whether nested OMP is to be enabled])
 AC_ARG_ENABLE([nestedomp], [AS_HELP_STRING([--enable-nestedomp],
               [build with nested OMP capability])])
+
 test "x$enable_nestedomp" = xyes || enable_nestedomp=no
-AM_CONDITIONAL(ENABLE_NESTEDOMP, [test x$enable_nestedomp = xyes])
+# If nestedomp requested, verify basic OpenMP capability was there
+if test "x$enable_nestedomp" = xyes; then
+  if test "x$enable_openmp" != xyes; then
+    AC_MSG_ERROR([Nested OMP capability requested but OpenMP disabled or not available])
+  fi
+  AC_DEFINE([ENABLE_NESTEDOMP], [1], [nested omp capability enabled])
+fi
 AC_MSG_RESULT($enable_nestedomp)
+AM_CONDITIONAL(ENABLE_NESTEDOMP, [test x$enable_nestedomp = xyes])
+
+# pthread library. default disabled
+AC_ARG_ENABLE([pthread],
+    AS_HELP_STRING([--enable-pthread], [Enable pthread capability]))
+
+if test "x$enable_pthread" = xyes; then
+  dnl Do the stuff needed for enabling the feature
+  AC_MSG_CHECKING([for pthread support])
+  AC_CHECK_LIB([pthread], [pthread_mutex_init])
+  if test "x$ac_cv_lib_pthread_pthread_mutex_init" = xyes; then
+     AC_DEFINE([THREADED_PTHREADS], [1], [pthreads library is present])
+  fi
+fi
+
+# GPTL only works with EITHER OpenMP OR pthread lib. Barf on attempts to enable both
+if test "$enable_omp" = yes; then
+  if test "x$ac_cv_lib_pthread_pthread_mutex_init" = xyes; then
+    AC_MSG_ERROR([OpenMP and pthreads cannot both be enabled: For pthreads use --disable-openmp --enable-pthread])
+  fi
+fi
 
 # Does the user want to disable papi?
 AC_MSG_CHECKING([whether PAPI should be enabled])
@@ -72,17 +121,6 @@ fi
 AC_MSG_RESULT($enable_pmpi)
 AC_DEFINE([MPI_STATUS_SIZE_IN_INTS], [5], [size of status in MPI])
 
-# Does the user want to test autoprofiling? (adds 2 tests to "make
-# test"). If compiler is gcc or pathscale or intel, set INSTRFLAG to
-# -finstrument-functions. PGI 8.0.2 and later provide
-# -Minstrument:functions.
-AC_MSG_CHECKING([whether autoprofile testing is to be enabled])
-AC_ARG_ENABLE([autoprofile-testing], [AS_HELP_STRING([--enable-autoprofile-testing],
-              [test autoprofileing])])
-test "x$enable_autoprofile_testing" = xyes || enable_autoprofile_testing=no
-AM_CONDITIONAL(TEST_AUTOPROFILE, [test $enable_autoprofile_testing = yes])
-AC_MSG_RESULT($enable_autoprofile_testing)
-
 # Does the user want to use double underscores for fortran wrappers?
 AC_MSG_CHECKING([whether double underscore for Fortran wrappers should be enabled])
 AC_ARG_ENABLE([double-underscore], [AS_HELP_STRING([--enable-double-underscore],
@@ -95,6 +133,20 @@ else
    AC_DEFINE([FORTRANUNDERSCORE], [1], [use single underscore for Fortran wrappers])
 fi
 
+AC_ARG_ENABLE([debug], [AS_HELP_STRING([--enable-debug],
+              [enable DEBUG ifdef])])
+test "x$enable_debug" = xyes || enable_debug=no
+if test $enable_debug = yes; then
+   AC_DEFINE([DEBUG], [1], [set debug ifdef])
+fi
+
+AC_MSG_CHECKING([whether PAPI is to be enabled])
+AC_ARG_ENABLE([papi], [AS_HELP_STRING([--enable-papi],
+              [enable papi])])
+test "x$enable_papi" = xyes || enable_papi=no
+AC_MSG_RESULT($enable_papi)
+
+if test x$enable_papi = xyes; then
 # Check for papi library.
 AC_CHECK_LIB([papi], [PAPI_library_init])
 AC_MSG_CHECKING([whether system can support PAPI])
@@ -113,7 +165,6 @@ if test "$enable_papi" = yes; then
       have_papi=yes
    fi
 fi
-AC_MSG_RESULT($have_papi)
 AM_CONDITIONAL([HAVE_PAPI], [test "x$have_papi" = xyes])
 
 # Check for rt library. clock_gettime() in librt.a is an option for
@@ -122,65 +173,87 @@ AM_CONDITIONAL([HAVE_PAPI], [test "x$have_papi" = xyes])
 # applications with -lrt
 AC_CHECK_LIB([rt], [clock_gettime])
 
-# Only define HAVE_NANOTIME if this is a x86. It provides by far the finest grained,
-# lowest overhead wallclock timer on that architecture.
-# If HAVE_NANOTIME=yes, set BIT64=yes if this is an x86_64
-dnl HAVE_NANOTIME = yes
-dnl ifeq ($(HAVE_NANOTIME),yes)
-dnl   BIT64 = yes
-dnl endif
-
 # Check for existance of procfs, the proc file system.
 AC_CHECK_FILE([/proc],
-        [AC_DEFINE([HAVE_SLASHPROC], [1], [some comment])])
-
-# Check for pthread lirbary.
-AC_CHECK_LIB([pthread], [pthread_mutex_init])
-if test "x$ac_cv_lib_pthread_pthread_mutex_init" = xyes; then
-   AC_DEFINE([PTHREADS], [1], [pthreads library is present])
-fi
+        [AC_DEFINE([HAVE_SLASHPROC], [1], [/proc exists. Will use that for memory checking])])
 
 # We need the math library for some tests.
 AC_CHECK_LIB([m], [floor], [],
                   [AC_MSG_ERROR([Can't find or link to the math library.])])
 
-# Check for function backtrace_symbols. If HAVE_BACKTRACE=yes will
-# enable auto-generation of function name when auto-profiling and
-# GPTLdopr_memusage has been enabled at run-time. If
-# HAVE_BACKTRACE=no, function address will be printed instead.  GNU
-# compilers: compile application code with -finstrument-functions
-# -rdynamic Intel compilers: compile application code with
-# -finstrument-functions -rdynamic -g
-AC_CHECK_FUNC([backtrace_symbols],
-        [AC_DEFINE([HAVE_BACKTRACE], [1], [backtrace_symbols function is present])])
+# AC_CHECK_LIB doesn't work for libunwind due to funkiness in the lib so use AC_CHECK_HEADER
+AC_MSG_CHECKING([for libunwind])
+AC_CHECK_HEADER([libunwind.h], found_libunwind=yes;)
+AC_MSG_RESULT([$ac_cv_libunwind_h])
+
+AC_MSG_CHECKING([for backtrace])
+AC_CHECK_FUNC([backtrace_symbols], found_backtrace=yes;)
+AC_MSG_RESULT([$ac_cv_func_backtrace_symbols])
+
+# For auto-profiling, backtrace is the default method to recover current function name.
+# If not available, try libunwind. If neither are available, auto-profiling will not be
+# possible. To use auto auto-profiling with GNU or Intel compilers:
+# Compile application code with -g -finstrument-functions -rdynamic
+#
+dnl auto-profiling capability. Default is disabled because it will require extra link flags
+AC_ARG_ENABLE([libunwind],
+    AS_HELP_STRING([--enable-libunwind], [Enable auto-profiling capability via libunwind]))
+
+AC_ARG_ENABLE([backtrace],
+    AS_HELP_STRING([--enable-backtrace], [Enable auto-profiling capability via backtrace]))
+
+# Default is to enable auto-profiling capability via libunwind.
+# Default is to disable auto-profiling capability via backtrace
+# Cannot have both methods enabled at once
+if test "x$enable_backtrace" != xno; then
+  if test "x$enable_libunwind" = xyes; then
+    AC_MSG_ERROR([--enable-libunwind requires --disable-backtrace])
+  fi
+# Set define for LIBUNWIND if user didn't say no and backtrace found
+  if test "x$found_backtrace" = xyes; then
+    usebacktrace=yes;
+    AC_DEFINE([HAVE_BACKTRACE], [1], [backtrace will be used])
+    AC_MSG_NOTICE([backtrace enabled for auto-profiling: Ensure LDFLAGS+= -rdynamic in profiled apps!!!])
+  fi
+fi
+
+# Set define for BACKTRACE if user said yes and backtrace found
+if test "x$enable_libunwind" = xyes; then
+  if test "x$found_libunwind" = xyes; then
+    useunwind=yes;
+    AC_DEFINE([HAVE_LIBUNWIND], [1], [libunwind will be used])
+    AC_MSG_NOTICE([libunwind enabled for auto-profiling: Ensure LDFLAGS+= -rdynamic -lunwind in profiled apps!!!])
+  fi
+fi
+
+# Above logic ensures that both haveunwind and havebacktrace cannot both = yes
+AM_CONDITIONAL([HAVE_LIBUNWIND], [test x$useunwind = xyes])
+AM_CONDITIONAL([HAVE_BACKTRACE], [test x$usebacktrace = xyes])
 
 # Check for times.
 AC_CHECK_FUNC([times],
-        [AC_DEFINE([HAVE_TIMES], [1], [vfprint function is available])])
+        [AC_DEFINE([HAVE_TIMES], [1], [times function is available])])
 
 # Check for gettimeofday.
 AC_CHECK_FUNC([gettimeofday],
         [AC_DEFINE([HAVE_GETTIMEOFDAY], [1], [gettimeofday function is available])])
 
 # Do we have MPI?
-AC_CHECK_FUNC([MPI_Init], [have_mpi=yes])
+AC_CHECK_FUNC([MPI_Init], [have_mpi=yes], [have_mpi=no])
+if test "x$have_mpi_comm_f2c" = xyes; then
+  AC_DEFINE([HAVE_MPI], [1], [found MPI])
+fi
 AM_CONDITIONAL([HAVE_MPI], [test "x$have_mpi" = xyes])
 
 # Do we have function MPI_Comm_f2c?
-AC_CHECK_FUNC([MPI_Comm_f2c], [have_mpi_comm_f2c=yes])
+AC_CHECK_FUNC([MPI_Comm_f2c], [have_mpi_comm_f2c=yes], [have_mpi_comm_f2c=no])
 if test "x$have_mpi_comm_f2c" = xyes; then
-   AC_DEFINE([HAVE_COMM_F2C], [1], [MPI_Comm_f2c is present])
+  AC_DEFINE([HAVE_COMM_F2C], [1], [MPI_Comm_f2c is present])
 fi
 
 # Check for function iargc, which may be part of MPI.
 AC_CHECK_FUNC([iargc],
-        [AC_DEFINE([HAVE_IARGCGETARG], [1], [backtrace_symbols function is present])])
-
-# Check the size of a void pointer.
-AC_CHECK_SIZEOF([void *])
-if test "x$ac_cv_sizeof_void_p" = x8; then
-   AC_DEFINE([BIT64], [1], [void pointer is 8 bytes])
-fi
+  [have_iargc=yes; AC_DEFINE([HAVE_IARGCGETARG], [1], [iargc is present])], [have_iargc=no])
 
 # Is doxygen installed?
 AC_CHECK_PROGS([DOXYGEN], [doxygen])
@@ -194,7 +267,7 @@ AC_CONFIG_FILES([Makefile
                  test/Makefile
                  src/Makefile
                  bin/Makefile
-		 ])
+	       ])
 
 # Build the files listed above.
 AC_OUTPUT()

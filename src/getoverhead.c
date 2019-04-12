@@ -1,7 +1,17 @@
 #include "config.h" /* Must be first include. */
 
+#ifdef HAVE_LIBUNWIND
+#define UNW_LOCAL_ONLY
+#include <libunwind.h>
+#endif
+
+#ifdef HAVE_BACKTRACE
+#include <execinfo.h>
+#endif
+
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>  // for free()
 #include "private.h"
 
 static int gptlstart_sim (char *, int);
@@ -54,7 +64,8 @@ int GPTLget_overhead (FILE *fp,
   double utr_ohd;            /* Underlying timing routine */
   double papi_ohd;           /* Reading PAPI counters */
   double total_ohd;          /* Sum of overheads */
-  double getentry_instr_ohd; /* Finding entry in hash tabe for auto-instrumented calls */
+  double getentry_instr_ohd; /* Finding entry in hash table for auto-instrumented calls */
+  double addr2name_ohd;      // Invoking libunwind or backtrace routines from __cyg_profile_func_enter
   double misc_ohd;           /* misc. calcs within start/stop */
   int i, n;
   int ret;
@@ -69,7 +80,6 @@ int GPTLget_overhead (FILE *fp,
   ** First: Fortran wrapper overhead
   */
   t1 = (*ptr2wtimefunc)();
-#pragma unroll(10)
   for (i = 0; i < 1000; ++i) {
     /* 9 is the number of characters in "timername" */
     ret = gptlstart_sim ("timername", 9);
@@ -79,7 +89,6 @@ int GPTLget_overhead (FILE *fp,
 
   /* get_thread_num() overhead */
   t1 = (*ptr2wtimefunc)();
-#pragma unroll(10)
   for (i = 0; i < 1000; ++i) {
     mythread = get_thread_num ();
   }
@@ -88,7 +97,6 @@ int GPTLget_overhead (FILE *fp,
 
   /* genhashidx overhead */
   t1 = (*ptr2wtimefunc)();
-#pragma unroll(10)
   for (i = 0; i < 1000; ++i) {
     hashidx = genhashidx ("timername");
   }
@@ -122,7 +130,6 @@ int GPTLget_overhead (FILE *fp,
 
   /* utr overhead */
   t1 = (*ptr2wtimefunc)();
-#pragma unroll(10)
   for (i = 0; i < 1000; ++i) {
     t2 = (*ptr2wtimefunc)();
   }
@@ -143,9 +150,44 @@ int GPTLget_overhead (FILE *fp,
   papi_ohd = 0.;
 #endif
 
+#ifdef HAVE_LIBUNWIND
+  // libunwind overhead
+  unw_cursor_t cursor;
+  unw_context_t context;
+  unw_word_t offset, pc;
+  char symbol[MAX_SYMBOL_NAME+1];
+
+  t1 = (*ptr2wtimefunc)();
+  for (i = 0; i < 1000; ++i) {
+    // Initialize cursor to current frame for local unwinding.
+    unw_getcontext (&context);
+    unw_init_local (&cursor, &context);
+
+    (void) unw_step (&cursor);
+    unw_get_reg (&cursor, UNW_REG_IP, &pc);
+    (void) unw_get_proc_name (&cursor, symbol, sizeof(symbol), &offset);
+  }
+  t2 = (*ptr2wtimefunc)();
+  addr2name_ohd = 0.001 * (t2 - t1);
+#endif
+
+#ifdef HAVE_BACKTRACE
+  void *buffer[2];
+  int nptrs;
+  char **strings;
+
+  t1 = (*ptr2wtimefunc)();
+  for (i = 0; i < 1000; ++i) {
+    nptrs = backtrace (buffer, 2);
+    strings = backtrace_symbols (buffer, nptrs);
+    free (strings);
+  }
+  t2 = (*ptr2wtimefunc)();
+  addr2name_ohd = 0.001 * (t2 - t1);
+#endif
+
   /* getentry_instr overhead */
   t1 = (*ptr2wtimefunc)();
-#pragma unroll(10)
   for (i = 0; i < 1000; ++i) {
     entry = getentry_instr_sim (hashtable, &randomvar, &hashidx, tablesize);
   }
@@ -158,7 +200,6 @@ int GPTLget_overhead (FILE *fp,
     misc_ohd = 0.;
   } else {
     t1 = (*ptr2wtimefunc)();
-#pragma unroll(10)
     for (i = 0; i < 1000; ++i) {
       misc_sim (stackidx, callstack, 0);
     }
@@ -189,6 +230,11 @@ int GPTLget_overhead (FILE *fp,
   }
 #endif
   fprintf (fp, "\n");
+#ifdef HAVE_LIBUNWIND
+  fprintf (fp, "Overhead of libunwind (invoked just once per auto-instrumented start entry)=%g seconds\n", addr2name_ohd);
+#elif defined HAVE_BACKTRACE
+  fprintf (fp, "Overhead of backtrace (invoked just once per auto-instrumented start entry)=%g seconds\n", addr2name_ohd);
+#endif
   fprintf (fp, "NOTE: If GPTL is called from C not Fortran, the 'Fortran layer' overhead is zero\n");
   fprintf (fp, "NOTE: For calls to GPTLstart_handle()/GPTLstop_handle(), the 'Generate hash index' overhead is zero\n");
   fprintf (fp, "NOTE: For auto-instrumented calls, the cost of generating the hash index plus finding\n"
@@ -276,3 +322,4 @@ static void misc_sim (Nofalse *stackidx, Timer ***callstack, int t)
 
   return;
 }
+

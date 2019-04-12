@@ -8,6 +8,7 @@
 #include <stdlib.h>
 
 #include "private.h"
+#include "gptl.h"
 
 static bool abort_on_error = false;  /* flag says to abort on any error */
 static int max_errors = 10;          /* max number of error print msgs */
@@ -150,4 +151,30 @@ void *GPTLallocate (const int nbytes, const char *caller)
     (void) GPTLerror ("GPTLallocate from %s: malloc failed for %d bytes\n", nbytes, caller);
 
   return ptr;
+}
+
+/* 
+** GPTLbarrier: When MPI enabled, set and time an MPI barrier
+**
+** Input arguments:
+**   comm: commuicator (e.g. MPI_COMM_WORLD). If zero, use MPI_COMM_WORLD
+**   name: region name
+**
+** Return value: 0 (success)
+*/
+int GPTLbarrier (MPI_Comm comm, const char *name)
+{
+  static const char *thisfunc = "GPTLbarrier";
+
+#ifdef HAVE_LIBMPI
+  int ret;
+
+  ret = GPTLstart (name);
+  if ((ret = MPI_Barrier (comm)) != MPI_SUCCESS)
+    return GPTLerror ("%s: Bad return from MPI_Barrier=%d", thisfunc, ret);
+  ret = GPTLstop (name);
+  return ret;
+#else
+  return GPTLerror ("%s: Need to build GPTL with #define HAVE_LIBMPI\n", thisfunc);
+#endif    /* HAVE_LIBMPI */
 }

@@ -14,12 +14,12 @@ int main (int argc, char **argv)
   int nthreads = 1;  /* Value is 1 if no threading */
   int iam = 0;       /* Value is 0 if no MPI */
   int commsize = 1;  /* Value is 1 if no MPI */
-  int provided = -1; /* level of threading support in this MPI lib */
   int n;
   int ret;
 
 #ifdef HAVE_LIBMPI
   int resultlen;                      /* returned length of string from MPI routine */
+  int provided = -1;                  // level of threading support in this MPI lib
   char string[MPI_MAX_ERROR_STRING];  /* character string returned from MPI routine */
 
   /* Initialize MPI by using MPI_Init_thread: report back level of MPI support */
@@ -94,7 +94,7 @@ int main (int argc, char **argv)
   ret = GPTLpr_summary (MPI_COMM_WORLD);
   ret = MPI_Finalize ();
 #else
-  ret = GPTLpr_summary ();
+  ret = GPTLpr_summary (0);
 #endif
   return 0;
 }

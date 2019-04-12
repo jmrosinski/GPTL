@@ -1,53 +1,31 @@
 #include "config.h"
 #include <stdio.h>
 
-static int junk;
-extern void callutil10times ();
-extern void callutil100times ();
-extern void util ();
-extern void A ();
-extern void B ();
-extern void C ();
+extern void A (void);
+extern void B (void);
+extern void twice (void);
 
 void callsubs (int niter)
 {
-  callutil10times ();
-  callutil100times ();
   A();
-  util ();
 }
 
-void callutil10times ()
+void A (void)
 {
   int n;
-  for (n = 0; n < 10; ++n) 
-    util ();
+  
+#pragma omp parallel for private(n)
+  for (n = 0; n < 2; ++n) {
+    B ();
+  }
 }
 
-void callutil100times ()
+void B (void)
 {
-  int n;
-  for (n = 0; n < 100; ++n)
-    util ();
+  twice ();
+  twice ();
 }
 
-void util () 
+void twice (void)
 {
-  junk = 11;
-}
-
-void A ()
-{
-  B ();
-}
-
-void B ()
-{
-  C ();
-}
-
-void C ()
-{
-  util ();
-  callutil10times ();
 }

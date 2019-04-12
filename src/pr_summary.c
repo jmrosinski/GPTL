@@ -53,7 +53,6 @@ static int nthreads;  /* Used by both GPTLpr_summary() and get_threadstats() */
 */
 
 #ifdef HAVE_LIBMPI
-#include <mpi.h>
 int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)       /* communicator */
 {
   int ret;             /* return code */
@@ -379,7 +378,7 @@ int GPTLpr_summary (MPI_Comm comm)       /* communicator */
 #else
 
 /* No MPI. Mimic MPI version but for only one rank */
-int GPTLpr_summary_file (const char *outfile)
+int GPTLpr_summary_file (MPI_Comm dummy, const char *outfile)
 {
   FILE *fp = 0;        /* file handle */
   Timer **timers;
@@ -490,11 +489,11 @@ int GPTLpr_summary_file (const char *outfile)
   return 0;
 }
 
-int GPTLpr_summary ()       /* communicator */
+int GPTLpr_summary (MPI_Comm dummy)       // communicator
 {
   static const char *outfile = "timing.summary";   /* file to write to */
 
-  return GPTLpr_summary_file (outfile);
+  return GPTLpr_summary_file (dummy, outfile);
 }
 
 #endif  /* False branch of HAVE_LIBMPI */

@@ -6,6 +6,14 @@
 #ifndef GPTL_H
 #define GPTL_H
 
+// mpi.h needed for MPI_Comm type
+// When MPI not enabled, use an int as a placeholder
+#ifdef HAVE_LIBMPI
+#include <mpi.h>
+#else
+typedef int MPI_Comm;
+#endif
+
 /*
 ** Options settable by a call to GPTLsetoption() (default in parens)
 ** These numbers need to be small integers because GPTLsetoption can
@@ -96,13 +104,9 @@ extern int GPTLstamp (double *, double *, double *);
 extern int GPTLpr (const int);
 extern int GPTLpr_file (const char *);
 
-/*
-** Use K&R prototype for these 3 because they require MPI
-** C++ compilers can encounter problems
-*/
-extern int GPTLpr_summary ();
-extern int GPTLpr_summary_file ();
-extern int GPTLbarrier ();
+extern int GPTLpr_summary (MPI_Comm);
+extern int GPTLpr_summary_file (MPI_Comm, const char *);
+extern int GPTLbarrier (MPI_Comm, const char *);
 
 extern int GPTLreset (void);
 extern int GPTLreset_timer (char *);
