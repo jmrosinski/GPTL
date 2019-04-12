@@ -104,7 +104,7 @@ fi
 
 # Does the user want to disable papi?
 AC_MSG_CHECKING([whether PAPI should be enabled])
-AC_ARG_ENABLE([nestedomp], [AS_HELP_STRING([--disable-papi],
+AC_ARG_ENABLE([papi], [AS_HELP_STRING([--disable-papi],
               [disable PAPI library use])])
 test "x$enable_papi" = xno || enable_papi=yes
 AC_MSG_RESULT($enable_papi)
