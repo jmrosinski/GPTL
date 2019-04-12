@@ -53,6 +53,13 @@ test "x$enable_nestedomp" = xyes || enable_nestedomp=no
 AM_CONDITIONAL(ENABLE_NESTEDOMP, [test x$enable_nestedomp = xyes])
 AC_MSG_RESULT($enable_nestedomp)
 
+# Does the user want to disable papi?
+AC_MSG_CHECKING([whether PAPI should be enabled])
+AC_ARG_ENABLE([nestedomp], [AS_HELP_STRING([--disable-papi],
+              [disable PAPI library use])])
+test "x$enable_papi" = xno || enable_papi=yes
+AC_MSG_RESULT($enable_papi)
+
 # Does the user want to turn on PMPI?
 AC_MSG_CHECKING([whether PMPI is to be enabled])
 AC_ARG_ENABLE([pmpi], [AS_HELP_STRING([--enable-pmpi],
@@ -91,17 +98,20 @@ fi
 # Check for papi library.
 AC_CHECK_LIB([papi], [PAPI_library_init])
 AC_MSG_CHECKING([whether system can support PAPI])
-if test "x$ac_cv_lib_papi_PAPI_library_init" = xyes; then
-   # If we have PAPI library, check /proc/sys/kernel/perf_event_paranoid
-   # to see if we have permissions.
-   if test -f /proc/sys/kernel/perf_event_paranoid; then
-      if test `cat /proc/sys/kernel/perf_event_paranoid` != 1; then
-         AC_MSG_ERROR([PAPI library found, but /proc/sys/kernel/perf_event_paranoid != 1
-                            try sudo sh -c 'echo 1 >/proc/sys/kernel/perf_event_paranoid'])
+have_papi=no
+if test "$enable_papi" = yes; then
+   if test "x$ac_cv_lib_papi_PAPI_library_init" = xyes; then
+      # If we have PAPI library, check /proc/sys/kernel/perf_event_paranoid
+      # to see if we have permissions.
+      if test -f /proc/sys/kernel/perf_event_paranoid; then
+         if test `cat /proc/sys/kernel/perf_event_paranoid` != 1; then
+            AC_MSG_ERROR([PAPI library found, but /proc/sys/kernel/perf_event_paranoid != 1
+                               try sudo sh -c 'echo 1 >/proc/sys/kernel/perf_event_paranoid'])
+         fi
       fi
+      AC_DEFINE([HAVE_PAPI], [1], [PAPI library is present and usable])
+      have_papi=yes
    fi
-   AC_DEFINE([HAVE_PAPI], [1], [PAPI library is present and usable])
-   have_papi=yes
 fi
 AC_MSG_RESULT($have_papi)
 AM_CONDITIONAL([HAVE_PAPI], [test "x$have_papi" = xyes])
