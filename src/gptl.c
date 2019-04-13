@@ -133,6 +133,8 @@ typedef struct {
   int max_chars2pr;
 } Outputfmt;
 
+static inline int preamble_start (int *, const char *, const char *);
+static inline int preamble_stop (int *, double *, long *, long *, const char *, const char *);
 static int get_longest_omp_namelen (void);
 static int get_outputfmt (const Timer *, const int, const int, Outputfmt *);
 static void fill_output (int, int, int, Outputfmt *);
@@ -579,27 +581,13 @@ int GPTLstart (const char *name)               /* timer name */
 {
   Timer *ptr;        /* linked list pointer */
   int t;             /* thread index (of this thread) */
+  int ret;           // return value
   int numchars;      /* number of characters to copy */
   unsigned int indx; /* hash table index */
   static const char *thisfunc = "GPTLstart";
 
-  if (disabled)
-    return 0;
-
-  if ( ! initialized)
-    return GPTLerror ("%s name=%s: GPTLinitialize has not been called\n", thisfunc, name);
-
-  if ((t = get_thread_num ()) < 0)
-    return GPTLerror ("%s: bad return from get_thread_num\n", thisfunc);
-
-  /*
-  ** If current depth exceeds a user-specified limit for print, just
-  ** increment and return
-  */
-  if (stackidx[t].val >= depthlimit) {
-    ++stackidx[t].val;
-    return 0;
-  }
+  if ((ret = preamble_start (&t, name, thisfunc)) != 0)
+    return ret;
 
   /* ptr will point to the requested timer in the current list, or NULL if this is a new entry */
   indx = genhashidx (name);
@@ -640,7 +628,29 @@ int GPTLstart (const char *name)               /* timer name */
   if (update_ptr (ptr, t) != 0)
     return GPTLerror ("%s: update_ptr error\n", thisfunc);
 
-  return (0);
+  return 0;
+}
+
+static inline int preamble_start (int *t, const char *name, const char *caller)
+{
+  if (disabled)
+    return DONE;
+
+  if ( ! initialized)
+    return GPTLerror ("%s name=%s: GPTLinitialize has not been called\n", caller, name);
+
+  if ((*t = get_thread_num ()) < 0)
+    return GPTLerror ("%s: bad return from get_thread_num\n", caller);
+
+  /*
+  ** If current depth exceeds a user-specified limit for print, just
+  ** increment and tell caller to return immediately (DONTSTART)
+  */
+  if (stackidx[*t].val >= depthlimit) {
+    ++stackidx[*t].val;
+    return DONE;
+  }
+  return 0;
 }
 
 /*
@@ -678,23 +688,12 @@ int GPTLstart_handle (const char *name,  /* timer name */
 {
   Timer *ptr;                            /* linked list pointer */
   int t;                                 /* thread index (of this thread) */
+  int ret;                               // return value
   int numchars;                          /* number of characters to copy */
   static const char *thisfunc = "GPTLstart_handle";
 
-  if (disabled)
-    return 0;
-
-  if ( ! initialized)
-    return GPTLerror ("%s name=%s: GPTLinitialize has not been called\n", thisfunc, name);
-
-  if ((t = get_thread_num ()) < 0)
-    return GPTLerror ("%s: bad return from get_thread_num\n", thisfunc);
-
-  /* If current depth exceeds a user-specified limit for print, just increment and return */
-  if (stackidx[t].val >= depthlimit) {
-    ++stackidx[t].val;
-    return 0;
-  }
+  if ((ret = preamble_start (&t, name, thisfunc)) != 0)
+    return ret;
 
   /*
   ** If handle is zero on input, generate the hash entry and return it to the user.
@@ -894,35 +893,15 @@ int GPTLstop (const char *name)               /* timer name */
   double tp1 = 0.0;          /* time stamp */
   Timer *ptr;                /* linked list pointer */
   int t;                     /* thread number for this process */
+  int ret;                   // return value
   unsigned int indx;         /* index into hash table */
   long usr = 0;              /* user time (returned from get_cpustamp) */
   long sys = 0;              /* system time (returned from get_cpustamp) */
   static const char *thisfunc = "GPTLstop";
 
-  if (disabled)
-    return 0;
-
-  if ( ! initialized)
-    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
-
-  /* Get the timestamp */
-    
-  if (wallstats.enabled) {
-    tp1 = (*ptr2wtimefunc) ();
-  }
-
-  if (cpustats.enabled && get_cpustamp (&usr, &sys) < 0)
-    return GPTLerror ("%s: get_cpustamp error", thisfunc);
-
-  if ((t = get_thread_num ()) < 0)
-    return GPTLerror ("%s: bad return from get_thread_num\n", thisfunc);
-
-  /* If current depth exceeds a user-specified limit for print, just decrement and return */
-  if (stackidx[t].val > depthlimit) {
-    --stackidx[t].val;
-    return 0;
-  }
-
+  if ((ret = preamble_stop (&t, &tp1, &usr, &sys, name, thisfunc)) != 0)
+    return ret;
+       
   indx = genhashidx (name);
   if (! (ptr = getentry (hashtable[t], name, indx)))
     return GPTLerror ("%s thread %d: timer for %s had not been started.\n", thisfunc, t, name);
@@ -949,6 +928,34 @@ int GPTLstop (const char *name)               /* timer name */
   return 0;
 }
 
+static inline int preamble_stop (int *t, double *tp1, long *usr, long *sys,
+				 const char *name, const char *caller)
+{
+  if (disabled)
+    return DONE;
+
+  if ( ! initialized)
+    return GPTLerror ("%s: GPTLinitialize has not been called\n", caller);
+
+  // Get the timestamp
+  if (wallstats.enabled) {
+    *tp1 = (*ptr2wtimefunc) ();
+  }
+
+  if (cpustats.enabled && get_cpustamp (usr, sys) < 0)
+    return GPTLerror ("%s: get_cpustamp error", caller);
+
+  if ((*t = get_thread_num ()) < 0)
+    return GPTLerror ("%s: bad return from get_thread_num\n", caller);
+
+  // If current depth exceeds a user-specified limit for print, just decrement and return
+  if (stackidx[*t].val > depthlimit) {
+    --stackidx[*t].val;
+    return DONE;
+  }
+  return 0;
+}
+
 /*
 ** GPTLstop_handle: stop a timer based on a handle
 **
@@ -964,34 +971,15 @@ int GPTLstop_handle (const char *name,     /* timer name */
   double tp1 = 0.0;          /* time stamp */
   Timer *ptr;                /* linked list pointer */
   int t;                     /* thread number for this process */
+  int ret;                   // return value
   long usr = 0;              /* user time (returned from get_cpustamp) */
   long sys = 0;              /* system time (returned from get_cpustamp) */
   unsigned int indx;
   static const char *thisfunc = "GPTLstop_handle";
 
-  if (disabled)
-    return 0;
-
-  if ( ! initialized)
-    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
-
-  /* Get the timestamp */
-  if (wallstats.enabled) {
-    tp1 = (*ptr2wtimefunc) ();
-  }
-
-  if (cpustats.enabled && get_cpustamp (&usr, &sys) < 0)
-    return GPTLerror (0);
-
-  if ((t = get_thread_num ()) < 0)
-    return GPTLerror ("%s: bad return from get_thread_num\n", thisfunc);
-
-  /* If current depth exceeds a user-specified limit for print, just decrement and return */
-  if (stackidx[t].val > depthlimit) {
-    --stackidx[t].val;
-    return 0;
-  }
-
+  if ((ret = preamble_stop (&t, &tp1, &usr, &sys, name, thisfunc)) != 0)
+    return ret;
+       
   indx = (unsigned int) *handle;
   if (indx == 0 || indx > tablesizem1) 
     return GPTLerror ("%s: bad input handle=%u for timer %s.\n", thisfunc, indx, name);
@@ -2854,24 +2842,8 @@ void __cyg_profile_func_enter (void *this_fn,
 #endif
   static const char *thisfunc = "__cyg_profile_func_enter";
 
-  if (disabled)
+  if (preamble_start (&t, unknown, thisfunc) != 0)
     return;
-
-  if ( ! initialized) {
-    GPTLwarn ("%s this_fn=%p: GPTLinitialize() has not been called\n", thisfunc, this_fn);
-    return;
-  }
-
-  if ((t = get_thread_num ()) < 0) {
-    GPTLwarn ("%s: bad return from get_thread_num\n", thisfunc);
-    return;
-  }
-
-  /* If current depth exceeds a user-specified limit for print, just increment and return */
-  if (stackidx[t].val >= depthlimit) {
-    ++stackidx[t].val;
-    return;
-  }
 
   ptr = getentry_instr (hashtable[t], this_fn, &indx);
 
@@ -3035,35 +3007,9 @@ void __cyg_profile_func_exit (void *this_fn,
 #endif
   static const char *thisfunc = "__cyg_profile_func_exit";
 
-  if (disabled)
+  if (preamble_stop (&t, &tp1, &usr, &sys, unknown, thisfunc) != 0)
     return;
-
-  if ( ! initialized) {
-    GPTLwarn ("%s: GPTLinitialize has not been called\n", thisfunc);
-    return;
-  }
-
-  if ((t = get_thread_num ()) < 0) {
-    GPTLwarn ("%s: bad return from get_thread_num\n", thisfunc);
-    return;
-  }
-
-  /* Get the timestamp */    
-  if (wallstats.enabled) {
-    tp1 = (*ptr2wtimefunc) ();
-  }
-
-  if (cpustats.enabled && get_cpustamp (&usr, &sys) < 0) {
-    GPTLwarn ("%s: bad return from get_cpustamp\n", thisfunc);
-    return;
-  }
-
-  /* If current depth exceeds a user-specified limit for print, just decrement and return */
-  if (stackidx[t].val > depthlimit) {
-    --stackidx[t].val;
-    return;
-  }
-
+       
   ptr = getentry_instr (hashtable[t], this_fn, &indx);
 
   if ( ! ptr) {

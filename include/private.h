@@ -34,6 +34,9 @@
 // Longest allowed symbol name for libunwind
 #define MAX_SYMBOL_NAME 255
 
+// A non-zero non-error flag for start/stop
+#define DONE 1
+
 /* 
 ** max allowable number of PAPI counters, or derived events. For convenience,
 ** set to max (# derived events, # papi counters required) so "avail" lists

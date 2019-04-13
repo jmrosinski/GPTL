@@ -102,24 +102,12 @@ if test "$enable_omp" = yes; then
   fi
 fi
 
-# Does the user want to turn on PMPI?
-AC_MSG_CHECKING([whether PMPI is to be enabled])
-AC_ARG_ENABLE([pmpi], [AS_HELP_STRING([--enable-pmpi],
-              [build with PMPI capability])])
-test "x$enable_pmpi" = xyes || enable_pmpi=no
-AM_CONDITIONAL(ENABLE_PMPI, [test x$enable_pmpi = xyes])
-if test $enable_pmpi = yes; then
-   AC_DEFINE([ENABLE_PMPI], [1], [enable pmpi])
-fi
-AC_MSG_RESULT($enable_pmpi)
-AC_DEFINE([MPI_STATUS_SIZE_IN_INTS], [5], [size of status in MPI])
-
 # Does the user want to use double underscores for fortran wrappers?
 AC_MSG_CHECKING([whether double underscore for Fortran wrappers should be enabled])
 AC_ARG_ENABLE([double-underscore], [AS_HELP_STRING([--enable-double-underscore],
               [use double underscore for Fortran wrappers])])
 test "x$enable_double_underscore" = xyes || enable_double_underscore=no
-AC_MSG_RESULT($enable_pmpi)
+AC_MSG_RESULT($enable_double_underscore)
 if test $enable_double_underscore = yes; then
    AC_DEFINE([FORTRANDOUBLEUNDERSCORE], [1], [use double underscore for Fortran wrappers])
 else
@@ -131,6 +119,7 @@ AC_ARG_ENABLE([debug], [AS_HELP_STRING([--enable-debug],
 test "x$enable_debug" = xyes || enable_debug=no
 if test $enable_debug = yes; then
    AC_DEFINE([DEBUG], [1], [set debug ifdef])
+   CFLAGS="$CFLAGS -O0"
 fi
 
 AC_MSG_CHECKING([whether PAPI is to be enabled])
@@ -233,11 +222,11 @@ AC_CHECK_FUNC([gettimeofday],
         [AC_DEFINE([HAVE_GETTIMEOFDAY], [1], [gettimeofday function is available])])
 
 # Do we have MPI?
-AC_CHECK_FUNC([MPI_Init], [have_mpi=yes], [have_mpi=no])
-if test "x$have_mpi_comm_f2c" = xyes; then
-  AC_DEFINE([HAVE_MPI], [1], [found MPI])
+AC_CHECK_FUNC([MPI_Init], [have_libmpi=yes], [have_libmpi=no])
+if test "x$have_libmpi" = xyes; then
+  AC_DEFINE([HAVE_LIBMPI], [1], [found MPI library])
 fi
-AM_CONDITIONAL([HAVE_MPI], [test "x$have_mpi" = xyes])
+AM_CONDITIONAL([HAVE_LIBMPI], [test "x$have_libmpi" = xyes])
 
 # Do we have function MPI_Comm_f2c?
 AC_CHECK_FUNC([MPI_Comm_f2c], [have_mpi_comm_f2c=yes], [have_mpi_comm_f2c=no])
@@ -248,6 +237,20 @@ fi
 # Check for function iargc, which may be part of MPI.
 AC_CHECK_FUNC([iargc],
   [have_iargc=yes; AC_DEFINE([HAVE_IARGCGETARG], [1], [iargc is present])], [have_iargc=no])
+
+# Does the user want to turn on PMPI?
+AC_MSG_CHECKING([whether PMPI is to be enabled])
+AC_ARG_ENABLE([pmpi], [AS_HELP_STRING([--enable-pmpi],
+              [build with PMPI capability])])
+test "x$enable_pmpi" = xyes || enable_pmpi=no
+AM_CONDITIONAL([ENABLE_PMPI], [test x$enable_pmpi = xyes])
+if test "$enable_pmpi" = yes; then
+   AC_DEFINE([ENABLE_PMPI], [1], [enable pmpi])
+fi
+AC_MSG_RESULT($enable_pmpi)
+
+# TODO: The value is not always 5!!!
+AC_DEFINE([MPI_STATUS_SIZE_IN_INTS], [5], [size of status in MPI])
 
 # Is doxygen installed?
 AC_CHECK_PROGS([DOXYGEN], [doxygen])

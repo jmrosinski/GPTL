@@ -59,12 +59,14 @@ endif
 endif
 
 # Build these tests if MPI is present.
-if HAVE_MPI
+if HAVE_LIBMPI
 check_PROGRAMS += summary
-TESTS += run_par_test.sh
+noinst_PROGRAMS += summary
+TESTS += summary run_par_test.sh
 if ENABLE_PMPI
 check_PROGRAMS += pmpi
-TESTS += run_par_pmpi_test.sh
+noinst_PROGRAMS += pmpi
+TESTS += pmpi run_par_pmpi_test.sh
 endif
 endif
 
