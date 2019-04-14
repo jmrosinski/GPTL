@@ -8,11 +8,6 @@
 
 #if ( defined FORTRANUNDERSCORE )
 
-#define iargc iargc_
-#define getarg getarg_
-#define mpi_init mpi_init_
-#define mpi_init_thread mpi_init_thread_
-#define mpi_finalize mpi_finalize_
 #define mpi_send mpi_send_
 #define mpi_recv mpi_recv_
 #define mpi_sendrecv mpi_sendrecv_
@@ -40,11 +35,6 @@
 
 #elif ( defined FORTRANDOUBLEUNDERSCORE )
 
-#define iargc iargc_
-#define getarg getarg_
-#define mpi_init mpi_init__
-#define mpi_init_thread mpi_init_thread__
-#define mpi_finalize mpi_finalize__
 #define mpi_send mpi_send__
 #define mpi_recv mpi_recv__
 #define mpi_sendrecv mpi_sendrecv__
@@ -72,21 +62,8 @@
 
 #endif
 
-#ifdef HAVE_IARGCGETARG
-void mpi_init (MPI_Fint *ierr);
-void mpi_finalize (MPI_Fint *ierr);
-#endif
-
 #ifdef HAVE_LIBMPI
 #ifdef ENABLE_PMPI
-
-/*
-** Wart needed for MPI_Waitall. fpmpi configure figures this out--I just hardwired
-** the most common value. It currently fails on NCAR bluefire machine.
-*/
-#ifndef MPI_STATUS_SIZE
-#define MPI_STATUS_SIZE MPI_STATUS_SIZE_IN_INTS
-#endif
 
 /* Local prototypes */
 void mpi_send (void *buf, MPI_Fint *count, MPI_Fint *datatype, MPI_Fint *dest,
@@ -109,8 +86,9 @@ void mpi_irecv (void *buf, MPI_Fint *count, MPI_Fint *datatype,
 		MPI_Fint *source, MPI_Fint *tag, MPI_Fint *comm, 
 		MPI_Fint *request, MPI_Fint *__ierr);
 void mpi_wait (MPI_Fint *request, MPI_Fint *status, MPI_Fint *__ierr);
+// The value of MPI_STATUS_SIZE_IN_INTS was determined by ./configure
 void mpi_waitall (MPI_Fint *count, MPI_Fint array_of_requests[], 
-                  MPI_Fint array_of_statuses[][MPI_STATUS_SIZE], 
+                  MPI_Fint array_of_statuses[][MPI_STATUS_SIZE_IN_INTS], 
                   MPI_Fint *__ierr);
 void mpi_barrier (MPI_Fint *comm, MPI_Fint *__ierr);
 void mpi_bcast (void *buffer, MPI_Fint *count, MPI_Fint *datatype, 
@@ -160,118 +138,6 @@ void mpi_test (MPI_Fint *request, MPI_Fint *flag, MPI_Fint *status,
 ** These routines were adapted from the FPMPI distribution. They ensure profiling of 
 ** Fortran codes, using the routines defined in pmpi.c
 */
-
-/*
-** mpi_init requires iargc and getarg. If these exist, define mpi_init and mpi_finalize
-** wrappers so that GPTLinitialize and GPTLpr will be called.
-*/
-#ifdef HAVE_IARGCGETARG
-extern int iargc (void);
-extern void getarg (int *, char *, int);
-
-void mpi_init (MPI_Fint *ierr)
-{
-  int Argc;
-  int i, argsize = 1024;
-  char **Argv, *p;
-  int  ArgcSave;           /* Save the argument count */
-  char **ArgvSave;         /* Save the pointer to the argument vector */
-  char **ArgvValSave;      /* Save entries in the argument vector */
-
-  /* Recover the args with the Fortran routines iargc and getarg */
-  ArgcSave    = Argc = iargc() + 1; 
-  ArgvSave    = Argv = (char **) malloc (Argc * sizeof(char *));
-  ArgvValSave = (char**) malloc (Argc * sizeof(char *));
-  if ( ! Argv) {
-    fprintf (stderr, "Out of space in MPI_INIT");
-    *ierr = -1;
-    return;
-  }
-
-  for (i = 0; i < Argc; i++) {
-    ArgvValSave[i] = Argv[i] = (char *) malloc (argsize + 1);
-    if ( ! Argv[i]) {
-      fprintf (stderr, "Out of space in MPI_INIT");
-      *ierr = -1;
-      return;
-    }
-    getarg (&i, Argv[i], argsize);
-
-    /* Trim trailing blanks */
-    p = Argv[i] + argsize - 1;
-    while (p > Argv[i]) {
-      if (*p != ' ') {
-	p[1] = '\0';
-	break;
-      }
-      p--;
-    }
-  }
-  
-  *ierr = MPI_Init (&Argc, &Argv);
-    
-  /* Recover space */
-  for (i = 0; i < ArgcSave; i++) {
-    free (ArgvValSave[i]);
-  }
-  free (ArgvValSave);
-  free (ArgvSave);
-}
-
-void mpi_init_thread (MPI_Fint *required, MPI_Fint *provided, MPI_Fint *ierr)
-{
-  int Argc;
-  int i, argsize = 1024;
-  char **Argv, *p;
-  int  ArgcSave;           /* Save the argument count */
-  char **ArgvSave;         /* Save the pointer to the argument vector */
-  char **ArgvValSave;      /* Save entries in the argument vector */
-
-  /* Recover the args with the Fortran routines iargc and getarg */
-  ArgcSave    = Argc = iargc() + 1; 
-  ArgvSave    = Argv = (char **) malloc (Argc * sizeof(char *));
-  ArgvValSave = (char**) malloc (Argc * sizeof(char *));
-  if ( ! Argv) {
-    fprintf (stderr, "Out of space in MPI_INIT");
-    *ierr = -1;
-    return;
-  }
-
-  for (i = 0; i < Argc; i++) {
-    ArgvValSave[i] = Argv[i] = (char *) malloc (argsize + 1);
-    if ( ! Argv[i]) {
-      fprintf (stderr, "Out of space in MPI_INIT");
-      *ierr = -1;
-      return;
-    }
-    getarg (&i, Argv[i], argsize);
-
-    /* Trim trailing blanks */
-    p = Argv[i] + argsize - 1;
-    while (p > Argv[i]) {
-      if (*p != ' ') {
-	p[1] = '\0';
-	break;
-      }
-      p--;
-    }
-  }
-  
-  *ierr = MPI_Init_thread (&Argc, &Argv, *required, provided);
-    
-  /* Recover space */
-  for (i = 0; i < ArgcSave; i++) {
-    free (ArgvValSave[i]);
-  }
-  free (ArgvValSave);
-  free (ArgvSave);
-}
-
-void mpi_finalize (MPI_Fint *ierr)
-{
-  *ierr = MPI_Finalize();
-}
-#endif
 
 void mpi_send (void *buf, MPI_Fint *count, MPI_Fint *datatype, MPI_Fint *dest,
 	       MPI_Fint *tag, MPI_Fint *comm, MPI_Fint *__ierr)

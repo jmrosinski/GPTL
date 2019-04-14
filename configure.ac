@@ -248,10 +248,6 @@ if test "x$have_mpi_comm_f2c" = xyes; then
   AC_DEFINE([HAVE_COMM_F2C], [1], [MPI_Comm_f2c is present])
 fi
 
-# Check for function iargc, which may be part of MPI.
-AC_CHECK_FUNC([iargc],
-  [have_iargc=yes; AC_DEFINE([HAVE_IARGCGETARG], [1], [iargc is present])], [have_iargc=no])
-
 # Does the user want to turn on PMPI?
 AC_MSG_CHECKING([whether PMPI is to be enabled])
 AC_ARG_ENABLE([pmpi], [AS_HELP_STRING([--enable-pmpi],

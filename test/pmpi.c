@@ -44,14 +44,8 @@ int main (int argc, char **argv)
   ret = GPTLsetoption (GPTLpercent, 0);        /* Don't print percentage stats */
   ret = GPTLsetoption (GPTLabort_on_error, 1); /* Abort on any GPTL error */
 
-  /* 
-  ** Only initialize GPTL if ENABLE_PMPI is false.
-  ** If it is true, the library will be initialized in MPI_Init()
-  */
-#ifndef ENABLE_PMPI
   ret = GPTLinitialize ();                     /* Initialize GPTL */
   ret = GPTLstart ("total");                   /* Time the whole program */
-#endif
 
   /* Initialize MPI by using MPI_Init_thread: report back level of MPI support */
   if ((ret = MPI_Init_thread (&argc, &argv, MPI_THREAD_SINGLE, &provided)) != 0) {
@@ -199,12 +193,9 @@ int main (int argc, char **argv)
     chkbuf ("MPI_Reduce", recvbuf, count, sum);
   }
 
-  ret = MPI_Finalize ();          /* Clean up MPI */
-
-#ifndef ENABLE_PMPI
   ret = GPTLstop ("total");
   ret = GPTLpr (iam);             /* Print the results */
-#endif
+  ret = GPTLpr_summary (comm);
 
   /* Check that PMPI entries were generated for all expected routines */
   if (iam == 0) {
@@ -218,6 +209,7 @@ int main (int argc, char **argv)
       printf("Success\n");
     }
   }
+  ret = MPI_Finalize ();          /* Clean up MPI */
   return 0;
 }
 

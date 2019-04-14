@@ -31,38 +31,6 @@ int GPTLpmpi_setoption (const int option,
   return retval;
 }
 
-/*
-** Additions to MPI_Init: Initialize GPTL if this hasn't already been done.
-** Start a timer which will be stopped in MPI_Finalize.
-*/
-int MPI_Init (int *argc, char ***argv)
-{
-  int ret;
-  int ignoreret;
-
-  ret = PMPI_Init (argc, argv);
-  if ( ! GPTLis_initialized ())
-    ignoreret = GPTLinitialize ();
-
-  ignoreret = GPTLstart ("MPI_Init_thru_Finalize");
-
-  return ret;
-}
-
-int MPI_Init_thread (int *argc, char ***argv, int required, int *provided)
-{
-  int ret;
-  int ignoreret;
-  
-  ret = PMPI_Init_thread (argc, argv, required, provided);
-  if ( ! GPTLis_initialized ())
-    ignoreret = GPTLinitialize ();
-  
-  ignoreret = GPTLstart ("MPI_Init_thru_Finalize");
-  
-  return ret;
-}
-
 int MPI_Send (const void *buf, int count, MPI_Datatype datatype, int dest, int tag, 
 	      MPI_Comm comm)
 {
@@ -429,28 +397,6 @@ int MPI_Reduce (const void *sendbuf, void *recvbuf, int count, MPI_Datatype data
   return ret;
 }
 
-/*
-** Additions to MPI_Finalize: Stop the timer started in MPI_Init, and
-** call GPTLpr() if it hasn't already been called.
-*/
-int MPI_Finalize (void)
-{
-  int ret, ignoreret;
-  int iam;
-
-  ignoreret = GPTLstop ("MPI_Init_thru_Finalize");
-
-  if ( ! GPTLpr_has_been_called ()) {
-    PMPI_Comm_rank (MPI_COMM_WORLD, &iam);
-    ignoreret = GPTLpr (iam);
-  }
-  /* Since we're in MPI_Finalize it's safe to call GPTLpr_summary for MPI_COMM_WORLD */
-  ignoreret = GPTLpr_summary (MPI_COMM_WORLD);
-
-  ret = PMPI_Finalize();
-  return ret;
-}
-
 int MPI_Allgather (const void *sendbuf, int sendcount, MPI_Datatype sendtype, 
                    void *recvbuf, int recvcount, MPI_Datatype recvtype, 
                    MPI_Comm comm)
@@ -655,7 +601,7 @@ int MPI_Test (MPI_Request *request, int *flag, MPI_Status *status)
 int GPTLpmpi_setoption (const int option,
 			const int val)
 {
-  return GPTLerror ("GPTLpmpi_setoption: GPTL needs to be built with ENABLE_PMPI=yes "
+  return GPTLerror ("GPTLpmpi_setoption: GPTL needs to be built with ./configure arg enable-pmpi "
 		    "to set option %d\n", option);
 }
 

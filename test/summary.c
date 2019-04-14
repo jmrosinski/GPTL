@@ -59,14 +59,8 @@ int main (int argc, char **argv)
     return 1;
   }
 
-  /*
-  ** If ENABLE_PMPI is set, GPTL was initialized in MPI_Init
-  */
-
-#ifndef ENABLE_PMPI
   ret = GPTLinitialize ();
   ret = GPTLstart ("total");
-#endif
 	 
   ret = MPI_Comm_rank (MPI_COMM_WORLD, &iam);
   ret = MPI_Comm_size (MPI_COMM_WORLD, &nproc);
@@ -87,10 +81,8 @@ int main (int argc, char **argv)
     value = sub (iter);
   }
 
-#ifndef ENABLE_PMPI
   ret = GPTLstop ("total");
   ret = GPTLpr (iam);
-#endif
 
   if (iam == 0) {
     printf ("summary: testing GPTLpr_summary...\n");
@@ -98,6 +90,8 @@ int main (int argc, char **argv)
     printf ("Number of tasks was %d\n", nproc);
   }
 
+  // NOTE: if ENABLE_PMPI is set, 2nd pr call below will show some extra send/recv calls
+  // due to MPI calls from within GPTLpr_summary_file
   if (GPTLpr_summary (MPI_COMM_WORLD) != 0)
     return 1;
 
