@@ -225,6 +225,20 @@ AC_CHECK_FUNC([gettimeofday],
 AC_CHECK_FUNC([MPI_Init], [have_libmpi=yes], [have_libmpi=no])
 if test "x$have_libmpi" = xyes; then
   AC_DEFINE([HAVE_LIBMPI], [1], [found MPI library])
+# Need MPI_STATUS_SIZE for Fortran wrappers
+  AC_CHECK_SIZEOF([int])
+# Double brackets are important
+  AC_CHECK_SIZEOF([MPI_Status],[],[[#include <mpi.h>]])
+  if test "$ac_cv_sizeof_MPI_Status" != 0; then
+    mpi_status_size_in_ints=$((ac_cv_sizeof_MPI_Status / ac_cv_sizeof_int));
+# Use unquoted so can use a variable for value (2nd arg)
+    AC_DEFINE_UNQUOTED([MPI_STATUS_SIZE_IN_INTS], [$mpi_status_size_in_ints], [size of status in MPI])
+    AC_MSG_NOTICE([MPI_STATUS_SIZE_IN_INTS = $ac_cv_sizeof_MPI_Status / $ac_cv_sizeof_int = $mpi_status_size_in_ints])
+  else
+# TODO: The value is not always 5!!!
+    AC_DEFINE([MPI_STATUS_SIZE_IN_INTS], [5], [size of status in MPI])
+    AC_MSG_WARN([Could not determine MPI_STATUS_SIZE_IN_INTS -- GUESSING 5])
+  fi
 fi
 AM_CONDITIONAL([HAVE_LIBMPI], [test "x$have_libmpi" = xyes])
 
@@ -248,9 +262,6 @@ if test "$enable_pmpi" = yes; then
    AC_DEFINE([ENABLE_PMPI], [1], [enable pmpi])
 fi
 AC_MSG_RESULT($enable_pmpi)
-
-# TODO: The value is not always 5!!!
-AC_DEFINE([MPI_STATUS_SIZE_IN_INTS], [5], [size of status in MPI])
 
 # Is doxygen installed?
 AC_CHECK_PROGS([DOXYGEN], [doxygen])
