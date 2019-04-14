@@ -60,7 +60,6 @@ static volatile int maxthreads = -1;   /* max threads */
 static int depthlimit = 99999;         /* max depth for timers (99999 is effectively infinite) */
 static volatile bool disabled = false; /* Timers disabled? */
 static volatile bool initialized = false;        /* GPTLinitialize has been called */
-static volatile bool pr_has_been_called = false; /* GPTLpr_file has been called */
 #ifdef HAVE_PAPI
 Entry GPTLeventlist[MAX_AUX];          /* list of PAPI-based events to be counted */
 int GPTLnevents = 0;                   /* number of PAPI events (init to 0) */
@@ -544,7 +543,6 @@ int GPTLfinalize (void)
   depthlimit = 99999;
   disabled = false;
   initialized = false;
-  pr_has_been_called = false;
   dousepapi = false;
   verbose = false;
   percent = false;
@@ -1554,7 +1552,6 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   if (fp != stderr && fclose (fp) != 0)
     fprintf (stderr, "%s: Attempt to close %s failed\n", thisfunc, outfile);
 
-  pr_has_been_called = true;
   return 0;
 }
 
@@ -3414,16 +3411,6 @@ Timer *GPTLgetentry (const char *name)
 
   indx = genhashidx (name);
   return (getentry (hashtable[t], name, indx));
-}
-
-/*
-** GPTLpr_has_been_called: Called ONLY from pmpi.c (i.e. not a public entry point). Return 
-**                         whether GPTLpr_file has been called. MPI_Finalize wrapper needs
-**                         to know whether it needs to call GPTLpr.
-*/
-int GPTLpr_has_been_called (void)
-{
-  return (int) pr_has_been_called;
 }
 
 #endif

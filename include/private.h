@@ -191,7 +191,6 @@ extern int GPTLcreate_and_start_events (const int);
 #ifdef ENABLE_PMPI
 extern Timer *GPTLgetentry (const char *);
 extern int GPTLpmpi_setoption (const int, const int);
-extern int GPTLpr_has_been_called (void);      /* needed by MPI_Finalize wrapper*/
 #endif
 
 #endif /* _GPTL_PRIVATE_ */
