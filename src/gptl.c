@@ -585,10 +585,13 @@ int GPTLstart (const char *name)               /* timer name */
   int numchars;      /* number of characters to copy */
   unsigned int indx; /* hash table index */
   static const char *thisfunc = "GPTLstart";
-
-  if ((ret = preamble_start (&t, name, thisfunc)) != 0)
+  
+  ret = preamble_start (&t, name, thisfunc);
+  if (ret == DONE)
+    return 0;
+  else if (ret != 0)
     return ret;
-
+  
   /* ptr will point to the requested timer in the current list, or NULL if this is a new entry */
   indx = genhashidx (name);
   ptr = getentry (hashtable[t], name, indx);
@@ -692,7 +695,10 @@ int GPTLstart_handle (const char *name,  /* timer name */
   int numchars;                          /* number of characters to copy */
   static const char *thisfunc = "GPTLstart_handle";
 
-  if ((ret = preamble_start (&t, name, thisfunc)) != 0)
+  ret = preamble_start (&t, name, thisfunc);
+  if (ret == DONE)
+    return 0;
+  else if (ret != 0)
     return ret;
 
   /*
@@ -899,7 +905,10 @@ int GPTLstop (const char *name)               /* timer name */
   long sys = 0;              /* system time (returned from get_cpustamp) */
   static const char *thisfunc = "GPTLstop";
 
-  if ((ret = preamble_stop (&t, &tp1, &usr, &sys, name, thisfunc)) != 0)
+  ret = preamble_stop (&t, &tp1, &usr, &sys, name, thisfunc);  
+  if (ret == DONE)
+    return 0;
+  else if (ret != 0)
     return ret;
        
   indx = genhashidx (name);
@@ -977,7 +986,10 @@ int GPTLstop_handle (const char *name,     /* timer name */
   unsigned int indx;
   static const char *thisfunc = "GPTLstop_handle";
 
-  if ((ret = preamble_stop (&t, &tp1, &usr, &sys, name, thisfunc)) != 0)
+  ret = preamble_stop (&t, &tp1, &usr, &sys, name, thisfunc);  
+  if (ret == DONE)
+    return 0;
+  else if (ret != 0)
     return ret;
        
   indx = (unsigned int) *handle;
@@ -1072,14 +1084,13 @@ static inline int update_stats (Timer *ptr,
     bptr = callstack[t][bidx];
     if (ptr != bptr) {
       imperfect_nest = true;
-      printf ("%s: Imperfect nest detected at ptr=%p\n", thisfunc, ptr);
-      printf ("%s: Got timer=%s\n", thisfunc, ptr->name);
-
+      // Sometimes imperfect_nest can cause bptr to be NULL so check for that
       if (bptr)
-	  printf ("%s Expected btm of call stack=%s\n", thisfunc, bptr->name);
+	GPTLwarn ("%s: Imperfect nest detected: Got timer=%s expected btm of call stack=%s\n",
+		  thisfunc, ptr->name, bptr->name);
       else
-	printf ("%s Cannot dereference bptr\n", thisfunc);
-
+	GPTLwarn ("%s: Imperfect nest detected: Got timer=%s expected btm of call stack=%p\n",
+		  thisfunc, ptr->name, bptr);
       print_callstack (t, thisfunc);
     }
   }
