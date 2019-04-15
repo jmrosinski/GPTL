@@ -18,6 +18,7 @@ int main (int argc, char **argv)
   int nthreads = 1;  /* number of threads (default 1) */
   int iter;
   int tnum = 0;
+  MPI_Comm comm;
 #ifdef HAVE_PAPI
   int code;
 #endif
@@ -44,8 +45,9 @@ int main (int argc, char **argv)
     printf ("Failure from MPI_Init\n");
     return 1;
   }
-  ret = MPI_Comm_rank (MPI_COMM_WORLD, &iam);
-  ret = MPI_Comm_size (MPI_COMM_WORLD, &nranks);
+  comm = MPI_COMM_WORLD;
+  ret = MPI_Comm_rank (comm, &iam);
+  ret = MPI_Comm_size (comm, &nranks);
 #endif
 
   ret = GPTLinitialize ();
@@ -87,13 +89,10 @@ int main (int argc, char **argv)
   if (iam == 0)
     printf ("global: testing GPTLpr_summary...\n");
 
+  if (GPTLpr_summary (comm) != 0)
+    return 1;
 #ifdef HAVE_LIBMPI
-  if (GPTLpr_summary (MPI_COMM_WORLD) != 0)
-    return 1;
   ret = MPI_Finalize ();
-#else
-  if (GPTLpr_summary () != 0)
-    return 1;
 #endif
 
   if (GPTLfinalize () != 0)

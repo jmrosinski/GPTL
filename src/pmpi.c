@@ -601,7 +601,7 @@ int MPI_Test (MPI_Request *request, int *flag, MPI_Status *status)
 int GPTLpmpi_setoption (const int option,
 			const int val)
 {
-  return GPTLerror ("GPTLpmpi_setoption: GPTL needs to be built with ./configure arg enable-pmpi "
+  return GPTLerror ("GPTLpmpi_setoption: GPTL needs to be built with ./configure --enable-pmpi "
 		    "to set option %d\n", option);
 }
 

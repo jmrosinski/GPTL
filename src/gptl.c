@@ -199,19 +199,17 @@ static Funcentry funclist[] = {
 };
 static const int nfuncentries = sizeof (funclist) / sizeof (Funcentry);
 
-static double (*ptr2wtimefunc)() = 0; /* init to invalid */
-#ifdef HAVE_NANOTIME
-static int funcidx = 1;               // default timer is x86 register read (nanotime)
-#else
-static int funcidx = 0;               // default timer is gettimeofday
-#endif
+static double (*ptr2wtimefunc)() = 0;    /* init to invalid */
 static char unknown[] = "unknown";
 #ifdef HAVE_NANOTIME
-static float cpumhz = -1.;                        /* init to bad value */
-static double cyc2sec = -1;                       /* init to bad value */
-static inline long long nanotime (void);          /* read counter (assembler) */
-static float get_clockfreq (void);                /* cycles/sec */
-static char *clock_source = unknown;              // where clock found
+static int funcidx = 1;                  // default timer is x86 register read (nanotime)
+static float cpumhz = -1.;               // init to bad value
+static double cyc2sec = -1;              // init to bad value
+static inline long long nanotime (void); // read counter (assembler)
+static float get_clockfreq (void);       // cycles/sec
+static char *clock_source = unknown;     // where clock found
+#else
+static int funcidx = 0;                  // default timer is gettimeofday
 #endif
 
 #define DEFAULT_TABLE_SIZE 1023

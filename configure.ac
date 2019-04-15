@@ -114,6 +114,7 @@ else
    AC_DEFINE([FORTRANUNDERSCORE], [1], [use single underscore for Fortran wrappers])
 fi
 
+# --enable-debug means build with low optimization and add some code inside some #ifdef DEBUG
 AC_ARG_ENABLE([debug], [AS_HELP_STRING([--enable-debug],
               [enable DEBUG ifdef])])
 test "x$enable_debug" = xyes || enable_debug=no
@@ -185,14 +186,14 @@ AC_ARG_ENABLE([libunwind],
 AC_ARG_ENABLE([backtrace],
     AS_HELP_STRING([--enable-backtrace], [Enable auto-profiling capability via backtrace]))
 
-# Default is to enable auto-profiling capability via libunwind.
-# Default is to disable auto-profiling capability via backtrace
+# Default is to enable auto-profiling capability via backtrace
+# Default is to disnable auto-profiling capability via libunwind.
 # Cannot have both methods enabled at once
 if test "x$enable_backtrace" != xno; then
   if test "x$enable_libunwind" = xyes; then
     AC_MSG_ERROR([--enable-libunwind requires --disable-backtrace])
   fi
-# Set define for LIBUNWIND if user didn't say no and backtrace found
+# Set define for BACKTRACE if user didn't say no and backtrace found
   if test "x$found_backtrace" = xyes; then
     usebacktrace=yes;
     AC_DEFINE([HAVE_BACKTRACE], [1], [backtrace will be used])
@@ -200,7 +201,7 @@ if test "x$enable_backtrace" != xno; then
   fi
 fi
 
-# Set define for BACKTRACE if user said yes and backtrace found
+# Set define for LIBUNWIND if user said yes and backtrace found
 if test "x$enable_libunwind" = xyes; then
   if test "x$found_libunwind" = xyes; then
     useunwind=yes;
