@@ -1381,10 +1381,12 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 #endif
     fprintf (fp, "\nIf a \'%%_of\' field is present, it is w.r.t. the first timer for thread 0.\n"
              "If a \'e6_per_sec\' field is present, it is in millions of PAPI counts per sec.\n\n"
-             "A '*' in column 1 below means the timer had multiple parents, though the\n"
-             "values printed are for all calls.\n"
-             "Further down the listing may be more detailed information about multiple\n"
-             "parents. Look for 'Multiple parent info'\n\n");
+             "A '*' in column 1 below means the timer had multiple parents, though the values\n"
+             "printed are for all calls. Multiple parent stats appear later in the file in the\n"
+	     "section titled \'Multiple parent info\'\n"
+	     "A \'!\' in column 1 means the timer is currently ON and the printed timings are only\n"
+	     "valid as of the previous GPTLstop. \'!\' overrides \'*\' if the region had multiple\n"
+	     "parents and was currently ON.\n\n");
   }
 
   /* Print the process size at time of call to GPTLpr_file */
@@ -1941,7 +1943,9 @@ static void printstats (const Timer *timer,
   /* Flag regions having multiple parents with a "*" in column 1 */
   // TODO: The following ASSUMES indent_chars=2!!!
   if (doindent) {
-    if (timer->nparent > 1)
+    if (timer->onflg)
+      fprintf (fp, "! ");
+    else if (timer->nparent > 1)
       fprintf (fp, "* ");
     else
       fprintf (fp, "  ");
@@ -1958,16 +1962,7 @@ static void printstats (const Timer *timer,
   for (i = 0; i < extraspace; ++i)
     fprintf (fp, " ");
 
-  /* 
-  ** Don't print stats if the timer is currently on: too dangerous since the timer needs 
-  ** to be stopped to have currently accurate timings
-  */
-  if (timer->onflg) {
-    fprintf (fp, " NOT PRINTED: timer is currently ON\n");
-    return;
-  }
-
-if (timer->count < PRTHRESH) {
+  if (timer->count < PRTHRESH) {
     if (timer->nrecurse > 0)
       fprintf (fp, " %8lu %8lu", timer->count, timer->nrecurse);
     else
@@ -2839,6 +2834,7 @@ void __cyg_profile_func_enter (void *this_fn,
   void *buffer[2];
   int nptrs;
   char **strings = 0;
+  char addrstr[MAX_CHARS+1];          // function address as a string
   extern char *extract_name (char *);
 #endif
 
@@ -2903,6 +2899,11 @@ void __cyg_profile_func_enter (void *this_fn,
       return;
     }
     symnam = extract_name (strings[1]);
+    // If meaningful name not found, store the function address as a string
+    if (symnam == unknown) {
+      snprintf (addrstr, MAX_CHARS+1, "%lx", (unsigned long) this_fn);
+      symnam = addrstr;
+    }
 #endif
 
     symsize = strlen (symnam);
