@@ -170,50 +170,60 @@ int gptlpr_file (char *file, int nc)
   return ret;
 }
 
+// Some pretty nasty combinations of ifdef logic in next 3 routines--can it be cleaned up?
 int gptlpr_summary (int *fcomm)
 {
-  MPI_Comm ccomm;
+  int ret;
+
+#ifdef HAVE_LIBMPI
 #ifdef HAVE_COMM_F2C
+  MPI_Comm ccomm;
   ccomm = MPI_Comm_f2c (*fcomm);
+  ret = GPTLpr_summary (ccomm);
 #else
-  /* Punt and try just casting the Fortran communicator */
-  ccomm = (MPI_Comm) *fcomm;
+  ret = GPTLerror ("HAVE_COMM_F2C not set so cannot call GPTLpr_summary\n");
 #endif
-  return GPTLpr_summary (ccomm);
+#else
+  ret = GPTLpr_summary (0);
+#endif
+  return ret;
 }
 
 int gptlpr_summary_file (int *fcomm, char *outfile, int nc)
 {
-  MPI_Comm ccomm;
   char locfile[nc+1];
   int ret;
 
-  snprintf (locfile, nc+1, "%s", outfile);
-
+#ifdef HAVE_LIBMPI
 #ifdef HAVE_COMM_F2C
+  MPI_Comm ccomm;
+
+  snprintf (locfile, nc+1, "%s", outfile);
   ccomm = MPI_Comm_f2c (*fcomm);
-#else
-  /* Punt and try just casting the Fortran communicator */
-  ccomm = (MPI_Comm) *fcomm;
-#endif
   ret = GPTLpr_summary_file (ccomm, locfile);
+#else
+  ret = GPTLerror ("HAVE_COMM_F2C not set so cannot call GPTLpr_summary_file\n");
+#endif
+#else
+  snprintf (locfile, nc+1, "%s", outfile);
+  ret = GPTLpr_summary_file (0, locfile);
+#endif
   return ret;
 }
 
 int gptlbarrier (int *fcomm, char *name, int nc)
 {
+#if ( defined HAVE_LIBMPI && defined HAVE_COMM_F2C )
   MPI_Comm ccomm;
   char cname[nc+1];
 
   strncpy (cname, name, nc);
   cname[nc] = '\0';
-#ifdef HAVE_COMM_F2C
   ccomm = MPI_Comm_f2c (*fcomm);
-#else
-  /* Punt and try just casting the Fortran communicator */
-  ccomm = (MPI_Comm) *fcomm;
-#endif
   return GPTLbarrier (ccomm, cname);
+#else
+  return GPTLerror ("Either HAVE_COMM_F2C or HAVE_LIBMPI not set so cannot call GPTLbarrier\n");
+#endif
 }
 
 int gptlreset (void)

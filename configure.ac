@@ -179,7 +179,6 @@ AC_MSG_RESULT([$ac_cv_func_backtrace_symbols])
 # possible. To use auto auto-profiling with GNU or Intel compilers:
 # Compile application code with -g -finstrument-functions -rdynamic
 #
-dnl auto-profiling capability. Default is disabled because it will require extra link flags
 AC_ARG_ENABLE([libunwind],
     AS_HELP_STRING([--enable-libunwind], [Enable auto-profiling capability via libunwind]))
 
