@@ -128,7 +128,9 @@ static const Entry papitable [] = {
   {PAPI_FDV_INS,"PAPI_FDV_INS","FDV_INS ", "FD_ins          ", "FD ins"},
   {PAPI_FSQ_INS,"PAPI_FSQ_INS","FSQ_INS ", "FSq_ins         ", "FSq ins"},
   {PAPI_FNV_INS,"PAPI_FNV_INS","FNV_INS ", "Finv_ins        ", "Finv ins"},
-  {PAPI_FP_OPS, "PAPI_FP_OPS", "FP_OPS  ", "FP_ops_executed ", "Floating point operations executed"}
+  {PAPI_FP_OPS, "PAPI_FP_OPS", "FP_OPS  ", "FP_ops_executed ", "Floating point ops executed"},
+  {PAPI_SP_OPS, "PAPI_SP_OPS", "SP_OPS  ", "SP_ops_executed ", "Single prec ops executed"},
+  {PAPI_DP_OPS, "PAPI_DP_OPS", "DP_OPS  ", "DP_ops_executed ", "Double prec ops executed"}
 };
 
 static const int npapientries = sizeof (papitable) / sizeof (Entry);
@@ -909,19 +911,19 @@ void GPTL_PAPIprstr (FILE *fp)
   
   if (narrowprint) {
     for (n = 0; n < nevents; n++) {
-      fprintf (fp, "%8.8s ", pr_event[n].event.str8);
+      fprintf (fp, " %8.8s", pr_event[n].event.str8);
 
       /* Test on < 0 says it's a PAPI preset */
       if (persec && pr_event[n].event.counter < 0)
-	fprintf (fp, "e6_/_sec ");
+	fprintf (fp, " e6_/_sec");
     }
   } else {
     for (n = 0; n < nevents; n++) {
-      fprintf (fp, "%16.16s ", pr_event[n].event.str16);
+      fprintf (fp, " %16.16s", pr_event[n].event.str16);
 
       /* Test on < 0 says it's a PAPI preset */
       if (persec && pr_event[n].event.counter < 0)
-	fprintf (fp, "e6_/_sec ");
+	fprintf (fp, " e6_/_sec");
     }
   }
 }
@@ -940,10 +942,10 @@ void GPTL_PAPIpr (FILE *fp,                          /* file descriptor to write
 		  const int count,                   /* number of invocations */
 		  const double wcsec)                /* wallclock time (sec) */
 {
-  const char *shortintfmt   = "%8ld ";
-  const char *longintfmt    = "%16ld ";
-  const char *shortfloatfmt = "%8.2e ";
-  const char *longfloatfmt  = "%16.10e ";
+  const char *shortintfmt   = " %8ld";
+  const char *longintfmt    = " %16ld";
+  const char *shortfloatfmt = " %8.2e";
+  const char *longfloatfmt  = " %16.10e";
   const char *intfmt;       /* integer format */
   const char *floatfmt;     /* floating point format */
 
@@ -985,9 +987,9 @@ void GPTL_PAPIpr (FILE *fp,                          /* file descriptor to write
 
       if (persec) {
 	if (wcsec > 0.)
-	  fprintf (fp, "%8.2f ", aux->accum[numidx] * 1.e-6 / wcsec);
+	  fprintf (fp, " %8.2f", aux->accum[numidx] * 1.e-6 / wcsec);
 	else
-	  fprintf (fp, "%8.2f ", 0.);
+	  fprintf (fp, " %8.2f", 0.);
       }
     }
   }
