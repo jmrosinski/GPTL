@@ -23,7 +23,7 @@ int main (int argc, char **argv)
   int code;
 #endif
   int ret;
-  unsigned int nsec;           /* number of seconds to sleep */
+  useconds_t msec_sleep;  /* number of msec to sleep */
 
 #ifdef HAVE_PAPI
   int sub (int, int);
@@ -55,7 +55,7 @@ int main (int argc, char **argv)
 	 
 #ifdef THREADED_OMP
   nthreads = omp_get_max_threads ();
-#pragma omp parallel for private (ret, tnum, nsec)
+#pragma omp parallel for private (ret, tnum, msec_sleep)
 #endif
   for (iter = 0; iter < nthreads; ++iter) {
 #ifdef THREADED_OMP
@@ -63,16 +63,16 @@ int main (int argc, char **argv)
 #endif
     /* Test 1: threaded sleep */
     ret = GPTLstart ("nranks-iam+mythread");
-    nsec = (unsigned int) nranks-iam+tnum;
-    ret = sleep (nsec);
+    msec_sleep = (useconds_t) (1000*(nranks - iam + tnum));
+    ret = usleep (msec_sleep);
     ret = GPTLstop ("nranks-iam+mythread");
   }
 
-  /* Test 2: 5-task sleep(iam) ms */
+  /* Test 2: 5-task usleep(f(iam)) ms */
   if (iam > 0 && iam < 6) {
     ret = GPTLstart ("1-5_iam");
-    nsec = iam;
-    ret = sleep (nsec);
+    msec_sleep = (useconds_t) (1000*iam);
+    ret = usleep (msec_sleep);
     ret = GPTLstop ("1-5_iam");
   }
 
