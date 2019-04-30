@@ -1815,13 +1815,14 @@ static int get_outputfmt (const Timer *ptr,
   int ret;
   int namelen  = strlen (ptr->name);
   int chars2pr = namelen + indent*depth;
+  int n;
 
   if (ptr->nchildren == 0) {
     fill_output (depth, namelen, chars2pr, outputfmt);
     return 0;
   }
 
-  for (int n = 0; n < ptr->nchildren; ++n) {
+  for (n = 0; n < ptr->nchildren; ++n) {
     ret = get_outputfmt (ptr->children[n], depth+1, indent, outputfmt);
     fill_output (depth, namelen, chars2pr, outputfmt);
   }
@@ -1898,7 +1899,9 @@ static int is_descendant (const Timer *node1, const Timer *node2)
 */
 static int is_onlist (const Timer *child, const Timer *parent)
 {
-  for (int n = 0; n < parent->nchildren; ++n) {
+  int n;
+
+  for (n = 0; n < parent->nchildren; ++n) {
     if (child == parent->children[n])
       return 1;
   }
