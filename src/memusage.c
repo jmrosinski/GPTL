@@ -109,16 +109,14 @@ int GPTLget_memusage (int *size_out,        /* process size in MB */
 
 #else
 
-  struct rusage usage;         /* structure filled in by getrusage */
-
   if (getrusage (RUSAGE_SELF, &usage) < 0)
     return GPTLerror ("%s: Failure from getrusage", thisfunc);
   
-  *size      = -1;
-  *rss_out   = (int) (usage.ru_maxrss * convert2mb);
-  *share     = -1;
-  *text      = -1;
-  *datastack = -1;
+  *size_out      = -1;
+  *rss_out       = (int) (usage.ru_maxrss * convert2mb);
+  *share_out     = -1;
+  *text_out      = -1;
+  *datastack_out = -1;
 #ifdef IRIX64
   *datastack = (int) ((usage.ru_idrss + usage.ru_isrss) * convert2mb);
 #endif
