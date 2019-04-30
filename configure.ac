@@ -157,9 +157,16 @@ AM_CONDITIONAL([HAVE_PAPI], [test "x$have_papi" = xyes])
 # applications with -lrt
 AC_CHECK_LIB([rt], [clock_gettime])
 
-# Check for existance of procfs, the proc file system.
-AC_CHECK_FILE([/proc],
+# Check for existence of /proc, used for memory checking
+# Must disable this when cross-compiling
+AC_ARG_ENABLE([slashproc], [AS_HELP_STRING([--disable-slashproc],
+              [check for existence of /proc file system: must be disabled when cross-compiling])])
+
+test "x$enable_slashproc" != xno && enable_slashproc=yes
+if test "$enable_slashproc" = yes; then
+  AC_CHECK_FILE([/proc],
         [AC_DEFINE([HAVE_SLASHPROC], [1], [/proc exists. Will use that for memory checking])])
+fi
 
 # We need the math library for some tests.
 AC_CHECK_LIB([m], [floor], [],
