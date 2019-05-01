@@ -250,10 +250,12 @@ fi
 AM_CONDITIONAL([HAVE_LIBMPI], [test "x$have_libmpi" = xyes])
 
 # Do we have function MPI_Comm_f2c?
-AC_CHECK_FUNC([MPI_Comm_f2c], [have_mpi_comm_f2c=yes], [have_mpi_comm_f2c=no])
-if test "x$have_mpi_comm_f2c" = xyes; then
-  AC_DEFINE([HAVE_COMM_F2C], [1], [MPI_Comm_f2c is present])
-fi
+# For some reason this check trips up titan even though it exists. Just define it for now,
+# since it has been part of the MPI standard for some time.
+#AC_CHECK_FUNC([MPI_Comm_f2c], [have_mpi_comm_f2c=yes], [have_mpi_comm_f2c=no])
+#if test "x$have_mpi_comm_f2c" = xyes; then
+AC_DEFINE([HAVE_COMM_F2C], [1], [Hopefully MPI_Comm_f2c is present])
+#fi
 
 # Does the user want to turn on PMPI?
 AC_MSG_CHECKING([whether PMPI is to be enabled])
