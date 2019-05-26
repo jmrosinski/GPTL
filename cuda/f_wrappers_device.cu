@@ -43,18 +43,19 @@
 extern "C" {
 
 /* Local function prototypes */
-__device__ int gptlstart_gpu (char *, long long);
-__device__ int gptlinit_handle_gpu (const char *, int *, long long);
-__device__ int gptlstart_handle_gpu (const char *, int *, long long);
-__device__ int gptlstop_gpu (const char *, long long);
-__device__ int gptlstop_handle_gpu (const char *, const int *, long long);
+__device__ int gptlstart_gpu (const char *, int);
+__device__ int gptlstart_gpu_c (char *, int);
+__device__ int gptlinit_handle_gpu (const char *, int *, int);
+__device__ int gptlstart_handle_gpu (const char *, int *, int);
+__device__ int gptlstop_gpu (const char *, int);
+__device__ int gptlstop_gpu_c (char *, int);
+__device__ int gptlstop_handle_gpu (const char *, const int *, int);
 __device__ int gptlmy_sleep (float *);
-__device__ int gptget_wallclock_gpu (const char *, double *, double *, double *, long long);
+__device__ int gptget_wallclock_gpu (const char *, double *, double *, double *, int);
 /* Fortran wrapper functions start here */
 
-//JR Cannot dimension local cname[nc] because nc is an input argument
-//JR Maybe a C99-compliancy issue?
-__device__ int gptlstart_gpu (char *name, long long nc)
+//JR Cannot dimension local cname[nc+1] because nc is an input argument
+__device__ int gptlstart_gpu (const char *name, int nc)
 {
   register char cname[MAX_CHARS+1];
   const char *thisfunc = "gptlstart_gpu";
@@ -68,12 +69,12 @@ __device__ int gptlstart_gpu (char *name, long long nc)
   return GPTLstart_gpu (cname);
 }
 
-__device__ int gptlstart_gpu_c (char *name, long long nc)
+__device__ int gptlstart_gpu_c (char *name, int nc)
 {
   return GPTLstart_gpu (name);
 }
 
-__device__ int gptlinit_handle_gpu (const char *name, int *handle, long long nc)
+__device__ int gptlinit_handle_gpu (const char *name, int *handle, int nc)
 {
   register char cname[MAX_CHARS+1];
   const char *thisfunc = "gptlinit_handle_gpu";
@@ -87,7 +88,7 @@ __device__ int gptlinit_handle_gpu (const char *name, int *handle, long long nc)
   return GPTLinit_handle_gpu (cname, handle);
 }
 
-__device__ int gptlstart_handle_gpu (const char *name, int *handle, long long nc)
+__device__ int gptlstart_handle_gpu (const char *name, int *handle, int nc)
 {
   register char cname[MAX_CHARS+1];
   const char *thisfunc = "gptlstart_handle_gpu";
@@ -101,12 +102,12 @@ __device__ int gptlstart_handle_gpu (const char *name, int *handle, long long nc
   return GPTLstart_handle_gpu (cname, handle);
 }
 
-__device__ int gptlstart_handle_gpu_c (const char *name, int *handle, long long nc)
+__device__ int gptlstart_handle_gpu_c (const char *name, int *handle, int nc)
 {
   return GPTLstart_handle_gpu (name, handle);
 }
 
-__device__ int gptlstop_gpu (const char *name, long long nc)
+__device__ int gptlstop_gpu (const char *name, int nc)
 {
   register char cname[MAX_CHARS+1];
   const char *thisfunc = "gptlstop_gpu";
@@ -120,12 +121,12 @@ __device__ int gptlstop_gpu (const char *name, long long nc)
   return GPTLstop_gpu (cname);
 }
 
-__device__ int gptlstop_gpu_c (const char *name, long long nc)
+__device__ int gptlstop_gpu_c (char *name, int nc)
 {
   return GPTLstop_gpu (name);
 }
 
-__device__ int gptlstop_handle_gpu_c (const char *name, const int *handle, long long nc)
+__device__ int gptlstop_handle_gpu_c (const char *name, const int *handle, int nc)
 {
   return GPTLstop_handle_gpu (name, handle);
 }
@@ -135,7 +136,7 @@ __device__ int gptlmy_sleep (float *seconds)
   return GPTLmy_sleep (*seconds);
 }
 
-__device__ int gptlget_wallclock_gpu (char *name, double *accum, double *maxval, double *minval, long long nc)
+__device__ int gptlget_wallclock_gpu (char *name, double *accum, double *maxval, double *minval, int nc)
 {
   register char cname[MAX_CHARS+1];
   const char *thisfunc = "gptlget_wallclock_gpu";
