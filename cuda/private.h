@@ -34,13 +34,9 @@ typedef struct TIMER {
   unsigned int negcount_start; // number of times a stop time < start time
   unsigned int negcount_stop;  // number of times a stop time < start time
   unsigned int recurselvl;  /* recursion level */
-#ifdef CHECK_SM
   unsigned int smid;  // sm the region is running on
-  uint warpid;
-  uint badsmid_start_count;
-  uint badsmid_stop_count;
-  bool badwarpid;
-#endif
+  uint badsmid_count;
+  uint negdelta_count;
   bool onflg;               /* timer currently on or off */
   bool beenprocessed;       // keep track of which timers in which warps have been processed
   char name[MAX_CHARS+1];   /* timer name (user input) */

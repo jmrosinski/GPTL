@@ -44,11 +44,11 @@ extern "C" {
 
 /* Local function prototypes */
 __device__ int gptlstart_gpu (const char *, int);
-__device__ int gptlstart_gpu_c (char *, int);
+__device__ int gptlstart_gpu_c (const char *, int);
 __device__ int gptlinit_handle_gpu (const char *, int *, int);
 __device__ int gptlstart_handle_gpu (const char *, int *, int);
 __device__ int gptlstop_gpu (const char *, int);
-__device__ int gptlstop_gpu_c (char *, int);
+__device__ int gptlstop_gpu_c (const char *, int);
 __device__ int gptlstop_handle_gpu (const char *, const int *, int);
 __device__ int gptlmy_sleep (float *);
 __device__ int gptget_wallclock_gpu (const char *, double *, double *, double *, int);
@@ -69,7 +69,7 @@ __device__ int gptlstart_gpu (const char *name, int nc)
   return GPTLstart_gpu (cname);
 }
 
-__device__ int gptlstart_gpu_c (char *name, int nc)
+__device__ int gptlstart_gpu_c (const char *name, int nc)
 {
   return GPTLstart_gpu (name);
 }
@@ -121,7 +121,7 @@ __device__ int gptlstop_gpu (const char *name, int nc)
   return GPTLstop_gpu (cname);
 }
 
-__device__ int gptlstop_gpu_c (char *name, int nc)
+__device__ int gptlstop_gpu_c (const char *name, int nc)
 {
   return GPTLstop_gpu (name);
 }

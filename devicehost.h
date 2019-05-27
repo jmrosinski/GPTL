@@ -27,12 +27,9 @@ typedef struct {
   long long max;
   long long min;
   unsigned long count;
-  unsigned int negcount_start_max;
-  unsigned int negcount_stop_max;
-  int negcount_start_max_warp;
-  int negcount_stop_max_warp;
-  unsigned int negstart_nwarps;
-  unsigned int negstop_nwarps;
+  unsigned int negdelta_count_max;
+  int negdelta_count_max_warp;
+  unsigned int negdelta_nwarps;
   int accum_max_warp;
   int accum_min_warp;
   int nwarps;
@@ -40,10 +37,7 @@ typedef struct {
   int count_max_warp;
   int count_min;
   int count_min_warp;
-#ifdef CHECK_SM
-  uint badsmid_start_count;
-  uint badsmid_stop_count;
-#endif
+  uint badsmid_count;
   char name[MAX_CHARS+1];
 } Gpustats;
 

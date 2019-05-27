@@ -5,7 +5,6 @@
 ** Main file contains most CUDA GPTL functions
 */
 
-#undef CHECK_1SEC
 #undef USE_THREADS
 
 #include <stdio.h>
@@ -18,7 +17,6 @@
 
 #define FLATTEN_TIMERS(SUB1,SUB2) (SUB1)*maxtimers + (SUB2)
 #define FLATTEN_HASH(SUB1,SUB2) (SUB1)*tablesize + (SUB2)
-#define CLOCK64_BUGFIX
 
 __device__ static int *badderef = 0;       // dereferencing this should should crash
 __device__ static Hashentry *hashtable;
@@ -43,31 +41,16 @@ __device__ static bool initialized = false;       /* GPTLinitialize has been cal
 __device__ static bool verbose = false;           /* output verbosity */
 __device__ static double gpu_hz = 0.;             // clock freq
 __device__ static volatile int mutex = 0;         // critical section unscrambles printf output
-#ifdef CHECK_1SEC
-typedef struct {
-  long long last;
-  long long current;
-  long long delta;
-  uint smid;
-  float diff;
-} Startstop;
-__device__ static volatile Startstop *startstop;
-#endif
 
 extern "C" {
 
-/* Local function prototypes */
-#ifdef CHECK_1SEC
-__global__ static void initialize_gpu (const int, const int, const int, const int, const double, 
-				       Timer *, Hashentry *, int *, int *, Startstop *, Timer **);
-#else
+// Local function prototypes
 __global__ static void initialize_gpu (const int, const int, const int, const int, const double, 
 				       Timer *, Hashentry *, int *, int *, Timer **);
-#endif
 __device__ static inline int get_warp_num (void);         /* get 0-based warp number */
 __device__ static inline unsigned int genhashidx (const char *);
 __device__ static __forceinline__ Timer *getentry (const int, const char *, const unsigned int);
-__device__ static inline int update_stats_gpu (Timer *, const long long, const int);
+__device__ static inline int update_stats_gpu (Timer *, const long long, const int, const volatile uint);
 __device__ static int update_ll_hash_gpu (Timer *, int, unsigned int);
 __device__ static inline int update_ptr_gpu (Timer *, const int);
 __device__ static __forceinline__ int my_strlen (const char *);
@@ -94,9 +77,6 @@ __host__ int GPTLinitialize_gpu (const int verbose_in,
   static int *ntimers_allocated_cpu;              /* max length of timer name */
   static Timer *timers_cpu = 0;             /* linked list of timers */
   static Timer **lasttimer_cpu = 0;               /* last element in list */
-#ifdef CHECK_1SEC
-  static Startstop *startstop_cpu = 0;
-#endif
   //  static const char *thisfunc = "GPTLinitialize_gpu";
 
   nbytes = maxwarps_in * maxtimers_in * sizeof (Timer);
@@ -112,11 +92,6 @@ __host__ int GPTLinitialize_gpu (const int verbose_in,
   nbytes = maxwarps_in * sizeof (Timer *);
   gpuErrchk (cudaMalloc (&lasttimer_cpu, nbytes));
 
-#ifdef CHECK_1SEC
-  nbytes = maxwarps_in * sizeof (Startstop);
-  gpuErrchk (cudaMalloc (&startstop_cpu, nbytes));
-#endif
-
   // Using constant memory doesn't seem to help much if at all
   // First arg is pass by reference so no "&"
   // maxtimers_in and tablesize_in will be ignored if USE_CONSTANT is defined
@@ -130,9 +105,6 @@ __host__ int GPTLinitialize_gpu (const int verbose_in,
 			    hashtable_cpu, 
 			    max_name_len_cpu, 
 			    ntimers_allocated_cpu,
-#ifdef CHECK_1SEC
-			    startstop_cpu,
-#endif			    
 			    lasttimer_cpu);
   // This should flush any existing print buffers
   cudaDeviceSynchronize ();
@@ -154,9 +126,6 @@ __global__ static void initialize_gpu (const int verbose_in,
 				       Hashentry *hashtable_cpu,
 				       int *max_name_len_cpu,
 				       int *ntimers_allocated_cpu,
-#ifdef CHECK_1SEC
-				       Startstop *startstop_cpu,
-#endif				       
 				       Timer **lasttimer_cpu)
 {
   int i, w;           // loop indices over timer, table, warp
@@ -186,9 +155,6 @@ __global__ static void initialize_gpu (const int verbose_in,
   hashtable = hashtable_cpu;
   max_name_len = max_name_len_cpu;
   ntimers_allocated = ntimers_allocated_cpu;
-#ifdef CHECK_1SEC
-  startstop = startstop_cpu;
-#endif
   lasttimer = lasttimer_cpu;
 
   // Initialize hashtable
@@ -446,17 +412,6 @@ __device__ static int update_ll_hash_gpu (Timer *ptr, int w, unsigned int indx)
   wi = FLATTEN_HASH(w,indx);
   hashtable[wi].entry = ptr;
 
-#ifdef CHECK_SM
-  volatile uint smid;
-  volatile uint warpid;
-  asm volatile ("mov.u32 %0, %smid;" : "=r"(smid));
-  asm volatile ("mov.u32 %0, %warpid;" : "=r"(warpid));
-  //  printf ("%s: name=%s warp= %d sm= %d\n", thisfunc, ptr->name, w, smid);
-  ptr->smid = smid;
-  ptr->warpid = warpid;
-  ptr->badwarpid = false;
-#endif
-
 #ifdef DEBUG_PRINT
   printf("%s: name=%s indx=%d wi=%d\n", thisfunc, ptr->name, indx, wi);
 #endif
@@ -475,81 +430,23 @@ __device__ static int update_ll_hash_gpu (Timer *ptr, int w, unsigned int indx)
 __device__ static inline int update_ptr_gpu (Timer *ptr, const int w)
 {
   long long tp2;    /* time stamp */
-  long long delta;
+  volatile uint smid;
   static const char *thisfunc = "update_ptr_gpu";
 
 #ifdef DEBUG_PRINT
   printf ("%s: ptr=%p setting onflg=true\n", thisfunc, ptr);
 #endif
 
-#ifdef CHECK_SM
-  volatile uint smid;
-  volatile uint warpid;
+  // Get the timestamp and smid
+  // IMPORTANT: Issue the cmds in sequence because SM changing between clock64() call and getting
+  // the SM number would be bad.
+  // NOTE: Timing value will be thrown away if SM changes upon stop() call.
+  tp2 = clock64 ();
   asm volatile ("mov.u32 %0, %smid;" : "=r"(smid));
-  asm volatile ("mov.u32 %0, %warpid;" : "=r"(warpid));
 
-#undef PRINT_START_CHANGE
-  if (smid != ptr->smid) {
-#ifdef PRINT_START_CHANGE
-    printf ("GPTL %s: name=%s w=%d sm changed from %d to %d\n", 
-    	    thisfunc, ptr->name, w, ptr->smid, smid);
-#endif
-    ++ptr->badsmid_start_count;
-    ptr->smid = smid;
-  }
-
-  if (warpid != ptr->warpid) {
-#ifdef PRINT_START_CHANGE
-    printf ("GPTL %s: name=%s w=%d warpid changed from %d to %d\n", 
-    	    thisfunc, ptr->name, w, ptr->warpid, warpid);
-#endif
-    ptr->warpid = warpid;
-  }
-  ptr->badwarpid = false;
-#endif
-  
-  ptr->onflg = true;
-  tp2 = clock64 ();
-#ifdef CLOCK64_BUGFIX
-  tp2 = clock64 ();
-#endif
-  delta = (tp2 - ptr->wall.last);
-
-  if (delta < 0) {
-    ++ptr->negcount_start;
-    // In practice there are tons of negative start events, so disable print
-#undef PR_NEGSTART
-#ifdef PR_NEGSTART
-    bool isSet; 
-    // Use critical section so printf from multiple SMs don't get scrambled
-    do {
-      // If mutex is 0, grab by setting = 1
-      // If mutex is 1, it stays 1 and isSet will be false
-      isSet = atomicCAS ((int *) &mutex, 0, 1) == 0; 
-      if (isSet) {  // critical section starts here
-	printf ("GPTL: %s name=%s w=%d WARNING: backward by %g sec: resetting anyway \n",
-		thisfunc, ptr->name, w, delta/-gpu_hz);
-	printf ("Bit pattern old:");
-	prbits8 ((uint64_t) ptr->wall.last);
-	
-	printf ("Bit pattern new:");
-	prbits8 ((uint64_t) tp2);
-
-	mutex = 0;     // end critical section by releasing the mutex
-      }
-    } while ( !isSet); // exit the loop after critical section executed
-#endif
-    if ((void *) &timers != timersaddr) {
-      printf ("%s: timers changed address!!!! old=%p new=%p\n", thisfunc, &timers, timersaddr);
-      return *badderef;
-    }
-    if (my_strcmp (timers[0].name, "GPTL_ROOT") != 0) {
-      printf ("%s: timers[0].name=%s should=GPTL_ROOT\n", thisfunc, timers[0].name);
-      return *badderef;
-    }
-  }
-
+  ptr->smid = smid;
   ptr->wall.last = tp2;
+  ptr->onflg = true;
   return SUCCESS;
 }
 
@@ -567,6 +464,7 @@ __device__ int GPTLstop_gpu (const char *name)  // timer name
   Timer *ptr;                // linked list pointer
   int w;                     // warp number for this process
   unsigned int indx;         // index into hash table
+  volatile uint smid;        // SM id
   static const char *thisfunc = "GPTLstop_gpu";
 
   if (disabled)
@@ -575,16 +473,18 @@ __device__ int GPTLstop_gpu (const char *name)  // timer name
   if ( ! initialized)
     return GPTLerror_1s ("%s: GPTLinitialize_gpu has not been called\n", thisfunc);
 
-  /* Get the timestamp */
-  tp1 = clock64 ();
-#ifdef CLOCK64_BUGFIX
-  tp1 = clock64 ();
-#endif
   w = get_warp_num ();
 
   // Return if not thread 0 of the warp, or warpId is outside range of available timers
   if (w == NOT_ROOT_OF_WARP || w == WARPID_GT_MAXWARPS)
     return SUCCESS;
+
+  // Get the timestamp and smid
+  // IMPORTANT: Issue the cmds in sequence because SM changing between clock64() call and getting
+  // the SM number would be bad.
+  // NOTE: Timing value will be thrown away if SM changed from start() call.
+  tp1 = clock64 ();
+  asm volatile ("mov.u32 %0, %smid;" : "=r"(smid));
 
   indx = genhashidx (name);
   if (! (ptr = getentry (w, name, indx)))
@@ -604,7 +504,7 @@ __device__ int GPTLstop_gpu (const char *name)  // timer name
     return SUCCESS;
   }
 
-  if (update_stats_gpu (ptr, tp1, w) != 0)
+  if (update_stats_gpu (ptr, tp1, w, smid) != 0)
     return GPTLerror_1s ("%s: error from update_stats_gpu\n", thisfunc);
 
   return SUCCESS;
@@ -622,10 +522,11 @@ __device__ int GPTLstop_gpu (const char *name)  // timer name
 __device__ int GPTLstop_handle_gpu (const char *name,     /* timer name */
 				    const int *handle)    /* handle */
 {
-  volatile long long tp1;         /* time stamp */
-  Timer *ptr;                /* linked list pointer */
-  int w;                     /* warp number for this process */
+  volatile long long tp1;    // time stamp
+  Timer *ptr;                // linked list pointer
+  int w;                     // warp number for this process
   unsigned int indx;
+  volatile uint smid;        // SM id
   static const char *thisfunc = "GPTLstop_handle_gpu";
 
   if (disabled)
@@ -634,16 +535,18 @@ __device__ int GPTLstop_handle_gpu (const char *name,     /* timer name */
   if ( ! initialized)
     return GPTLerror_1s ("%s: GPTLinitialize_gpu has not been called\n", thisfunc);
 
-  /* Get the timestamp */
-  tp1 = clock64 ();
-#ifdef CLOCK64_BUGFIX
-  tp1 = clock64 ();
-#endif
   w = get_warp_num ();
 
   // Return if not thread 0 of the warp, or warpId is outside range of available timers
   if (w == NOT_ROOT_OF_WARP || w == WARPID_GT_MAXWARPS)
     return SUCCESS;
+
+  // Get the timestamp and smid
+  // IMPORTANT: Issue the cmds in sequence because SM changing between clock64() call and getting
+  // the SM number would be bad.
+  // NOTE: Timing value will be thrown away if SM changed from start() call.
+  tp1 = clock64 ();
+  asm volatile ("mov.u32 %0, %smid;" : "=r"(smid));
 
   indx = (unsigned int) *handle;
   if (indx == 0 || indx > tablesizem1)
@@ -668,7 +571,7 @@ __device__ int GPTLstop_handle_gpu (const char *name,     /* timer name */
     return SUCCESS;
   }
 
-  if (update_stats_gpu (ptr, tp1, w) != 0)
+  if (update_stats_gpu (ptr, tp1, w, smid) != 0)
     return GPTLerror_1s ("%s: error from update_stats_gpu\n", thisfunc);
 
   return SUCCESS;
@@ -686,13 +589,10 @@ __device__ int GPTLstop_handle_gpu (const char *name,     /* timer name */
 */
 __device__ static inline int update_stats_gpu (Timer *ptr, 
 					       const long long tp1, 
-					       const int w)
+					       const int w,
+					       const volatile uint smid)
 {
-  int ret = SUCCESS;
-  volatile uint smid;         // only needed when certain ifdefs defined
-  volatile uint warpid;
-  long long delta;   /* difference */
-  bool badsmid_stop = false;
+  long long delta;           // time diff from start()
   static const char *thisfunc = "update_stats_gpu";
 #ifdef DEBUG_PRINT
   printf ("%s: ptr=%p setting onflg=false\n", thisfunc, ptr);
@@ -701,45 +601,18 @@ __device__ static inline int update_stats_gpu (Timer *ptr,
   ptr->onflg = false;
   delta = tp1 - ptr->wall.last;
 
-#ifdef CHECK_1SEC
-  double diff =  delta / gpu_hz;
-  if (diff < 0.99) {
-    asm volatile ("mov.u32 %0, %smid;" : "=r"(smid));
-    printf ("%s: w=%d smid=%u smid_sleep=%u\n", thisfunc, w, smid, startstop[w].smid);
-    printf ("start(gptl) %lld start(sleep) %lld stop(sleep) %lld stop(gptl) %lld\n",
-	    ptr->wall.last, startstop[w].last, startstop[w].current, tp1);
-    printf ("diff(gptl) %f diff(sleep) %f\n", delta/gpu_hz, startstop[w].diff);
-  }
-#endif
-
-#ifdef CHECK_SM
-  asm volatile ("mov.u32 %0, %smid;" : "=r"(smid));
-  asm volatile ("mov.u32 %0, %warpid;" : "=r"(warpid));
-
   if (smid != ptr->smid) {
-    printf ("GPTL %s: name=%s w=%d sm changed from %d to %d\n", 
+#ifdef DEBUG_PRINT
+    printf ("GPTL %s: name=%s w=%d sm changed from %d to %d: SKIPPING timing\n", 
 	    thisfunc, ptr->name, w, ptr->smid, smid);
-    badsmid_stop = true;
-    ++ptr->badsmid_stop_count;
-    ptr->smid = smid;
+#endif
+    ++ptr->badsmid_count;
+    return SUCCESS;
   }
 
-#undef PRINT_STOP_CHANGE
-  if (warpid != ptr->warpid) {
-#ifdef PRINT_STOP_CHANGE
-    printf ("GPTL %s: name=%s w=%d warpid changed from %d to %d\n", 
-	    thisfunc, ptr->name, w, ptr->warpid, warpid);
-#endif
-    ptr->warpid = warpid;
-    ptr->badwarpid = true;
-  }
-#endif
-
-#define LEAVE_EARLY -1
-#undef DISCARD_BAD_SM_WARP
   if (delta < 0) {
+#ifdef DEBUG_PRINT
     bool isSet; 
-    ++ptr->negcount_stop;
     // Use critical section so printf from multiple SMs don't get scrambled
     do {
       // If mutex is 0, grab by setting = 1
@@ -756,29 +629,11 @@ __device__ static inline int update_stats_gpu (Timer *ptr,
 	mutex = 0;     // end critical section by releasing the mutex
       }
     } while ( !isSet); // exit the loop after critical section executed
-
-    // If either of these tests fail, need to abort
-    if ((void *) &timers != timersaddr) {
-      printf ("%s: timers changed address!!!! old=%p new=%p\n", thisfunc, &timers, timersaddr);
-      return *badderef;
-    }
-    if (my_strcmp (timers[0].name, "GPTL_ROOT") != 0) {
-      printf ("%s: timers[0].name=%s should=GPTL_ROOT\n", thisfunc, timers[0].name);
-      return *badderef;
-    }
-    ret = LEAVE_EARLY;  // Return without adding the bad delta
-  }
-
-  if (badsmid_stop || ptr->badwarpid) {
-#ifdef DISCARD_BAD_SM_WARP
-    ret = LEAVE_EARLY;  // Return without adding the bad delta
-#else
-    ret = SUCCESS;
 #endif
-  }
-
-  if (ret == LEAVE_EARLY)
+    
+    ++ptr->negdelta_count;
     return SUCCESS;
+  }
 
   ++ptr->count;
   ptr->wall.accum += delta;
@@ -1137,19 +992,11 @@ __device__ static void init_gpustats (Gpustats *gpustats, Timer *ptr, int w)
   gpustats->count_min      = ptr->count;
   gpustats->count_min_warp = w;
 
-  gpustats->negcount_start_max      = ptr->negcount_start;
-  gpustats->negcount_start_max_warp = w;
+  gpustats->negdelta_count_max       = ptr->negdelta_count;
+  gpustats->negdelta_count_max_warp  = w;
+  gpustats->negdelta_nwarps          = ptr->negdelta_count  > 0 ? 1 : 0;
 
-  gpustats->negcount_stop_max       = ptr->negcount_stop;
-  gpustats->negcount_stop_max_warp  = w;
-
-  gpustats->negstart_nwarps = ptr->negcount_start > 0 ? 1 : 0;
-  gpustats->negstop_nwarps  = ptr->negcount_stop  > 0 ? 1 : 0;
-
-#ifdef CHECK_SM
-  gpustats->badsmid_start_count = ptr->badsmid_start_count;
-  gpustats->badsmid_stop_count  = ptr->badsmid_stop_count;
-#endif
+  gpustats->badsmid_count  = ptr->badsmid_count;
 
   ptr->beenprocessed = true;
 }
@@ -1179,27 +1026,15 @@ __device__ static void fill_gpustats (Gpustats *gpustats, Timer *ptr, int w)
     gpustats->count_min_warp = w;
   }
 
-  if (ptr->negcount_start > gpustats->negcount_start_max) {
-    gpustats->negcount_start_max      = ptr->negcount_start;
-    gpustats->negcount_start_max_warp = w;
+  if (ptr->negdelta_count > gpustats->negdelta_count_max) {
+    gpustats->negdelta_count_max      = ptr->negdelta_count;
+    gpustats->negdelta_count_max_warp = w;
   }
 
-  if (ptr->negcount_stop > gpustats->negcount_stop_max) {
-    gpustats->negcount_stop_max      = ptr->negcount_stop;
-    gpustats->negcount_stop_max_warp = w;
-  }
+  if (ptr->negdelta_count > 0)
+    ++gpustats->negdelta_nwarps;
 
-  if (ptr->negcount_start > 0)
-    ++gpustats->negstart_nwarps;
-
-  if (ptr->negcount_stop > 0)
-    ++gpustats->negstop_nwarps;
-
-#ifdef CHECK_SM
-  gpustats->badsmid_start_count += ptr->badsmid_start_count;
-  gpustats->badsmid_stop_count  += ptr->badsmid_stop_count;
-#endif
-
+  gpustats->badsmid_count  += ptr->badsmid_count;
 }
 
 __device__ static __forceinline__ int my_strlen (const char *str)
@@ -1393,18 +1228,6 @@ __global__ void GPTLget_memstats_gpu (float *hashmem, float *regionmem)
 
 __device__ int GPTLmy_sleep (float seconds)
 {
-#ifdef CHECK_1SEC
-  int warpId;
-  int blockId = blockIdx.x 
-    + blockIdx.y * gridDim.x 
-    + gridDim.x * gridDim.y * blockIdx.z; 
-  int threadId = blockId * (blockDim.x * blockDim.y * blockDim.z)
-    + (threadIdx.z * (blockDim.x * blockDim.y))
-    + (threadIdx.y * blockDim.x)
-    + threadIdx.x;
-  int w = threadId / WARPSIZE;
-#endif
-
   volatile long long start, now;
   volatile double delta;
   static const char *thisfunc = "GPTLmy_sleep";
@@ -1414,27 +1237,11 @@ __device__ int GPTLmy_sleep (float seconds)
 			 thisfunc);
 
   start = clock64();
-#ifdef CLOCK64_BUGFIX
-  start = clock64 ();
-#endif
   do {
     now = clock64();
     delta = (now - start) / gpu_hz;
   } while (delta < seconds);
 
-#ifdef CHECK_1SEC
-  if (threadId % WARPSIZE == 0) {
-    volatile uint smid;
-    startstop[w].last = start;
-    startstop[w].current = now;
-    startstop[w].delta = now - start;
-    asm volatile ("mov.u32 %0, %smid;" : "=r"(smid));
-    startstop[w].smid = smid;
-    startstop[w].diff = (now - start) / gpu_hz;
-    if (startstop[w].diff < 0.99 || startstop[w].diff > 1.01)
-      printf ("%s: diff %f start %lld now %lld\n", thisfunc, startstop[w].diff, start, now);
-  }
-#endif
   // For some reason, w/o syncthreads, ACC tests often sleep much less than 1 sec
   // But CUDA tests all seem to work fine
   // __syncthreads();
@@ -1445,6 +1252,7 @@ __device__ void GPTLdummy_gpu (int num)
 {
   Hashentry x;
   static const char *thisfunc = "GPTLdummy_gpu";
+
   printf ("%s: num=%d hashtable=%p\n", thisfunc, num, hashtable);
   // If hashtable pointer has become bad, force a cuda error
   x = *hashtable;

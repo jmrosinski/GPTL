@@ -16,7 +16,7 @@ MANDIR =
 
 # Provide full path to C and CU compilers to avoid conflict with /usr/bin/nvcc
 # C compiler
-CC = /usr/local/cuda-10.0/bin/nvcc
+CC = gcc
 
 # CUDA compiler
 CU = /usr/local/cuda-10.0/bin/nvcc
@@ -24,9 +24,9 @@ CU = /usr/local/cuda-10.0/bin/nvcc
 # Whether to build debug lib or optimized lib, and associated flags
 DEBUG = no
 ifeq ($(DEBUG),yes)
-  CUFLAGS = -DDEBUG -DUSE_CONSTANT $(UNDERSCORING) -g -O0 -G -lineinfo -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true -Xptxas="-v"
+  CUFLAGS = -DDEBUG -DUSE_CONSTANT $(UNDERSCORING) -g -O0 -fopenacc
 else
-  CUFLAGS = -UDEBUG -DUSE_CONSTANT $(UNDERSCORING) -g -O2              -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true -Xptxas="-v"
+  CUFLAGS = -UDEBUG -DUSE_CONSTANT $(UNDERSCORING) -g -O2 -fopenacc
 endif
 
 # Set compiler flags for non-default ABIs (e.g. 64-bit addressing). 
@@ -44,7 +44,7 @@ HAVE_SLASHPROC = yes
 # if either OPENMP=yes, or PTHREADS=yes. If OPENMP=no and PTHREADS=no, GPTL 
 # will not be thread-safe.
 OPENMP = no
-COMPFLAG = -mp
+COMPFLAG = -fopenmp
 # Set PTHREADS if available and OPENMP=no
 ifeq ($(OPENMP),no)
   PTHREADS = no
@@ -84,9 +84,9 @@ ifeq ($(FORTRAN),yes)
 # Set Fortran compiler, flags, and OpenMP compiler flag. Note that Fortran
 # OpenMP tests are possible with OPENMP=no as long as PTHREADS=yes
 # These settings are only used by the Fortran test applications in ftests/.
-  FC     = pgfortran
-  FFLAGS = -g -O2 -m64
-  FOMPFLAG = -mp
+  FC     = gfortran
+  FFLAGS = -g -O2
+  FOMPFLAG = -fopenmp
 endif
 
 # Archiver: normally it's just ar

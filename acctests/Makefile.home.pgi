@@ -4,7 +4,7 @@ GPTL = ..
 FFLAGS  = -g -O0 -I$(GPTL) -I$(GPTL)/cuda -acc -Minfo=accel -Minfo -ta=tesla:cc60,keepgpu -m64
 CPPFLAGS = -I$(GPTL) -I$(GPTL)/cuda -D_OPENACC -DPAR_WRK=1 -DVEC_LEN=96 -DNZ=96
 FFLAGS_VDM = -g -O0 -I$(GPTL) -I$(GPTL)/cuda -traceback -Meh_frame -D_OPENACC -DPAR_WRK=1 \
-             -DVEC_LEN=96 -DNZ=96 -acc -Minfo=accel -ta=tesla,cc60,ptxinfo,gvmode,maxregcount:96 -m64
+             -DVEC_LEN=96 -DNZ=96 -acc -Minfo=accel -ta=tesla,cc60,ptxinfo,gvmode -m64
 # -Mcuda=cc60 still results in address changes, though only with large values of threads and blocks
 # But it seems to be required to avoid unsatisfied externals. 
 

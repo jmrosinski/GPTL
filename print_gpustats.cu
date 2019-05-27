@@ -29,7 +29,7 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   long long *get_thread_num_ohdgpu; /* Getting my thread index */
   long long *genhashidx_ohdgpu;     /* Generating hash index */
   long long *getentry_ohdgpu;       /* Finding entry in hash table */
-  char *getentry_ohdgpu_name; // name used for getentry test
+  char *getentry_ohdgpu_name;       // name used for getentry test
   long long *utr_ohdgpu;            /* Underlying timing routine */
   long long *self_ohdgpu;           // Cost est. for timing this region
   long long *parent_ohdgpu;         // Cost est. to parent of this region
@@ -144,101 +144,87 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   fprintf (fp, "GPTL could handle up to %d warps (%d threads)\n", maxwarps, maxwarps * WARPSIZE);
   fprintf (fp, "This setting can be changed with: GPTLsetoption(GPTLmaxthreads_gpu,<number>)\n");
   fprintf (fp, "%d = max warpId found\n", maxwarpid_found[0]);
-  fprintf (fp, "%d = max warpId timed\n", maxwarpid_timed[0]);
+  fprintf (fp, "%d = max warpId examined\n", maxwarpid_timed[0]);
   fprintf (fp, "Only warps which were timed are counted in the following stats\n");
   fprintf (fp, "Overhead estimates self_OH and parent_OH are for warp with \'maxcount\' calls\n");
   fprintf (fp, "OHD estimate assumes Fortran, and non-handle routines used\n");
   fprintf (fp, "Actual overhead can be reduced by using \'handle\' routines and \'_c\' Fortran routines\n\n");
 
   fprintf (fp, "name            = region name\n");
-  fprintf (fp, "calls           = number of invocations across all timed warps\n");
-  fprintf (fp, "warps           = number of timed warps for which region was timed at least once\n");
-  fprintf (fp, "holes           = number of timed warps for which region was never timed (maxwarpid_timed + 1 - nwarps(region)\n");
+  fprintf (fp, "calls           = number of invocations across all examined warps\n");
+  fprintf (fp, "warps           = number of examined warps for which region was timed at least once\n");
+  fprintf (fp, "holes           = number of examined warps for which region was never executed (maxwarpid_timed + 1 - nwarps(region)\n");
   fprintf (fp, "wallmax (warp)  = max wall time (sec) taken by any timed warp for this region, followed by the warp number\n");
   fprintf (fp, "wallmin (warp)  = min wall time (sec) taken by any timed warp for this region, followed by the warp number\n");
   fprintf (fp, "maxcount (warp) = max number of times region invoked by any timed warp, followed by the warp number\n");
   fprintf (fp, "mincount (warp) = min number of times region invoked by any timed warp, followed by the warp number\n");
-  fprintf (fp, "negmxstrt(warp) = if a start region had a neg intrvl, biggest count is printed along with the warp number responsible\n");
-  fprintf (fp, "nwarps          = number of warps encountering negmxstrt > 0\n");
-  fprintf (fp, "negmxstop(warp) = if a stop region had a neg intrvl, biggest count is printed along with the warp number responsible\n");
-  fprintf (fp, "nwarps          = number of warps encountering negmxstop > 0\n");
-#ifdef CHECK_SM
-  fprintf (fp, "smstrt          = number of warps encountering change of smid on start\n");
-  fprintf (fp, "smstop          = number of warps encountering change of smid on stop\n");
-#endif
+  fprintf (fp, "negmax (warp)   = if a region had a negative interval, biggest count is printed along with the warp number responsible\n");
+  fprintf (fp, "nwarps          = number of warps encountering a negative interval\n");
+  fprintf (fp, "Bad_SM          = number of times smid changed (these instances are NOT timed!) Max possible = 'calls'\n");
   fprintf (fp, "self_OH         = estimate of GPTL overhead (sec) in the timer incurred by 'maxcount' invocations of it\n");
   fprintf (fp, "parent_OH       = estimate of GPTL overhead (sec) in the parent of the timer incurred by 'maxcount' invocations of it\n\n");
   // Print header, padding to length of longest name
   extraspace = max_name_len_gpu[0] - 4; // "name" is 4 chars
   for (i = 0; i < extraspace; ++i)
     fprintf (fp, " ");
-#ifdef CHECK_SM
-  fprintf (fp, "name    calls  warps  holes  wallmax  (warp) wallmin (warp) maxcount (warp) mincount (warp) negmxstrt(warp) nwarps negmxstop(warp) nwarps   smstrt   smstop  self_OH parent_OH\n");
-#else
-  fprintf (fp, "name    calls  warps  holes  wallmax  (warp) wallmin (warp) maxcount (warp) mincount (warp) negmxstrt(warp) nwarps negmxstop(warp) nwarps  self_OH parent_OH\n");
-#endif
+  fprintf (fp, "name    calls  warps  holes | wallmax  (warp)| wallmin (warp) | maxcount (warp)| mincount (warp)| negmax (warp) nwarps  | Bad_SM| self_OH parent_OH\n");
   for (n = 0; n < ngputimers[0]; ++n) {
     extraspace = max_name_len_gpu[0] - strlen (gpustats[n].name);
     for (i = 0; i < extraspace; ++i)
       fprintf (fp, " ");
     fprintf (fp, "%s ", gpustats[n].name);               // region name
     if (gpustats[n].count < 1000000)
-      fprintf (fp, "%8lu ", gpustats[n].count);           // # start/stops of region
+      fprintf (fp, "%8lu ", gpustats[n].count);          // # start/stops of region
     else
       fprintf (fp, "%8.2e ", (float) gpustats[n].count); // # start/stops of region  
 
     fprintf (fp, "%6d ", gpustats[n].nwarps);            // nwarps involving name
-    fprintf (fp, "%6d ", maxwarpid_timed[0] - gpustats[n].nwarps + 1);            // number of (untimed) holes
+    fprintf (fp, "%6d ", maxwarpid_timed[0] - gpustats[n].nwarps + 1); // number of (untimed) holes
     
     wallmax = gpustats[n].accum_max / gpu_hz;            // max time for name across warps
     if (wallmax < 0.01)
-      fprintf (fp, "%8.2e ", wallmax);
+      fprintf (fp, "|%8.2e ", wallmax);
     else
-      fprintf (fp, "%8.3f ", wallmax);
+      fprintf (fp, "|%8.3f ", wallmax);
     fprintf (fp, "%6d ",gpustats[n].accum_max_warp);     // warp number for max
     
     wallmin = gpustats[n].accum_min / gpu_hz;            // min time for name across warps
     if (wallmin < 0.01)
-      fprintf (fp, "%8.2e ", wallmin);
+      fprintf (fp, "|%8.2e ", wallmin);
     else
-      fprintf (fp, "%8.3f ", wallmin);	       
-    fprintf (fp, "%6d ",gpustats[n].accum_min_warp);   // warp number for min
+      fprintf (fp, "|%8.3f ", wallmin);	       
+    fprintf (fp, "%6d ",gpustats[n].accum_min_warp);     // warp number for min
     
     count_max = gpustats[n].count_max;
     if (count_max < PRTHRESH)
-      fprintf (fp, "%8d ", count_max);                 // max count for region "name"
+      fprintf (fp, "|%8d ", count_max);                   // max count for region "name"
     else
-      fprintf (fp, "%8.1e ", (float) count_max);
-    fprintf (fp, "%6d ",gpustats[n].count_max_warp);   // warp which accounted for max times
+      fprintf (fp, "|%8.1e ", (float) count_max);
+    fprintf (fp, "%6d ",gpustats[n].count_max_warp);     // warp which accounted for max times
     
     count_min = gpustats[n].count_min;                
     if (count_min < PRTHRESH)
-      fprintf (fp, "%8d ", count_min);                  // min count for region "name"
+      fprintf (fp, "|%8d ", count_min);                   // min count for region "name"
     else
-      fprintf (fp, "%8.1e ", (float) count_min);
-    fprintf (fp, "%6d ",gpustats[n].count_min_warp);    // warp which accounted for max times
+      fprintf (fp, "|%8.1e ", (float) count_min);
+    fprintf (fp, "%6d ",gpustats[n].count_min_warp);     // warp which accounted for max times
 
-    fprintf (fp, "%8d ", gpustats[n].negcount_start_max);      // max negcount for "start" region "name" (hope it's zero)
-    fprintf (fp, "%6d ", gpustats[n].negcount_start_max_warp); // warp which accounted for negcount_start_max
-    fprintf (fp, "%6d ", gpustats[n].negstart_nwarps);         // number of warps which had > 0 negative starts
+    if (gpustats[n].negdelta_count_max == 0) {
+      fprintf (fp, "|    -    ");
+      fprintf (fp, "   -   ");
+      fprintf (fp, "   -   ");
+    } else {
+      fprintf (fp, "|%8d ", gpustats[n].negdelta_count_max);      // max negcount for "stop" region "name"
+      fprintf (fp, "%6d ", gpustats[n].negdelta_count_max_warp); // warp which accounted for negdelta_count_max
+      fprintf (fp, "%6d ", gpustats[n].negdelta_nwarps);         // number of warps which had > 0 negatives
+    }
 
-    fprintf (fp, "%8d ", gpustats[n].negcount_stop_max);       // max negcount for "stop" region "name" (hope it's zero)
-    fprintf (fp, "%6d ", gpustats[n].negcount_stop_max_warp);  // warp which accounted for negcount_stop_max
-    fprintf (fp, "%6d ", gpustats[n].negstop_nwarps);          // number of warps which had > 0 negative stops
-
-#ifdef CHECK_SM
-    if (gpustats[n].badsmid_start_count < PRTHRESH)
-      fprintf (fp, "%8d ", gpustats[n].badsmid_start_count);     // number of times SM changed on "start" call
+    if (gpustats[n].badsmid_count == 0)
+      fprintf (fp, "|   -   |");
     else
-      fprintf (fp, "%8.1e ", (float) gpustats[n].badsmid_start_count);
+      fprintf (fp, "|%6d |", gpustats[n].badsmid_count);      // number of times SM changed on "stop" call
 
-    if (gpustats[n].badsmid_stop_count < PRTHRESH)
-      fprintf (fp, "%8d ", gpustats[n].badsmid_stop_count);      // number of times SM changed on "stop" call
-    else
-      fprintf (fp, "%8.1e ", (float) gpustats[n].badsmid_stop_count);
-#endif
-
-    self = gpustats[n].count_max * self_ohdgpu[0] / gpu_hz;    // self ohd est
+    self = gpustats[n].count_max * self_ohdgpu[0] / gpu_hz; // self ohd est
     if (self < 0.01)
       fprintf (fp, "%8.2e  ", self);
     else
