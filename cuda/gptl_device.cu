@@ -5,8 +5,6 @@
 ** Main file contains most CUDA GPTL functions
 */
 
-#undef USE_THREADS
-
 #include <stdio.h>
 #include <string.h>        // memcpy
 #include <stdint.h>        // uint types
@@ -18,35 +16,30 @@
 #define FLATTEN_TIMERS(SUB1,SUB2) (SUB1)*maxtimers + (SUB2)
 #define FLATTEN_HASH(SUB1,SUB2) (SUB1)*tablesize + (SUB2)
 
-__device__ static int *badderef = 0;       // dereferencing this should should crash
+__device__ static int *badderef = 0;            // dereferencing this should should crash
 __device__ static Hashentry *hashtable;
-__device__ static Timer *timers = 0;             /* linked list of timers */
-__device__ static void *timersaddr;         // For verifying address of timers stays put
-__device__ static Timer **lasttimer = 0;               /* last element in list */
-__device__ static int *max_name_len;              /* max length of timer name */
+__device__ static Timer *timers = 0;            // linked list of timers
+__device__ static void *timersaddr;             // For verifying address of timers stays put
+__device__ static Timer **lasttimer = 0;        // last element in list
+__device__ static int *max_name_len;            // max length of timer name
 __device__ static int *ntimers_allocated;
-__device__ static int maxwarps = -1;              /* max warps */
-#ifdef USE_CONSTANT
-__device__ __constant__ static int maxtimers;                  /* max timers */
-__device__ __constant__ static int tablesize;                  // size of hash table
-#else
-__device__ static int maxtimers = -1;                  /* max timers */
-__device__ static int tablesize;                  // size of hash table
-#endif
-__device__ static int tablesizem1;                // one less
-__device__ static int maxwarpid_found = 0;           /* number of warps found : init to 0 */
-__device__ static int maxwarpid_timed = 0;           /* number of warps analyzed : init to 0 */
-__device__ static bool disabled = false;          /* Timers disabled? */
-__device__ static bool initialized = false;       /* GPTLinitialize has been called */
-__device__ static bool verbose = false;           /* output verbosity */
-__device__ static double gpu_hz = 0.;             // clock freq
-__device__ static volatile int mutex = 0;         // critical section unscrambles printf output
+__device__ static int maxwarps = -1;            // max warps
+__device__ __constant__ static int maxtimers;   // max number of timers
+__device__ __constant__ static int tablesize;   // size of hash table
+__device__ __constant__ static int tablesizem1; // one less
+__device__ static int maxwarpid_found = 0;      // number of warps found : init to 0
+__device__ static int maxwarpid_timed = 0;      // number of warps analyzed : init to 0
+__device__ static bool disabled = false;        // Timers disabled?
+__device__ static bool initialized = false;     // GPTLinitialize has been called
+__device__ static bool verbose = false;         // output verbosity
+__device__ static double gpu_hz = 0.;           // clock freq
+__device__ static volatile int mutex = 0;       // critical section unscrambles printf output
 
 extern "C" {
 
 // Local function prototypes
-__global__ static void initialize_gpu (const int, const int, const int, const int, const double, 
-				       Timer *, Hashentry *, int *, int *, Timer **);
+__global__ static void initialize_gpu (const int, const int, const double, Timer *, Hashentry *, 
+				       int *, int *, Timer **);
 __device__ static inline int get_warp_num (void);         /* get 0-based warp number */
 __device__ static inline unsigned int genhashidx (const char *);
 __device__ static __forceinline__ Timer *getentry (const int, const char *, const unsigned int);
@@ -72,12 +65,12 @@ __host__ int GPTLinitialize_gpu (const int verbose_in,
 				 const double gpu_hz_in)
 {
   size_t nbytes;  // number of bytes to allocate
+  int tablesizem1_loc = tablesize_in - 1;
   static Hashentry *hashtable_cpu;
-  static int *max_name_len_cpu;              /* max length of timer name */
-  static int *ntimers_allocated_cpu;              /* max length of timer name */
-  static Timer *timers_cpu = 0;             /* linked list of timers */
-  static Timer **lasttimer_cpu = 0;               /* last element in list */
-  //  static const char *thisfunc = "GPTLinitialize_gpu";
+  static int *max_name_len_cpu;          // max length of timer name
+  static int *ntimers_allocated_cpu;     // max length of timer name
+  static Timer *timers_cpu = 0;          // linked list of timers
+  static Timer **lasttimer_cpu = 0;      // last element in list
 
   nbytes = maxwarps_in * maxtimers_in * sizeof (Timer);
   gpuErrchk (cudaMalloc (&timers_cpu, nbytes));
@@ -92,15 +85,14 @@ __host__ int GPTLinitialize_gpu (const int verbose_in,
   nbytes = maxwarps_in * sizeof (Timer *);
   gpuErrchk (cudaMalloc (&lasttimer_cpu, nbytes));
 
-  // Using constant memory doesn't seem to help much if at all
-  // First arg is pass by reference so no "&"
-  // maxtimers_in and tablesize_in will be ignored if USE_CONSTANT is defined
-#ifdef USE_CONSTANT
-  gpuErrchk (cudaMemcpyToSymbol (maxtimers, &maxtimers_in, sizeof (int)));
-  gpuErrchk (cudaMemcpyToSymbol (tablesize, &tablesize_in, sizeof (int)));
-#endif
+  // Set constant memory values: First arg is pass by reference so no "&"
+  gpuErrchk (cudaMemcpyToSymbol (maxtimers,   &maxtimers_in,    sizeof (int)));
+  gpuErrchk (cudaMemcpyToSymbol (tablesize,   &tablesize_in,    sizeof (int)));
+  gpuErrchk (cudaMemcpyToSymbol (tablesizem1, &tablesizem1_loc, sizeof (int)));
 
-  initialize_gpu <<<1,1>>> (verbose_in, tablesize_in, maxwarps_in, maxtimers_in, gpu_hz_in,
+  initialize_gpu <<<1,1>>> (verbose_in,
+			    maxwarps_in,
+			    gpu_hz_in,
 			    timers_cpu, 
 			    hashtable_cpu, 
 			    max_name_len_cpu, 
@@ -118,9 +110,7 @@ __host__ int GPTLinitialize_gpu (const int verbose_in,
 **   capability. 
 */
 __global__ static void initialize_gpu (const int verbose_in,
-				       const int tablesize_in,
 				       const int maxwarps_in,
-				       const int maxtimers_in,
 				       const double gpu_hz_in,
 				       Timer *timers_cpu,
 				       Hashentry *hashtable_cpu,
@@ -143,11 +133,6 @@ __global__ static void initialize_gpu (const int verbose_in,
 
   // Set global vars from input args
   verbose     = verbose_in;
-#ifndef USE_CONSTANT
-  tablesize   = tablesize_in;
-  maxtimers   = maxtimers_in;
-#endif
-  tablesizem1 = tablesize_in - 1;
   maxwarps    = maxwarps_in;
   gpu_hz = gpu_hz_in;
   timers = timers_cpu;
@@ -768,26 +753,11 @@ __device__ static inline int get_warp_num ()
     + (threadIdx.y * blockDim.x)
     + threadIdx.x;
 
-#if 0
-  printf ("gridDim= %d %d, blockDim= %d %d %d blockIdx= %d %d %d, threadIdx= %d %d %d "
-	  "myblockId= %d mythreadId= %d\n",	  
-	  gridDim.x, gridDim.y, 
-	  blockDim.x, blockDim.y, blockDim.z, 
-	  blockIdx.x, blockIdx.y, blockIdx.z, 
-	  threadIdx.x, threadIdx.y, threadIdx.z,
-	  blockId, threadId);
-#endif
-  
   // Only thread 0 of the warp will be timed
   if (threadId % WARPSIZE != 0)
     return NOT_ROOT_OF_WARP;
 
-  // USE_THREADS means use threadId not warpId 
-#ifdef USE_THREADS
-  warpId = threadId;
-#else
   warpId = threadId / WARPSIZE;
-#endif
 
   // maxwarpid_found is needed only by CPU code when printing results
   if (warpId+1 > maxwarpid_found)

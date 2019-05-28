@@ -102,17 +102,17 @@ subroutine persist (mostwork, outerlooplen, innerlooplen, balfact, oversub)
       dvals(n) = doalot_sqrt_double (niter, innerlooplen)
       ret = gptlstop_gpu ('doalot_sqrt_double')
 
-      ret = gptlstart_gpu_c ('doalot_sqrt_c'//char(0))
+      ret = gptlstart_gpu ('doalot_sqrt_c'//char(0))
       vals(n) = doalot_sqrt (niter, innerlooplen)
-      ret = gptlstop_gpu_c ('doalot_sqrt_c'//char(0))
+      ret = gptlstop_gpu ('doalot_sqrt_c'//char(0))
 
-      ret = gptlstart_handle_gpu_c ('doalot_handle_sqrt_c'//char(0), handle)
+      ret = gptlstart_handle_gpu ('doalot_handle_sqrt_c'//char(0), handle)
       vals(n) = doalot_sqrt (niter, innerlooplen)
-      ret = gptlstop_handle_gpu_c ('doalot_handle_sqrt_c'//char(0), handle)
+      ret = gptlstop_handle_gpu ('doalot_handle_sqrt_c'//char(0), handle)
       
-      ret = gptlstart_handle_gpu_c ('a'//char(0), handle2)
+      ret = gptlstart_handle_gpu ('a'//char(0), handle2)
       vals(n) = doalot_sqrt (niter, innerlooplen)
-      ret = gptlstop_handle_gpu_c ('a'//char(0), handle2)
+      ret = gptlstop_handle_gpu ('a'//char(0), handle2)
       ret = gptlstop_gpu ('total_gputime')
     end do
 !$acc end parallel

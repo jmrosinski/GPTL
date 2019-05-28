@@ -24,10 +24,12 @@ CU = /usr/local/cuda-10.0/bin/nvcc
 # Whether to build debug lib or optimized lib, and associated flags
 DEBUG = no
 ifeq ($(DEBUG),yes)
-  CUFLAGS = -DDEBUG -DUSE_CONSTANT $(UNDERSCORING) -g -O0 -G -lineinfo -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true -Xptxas="-v"
+  CUFLAGS = -DDEBUG $(UNDERSCORING) -g -O0 -G -lineinfo -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true
 else
-  CUFLAGS = -UDEBUG -DUSE_CONSTANT $(UNDERSCORING) -g -O2              -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true -Xptxas="-v"
+  CUFLAGS = -UDEBUG $(UNDERSCORING) -g -O2              -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true
 endif
+# Add diagnostic info
+#CUFLAGS += -Xptxas="-v"
 
 # Set compiler flags for non-default ABIs (e.g. 64-bit addressing). 
 # Normally this can be blank.

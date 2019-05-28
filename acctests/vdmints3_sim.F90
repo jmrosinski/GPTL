@@ -31,10 +31,10 @@ subroutine vdmints3_sim (ips, ipe, oversub)
 
   do ipnn=ips,ipe,chunksize
 !$acc parallel private(ret) num_workers(1) vector_length(NZ) copyin(ipnn,chunksize,ipe)
-    ret = gptlstart_gpu_c ('vdmints3'//char(0))
+    ret = gptlstart_gpu ('vdmints3'//char(0))
 !$acc loop gang worker private(ipn,ret2,k,isn)
     do ipn=ipnn,min(ipnn+chunksize-1,ipe)
-      ret2 = gptlstart_gpu_c('vdmints3_ipn'//char(0))
+      ret2 = gptlstart_gpu('vdmints3_ipn'//char(0))
 !$acc loop vector
       do k=1,NZ-1
         call burn_time(ipn,k)
@@ -53,9 +53,9 @@ subroutine vdmints3_sim (ips, ipe, oversub)
         call burn_time(ipn,k)
       end do
       call burn_time(ipn,1)
-      ret2 = gptlstop_gpu_c('vdmints3_ipn'//char(0))
+      ret2 = gptlstop_gpu('vdmints3_ipn'//char(0))
     end do
-    ret = gptlstop_gpu_c('vdmints3'//char(0))
+    ret = gptlstop_gpu('vdmints3'//char(0))
 !$acc end parallel
   end do
 
