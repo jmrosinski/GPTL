@@ -19,7 +19,7 @@ MANDIR =
 CC = gcc
 
 # CUDA compiler
-CU = /usr/local/cuda-10.0/bin/nvcc
+CU = nvcc
 
 # Whether to build debug lib or optimized lib, and associated flags
 DEBUG = no

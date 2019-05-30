@@ -1009,15 +1009,9 @@ __device__ static void fill_gpustats (Gpustats *gpustats, Timer *ptr, int w)
 
 __device__ static __forceinline__ int my_strlen (const char *str)
 {
-#ifdef SLOW
-  int i;
-  for (i = 0; str[i] != '\0'; ++i);
-  return i;
-#else
   const char *s;
   for (s = str; *s; ++s);
   return(s - str);
-#endif
 }
 
 __device__ static inline char *my_strcpy (char *dest, const char *src)

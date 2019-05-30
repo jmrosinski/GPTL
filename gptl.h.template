@@ -9,8 +9,8 @@
 #ifndef GPTL_H
 #define GPTL_H
 
-extern const int GPTLcores_per_sm;
-extern const int GPTLcores_per_gpu;
+extern int GPTLcores_per_sm;
+extern int GPTLcores_per_gpu;
 
 /*
 ** Options settable by a call to GPTLsetoption() (default in parens)
@@ -119,7 +119,7 @@ extern int GPTLnum_warn (void);
 extern int GPTLget_count (const char *, int, int *);
 extern __host__ int GPTLcompute_chunksize (const int, const int);
 extern __host__ int GPTLget_gpu_props (int *, int *, int *, int *);
-extern __host__ void GPTLcudadevsync (void);
+extern __host__ int GPTLcudadevsync (void);
 };
 
 #endif

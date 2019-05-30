@@ -9,8 +9,8 @@
 #ifndef GPTL_H
 #define GPTL_H
 
-extern const int GPTLcores_per_sm;
-extern const int GPTLcores_per_gpu;
+extern int GPTLcores_per_sm;
+extern int GPTLcores_per_gpu;
 
 /*
 ** Options settable by a call to GPTLsetoption() (default in parens)

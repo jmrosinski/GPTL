@@ -34,16 +34,9 @@
 #include "private.h"
 #include "gptl.h"
 
-// Cannot use this one because it is not (yet) in a standard place
-//#include <helper_cuda.h>   // provides _ConvertSMVer2Cores()
-// Instead use this horrible hack
-#ifdef HOMEPC
-const int GPTLcores_per_sm  = 128;
-const int GPTLcores_per_gpu = 640;
-#else
-const int GPTLcores_per_sm  = 64;
-const int GPTLcores_per_gpu = 3584;
-#endif
+#include <helper_cuda.h>
+int GPTLcores_per_sm = -1;
+int GPTLcores_per_gpu = -1;
 
 static Timer **timers = 0;             /* linked list of timers */
 static Timer **last = 0;               /* last element in list */
@@ -3072,29 +3065,22 @@ __host__ int GPTLget_gpu_props (int *khz, int *warpsize, int *devnum, int *SMcou
     return -1;
   }
 
-  *khz      = prop.clockRate;
-  *warpsize = prop.warpSize;
-  *SMcount   = prop.multiProcessorCount;
+  *khz              = prop.clockRate;
+  *warpsize         = prop.warpSize;
+  *SMcount          = prop.multiProcessorCount;
+  GPTLcores_per_sm  = _ConvertSMVer2Cores (prop.major, prop.minor);
+  GPTLcores_per_gpu = GPTLcores_per_sm * (*SMcount);
+  
   // Use _ConvertSMVer2Cores when it is available from nvidia
   //  cores_per_gpu = _ConvertSMVer2Cores (prop.major, prop.minor) * prop.multiProcessorCount);
-  printf ("%s: major.minor=%d.%d SM count=%d\n", thisfunc, prop.major, prop.minor, *SMcount);
+  printf ("%s: major.minor=%d.%d\n", thisfunc, prop.major, prop.minor);
+  printf ("%s: SM count=%d\n", thisfunc, *SMcount);
+  printf ("%s: cores per sm=%d\n", thisfunc, GPTLcores_per_sm);
+  printf ("%s: cores per GPU=%d\n", thisfunc, GPTLcores_per_gpu);
 
   err = cudaGetDevice (devnum);  // device number
   err = cudaDeviceGetLimit (&size, cudaLimitMallocHeapSize);
   printf ("%s: default cudaLimitMallocHeapSize=%d MB\n", thisfunc, (int) (size / onemb));
-  // This stuff shouldn't be needed since malloc on GPU is gone
-  /*
-  if (size < heap_mb * onemb) {
-    printf ("Changing to %ld MB\n", heap_mb);
-    if ((err = cudaDeviceSetLimit (cudaLimitMallocHeapSize, heap_mb * onemb))
-	!= cudaSuccess) {
-      printf ("%s: error:%s\n", thisfunc, cudaGetErrorString (err));
-      return -1;
-    }
-    err = cudaDeviceGetLimit (&size, cudaLimitMallocHeapSize);
-    printf ("CUDA now says limit=%d MB\n", size / onemb);
-  }
-  */
   return 0;
 }
 

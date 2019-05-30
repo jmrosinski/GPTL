@@ -14,19 +14,19 @@ INSTALLDIR = $(HOME)/gptl_flatten
 # Where to install man pages (if blank, defaults to $INSTALLDIR)
 MANDIR = 
 
-# Provide full path to C and CU compilers to avoid conflict with /usr/bin/nvcc
 # C compiler
-CC = /usr/local/cuda-10.0/bin/nvcc
+CC = nvcc
 
 # CUDA compiler
-CU = /usr/local/cuda-10.0/bin/nvcc
+CU = nvcc
 
 # Whether to build debug lib or optimized lib, and associated flags
 DEBUG = no
+CUFLAGS_ALL = $(UNDERSCORING) -I$(CUDA_ROOT)/samples/common/inc -g -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true
 ifeq ($(DEBUG),yes)
-  CUFLAGS = -DDEBUG $(UNDERSCORING) -g -O0 -G -lineinfo -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true
+  CUFLAGS = -DDEBUG -O0 -G -lineinfo $(CUFLAGS_ALL)
 else
-  CUFLAGS = -UDEBUG $(UNDERSCORING) -g -O2              -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true
+  CUFLAGS = -UDEBUG -O2              $(CUFLAGS_ALL)
 endif
 # Add diagnostic info
 #CUFLAGS += -Xptxas="-v"
@@ -160,10 +160,3 @@ CHECK_SM = yes
 ifeq ($(CHECK_SM),yes)
   CUFLAGS += -DCHECK_SM
 endif
-
-# This nasty wart is needed until there's a standard way to determine cores per gpu
-CUFLAGS += -DHOMEPC
-FFLAGS += -DHOMEPC
-
-# Fix older bugs in nvcc
-CUFLAGS += -D_FORCE_INLINES
