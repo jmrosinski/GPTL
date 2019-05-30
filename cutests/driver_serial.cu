@@ -11,6 +11,7 @@ int main ()
   int mostwork;
   int balfact;
   int oversub;
+  int cores_per_sm;
   int cores_per_gpu;
   int khz, warpsize, devnum, smcount;
   
@@ -18,9 +19,7 @@ int main ()
   int ok;
   int ans;
   
-
-  ret = GPTLget_gpu_props (&khz, &warpsize, &devnum, &smcount);
-  cores_per_gpu = GPTLcompute_chunksize (1, 1);
+  ret = GPTLget_gpu_props (&khz, &warpsize, &devnum, &smcount, &cores_per_sm, &cores_per_gpu);
   printf ("smcount=%d\n", smcount);
   printf ("warpsize=%d\n", warpsize);
   printf ("cores_per_gpu=%d\n", cores_per_gpu);

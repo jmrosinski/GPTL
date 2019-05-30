@@ -9,13 +9,13 @@ program driver_serial
   integer :: mostwork = 1000
   integer :: balfact = 1
   integer :: oversub
+  integer :: cores_per_sm
   integer :: cores_per_gpu
   integer :: khz, warpsize, devnum, smcount
   integer :: ret
   character(len=1) :: ans
 
-  ret = gptlget_gpu_props (khz, warpsize, devnum, smcount)
-  cores_per_gpu = gptlcompute_chunksize (1, 1)
+  ret = gptlget_gpu_props (khz, warpsize, devnum, smcount, cores_per_sm, cores_per_gpu)
   write(6,*)'cores_per_gpu=', cores_per_gpu
 
   maxwarps_gpu = cores_per_gpu / warpsize

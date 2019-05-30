@@ -137,7 +137,7 @@ int gptlnum_errors (void);
 int gptlnum_warn (void);
 int gptlget_count (char *, int *, int *, int);
 int gptlcompute_chunksize (int *, int *);
-int gptlget_gpu_props (int *, int *,int *, int *);
+int gptlget_gpu_props (int *, int *,int *, int *,int *, int *);
 int gptldevsync (void);
 
 /* Fortran wrapper functions start here */
@@ -442,9 +442,10 @@ int gptlcompute_chunksize (int *oversub, int *inner_iter_count)
   return GPTLcompute_chunksize (*oversub, *inner_iter_count);
 }
 
-int gptlget_gpu_props (int *khz, int *warpsize, int *devnum, int *SMcount)
+int gptlget_gpu_props (int *khz, int *warpsize, int *devnum, int *SMcount, int *cores_per_sm,
+		       int *cores_per_gpu)
 {
-  return GPTLget_gpu_props (khz, warpsize, devnum, SMcount);
+  return GPTLget_gpu_props (khz, warpsize, devnum, SMcount, cores_per_sm, cores_per_gpu);
 }
 
 int gptlcudadevsync (void)

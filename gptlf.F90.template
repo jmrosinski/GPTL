@@ -223,11 +223,13 @@ module gptl
        integer, intent(in) :: inner_iter_count
      end function gptlcompute_chunksize
 
-     integer function gptlget_gpu_props (khz, warpsize, devnum, smcount)
+     integer function gptlget_gpu_props (khz, warpsize, devnum, smcount, cores_per_sm, cores_per_gpu)
        integer, intent(out) :: khz
        integer, intent(out) :: warpsize
        integer, intent(out) :: devnum
        integer, intent(out) :: smcount
+       integer, intent(out) :: cores_per_sm
+       integer, intent(out) :: cores_per_gpu
      end function gptlget_gpu_props
 
      integer function gptlcudadevsync ()

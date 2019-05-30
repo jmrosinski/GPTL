@@ -9,13 +9,13 @@ program driver_vdmints3
   integer :: ips = 1
   integer :: ipe = 10242
   integer :: oversub
+  integer :: cores_per_sm
   integer :: cores_per_gpu
   integer :: khz, warpsize, devnum, smcount
   integer :: n
   integer :: ret
 
-  ret = gptlget_gpu_props (khz, warpsize, devnum, smcount)
-  cores_per_gpu = gptlcompute_chunksize (1, 1)
+  ret = gptlget_gpu_props (khz, warpsize, devnum, smcount, cores_per_sm, cores_per_gpu)
   write(6,*)'cores_per_gpu=', cores_per_gpu
 
   maxwarps_gpu = cores_per_gpu / warpsize

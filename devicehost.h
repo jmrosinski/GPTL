@@ -50,8 +50,7 @@ __global__ void GPTLreset_gpu (void);
 __global__ void GPTLfill_gpustats (Gpustats *, int *, int *);
 __global__ void GPTLget_memstats_gpu (float *, float *);
 __global__ void GPTLget_gpusizes (int *, int *);
-__global__ void GPTLget_overhead_gpu (long long *,            /* Fortran wrapper */
-				      long long *,            /* Getting my thread index */
+__global__ void GPTLget_overhead_gpu (long long *,            /* Getting my thread index */
 				      long long *,            /* Generating hash index */
 				      long long *,            /* Finding entry in hash table */
 				      char *,                 // name used for getentry

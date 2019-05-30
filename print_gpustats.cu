@@ -25,7 +25,6 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   int *maxwarpid_timed;
 
   // Returned from GPTLget_overhead_gpu:
-  long long *ftn_ohdgpu;            // Fortran wrapper overhead
   long long *get_thread_num_ohdgpu; /* Getting my thread index */
   long long *genhashidx_ohdgpu;     /* Generating hash index */
   long long *getentry_ohdgpu;       /* Finding entry in hash table */
@@ -60,7 +59,6 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   gpuErrchk (cudaMallocManaged (&maxwarpid_found,              sizeof (int)));
   gpuErrchk (cudaMallocManaged (&maxwarpid_timed,              sizeof (int)));
 
-  gpuErrchk (cudaMallocManaged (&ftn_ohdgpu,            sizeof (long long)));
   gpuErrchk (cudaMallocManaged (&get_thread_num_ohdgpu, sizeof (long long)));
   gpuErrchk (cudaMallocManaged (&genhashidx_ohdgpu,     sizeof (long long)));
   gpuErrchk (cudaMallocManaged (&getentry_ohdgpu,       sizeof (long long)));
@@ -104,8 +102,7 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   fprintf (fp, "%s: hostname=%s\n", thisfunc, hostname);
 
   GPTLget_gpusizes <<<1,1>>> (maxwarpid_found, maxwarpid_timed);
-  GPTLget_overhead_gpu <<<1,1>>> (ftn_ohdgpu,
-				  get_thread_num_ohdgpu,
+  GPTLget_overhead_gpu <<<1,1>>> (get_thread_num_ohdgpu,
 				  genhashidx_ohdgpu,
 				  getentry_ohdgpu,
 				  getentry_ohdgpu_name,
@@ -117,19 +114,18 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   cudaDeviceSynchronize();
 
   fprintf (fp, "Underlying timing routine was clock64() assumed @ %f Ghz\n", gpu_hz * 1.e-9);
-  tot_ohdgpu = (ftn_ohdgpu[0] + get_thread_num_ohdgpu[0] + genhashidx_ohdgpu[0] + 
+  tot_ohdgpu = (get_thread_num_ohdgpu[0] + genhashidx_ohdgpu[0] + 
 		getentry_ohdgpu[0] + utr_ohdgpu[0]) / gpu_hz;
-  fprintf (fp, "Total overhead of 1 GPTLstart_gpu or GPTLstop_gpu call=%g seconds\n", tot_ohdgpu);
+  fprintf (fp, "Total overhead of 1 GPTLstart_gpu or GPTLstop_gpu call (ignores a few settings)=%g seconds\n", tot_ohdgpu);
   fprintf (fp, "Components are as follows:\n");
-  fprintf (fp, "Fortran layer:                  %7.1e = %5.1f%% of total\n", 
-	   ftn_ohdgpu[0] / gpu_hz, ftn_ohdgpu[0] * 100. / (tot_ohdgpu * gpu_hz) );
+  fprintf (fp, "Fortran layer assumed zero, ASSUMES user provided null terminator\n"); 
   fprintf (fp, "Get thread number:              %7.1e = %5.1f%% of total\n", 
 	   get_thread_num_ohdgpu[0] / gpu_hz, get_thread_num_ohdgpu[0] * 100. / (tot_ohdgpu * gpu_hz) );
   fprintf (fp, "Generate hash index:            %7.1e = %5.1f%% of total\n", 
 	   genhashidx_ohdgpu[0] / gpu_hz, genhashidx_ohdgpu[0] * 100. / (tot_ohdgpu * gpu_hz) );
   fprintf (fp, "Find hashtable entry:           %7.1e = %5.1f%% of total (name=%s)\n", 
 	   getentry_ohdgpu[0] / gpu_hz, getentry_ohdgpu[0] * 100. / (tot_ohdgpu * gpu_hz), getentry_ohdgpu_name );
-  fprintf (fp, "Underlying timing routine:      %7.1e = %5.1f%% of total\n", 
+  fprintf (fp, "Underlying timing routine+SMID: %7.1e = %5.1f%% of total\n", 
 	   utr_ohdgpu[0] / gpu_hz, utr_ohdgpu[0] * 100. / (tot_ohdgpu * gpu_hz) );
   fprintf (fp, "\n");
 

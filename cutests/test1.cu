@@ -3,15 +3,17 @@
 #include "../gptl.h"
 #include "../cuda/gptl_cuda.h"
 
-static int warpsize = -1;
-static int smcount = -1;
 
-__host__ int get_gpu_props (void);
 __global__ void runit (float, float);
 
 int main ()
 {
   static int blocksize = 128;
+  int warpsize = -1;
+  int khz = -1;
+  int devnum = -1;
+  int smcount = -1;
+  int cores_per_sm = -1;
   int cores_per_gpu = -1;
   int oversub = -1;
   int nwarps;
@@ -24,23 +26,10 @@ int main ()
   float sleep_tot;
   float sleep_percall;
 
-  ret = get_gpu_props ();
-  printf ("CUDA says warpsize=%d\n", warpsize);
-  printf ("CUDA says smcount=%d\n", smcount);
-
-  cores_per_gpu = GPTLcompute_chunksize (1, 1);
-  printf ("GPTL says cores_per_gpu=%d\n", cores_per_gpu);
-  do {
-    printf ("Enter cores_per_gpu or -1 to accept default [%d]\n", cores_per_gpu);
-    scanf ("%d", &ans);
-    if (ans == -1)
-      break;
-    ok = ans % warpsize == 0;
-    if (! ok)
-      printf ("your response must divide evenly into warpsize=%d\n", warpsize);
-    else
-      cores_per_gpu = ans;
-  } while (! ok);
+  ret = GPTLget_gpu_props (&khz, &warpsize, &devnum, &smcount, &cores_per_sm, &cores_per_gpu);
+  printf ("warpsize=%d\n",      warpsize);
+  printf ("smcount=%d\n",       smcount);
+  printf ("cores_per_sm=%d\n",  cores_per_sm);
   printf ("cores_per_gpu=%d\n", cores_per_gpu);
 
   printf ("Enter oversubsubscription factor\n");
@@ -67,22 +56,6 @@ int main ()
   cudaDeviceSynchronize ();
   ret = GPTLstop ("total");
   ret = GPTLpr (0);
-  return 0;
-}
-
-__host__ int get_gpu_props (void)
-{
-  cudaDeviceProp prop;
-  cudaError_t err;
-  static const char *thisfunc = "GPTLget_gpu_props";
-
-  if ((err = cudaGetDeviceProperties (&prop, 0)) != cudaSuccess) {
-    printf ("%s: error:%s", thisfunc, cudaGetErrorString (err));
-    return -1;
-  }
-
-  warpsize = prop.warpSize;
-  smcount = prop.multiProcessorCount;
   return 0;
 }
 

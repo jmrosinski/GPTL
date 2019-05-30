@@ -2,7 +2,7 @@ GPTL was built without threading
 HAVE_MPI was false
 ENABLE_NESTEDOMP was false
 Underlying timing routine was gettimeofday.
-GPTLget_overhead: using hash entry 414=donothing for getentry estimate
+GPTLget_overhead: using hash entry 317=total for getentry estimate
 Total overhead of 1 GPTL start or GPTLstop call=3.9e-08 seconds
 Components are as follows:
 Fortran layer:             1.0e-09 =   2.6% of total
@@ -31,25 +31,22 @@ values printed are for all calls.
 Further down the listing may be more detailed information about multiple
 parents. Look for 'Multiple parent info'
 
-Process size=13084 MB rss=114 MB
+Process size=13043 MB rss=101 MB
 
 Stats for thread 0:
-                      Called  Recurse Wallclock max       min       self_OH  parent_OH 
-  total_kerneltime           3    -      28.737    18.901  9.05e-04     0.000     0.000 
-    donothing                1    -    9.02e-04  9.02e-04  9.02e-04     0.000     0.000 
-    doalot                   1    -      18.901    18.901    18.901     0.000     0.000 
-    sleep1ongpu              1    -       9.836     9.836     9.836     0.000     0.000 
+         Called  Recurse Wallclock max       min       self_OH  parent_OH 
+  total         1    -       8.978     8.978     8.978     0.000     0.000 
 
-Overhead sum =   4.5e-07 wallclock seconds
-Total calls  = 6
+Overhead sum =   7.5e-08 wallclock seconds
+Total calls  = 1
 Size of hash table was 1023
-Mean hash index for thread 0 was 590.500000
+Mean hash index for thread 0 was 317.000000
 
-Total GPTL memory usage = 18.312 KB
+Total GPTL memory usage = 17.616 KB
 Components:
-Hashmem                 = 16.4 KB
-Regionmem               = 0.832 KB
-Parent/child arrays     = 0.056 KB
+Hashmem                 = 16.376 KB
+Regionmem               = 0.208 KB
+Parent/child arrays     = 0.008 KB
 Callstackmem            = 1.024 KB
 
 GPTLthreadid[0] = 0
@@ -59,23 +56,23 @@ GPU Results:
 GPTLprint_gpustats: device number=0
 GPTLprint_gpustats: hostname=laptop2018
 Underlying timing routine was clock64() assumed @ 1.493000 Ghz
-Total overhead of 1 GPTLstart_gpu or GPTLstop_gpu call=5.47086e-06 seconds
+Total overhead of 1 GPTLstart_gpu or GPTLstop_gpu call=3.5144e-06 seconds
 Components are as follows:
-Fortran layer:                  2.7e-08 =   0.5% of total
-Get thread number:              3.3e-07 =   6.0% of total
-Generate hash index:            1.7e-06 =  32.0% of total
-Find hashtable entry:           3.3e-06 =  60.9% of total (name=total_gputime)
-Underlying timing routine:      3.5e-08 =   0.6% of total
+Fortran layer assumed zero, ASSUMES user provided null terminator
+Get thread number:              3.3e-07 =   9.5% of total
+Generate hash index:            1.8e-06 =  50.8% of total
+Find hashtable entry:           1.4e-06 =  38.7% of total (name=runit)
+Underlying timing routine:      3.5e-08 =   1.0% of total
 
 my_strlen (part of genhashidx): 1.8e-06
 STRMATCH (part of getentry):    2.6e-07
 
 
 GPU timing stats
-GPTL could handle up to 2000 warps (64000 threads)
+GPTL could handle up to 20 warps (640 threads)
 This setting can be changed with: GPTLsetoption(GPTLmaxthreads_gpu,<number>)
-1999 = max warpId found
-1999 = max warpId examined
+19 = max warpId found
+19 = max warpId examined
 Only warps which were timed are counted in the following stats
 Overhead estimates self_OH and parent_OH are for warp with 'maxcount' calls
 OHD estimate assumes Fortran, and non-handle routines used
@@ -95,20 +92,11 @@ Bad_SM          = number of times smid changed (these instances are NOT timed!) 
 self_OH         = estimate of GPTL overhead (sec) in the timer incurred by 'maxcount' invocations of it
 parent_OH       = estimate of GPTL overhead (sec) in the parent of the timer incurred by 'maxcount' invocations of it
 
-                name    calls  warps  holes | wallmax  (warp)| wallmin (warp) | maxcount (warp)| mincount (warp)| negmax (warp) nwarps  | Bad_SM| self_OH parent_OH
-       total_gputime     6000   2000      0 |   2.768    188 |   2.505   1864 |       3      0 |       3      0 |    -       -      -   |   -   |1.04e-07  3.27e-05 
-      total_gputime2     6000   2000      0 |   2.768    188 |   2.505   1864 |       3      0 |       3      0 |    -       -      -   |   -   |1.04e-07  3.27e-05 
-           donothing     2000   2000      0 |2.07e-06    429 |1.18e-06   1998 |       1      0 |       1      0 |    -       -      -   |   -   |3.48e-08  1.09e-05 
-          doalot_log     2000   2000      0 |   0.741    518 |   0.556   1018 |       1      0 |       1      0 |    -       -      -   |   -   |3.48e-08  1.09e-05 
-    doalot_log_inner   200000   2000      0 |   0.748   1409 |   0.603   1998 |     100      0 |     100      0 |    -       -      -   |   -   |3.48e-06  1.09e-03 
-         doalot_sqrt     2000   2000      0 |   0.014    184 |9.01e-03   1858 |       1      0 |       1      0 |    -       -      -   |   -   |3.48e-08  1.09e-05 
-  doalot_sqrt_double     2000   2000      0 |   0.236    150 |   0.132   1856 |       1      0 |       1      0 |    -       -      -   |   -   |3.48e-08  1.09e-05 
-       doalot_sqrt_c     2000   2000      0 |   0.019    404 |7.69e-03   1892 |       1      0 |       1      0 |    -       -      -   |   -   |3.48e-08  1.09e-05 
-doalot_handle_sqrt_c     2000   2000      0 |   0.019    405 |7.69e-03   1894 |       1      0 |       1      0 |    -       -      -   |   -   |3.48e-08  1.09e-05 
-                   a     2000   2000      0 |   0.019    400 |7.80e-03   1892 |       1      0 |       1      0 |    -       -      -   |   -   |3.48e-08  1.09e-05 
-              sleep1     2000   2000      0 |   1.000   1200 |   1.000   1960 |       1      0 |       1      0 |    -       -      -   |   -   |3.48e-08  1.09e-05 
+   name    calls  warps  holes | wallmax  (warp)| wallmin (warp) | maxcount (warp)| mincount (warp)| negmax (warp) nwarps  | Bad_SM| self_OH parent_OH
+  runit       20     20      0 |  10.000      0 |  10.000     15 |       1      0 |       1      0 |    -       -      -   |   -   |3.48e-08  6.99e-06 
+percall       20     20      0 |  10.000      3 |  10.000     19 |       1      0 |       1      0 |    -       -      -   |   -   |3.48e-08  6.99e-06 
 
-Total GPTL GPU memory usage = 10672 KB
+Total GPTL GPU memory usage = 106.72 KB
 Components:
-Hashmem                     = 2032 KB
-Regionmem                   = 8640 KB
+Hashmem                     = 20.32 KB
+Regionmem                   = 86.4 KB

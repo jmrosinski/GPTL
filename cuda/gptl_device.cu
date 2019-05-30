@@ -51,7 +51,6 @@ __device__ static inline char *my_strcpy (char *, const char *);
 __device__ static __forceinline__ int my_strcmp (const char *, const char *);
 __device__ static void init_gpustats (Gpustats *, Timer *, int);
 __device__ static void fill_gpustats (Gpustats *, Timer *, int);
-__device__ static int gptlstart_sim (const char *, long long);
 __device__ static Timer *get_new_timer (int, const char *, const char *);
 __device__ static void prbits8 (uint64_t);
 
@@ -1063,8 +1062,7 @@ __device__ static __forceinline__ int my_strcmp (const char *str1, const char *s
 **   self_ohd:           Estimate of GPTL-induced overhead in the timer itself (included in "Wallclock")
 **   parent_ohd:         Estimate of GPTL-induced overhead for the timer which appears in its parents
 */
-__global__ void GPTLget_overhead_gpu (long long *ftn_ohd,
-				      long long *get_warp_num_ohd, // Getting my warp index
+__global__ void GPTLget_overhead_gpu (long long *get_warp_num_ohd, // Getting my warp index
 				      long long *genhashidx_ohd,   // Generating hash index
 				      long long *getentry_ohd,     // Finding entry in hash table
 				      char *getentry_ohd_name,     // name used for getentry
@@ -1074,6 +1072,7 @@ __global__ void GPTLget_overhead_gpu (long long *ftn_ohd,
 				      long long *my_strlen_ohd,
 				      long long *STRMATCH_ohd)
 {
+  volatile uint smid;        // SM id
   long long t1, t2;          /* Initial, final timer values */
   int i;
   int ret;
@@ -1086,18 +1085,8 @@ __global__ void GPTLget_overhead_gpu (long long *ftn_ohd,
 
   /*
   ** Gather timings by running kernels 1000 times each
-  ** First: Fortran wrapper overhead
+  ** First: get_warp_num() overhead 
   */
-  nchars = my_strlen (timername);
-  t1 = clock64();
-  for (i = 0; i < 1000; ++i) {
-    /* 9 is the number of characters in "timername" */
-    ret = gptlstart_sim (timername, nchars);
-  }
-  t2 = clock64();
-  *ftn_ohd = (t2 - t1) / 1000;
-
-  /* get_warp_num() overhead */
   t1 = clock64();
   for (i = 0; i < 1000; ++i) {
     mywarp = get_warp_num ();
@@ -1116,7 +1105,6 @@ __global__ void GPTLget_overhead_gpu (long long *ftn_ohd,
   /* 
   ** getentry overhead
   ** Even if there are no user timers, GPTL_ROOT can be used
-  ** 
   */
   if (timers[0].next)
     my_strcpy (name, timers[0].next->name); // first user entry
@@ -1137,12 +1125,12 @@ __global__ void GPTLget_overhead_gpu (long long *ftn_ohd,
   t1 = clock64();
   for (i = 0; i < 1000; ++i) {
     t2 = clock64();
+    asm volatile ("mov.u32 %0, %smid;" : "=r"(smid));
   }
   *utr_ohd = (t2 - t1) / 1000;
 
   *self_ohd   = *utr_ohd;
-  *parent_ohd = *utr_ohd + 2*(*ftn_ohd + *get_warp_num_ohd + 
-			      *genhashidx_ohd + *getentry_ohd);
+  *parent_ohd = *utr_ohd + 2*(*get_warp_num_ohd + (*genhashidx_ohd) + (*getentry_ohd));
 
   // my_strlen overhead
   t1 = clock64();
@@ -1161,26 +1149,6 @@ __global__ void GPTLget_overhead_gpu (long long *ftn_ohd,
   t2 = clock64();
   *STRMATCH_ohd = (t2 - t1) / 1000;
   return;
-}
-
-/*
-** gptlstart_sim: Simulate the cost of Fortran wrapper layer "gptlstart()"
-** 
-** Input args:
-**   name: timer name
-**   nc:  number of characters in "name"
-*/
-__device__ static int gptlstart_sim (const char *name, long long nc)
-{
-  char cname[MAX_CHARS+1];
-
-  if (nc > MAX_CHARS)
-    printf ("%d exceeds MAX_CHARS=%d\n", nc, MAX_CHARS);
-
-  for (int n = 0; n < nc; ++n)
-    cname[n] = name[n];
-  cname[nc] = '\0';
-  return SUCCESS;
 }
 
 __global__ void GPTLget_memstats_gpu (float *hashmem, float *regionmem)

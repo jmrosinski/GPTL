@@ -430,7 +430,7 @@ __host__ int GPTLinitialize (void)
     printf ("Underlying wallclock timing routine is %s\n", funclist[funcidx].name);
   }
 
-  ret = GPTLget_gpu_props (&khz, &warpsize, &devnum, &SMcount);
+  ret = GPTLget_gpu_props (&khz, &warpsize, &devnum, &SMcount, &GPTLcores_per_sm, &GPTLcores_per_gpu);
   if (warpsize != WARPSIZE)
     return GPTLerror ("%s: warpsize=%d WARPSIZE=%d\n", thisfunc, warpsize, WARPSIZE);
   printf ("%s: device number=%d\n", thisfunc, devnum);
@@ -3050,7 +3050,10 @@ __host__ Timer **GPTLget_timersaddr ()
   return timers;
 }
 
-__host__ int GPTLget_gpu_props (int *khz, int *warpsize, int *devnum, int *SMcount)
+// Return useful GPU properties. Use arg list for SMcount, cores_per_sm, and cores_per_gpu even 
+// though they're globals, because this is a user-callable routine
+__host__ int GPTLget_gpu_props (int *khz, int *warpsize, int *devnum, int *SMcount,
+				int *cores_per_sm, int *cores_per_gpu)
 {
   cudaDeviceProp prop;
   size_t size;
@@ -3065,18 +3068,18 @@ __host__ int GPTLget_gpu_props (int *khz, int *warpsize, int *devnum, int *SMcou
     return -1;
   }
 
-  *khz              = prop.clockRate;
-  *warpsize         = prop.warpSize;
-  *SMcount          = prop.multiProcessorCount;
-  GPTLcores_per_sm  = _ConvertSMVer2Cores (prop.major, prop.minor);
-  GPTLcores_per_gpu = GPTLcores_per_sm * (*SMcount);
+  *khz           = prop.clockRate;
+  *warpsize      = prop.warpSize;
+  *SMcount       = prop.multiProcessorCount;
+  *cores_per_sm  = _ConvertSMVer2Cores (prop.major, prop.minor);
+  *cores_per_gpu = *cores_per_sm * (*SMcount);
   
   // Use _ConvertSMVer2Cores when it is available from nvidia
   //  cores_per_gpu = _ConvertSMVer2Cores (prop.major, prop.minor) * prop.multiProcessorCount);
   printf ("%s: major.minor=%d.%d\n", thisfunc, prop.major, prop.minor);
-  printf ("%s: SM count=%d\n", thisfunc, *SMcount);
-  printf ("%s: cores per sm=%d\n", thisfunc, GPTLcores_per_sm);
-  printf ("%s: cores per GPU=%d\n", thisfunc, GPTLcores_per_gpu);
+  printf ("%s: SM count=%d\n",      thisfunc, *SMcount);
+  printf ("%s: cores per sm=%d\n",  thisfunc, *cores_per_sm);
+  printf ("%s: cores per GPU=%d\n", thisfunc, *cores_per_gpu);
 
   err = cudaGetDevice (devnum);  // device number
   err = cudaDeviceGetLimit (&size, cudaLimitMallocHeapSize);
