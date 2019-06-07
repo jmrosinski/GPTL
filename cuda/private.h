@@ -21,25 +21,24 @@
 #define WARPID_GT_MAXWARPS -3
 
 typedef struct {
-  long long last;           /* timestamp from last call */
-  long long accum;          /* accumulated time */
-  long long max;            /* longest time for start/stop pair */
-  long long min;            /* shortest time for start/stop pair */
+  long long last;              // timestamp from last call
+  long long accum;             // accumulated time
+  long long max;               // longest time for start/stop pair
+  long long min;               // shortest time for start/stop pair
 } Wallstats;
 
 typedef struct TIMER {
-  struct TIMER *next;       /* next timer in linked list */
-  Wallstats wall;           /* wallclock stats */
-  unsigned long count;      /* number of start/stop calls */
-  unsigned int negcount_start; // number of times a stop time < start time
-  unsigned int negcount_stop;  // number of times a stop time < start time
-  unsigned int recurselvl;  /* recursion level */
-  unsigned int smid;  // sm the region is running on
-  uint badsmid_count;
-  uint negdelta_count;
-  bool onflg;               /* timer currently on or off */
-  bool beenprocessed;       // keep track of which timers in which warps have been processed
-  char name[MAX_CHARS+1];   /* timer name (user input) */
+  struct TIMER *next;          // next timer in linked list
+  Wallstats wall;              // wallclock stats
+  unsigned long count;         // number of start/stop calls
+  uint negcount_stop;          // number of times a stop time < start time
+  uint recurselvl;             // recursion level
+  uint smid;                   // SM the region is running on
+  uint badsmid_count;          // number of times SM id changed
+  uint negdelta_count;         // number of times a negative time increment occurred
+  bool onflg;                  // timer currently on or off
+  bool beenprocessed;          // keep track of which timers in which warps have been processed
+  char name[MAX_CHARS+1];      // timer name (user input)
 } Timer;
 
 typedef struct {
