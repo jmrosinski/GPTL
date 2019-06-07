@@ -16,10 +16,8 @@
 #define FLATTEN_TIMERS(SUB1,SUB2) (SUB1)*maxtimers + (SUB2)
 #define FLATTEN_HASH(SUB1,SUB2) (SUB1)*tablesize + (SUB2)
 
-__device__ static int *badderef = 0;            // dereferencing this should should crash
 __device__ static Hashentry *hashtable;
 __device__ static Timer *timers = 0;            // linked list of timers
-__device__ static void *timersaddr;             // For verifying address of timers stays put
 __device__ static Timer **lasttimer = 0;        // last element in list
 __device__ static int *max_name_len;            // max length of timer name
 __device__ static int *ntimers_allocated;
@@ -135,7 +133,6 @@ __global__ static void initialize_gpu (const int verbose_in,
   maxwarps    = maxwarps_in;
   gpu_hz = gpu_hz_in;
   timers = timers_cpu;
-  timersaddr = (void *) &timers;
   hashtable = hashtable_cpu;
   max_name_len = max_name_len_cpu;
   ntimers_allocated = ntimers_allocated_cpu;
@@ -1065,26 +1062,34 @@ __device__ static __forceinline__ int my_strcmp (const char *str1, const char *s
 __global__ void GPTLget_overhead_gpu (long long *get_warp_num_ohd, // Getting my warp index
 				      long long *genhashidx_ohd,   // Generating hash index
 				      long long *getentry_ohd,     // Finding entry in hash table
-				      char *getentry_ohd_name,     // name used for getentry
+				      char *ohd_name,              // name used for funcs needing strings
 				      long long *utr_ohd,          // Underlying timing routine
 				      long long *self_ohd,
 				      long long *parent_ohd,
 				      long long *my_strlen_ohd,
 				      long long *STRMATCH_ohd)
 {
-  volatile uint smid;        // SM id
-  long long t1, t2;          /* Initial, final timer values */
+  volatile uint smid;         // SM id
+  long long t1, t2;           // Initial, final timer values
   int i;
   int ret;
-  int mywarp;                /* which warp are we */
-  unsigned int hashidx;      /* Hash index */
+  int mywarp;                 // our warp number
+  unsigned int hashidx;       // Hash index
   long long nchars;
-  Timer *entry;              /* placeholder for return from "getentry()" */
-  char name[MAX_CHARS+1];
-  static char *timername = "timername";
+  Timer *entry;               // placeholder for return from "getentry()"
+  char name[MAX_CHARS+1];     // Name to be used for various OHD tests
+  char samename[MAX_CHARS+1]; // Copy of "name" for STRMATCH test
+
+  // Define name to be used in OHD estimates. Even if there are no user timers,
+  // GPTL_ROOT can be used
+  if (timers[0].next)
+    my_strcpy (name, timers[0].next->name); // first user entry
+  else
+    my_strcpy (name, timers[0].name);       // GPTL_ROOT
+  my_strcpy (samename, name);
 
   /*
-  ** Gather timings by running kernels 1000 times each
+  ** Gather timings by running each test 1000 times
   ** First: get_warp_num() overhead 
   */
   t1 = clock64();
@@ -1094,23 +1099,15 @@ __global__ void GPTLget_overhead_gpu (long long *get_warp_num_ohd, // Getting my
   t2 = clock64();
   get_warp_num_ohd[0] = (t2 - t1) / 1000;
 
-  /* genhashidx overhead */
+  // genhashidx overhead
   t1 = clock64();
   for (i = 0; i < 1000; ++i) {
-    hashidx = genhashidx (timername);
+    hashidx = genhashidx (name);
   }
   t2 = clock64();
   *genhashidx_ohd = (t2 - t1) / 1000;
 
-  /* 
-  ** getentry overhead
-  ** Even if there are no user timers, GPTL_ROOT can be used
-  */
-  if (timers[0].next)
-    my_strcpy (name, timers[0].next->name); // first user entry
-  else
-    my_strcpy (name, timers[0].name);       // GPTL_ROOT
-
+  // getentry overhead
   hashidx = genhashidx (name);
   t1 = clock64();
   for (i = 0; i < 1000; ++i) {
@@ -1119,7 +1116,7 @@ __global__ void GPTLget_overhead_gpu (long long *get_warp_num_ohd, // Getting my
   t2 = clock64();
 
   *getentry_ohd = (t2 - t1) / 1000;
-  my_strcpy (getentry_ohd_name, name);
+  my_strcpy (ohd_name, name);
 
   /* utr overhead */
   t1 = clock64();
@@ -1135,7 +1132,7 @@ __global__ void GPTLget_overhead_gpu (long long *get_warp_num_ohd, // Getting my
   // my_strlen overhead
   t1 = clock64();
   for (i = 0; i < 1000; ++i) {
-    ret = my_strlen (timername);
+    ret = my_strlen (name);
   }
   t2 = clock64();
   *my_strlen_ohd = (t2 - t1) / 1000;
@@ -1144,7 +1141,7 @@ __global__ void GPTLget_overhead_gpu (long long *get_warp_num_ohd, // Getting my
   t1 = clock64();
   for (i = 0; i < 1000; ++i) {
     // Use wi computed above
-    ret = STRMATCH (name, "ZZZ");
+    ret = STRMATCH (samename, name);
   }
   t2 = clock64();
   *STRMATCH_ohd = (t2 - t1) / 1000;

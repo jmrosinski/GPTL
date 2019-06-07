@@ -47,8 +47,8 @@ subroutine persist (mostwork, outerlooplen, innerlooplen, balfact, oversub)
 100 format('outerlooplen=',i6,' broken into ',i6,' kernels of chunksize=', i6)
   write(6,*)'inner vector length (decreases chunksize if > warpsize)=', veclen
 
-  ret = gptlstart ('total_kerneltime')
-  ret = gptlstart ('donothing')
+  ret = gptlstart ('total_kerneltime'//char(0))
+  ret = gptlstart ('donothing'//char(0))
 
   n = 0
   do nn=0,outerlooplen-1,chunksize
@@ -59,25 +59,25 @@ subroutine persist (mostwork, outerlooplen, innerlooplen, balfact, oversub)
   do nn=0,outerlooplen-1,chunksize
 !$acc parallel loop copyin(nn,chunksize,balfact,handle,handle2) copyout(ret)
     do n=nn,min(outerlooplen-1,nn+chunksize-1)
-      ret = gptlstart_gpu ('total_gputime')
-      ret = gptlstart_gpu ('donothing')
-      ret = gptlstop_gpu ('donothing')
-      ret = gptlstop_gpu ('total_gputime')
+      ret = gptlstart_gpu ('total_gputime'//char(0))
+      ret = gptlstart_gpu ('donothing'//char(0))
+      ret = gptlstop_gpu ('donothing'//char(0))
+      ret = gptlstop_gpu ('total_gputime'//char(0))
     end do
 !$acc end parallel
     ret = gptlcudadevsync ();
   end do
-  ret = gptlstop ('donothing')
-  ret = gptlstop ('total_kerneltime')
+  ret = gptlstop ('donothing'//char(0))
+  ret = gptlstop ('total_kerneltime'//char(0))
 
-  ret = gptlstart ('total_kerneltime')
-  ret = gptlstart ('doalot')
+  ret = gptlstart ('total_kerneltime'//char(0))
+  ret = gptlstart ('doalot'//char(0))
   do nn=0,outerlooplen-1,chunksize
 !$acc parallel loop private(niter,factor) &
 !$acc&  copyin(nn,chunksize,mostwork,innerlooplen,balfact,handle,handle2) &
 !$acc&  copyout(ret, vals, dvals)
     do n=nn,min(outerlooplen-1,nn+chunksize-1)
-      ret = gptlstart_gpu ('total_gputime')
+      ret = gptlstart_gpu ('total_gputime'//char(0))
       factor = real(n) / real(outerlooplen-1)
       select case (balfact)
       case (0)
@@ -88,19 +88,19 @@ subroutine persist (mostwork, outerlooplen, innerlooplen, balfact, oversub)
         niter = mostwork - int(factor * mostwork)
       end select
 
-      ret = gptlstart_gpu ('doalot_log')
+      ret = gptlstart_gpu ('doalot_log'//char(0))
       vals(n) = doalot_log (niter, innerlooplen)
-      ret = gptlstop_gpu ('doalot_log')
+      ret = gptlstop_gpu ('doalot_log'//char(0))
 
       vals(n) = doalot_log_inner (niter, innerlooplen)
 
-      ret = gptlstart_gpu ('doalot_sqrt')
+      ret = gptlstart_gpu ('doalot_sqrt'//char(0))
       vals(n) = doalot_sqrt (niter, innerlooplen)
-      ret = gptlstop_gpu ('doalot_sqrt')
+      ret = gptlstop_gpu ('doalot_sqrt'//char(0))
 
-      ret = gptlstart_gpu ('doalot_sqrt_double')
+      ret = gptlstart_gpu ('doalot_sqrt_double'//char(0))
       dvals(n) = doalot_sqrt_double (niter, innerlooplen)
-      ret = gptlstop_gpu ('doalot_sqrt_double')
+      ret = gptlstop_gpu ('doalot_sqrt_double'//char(0))
 
       ret = gptlstart_gpu ('doalot_sqrt_c'//char(0))
       vals(n) = doalot_sqrt (niter, innerlooplen)
@@ -118,41 +118,41 @@ subroutine persist (mostwork, outerlooplen, innerlooplen, balfact, oversub)
 !$acc end parallel
     ret = gptlcudadevsync ();
   end do
-  ret = gptlstop ('doalot')
-  ret = gptlstop ('total_kerneltime')
+  ret = gptlstop ('doalot'//char(0))
+  ret = gptlstop ('total_kerneltime'//char(0))
   
   write(6,*)'Sleeping 1 second on GPU...'
   maxsav(:) = 1.
   minsav(:) = 1.
 !$acc data copy (maxsav,minsav)
 
-  ret = gptlstart ('total_kerneltime')
-  ret = gptlstart ('sleep1ongpu')
+  ret = gptlstart ('total_kerneltime'//char(0))
+  ret = gptlstart ('sleep1ongpu'//char(0))
   do nn=0,outerlooplen-1,chunksize
 !$acc parallel loop private(ret,accum,maxval,minval) copyin(nn,chunksize)
     do n=nn,min(outerlooplen-1,nn+chunksize-1)
-      ret = gptlstart_gpu ('total_gputime')
-      ret = gptlstart_gpu ('sleep1')
+      ret = gptlstart_gpu ('total_gputime'//char(0))
+      ret = gptlstart_gpu ('sleep1'//char(0))
       ret = gptlmy_sleep (1.)
       ret = gptlstop_gpu ('sleep1')
       maxval = 1.
       minval = 1.
-      ret = gptlget_wallclock_gpu ('sleep1', accum, maxval, minval)
+      ret = gptlget_wallclock_gpu ('sleep1'//char(0), accum, maxval, minval)
       if (maxval > 1.1) then
         maxsav(n) = maxval
       end if
       if (minval < 0.9) then
         minsav(n) = minval
       end if
-      ret = gptlstop_gpu ('total_gputime')
+      ret = gptlstop_gpu ('total_gputime'//char(0))
     end do
 !$acc end parallel
     ret = gptlcudadevsync ();
   end do
 !$acc end data
 
-  ret = gptlstop ('sleep1ongpu')
-  ret = gptlstop ('total_kerneltime')
+  ret = gptlstop ('sleep1ongpu'//char(0))
+  ret = gptlstop ('total_kerneltime'//char(0))
 
   do n=0,outerlooplen-1
     if (maxsav(n) > 1.1) then
