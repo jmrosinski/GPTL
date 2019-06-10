@@ -18,7 +18,6 @@
 #define WARPSIZE 32
 // Pascal: 56 SMs 64 cuda cores each = 3584 cores
 #define DEFAULT_MAXWARPS_GPU 1792
-#define DEFAULT_TABLE_SIZE_GPU 127
 #define DEFAULT_MAXTIMERS_GPU 30
 
 typedef struct {
@@ -42,21 +41,18 @@ typedef struct {
 } Gpustats;
 
 extern "C" {
-__host__   int GPTLinitialize_gpu (const int, const int, const int, const int, const double);
+__host__   int GPTLinitialize_gpu (const int, const int, const int, const double);
 __global__ void GPTLfinalize_gpu (void);
 __global__ void GPTLenable_gpu (void);
 __global__ void GPTLdisable_gpu (void);
 __global__ void GPTLreset_gpu (void);
 __global__ void GPTLfill_gpustats (Gpustats *, int *, int *);
-__global__ void GPTLget_memstats_gpu (float *, float *);
+__global__ void GPTLget_memstats_gpu (float *);
 __global__ void GPTLget_gpusizes (int *, int *);
-__global__ void GPTLget_overhead_gpu (long long *,            /* Getting my thread index */
-				      long long *,            /* Generating hash index */
-				      long long *,            /* Finding entry in hash table */
-				      char *,                 // name used for getentry
-				      long long *,            /* Underlying timing routine */
-				      long long *,            /* self_ohd */
-				      long long *,            /* parent_ohd */
+__global__ void GPTLget_overhead_gpu (long long *,            // Getting my warp index
+				      long long *,            // Underlying timing routine
+				      long long *,            // self_ohd
+				      long long *,            // parent_ohd
 				      long long *,            // my_strlen ohd
 				      long long *);           // STRMATCH ohd
 }

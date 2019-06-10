@@ -24,8 +24,8 @@ CONTAINS
   end function doalot_log
 
 ! doalot_log_inner: Same computations as doalot_log, but add a timer inside "innerlooplen"
-  real function doalot_log_inner (n, innerlooplen) result (sum)
-    integer, intent(in) :: n, innerlooplen
+  real function doalot_log_inner (n, innerlooplen, doalot_log_inner_handle) result (sum)
+    integer, intent(in) :: n, innerlooplen, doalot_log_inner_handle
     integer :: i, iter
     integer :: ret
     real :: sum
@@ -33,11 +33,11 @@ CONTAINS
 
     sum = 0.
     do iter=1,innerlooplen
-      ret = gptlstart_gpu ('doalot_log_inner')
+      ret = gptlstart_gpu (doalot_log_inner_handle)
       do i=1,n
         sum = sum + log (real (iter*i))
       end do
-      ret = gptlstop_gpu ('doalot_log_inner')
+      ret = gptlstop_gpu (doalot_log_inner_handle)
     end do
   end function doalot_log_inner
 

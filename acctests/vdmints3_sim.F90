@@ -6,18 +6,21 @@ subroutine vdmints3_sim (ips, ipe, oversub)
 
   integer :: k, isn, ipn, ipnn
   integer :: chunksize
-  integer :: ret, ret2
-  integer :: handle, handle2
+  integer :: ret, ret2, ret3
+  integer :: vdmints3_gpu, vdmints3, vdmints3_ipn, vdmints3_k
   integer, parameter :: warpsize = 32
   logical :: first = .true.
 
 !$acc routine (solveithls3_sim) vector
 !$acc routine (burn_time) vector
 
-!$acc parallel private(ret) copyout(handle,handle2)
-  ret = gptlinit_handle_gpu ('vdmints3', handle)
-  ret = gptlinit_handle_gpu ('vdmints3_ipn', handle2)
-  ret = gptlstart_gpu ('vdmints3_gpu')
+!$acc parallel private(ret) copyout(vdmints3_gpu,vdmints3,vdmints3_ipn,vdmints3_k)
+  ret = gptlinit_handle_gpu ('vdmints3_gpu', vdmints3_gpu)
+  ret = gptlinit_handle_gpu ('vdmints3',     vdmints3)
+  ret = gptlinit_handle_gpu ('vdmints3_ipn', vdmints3_ipn)
+  ret = gptlinit_handle_gpu ('vdmints3_k',   vdmints3_k)
+
+  ret = gptlstart_gpu (vdmints3_gpu)
 !$acc end parallel
 
   chunksize = gptlcompute_chunksize (oversub, NZ-1)
@@ -30,14 +33,16 @@ subroutine vdmints3_sim (ips, ipe, oversub)
   end if
 
   do ipnn=ips,ipe,chunksize
-!$acc parallel private(ret) num_workers(1) vector_length(NZ) copyin(ipnn,chunksize,ipe)
-    ret = gptlstart_gpu ('vdmints3'//char(0))
-!$acc loop gang worker private(ipn,ret2,k,isn)
+!$acc parallel private(ret,ipn) num_workers(1) vector_length(NZ) copyin(ipnn,chunksize,ipe,vdmints3,vdmints3_ipn)
+    ret = gptlstart_gpu (vdmints3)
+!$acc loop gang worker private(ret2,ret3,k,isn)
     do ipn=ipnn,min(ipnn+chunksize-1,ipe)
-      ret2 = gptlstart_gpu('vdmints3_ipn'//char(0))
+      ret2 = gptlstart_gpu(vdmints3_ipn)
 !$acc loop vector
       do k=1,NZ-1
+        ret3 = gptlstart_gpu(vdmints3_k)
         call burn_time(ipn,k)
+        ret3 = gptlstop_gpu(vdmints3_k)
       end do
 
       call solveithls3_sim(ipn)
@@ -45,22 +50,26 @@ subroutine vdmints3_sim (ips, ipe, oversub)
       do isn=1,6
 !$acc loop vector
         do k=1,NZ-1
+          ret3 = gptlstart_gpu(vdmints3_k)
           call burn_time(1,k)
+          ret3 = gptlstop_gpu(vdmints3_k)
         end do
       end do
 !$acc loop vector
       do k=1,NZ-1
+        ret3 = gptlstart_gpu(vdmints3_k)
         call burn_time(ipn,k)
+        ret3 = gptlstop_gpu(vdmints3_k)
       end do
       call burn_time(ipn,1)
-      ret2 = gptlstop_gpu('vdmints3_ipn'//char(0))
+      ret2 = gptlstop_gpu(vdmints3_ipn)
     end do
-    ret = gptlstop_gpu('vdmints3'//char(0))
+    ret = gptlstop_gpu(vdmints3)
 !$acc end parallel
   end do
 
-!$acc parallel private(ret)
-  ret = gptlstop_gpu ('vdmints3_gpu')
+!$acc parallel private(ret) copyin(vdmints3_gpu)
+  ret = gptlstop_gpu (vdmints3_gpu)
 !$acc end parallel
 end subroutine vdmints3_sim
 

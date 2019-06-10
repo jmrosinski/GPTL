@@ -9,6 +9,7 @@ subroutine sleep1 (outerlooplen, oversub)
   integer :: ret
   integer :: n, nn
   integer :: chunksize, nchunks
+  integer :: sleep
   integer, parameter :: veclen = 1  ! parallel iteration count per outermost kernel iterator
 
   real*8 :: maxval, maxsav(0:outerlooplen-1)
@@ -27,6 +28,10 @@ subroutine sleep1 (outerlooplen, oversub)
     n = n + 1
   end do
   
+!$acc parallel copyout (ret, sleep)
+  ret = gptlinit_handle_gpu ('sleep1'//char(0), sleep)
+!$acc end parallel
+
   write(6,*)'Sleeping 1 second on GPU...'
   maxsav(:) = 1.
   minsav(:) = 1.
@@ -34,15 +39,15 @@ subroutine sleep1 (outerlooplen, oversub)
 
   ret = gptlstart ('sleep1ongpu')
   do nn=0,outerlooplen-1,chunksize
-!$acc parallel loop private(ret,accum,maxval,minval) copyin(nn,chunksize)
+!$acc parallel loop private(ret,accum,maxval,minval) copyin(nn,chunksize,sleep)
     do n=nn,min(outerlooplen-1,nn+chunksize-1)
 !      ret = gptlstart_gpu ('total_gputime')
-      ret = gptlstart_gpu ('sleep1')
+      ret = gptlstart_gpu (sleep)
       ret = gptlmy_sleep (1.)
-      ret = gptlstop_gpu ('sleep1')
+      ret = gptlstop_gpu (sleep)
       maxval = 1.
       minval = 1.
-      ret = gptlget_wallclock_gpu ('sleep1', accum, maxval, minval)
+      ret = gptlget_wallclock_gpu (sleep, accum, maxval, minval)
       if (maxval > 1.1) then
         maxsav(n) = maxval
       end if

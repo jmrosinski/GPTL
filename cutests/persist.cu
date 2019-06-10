@@ -6,10 +6,23 @@
 #include "../cuda/gptl_cuda.h"
 #include "./localproto.h"
 
-__global__ void dummy (int);
-__global__ void init_handles (int *, int *);
+__global__ void setup_handles (int *, int *, int *, int *, int *);
+__global__ void doalot (int, int, int, int, int, 
+			float *, float *, double *,
+			int *, int *, int *,
+			int *, int *);
 __global__ void doalot (int, int, int, int, int, 
 			float *, float *, double *, int *, int *);
+
+__device__ int *total_gputime;
+__device__ int *doalot_log_handle;
+__device__ int *doalot_log_inner_handle;
+__device__ int *doalot_sqrt_handle;
+__device__ int *doalot_sqrt_double_handle;
+
+__device__ float *logvals;
+__device__ float *sqrtvals;
+__device__ double *dsqrtvals;
 
 __host__ int persist (int mostwork, int outerlooplen, 
 		      int innerlooplen, int balfact, int oversub)
@@ -19,40 +32,40 @@ __host__ int persist (int mostwork, int outerlooplen,
   int ret;
   int n, nn;
   int totalwork;
-  int *handle, *handle2;  // Handles for 2 specific GPU calls
-  float *logvals;
-  float *sqrtvals;
-  double *dsqrtvals;
   cudaEvent_t tstart, tstop;
   float dt;  
   int chunksize;
   int nchunks;
+  cudaError_t cret;
   static const char *thisfunc = "persist";
 
-  printf ("%s: running dummy kernel 0: CUDA barfs if hashtable is no longer a valid pointer\n",
-	  thisfunc);
-  dummy <<<1,1>>> (0);
+  if (cudaMallocManaged (&total_gputime,             sizeof (int)) != cudaSuccess)
+    printf ("cudaMallocManaged error total_gputime\n");
+  if (cudaMallocManaged (&doalot_log_handle,         sizeof (int)) != cudaSuccess)
+    printf ("cudaMallocManaged error doalot_log_handle\n");
+  if (cudaMallocManaged (&doalot_sqrt_handle,        sizeof (int)) != cudaSuccess)
+    printf ("cudaMallocManaged error doalot_sqrt_handle\n");
+  if (cudaMallocManaged (&doalot_sqrt_double_handle, sizeof (int)) != cudaSuccess)
+    printf ("cudaMallocManaged error doalot_sqrt_double_handle\n");
+
+  printf ("%s: issuing cudaMallocManaged calls to hold results\n", thisfunc);
+  if ((cret = cudaMallocManaged (&logvals, outerlooplen * sizeof (float))) != cudaSuccess)
+    printf ("cudaMallocManaged error logvals:%s\n", cudaGetErrorString (cret));
+  if (cudaMallocManaged (&sqrtvals, outerlooplen * sizeof (float)) != cudaSuccess)
+    printf ("cudaMallocManaged error sqrtvals\n");
+  if (cudaMallocManaged (&dsqrtvals, outerlooplen * sizeof (double)) != cudaSuccess)
+    printf ("cudaMallocManaged error dsqrtvals\n");
+
+  setup_handles <<<1,1>>> (total_gputime, doalot_log_handle, doalot_log_inner_handle,
+			   doalot_sqrt_handle, doalot_sqrt_double_handle);
   cudaDeviceSynchronize();
+  printf ("called cudaDeviceSynchronize 1\n");
 
   chunksize = MIN (GPTLcompute_chunksize (oversub, inner_parallel), outerlooplen);
   nchunks = (outerlooplen + (chunksize-1)) / chunksize;
   printf ("outerlooplen=%d broken into %d kernels of chunksize=%d\n",
 	  outerlooplen, nchunks, chunksize);
 
-  // GPU-specific init_handle routine needed because its tablesize likely differs from CPU
-  cudaMalloc (&handle, sizeof (int));
-  cudaMalloc (&handle2, sizeof (int));
-
-  init_handles <<<1,1>>> (handle, handle2);
-  cudaDeviceSynchronize();
-
-  dummy <<<1,1>>> (1);
-  cudaDeviceSynchronize();
-
-  printf ("%s: issuing cudaMalloc calls to hold results\n", thisfunc);
-  cudaMalloc (&logvals, outerlooplen * sizeof (float));
-  cudaMalloc (&sqrtvals, outerlooplen * sizeof (float));
-  cudaMalloc (&dsqrtvals, outerlooplen * sizeof (double));
   n = 0;
   for (nn = 0; nn < outerlooplen; nn += chunksize) {
     printf ("chunk=%d totalwork=%d\n", n, MIN (chunksize, outerlooplen - nn));
@@ -82,7 +95,9 @@ __host__ int persist (int mostwork, int outerlooplen,
     ret = GPTLstart ("total_kerneltime");
     ret = GPTLstart ("doalot");
     doalot <<<gridsize, blocksize>>> (nn, outerlooplen, innerlooplen, balfact, mostwork, 
-				      logvals, sqrtvals, dsqrtvals, handle, handle2);
+				      logvals, sqrtvals, dsqrtvals,
+				      total_gputime, doalot_log_handle, doalot_log_inner_handle,
+				      doalot_sqrt_handle, doalot_sqrt_double_handle);
     cudaDeviceSynchronize();
     ret = GPTLstop ("doalot");
     ret = GPTLstop ("total_kerneltime");
@@ -119,7 +134,9 @@ __host__ int persist (int mostwork, int outerlooplen,
 }
 
 __global__ void doalot (int nn, int outerlooplen, int innerlooplen, int balfact, int mostwork, 
-			float *logvals, float *sqrtvals, double *dsqrtvals, int *handle, int *handle2)
+			float *logvals, float *sqrtvals, double *dsqrtvals,
+			int *total_gputime, int *doalot_log_handle, int *doalot_log_inner_handle,
+			int *doalot_sqrt_handle, int *doalot_sqrt_double_handle)
 {
   int ret;
   float factor;
@@ -152,51 +169,34 @@ __global__ void doalot (int nn, int outerlooplen, int innerlooplen, int balfact,
     printf ("doalot: bad balfact=%d--returning prematurely\n", balfact);
     return;
   }
-    
-  ret = GPTLstart_gpu ("total_gputime");
-  ret = GPTLstart_gpu ("total_gputime2");
+
+  ret = GPTLstart_gpu (*total_gputime);
   if (nnn < outerlooplen) {
-    ret = GPTLstart_gpu ("doalot_log");
+    ret = GPTLstart_gpu (*doalot_log_handle);
     logvals[nnn] = doalot_log (niter, innerlooplen);
-    ret = GPTLstop_gpu ("doalot_log");
+    ret = GPTLstop_gpu (*doalot_log_handle);
 
-    logvals[nnn] = doalot_log_inner (niter, innerlooplen);
+    logvals[nnn] = doalot_log_inner (niter, innerlooplen, doalot_log_inner_handle);
 
-    ret = GPTLstart_gpu ("doalot_sqrt");
+    ret = GPTLstart_gpu (*doalot_sqrt_handle);
     sqrtvals[nnn] = doalot_sqrt (niter, innerlooplen);
-    ret = GPTLstop_gpu ("doalot_sqrt");
+    ret = GPTLstop_gpu (*doalot_sqrt_handle);
 
-    ret = GPTLstart_gpu ("doalot_sqrt_double");
+    ret = GPTLstart_gpu (*doalot_sqrt_double_handle);
     dsqrtvals[nnn] = doalot_sqrt_double (niter, innerlooplen);
-    ret = GPTLstop_gpu ("doalot_sqrt_double");
-
-    // Repeat same call from above to match Fortran which has an "_c" variant
-    ret = GPTLstart_gpu ("doalot_sqrt_c");
-    sqrtvals[nnn] = doalot_sqrt (niter, innerlooplen);
-    ret = GPTLstop_gpu ("doalot_sqrt_c");
-
-    ret = GPTLstart_handle_gpu ("doalot_handle_sqrt_c", handle);
-    sqrtvals[nnn] = doalot_sqrt (niter, innerlooplen);
-    ret = GPTLstop_handle_gpu ("doalot_handle_sqrt_c", handle);
-
-    // Repeat same call from above to match Fortran which has an "_c" variant
-    ret = GPTLstart_handle_gpu ("a", handle2);
-    sqrtvals[nnn] = doalot_sqrt (niter, innerlooplen);
-    ret = GPTLstop_handle_gpu ("a", handle2);
+    ret = GPTLstop_gpu (*doalot_sqrt_double_handle);
   }
-  ret = GPTLstop_gpu ("total_gputime2");
-  ret = GPTLstop_gpu ("total_gputime");
+  ret = GPTLstop_gpu (*total_gputime);
 }
 
-__global__ void dummy (int id)
-{
-  GPTLdummy_gpu (id);
-}
-
-__global__ void init_handles (int *handle, int *handle2)
+__global__ void setup_handles (int *total_gputime, int *doalot_log_handle, int *doalot_log_inner_handle,
+			       int *doalot_sqrt_handle, int *doalot_sqrt_double_handle)
 {
   int ret;
-
-  ret = GPTLinit_handle_gpu ("doalot_handle_sqrt_c", handle);
-  ret = GPTLinit_handle_gpu ("a", handle2);
+  
+  ret = GPTLinit_handle_gpu ("total_gputime",      total_gputime);
+  ret = GPTLinit_handle_gpu ("doalot_log",         doalot_log_handle);
+  ret = GPTLinit_handle_gpu ("doalot_log_inner",   doalot_log_inner_handle);
+  ret = GPTLinit_handle_gpu ("doalot_sqrt",        doalot_sqrt_handle);
+  ret = GPTLinit_handle_gpu ("doalot_sqrt_double", doalot_sqrt_double_handle);
 }

@@ -110,7 +110,6 @@ static int tablesize = DEFAULT_TABLE_SIZE;  /* per-thread size of hash table (se
 static int tablesizem1 = DEFAULT_TABLE_SIZE - 1;
 
 static double gpu_hz = 0.;       // GPU frequency in cycles per second
-static int tablesize_gpu = DEFAULT_TABLE_SIZE_GPU;
 static int maxwarps_gpu = DEFAULT_MAXWARPS_GPU;
 static int maxtimers_gpu = DEFAULT_MAXTIMERS_GPU;
 static int devnum = -1;
@@ -291,14 +290,6 @@ __host__ int GPTLsetoption (const int option,  /* option */
     if (verbose)
       printf ("%s: tablesize = %d\n", thisfunc, tablesize);
     return 0;
-    // GPU-specific items start here
-  case GPTLtablesize_gpu:
-    if (val < 1)
-      return GPTLerror ("%s: tablesize_gpu must be positive. %d is invalid\n", thisfunc, val);
-    tablesize_gpu = val;
-    if (verbose)
-      printf ("%s: tablesize_gpu = %d\n", thisfunc, tablesize_gpu);
-    return 0;
   case GPTLmaxwarps_gpu:
     if (val < 1)
       return GPTLerror ("%s: maxwarps_gpu must be positive. %d is invalid\n", thisfunc, val);
@@ -437,7 +428,7 @@ __host__ int GPTLinitialize (void)
 
   gpu_hz = khz * 1000.;
   printf ("%s: GPU khz=%d\n", thisfunc, khz);
-  ret = GPTLinitialize_gpu (verbose, maxwarps_gpu, tablesize_gpu, maxtimers_gpu, gpu_hz);
+  ret = GPTLinitialize_gpu (verbose, maxwarps_gpu, maxtimers_gpu, gpu_hz);
   printf ("%s: Returned from GPTLinitialize_gpu\n", thisfunc);
   imperfect_nest = false;
   initialized = true;

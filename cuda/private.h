@@ -12,10 +12,11 @@
 #define MIN(X,Y) ((X) < (Y) ? (X) : (Y))
 #endif
 
-#define STRMATCH(X,Y) (my_strcmp((X),(Y)) == 0)
+#ifndef MAX
+#define MAX(X,Y) ((X) > (Y) ? (X) : (Y))
+#endif
 
-// Max number of allowed colliding entries in hash table
-#define MAXENT 2
+#define STRMATCH(X,Y) (my_strcmp((X),(Y)) == 0)
 
 #define NOT_ROOT_OF_WARP -2
 #define WARPID_GT_MAXWARPS -3
@@ -28,7 +29,6 @@ typedef struct {
 } Wallstats;
 
 typedef struct TIMER {
-  struct TIMER *next;          // next timer in linked list
   Wallstats wall;              // wallclock stats
   unsigned long count;         // number of start/stop calls
   uint negcount_stop;          // number of times a stop time < start time
@@ -37,18 +37,11 @@ typedef struct TIMER {
   uint badsmid_count;          // number of times SM id changed
   uint negdelta_count;         // number of times a negative time increment occurred
   bool onflg;                  // timer currently on or off
-  bool beenprocessed;          // keep track of which timers in which warps have been processed
   char name[MAX_CHARS+1];      // timer name (user input)
 } Timer;
 
-typedef struct {
-  Timer *entry;       // timer hash
-} Hashentry;
-
-/* Function prototypes */
+// Function prototypes
 extern "C" {
-/* These are user callable */
-
   /* These are callable from within gptl.cu */
 __device__ extern int GPTLerror_1s (const char *, const char *);
 __device__ extern int GPTLerror_2s (const char *, const char *, const char *);
