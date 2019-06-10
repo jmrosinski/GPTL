@@ -6,7 +6,7 @@
 #include "../cuda/gptl_cuda.h"
 #include "./localproto.h"
 
-__global__ void setup_handles (int *, int *, int *, int *, int *);
+__global__ void setup_handles (int *, int *, int *, int *, int *, int *);
 __global__ void doalot (int, int, int, int, int, 
 			float *, float *, double *,
 			int *, int *, int *,
@@ -15,6 +15,7 @@ __global__ void doalot (int, int, int, int, int,
 			float *, float *, double *, int *, int *);
 
 __device__ int *total_gputime;
+__device__ int *donothing_handle;
 __device__ int *doalot_log_handle;
 __device__ int *doalot_log_inner_handle;
 __device__ int *doalot_sqrt_handle;
@@ -41,8 +42,12 @@ __host__ int persist (int mostwork, int outerlooplen,
 
   if (cudaMallocManaged (&total_gputime,             sizeof (int)) != cudaSuccess)
     printf ("cudaMallocManaged error total_gputime\n");
+  if (cudaMallocManaged (&donothing_handle,          sizeof (int)) != cudaSuccess)
+    printf ("cudaMallocManaged error donothing_handle\n");
   if (cudaMallocManaged (&doalot_log_handle,         sizeof (int)) != cudaSuccess)
     printf ("cudaMallocManaged error doalot_log_handle\n");
+  if (cudaMallocManaged (&doalot_log_inner_handle,   sizeof (int)) != cudaSuccess)
+    printf ("cudaMallocManaged error doalot_log_inner_handle\n");
   if (cudaMallocManaged (&doalot_sqrt_handle,        sizeof (int)) != cudaSuccess)
     printf ("cudaMallocManaged error doalot_sqrt_handle\n");
   if (cudaMallocManaged (&doalot_sqrt_double_handle, sizeof (int)) != cudaSuccess)
@@ -56,8 +61,8 @@ __host__ int persist (int mostwork, int outerlooplen,
   if (cudaMallocManaged (&dsqrtvals, outerlooplen * sizeof (double)) != cudaSuccess)
     printf ("cudaMallocManaged error dsqrtvals\n");
 
-  setup_handles <<<1,1>>> (total_gputime, doalot_log_handle, doalot_log_inner_handle,
-			   doalot_sqrt_handle, doalot_sqrt_double_handle);
+  setup_handles <<<1,1>>> (total_gputime, donothing_handle, doalot_log_handle, 
+			   doalot_log_inner_handle, doalot_sqrt_handle, doalot_sqrt_double_handle);
   cudaDeviceSynchronize();
   printf ("called cudaDeviceSynchronize 1\n");
 
@@ -79,7 +84,7 @@ __host__ int persist (int mostwork, int outerlooplen,
 
     ret = GPTLstart ("total_kerneltime");
     ret = GPTLstart ("donothing");
-    donothing <<<gridsize, blocksize>>> ();
+    donothing <<<gridsize, blocksize>>> (total_gputime, donothing_handle);
     cudaDeviceSynchronize();
     ret = GPTLstop ("donothing");
     ret = GPTLstop ("total_kerneltime");
@@ -189,12 +194,13 @@ __global__ void doalot (int nn, int outerlooplen, int innerlooplen, int balfact,
   ret = GPTLstop_gpu (*total_gputime);
 }
 
-__global__ void setup_handles (int *total_gputime, int *doalot_log_handle, int *doalot_log_inner_handle,
-			       int *doalot_sqrt_handle, int *doalot_sqrt_double_handle)
+__global__ void setup_handles (int *total_gputime, int *donothing_handle, int *doalot_log_handle, 
+			       int *doalot_log_inner_handle, int *doalot_sqrt_handle, int *doalot_sqrt_double_handle)
 {
   int ret;
   
   ret = GPTLinit_handle_gpu ("total_gputime",      total_gputime);
+  ret = GPTLinit_handle_gpu ("donothing",          donothing_handle);
   ret = GPTLinit_handle_gpu ("doalot_log",         doalot_log_handle);
   ret = GPTLinit_handle_gpu ("doalot_log_inner",   doalot_log_inner_handle);
   ret = GPTLinit_handle_gpu ("doalot_sqrt",        doalot_sqrt_handle);

@@ -62,19 +62,12 @@ __device__ double doalot_sqrt_double (int n, int innerlooplen)
   return sum;
 }
 
-__global__ void donothing (void)
+__global__ void donothing (int *total_gputime, int *donothing_handle)
 {
   int ret;
-  int total_gputime, total_gputime2, donothing;
 
-  ret = GPTLinit_handle_gpu ("total_gputime",  &total_gputime);
-  ret = GPTLinit_handle_gpu ("total_gputime2", &total_gputime2);
-  ret = GPTLinit_handle_gpu ("donothing",      &donothing);
-
-  ret = GPTLstart_gpu (total_gputime);
-  ret = GPTLstart_gpu (total_gputime2);
-  ret = GPTLstart_gpu (donothing);
-  ret = GPTLstop_gpu (donothing);
-  ret = GPTLstop_gpu (total_gputime2);
-  ret = GPTLstop_gpu (total_gputime);
+  ret = GPTLstart_gpu (*total_gputime);
+  ret = GPTLstart_gpu (*donothing_handle);
+  ret = GPTLstop_gpu (*donothing_handle);
+  ret = GPTLstop_gpu (*total_gputime);
 }
