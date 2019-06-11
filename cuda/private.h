@@ -37,8 +37,11 @@ typedef struct TIMER {
   uint badsmid_count;          // number of times SM id changed
   uint negdelta_count;         // number of times a negative time increment occurred
   bool onflg;                  // timer currently on or off
-  char name[MAX_CHARS+1];      // timer name (user input)
 } Timer;
+
+typedef struct {
+  char name[MAX_CHARS+1];
+} Timername;
 
 // Function prototypes
 extern "C" {

@@ -77,7 +77,7 @@ __host__ int GPTLget_overhead (FILE *fp,
     ret = gptlstart_sim (timername, 9);
   }
   t2 = (*ptr2wtimefunc)();
-  ftn_ohd = 0.001 * (t2 - t1);
+  ftn_ohd = 2. * (0.001 * (t2 - t1));
 
   /* get_thread_num() overhead */
   t1 = (*ptr2wtimefunc)();
@@ -86,7 +86,7 @@ __host__ int GPTLget_overhead (FILE *fp,
     mythread = get_thread_num ();
   }
   t2 = (*ptr2wtimefunc)();
-  get_thread_num_ohd = 0.001 * (t2 - t1);
+  get_thread_num_ohd = 2.*(0.001 * (t2 - t1));
 
   /* genhashidx overhead */
   t1 = (*ptr2wtimefunc)();
@@ -95,7 +95,7 @@ __host__ int GPTLget_overhead (FILE *fp,
     hashidx = genhashidx (timername);
   }
   t2 = (*ptr2wtimefunc)();
-  genhashidx_ohd = 0.001 * (t2 - t1);
+  genhashidx_ohd = 2.*(0.001 * (t2 - t1));
 
   /* 
   ** getentry overhead
@@ -122,7 +122,7 @@ __host__ int GPTLget_overhead (FILE *fp,
       entry = getentry (hashtable, timername, hashidx);
     t2 = (*ptr2wtimefunc)();
   }
-  getentry_ohd = 0.001 * (t2 - t1);
+  getentry_ohd = 2.*(0.001 * (t2 - t1));
 
   /* utr overhead */
   t1 = (*ptr2wtimefunc)();
@@ -130,7 +130,7 @@ __host__ int GPTLget_overhead (FILE *fp,
   for (i = 0; i < 1000; ++i) {
     t2 = (*ptr2wtimefunc)();
   }
-  utr_ohd = 0.001 * (t2 - t1);
+  utr_ohd = 2.*(0.001 * (t2 - t1));
 
   /* getentry_instr overhead */
   t1 = (*ptr2wtimefunc)();
@@ -139,7 +139,7 @@ __host__ int GPTLget_overhead (FILE *fp,
     entry = getentry_instr_sim (hashtable, &randomvar, &hashidx, tablesize);
   }
   t2 = (*ptr2wtimefunc)();
-  getentry_instr_ohd = 0.001 * (t2 - t1);
+  getentry_instr_ohd = 2.*(0.001 * (t2 - t1));
 
   /* misc start/stop overhead */
   if (imperfect_nest) {
@@ -152,23 +152,29 @@ __host__ int GPTLget_overhead (FILE *fp,
       misc_sim (stackidx, callstack, 0);
     }
     t2 = (*ptr2wtimefunc)();
-    misc_ohd = 0.001 * (t2 - t1);
+    misc_ohd = 2.*(0.001 * (t2 - t1));
   }
 
-  total_ohd = ftn_ohd + get_thread_num_ohd + genhashidx_ohd + getentry_ohd + 
-              utr_ohd + misc_ohd;
-  fprintf (fp, "Total overhead of 1 GPTL start or GPTLstop call=%g seconds\n", total_ohd);
+  total_ohd = ftn_ohd + get_thread_num_ohd + genhashidx_ohd + getentry_ohd + utr_ohd + misc_ohd;
+
+  fprintf (fp, "Total overhead of 1 GPTL start + GPTLstop pair call=%7.1e seconds\n", total_ohd);
   fprintf (fp, "Components are as follows:\n");
+
   fprintf (fp, "Fortran layer:             %7.1e = %5.1f%% of total\n", 
 	  ftn_ohd, ftn_ohd / total_ohd * 100.);
+
   fprintf (fp, "Get thread number:         %7.1e = %5.1f%% of total\n", 
 	  get_thread_num_ohd, get_thread_num_ohd / total_ohd * 100.);
+
   fprintf (fp, "Generate hash index:       %7.1e = %5.1f%% of total\n", 
 	  genhashidx_ohd, genhashidx_ohd / total_ohd * 100.);
+
   fprintf (fp, "Find hashtable entry:      %7.1e = %5.1f%% of total\n", 
 	  getentry_ohd, getentry_ohd / total_ohd * 100.);
+
   fprintf (fp, "Underlying timing routine: %7.1e = %5.1f%% of total\n", 
 	  utr_ohd, utr_ohd / total_ohd * 100.);
+
   fprintf (fp, "Misc start/stop functions: %7.1e = %5.1f%% of total\n", 
 	  misc_ohd, misc_ohd / total_ohd * 100.);
   fprintf (fp, "\n");
@@ -178,9 +184,9 @@ __host__ int GPTLget_overhead (FILE *fp,
 	  "      the hashtable entry is %7.1e not the %7.1e portion taken by GPTLstart\n", 
 	  getentry_instr_ohd, genhashidx_ohd + getentry_ohd);
   fprintf (fp, "NOTE: Each hash collision roughly doubles the 'Find hashtable entry' cost of that timer\n");
-  *self_ohd   = ftn_ohd + utr_ohd; /* In GPTLstop() ftn wrapper is called before utr */
-  *parent_ohd = ftn_ohd + utr_ohd + misc_ohd +
-                2.*(get_thread_num_ohd + genhashidx_ohd + getentry_ohd);
+  *self_ohd   = 0.5*ftn_ohd + 0.5*utr_ohd;    // In GPTLstop() ftn wrapper is called before utr
+  *parent_ohd = 0.5*(ftn_ohd + utr_ohd + misc_ohd) +
+                get_thread_num_ohd + genhashidx_ohd + getentry_ohd;
   return 0;
 }
 

@@ -47,10 +47,13 @@ __global__ void GPTLenable_gpu (void);
 __global__ void GPTLdisable_gpu (void);
 __global__ void GPTLreset_gpu (void);
 __global__ void GPTLfill_gpustats (Gpustats *, int *, int *);
-__global__ void GPTLget_memstats_gpu (float *);
+__global__ void GPTLget_memstats_gpu (float *, float *);
 __global__ void GPTLget_gpusizes (int *, int *);
 __global__ void GPTLget_overhead_gpu (long long *,            // Getting my warp index
+				      long long *,            // start/stop pair
 				      long long *,            // Underlying timing routine
+				      long long *,            // misc start code
+				      long long *,            // misc stop code
 				      long long *,            // self_ohd
 				      long long *,            // parent_ohd
 				      long long *,            // my_strlen ohd

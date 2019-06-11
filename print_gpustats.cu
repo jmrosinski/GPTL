@@ -26,20 +26,25 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
 
   // Returned from GPTLget_overhead_gpu:
   long long *get_warp_num_ohdgpu; // Getting my thread index
-  char *ohdgpu_name;              // name used for getentry test
+  long long *startstop_ohdgpu;    // Cost est of start/stop pair
   long long *utr_ohdgpu;          // Underlying timing routine
+  long long *start_misc_ohdgpu;   // misc code from GPTLstart_gpu
+  long long *stop_misc_ohdgpu;    // misc code from GPTLstop_gpu
   long long *self_ohdgpu;         // Cost est. for timing this region
   long long *parent_ohdgpu;       // Cost est. to parent of this region
-
-  long long *my_strlen_ohdgpu;
-  long long *STRMATCH_ohdgpu;
+  long long *my_strlen_ohdgpu;    // my_strlen function
+  long long *STRMATCH_ohdgpu;     // my_strcmp function
   // Returned from GPTLget_memstats_gpu:
-  float *regionmem;
+  float *regionmem, *timernamemem;
 
   int count_max, count_min;
   double wallmax, wallmin;
   double self, parent;
-  double tot_ohdgpu;
+  double gwn;
+  double utr;
+  double denom;
+  double startstop;
+  double startmisc, stopmisc;
 #ifdef HAVE_MPI
   int myrank = 0;
   int mpi_active;
@@ -57,8 +62,10 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   gpuErrchk (cudaMallocManaged (&maxwarpid_timed,     sizeof (int)));
 
   gpuErrchk (cudaMallocManaged (&get_warp_num_ohdgpu, sizeof (long long)));
-  gpuErrchk (cudaMallocManaged (&ohdgpu_name,         MAX_CHARS+1));
+  gpuErrchk (cudaMallocManaged (&startstop_ohdgpu,    sizeof (long long)));
   gpuErrchk (cudaMallocManaged (&utr_ohdgpu,          sizeof (long long)));
+  gpuErrchk (cudaMallocManaged (&start_misc_ohdgpu,   sizeof (long long)));
+  gpuErrchk (cudaMallocManaged (&stop_misc_ohdgpu,    sizeof (long long)));
   gpuErrchk (cudaMallocManaged (&self_ohdgpu,         sizeof (long long)));
   gpuErrchk (cudaMallocManaged (&parent_ohdgpu,       sizeof (long long)));
 
@@ -66,6 +73,7 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   gpuErrchk (cudaMallocManaged (&STRMATCH_ohdgpu,     sizeof (long long)));
 
   gpuErrchk (cudaMallocManaged (&regionmem,           sizeof (float)));
+  gpuErrchk (cudaMallocManaged (&timernamemem,        sizeof (float)));
 
   GPTLfill_gpustats<<<1,1>>> (gpustats, max_name_len_gpu, ngputimers);
   if (cudaGetLastError() != cudaSuccess)
@@ -97,7 +105,10 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
 
   GPTLget_gpusizes <<<1,1>>> (maxwarpid_found, maxwarpid_timed);
   GPTLget_overhead_gpu <<<1,1>>> (get_warp_num_ohdgpu,
+				  startstop_ohdgpu,
 				  utr_ohdgpu,
+				  start_misc_ohdgpu,
+				  stop_misc_ohdgpu,
 				  self_ohdgpu,
 				  parent_ohdgpu,
 				  my_strlen_ohdgpu,
@@ -105,20 +116,33 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   cudaDeviceSynchronize();
 
   fprintf (fp, "Underlying timing routine was clock64() assumed @ %f Ghz\n", gpu_hz * 1.e-9);
-  tot_ohdgpu = (get_warp_num_ohdgpu[0] + utr_ohdgpu[0]) / gpu_hz;
-  fprintf (fp, "Total overhead of 1 GPTLstart_gpu or GPTLstop_gpu call (ignores a few settings)=%g seconds\n", tot_ohdgpu);
-  fprintf (fp, "Components are as follows:\n");
-  fprintf (fp, "Fortran layer assumed zero, ASSUMES user provided null terminator\n"); 
-  fprintf (fp, "Get warp number:                %7.1e = %5.1f%% of total\n", 
-	   get_warp_num_ohdgpu[0] / gpu_hz, get_warp_num_ohdgpu[0] * 100. / (tot_ohdgpu * gpu_hz) );
-  fprintf (fp, "Underlying timing routine+SMID: %7.1e = %5.1f%% of total\n", 
-	   utr_ohdgpu[0] / gpu_hz, utr_ohdgpu[0] * 100. / (tot_ohdgpu * gpu_hz) );
+  startstop = startstop_ohdgpu[0] / gpu_hz;
+  fprintf (fp, "Total overhead of 1 GPTLstart_gpu + GPTLstop_gpu pair call=%7.1e seconds\n", startstop);
+  fprintf (fp, "Components of the pair are as follows (Fortran layer ignored):\n");
+  fprintf (fp, "NOTE: sum of percentages should be near 100\% but not necessarily exact.\n");
+  fprintf (fp, "This is because start/stop timing est. is done separately from components\n");
+
+  denom = (double) startstop_ohdgpu[0] * (double) gpu_hz;
+  gwn = 2.*get_warp_num_ohdgpu[0] / gpu_hz;  // 2. is due to calls from both start and stop
+  fprintf (fp, "Get warp number:                %7.1e = %5.1f%% of total\n", gwn, 100.*(gwn/startstop));
+
+  utr = 2.*utr_ohdgpu[0] / gpu_hz;           // 2. is due to calls from both start and stop
+  fprintf (fp, "Underlying timing routine+SMID: %7.1e = %5.1f%% of total\n", utr, 100.*(utr/startstop));
+
+  startmisc = start_misc_ohdgpu[0] / gpu_hz;
+  fprintf (fp, "Misc calcs in GPTL_start_gpu:   %7.1e = %5.1f%% of total\n",
+	   startmisc, 100.*(startmisc/startstop));
+
+  stopmisc = stop_misc_ohdgpu[0] / gpu_hz;
+  fprintf (fp, "Misc calcs in GPTL_stop_gpu:    %7.1e = %5.1f%% of total\n",
+	   stopmisc, 100.*(stopmisc/startstop));
+
   fprintf (fp, "\n");
 
-  fprintf (fp, "my_strlen:                      %7.1e (name=%s)\n",
-	   my_strlen_ohdgpu[0] / gpu_hz, ohdgpu_name);
-  fprintf (fp, "STRMATCH:                       %7.1e (matched name=%s)\n",
-	   STRMATCH_ohdgpu[0] / gpu_hz, ohdgpu_name);
+  fprintf (fp, "my_strlen:                      %7.1e (name=GPTL_ROOT)\n",
+	   my_strlen_ohdgpu[0] / gpu_hz);
+  fprintf (fp, "STRMATCH:                       %7.1e (matched name=GPTL_ROOT)\n",
+	   STRMATCH_ohdgpu[0] / gpu_hz);
   fprintf (fp, "\n");
 
   printf ("%s: calling gpu kernel GPTLfill_gpustats...\n", thisfunc);
@@ -224,8 +248,11 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   }
 
   printf ("%s: calling gpu kernel GPTLget_memstats_gpu...\n", thisfunc);
-  GPTLget_memstats_gpu <<<1,1>>> (regionmem);
+  GPTLget_memstats_gpu <<<1,1>>> (regionmem, timernamemem);
   cudaDeviceSynchronize();
   fprintf (fp, "\n");
-  fprintf (fp, "GPTL GPU memory usage       = %g KB\n", regionmem[0]*.001);
+  fprintf (fp, "GPTL GPU memory usage (Timers)      = %8g KB\n", regionmem[0]*.001);
+  fprintf (fp, "GPTL GPU memory usage (Timer names) = %8g KB\n", timernamemem[0]*.001);
+  fprintf (fp, "                                      --------\n");
+  fprintf (fp, "GPTL GPU memory usage (Total)       = %8g KB\n", (regionmem[0] + timernamemem[0])*.001);
 }
