@@ -22,7 +22,7 @@ CU = nvcc
 
 # Whether to build debug lib or optimized lib, and associated flags
 DEBUG = no
-CUFLAGS_ALL = $(UNDERSCORING) -I$(CUDA_ROOT)/samples/common/inc -g -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true
+CUFLAGS_ALL = $(UNDERSCORING) -I$(CUDA_ROOT)/samples/common/inc -g -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true -keep
 ifeq ($(DEBUG),yes)
   CUFLAGS = -DDEBUG -O0 -G -lineinfo $(CUFLAGS_ALL)
 else
@@ -30,10 +30,6 @@ else
 endif
 # Add diagnostic info
 #CUFLAGS += -Xptxas="-v"
-
-# Set compiler flags for non-default ABIs (e.g. 64-bit addressing). 
-# Normally this can be blank.
-ABIFLAGS =
 
 # Is the /proc filesystem available? On most Linux systems it is. If available, get_memusage() 
 # reads from it to find memory usage info. Otherwise get_memusage() will use get_rusage()
@@ -154,9 +150,3 @@ ENABLE_ACC = yes
 
 # Name of the CUDA-enabled library (not a good idea to change this)
 GPULIB = gptl_cuda
-
-# Whether to test on which SM a region is running
-CHECK_SM = yes
-ifeq ($(CHECK_SM),yes)
-  CUFLAGS += -DCHECK_SM
-endif

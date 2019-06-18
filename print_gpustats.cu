@@ -42,7 +42,6 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   double self, parent;
   double gwn;
   double utr;
-  double denom;
   double startstop;
   double startmisc, stopmisc;
 #ifdef HAVE_MPI
@@ -122,7 +121,6 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   fprintf (fp, "NOTE: sum of percentages should be near 100\% but not necessarily exact.\n");
   fprintf (fp, "This is because start/stop timing est. is done separately from components\n");
 
-  denom = (double) startstop_ohdgpu[0] * (double) gpu_hz;
   gwn = 2.*get_warp_num_ohdgpu[0] / gpu_hz;  // 2. is due to calls from both start and stop
   fprintf (fp, "Get warp number:                %7.1e = %5.1f%% of total\n", gwn, 100.*(gwn/startstop));
 

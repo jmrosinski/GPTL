@@ -768,7 +768,7 @@ __global__ void GPTLget_overhead_gpu (long long *get_warp_num_ohd,  // Getting m
 
   // Self and parent OHD estimates: A few settings at the end of GPTLstart_gpu should instead be 
   // applied to parent. A few settings at the beginning of GPTLstop_gpu should instead be
-  // applied to self. But those errors should be minor.
+  // applied to self. But those errors are likely minor.
   self_ohd[0]   = utr_ohd[0] + start_misc_ohd[0];
   parent_ohd[0] = utr_ohd[0] + 2*get_warp_num_ohd[0] + stop_misc_ohd[0];
 
