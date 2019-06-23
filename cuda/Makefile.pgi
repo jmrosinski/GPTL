@@ -14,7 +14,7 @@ endif
 
 # set max reg count to a small number to minimize GPTL interference with app
 %.o: %.cu
-	$(CU) -c $< $(CUFLAGS) --maxrregcount 16
+	$(CU) -c $< $(CUFLAGS) --maxrregcount 32
 
 %.o: %.F90
 	$(FC) -c $< $(FFLAGS)

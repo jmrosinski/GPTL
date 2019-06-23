@@ -43,7 +43,9 @@ __device__ static void start_misc (int, const int);
 __device__ static void stop_misc (int w, const int handle);
 __device__ static void init_gpustats (Gpustats *, int);
 __device__ static void fill_gpustats (Gpustats *, int, int);
+#ifdef DEBUG_PRINT
 __device__ static void prbits8 (uint64_t);
+#endif
 
 /* VERBOSE is a debugging ifdef local to the rest of this file */
 #define VERBOSE
@@ -365,8 +367,8 @@ __device__ static inline int update_stats_gpu (const int handle,
 					       const uint smid)
 {
   register long long delta;           // time diff from start()
-  static const char *thisfunc = "update_stats_gpu";
 #ifdef DEBUG_PRINT
+  static const char *thisfunc = "update_stats_gpu";
   printf ("%s: ptr=%p setting onflg=false\n", thisfunc, ptr);
 #endif
 
@@ -467,19 +469,6 @@ __global__ void GPTLreset_gpu (void)
 
   if (verbose)
     printf ("%s: accumulators for all GPU timers set to zero\n", thisfunc);
-}
-
-/*
-** placebo: does nothing and returns zero always. Useful for estimating overhead costs
-*/
-__device__ static int init_placebo ()
-{
-  return SUCCESS;
-}
-
-__device__ static inline long long utr_placebo ()
-{
-  return (long long) SUCCESS;
 }
 
 __device__ static inline int get_warp_num ()
@@ -887,6 +876,7 @@ __device__ void GPTLdummy_gpu ()
   return;
 }
 
+#ifdef DEBUG_PRINT
 __device__ static void prbits8 (uint64_t val)
 {
   uint64_t mask = 1;
@@ -909,6 +899,7 @@ __device__ static void prbits8 (uint64_t val)
   }
   printf ("\n");
 }
+#endif
   
 __device__ void GPTLwhoami (const char *caller)
 {
