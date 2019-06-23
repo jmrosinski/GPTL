@@ -16,14 +16,14 @@ int main (int argc, char **argv)
 
   printf ("%s: testing getting event code for PAPI_TOT_CYC...\n", argv[0]);
   if ((ret = GPTLevent_name_to_code ("PAPI_TOT_CYC", &code)) == 0) {
-    printf ("Success\n");
+    printf ("Success: code=%d\n", code);
     printf ("Trying to ensure code translates to PAPI_TOT_CYC\n");
     if ((ret = GPTLevent_code_to_name (code, eventname)) != 0) {
       printf ("Failure\n");
       return 2;
     }
     if (strcmp (eventname, "PAPI_TOT_CYC") == 0) {
-      printf ("Success\n");
+      printf ("Success: eventname=%s\n", eventname);
     } else {
       printf ("Failure: got %s\n", eventname);
       return 2;

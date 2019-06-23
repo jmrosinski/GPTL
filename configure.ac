@@ -143,6 +143,7 @@ if test x$enable_papi = xyes; then
       fi
     fi
     AC_DEFINE([HAVE_PAPI], [1], [PAPI library is present and usable])
+    LDFLAGS="$LDFLAGS -lpapi"
     have_papi=yes
   else
     have_papi=no
@@ -184,7 +185,8 @@ AC_MSG_RESULT([$ac_cv_func_backtrace_symbols])
 # For auto-profiling, backtrace is the default method to recover current function name.
 # If not available, try libunwind. If neither are available, auto-profiling will not be
 # possible. To use auto auto-profiling with GNU or Intel compilers:
-# Compile application code with -g -finstrument-functions -rdynamic
+# Compile application code with -g and appropriate auto-instrumentation flag
+# Probably the appropriate dynamic linking flag (maybe -rdynamic or -Bdynamic) also is needed
 #
 AC_ARG_ENABLE([libunwind],
     AS_HELP_STRING([--enable-libunwind], [Enable auto-profiling capability via libunwind]))
@@ -203,7 +205,7 @@ if test "x$enable_backtrace" != xno; then
   if test "x$found_backtrace" = xyes; then
     usebacktrace=yes;
     AC_DEFINE([HAVE_BACKTRACE], [1], [backtrace will be used])
-    AC_MSG_NOTICE([backtrace enabled for auto-profiling: Ensure LDFLAGS+= -rdynamic in profiled apps!!!])
+    AC_MSG_NOTICE([backtrace enabled for auto-profiling: dynamic linking flag (see below) probably also needed])
   fi
 fi
 
@@ -212,13 +214,35 @@ if test "x$enable_libunwind" = xyes; then
   if test "x$found_libunwind" = xyes; then
     useunwind=yes;
     AC_DEFINE([HAVE_LIBUNWIND], [1], [libunwind will be used])
-    AC_MSG_NOTICE([libunwind enabled for auto-profiling: Ensure LDFLAGS+= -rdynamic -lunwind in profiled apps!!!])
+    AC_MSG_NOTICE([libunwind enabled for auto-profiling: dynamic linking flag (see below) probably also needed])
   fi
 fi
 
 # Above logic ensures that both haveunwind and havebacktrace cannot both = yes
 AM_CONDITIONAL([HAVE_LIBUNWIND], [test x$useunwind = xyes])
 AM_CONDITIONAL([HAVE_BACKTRACE], [test x$usebacktrace = xyes])
+
+# See if auto-instrumentation flag is available. If so, set INSTRFLAG for testing
+if test "x$useunwind" = xyes || test "x$usebacktrace" = xyes; then
+  AX_CHECK_COMPILE_FLAG([-finstrument-functions], [finstrf=yes], [finstrf=no])
+  AX_CHECK_COMPILE_FLAG([-Minstrument:functions], [minstrf=yes], [minstrf=no])
+fi
+
+# Auto-instrumentation often requires a special link flag
+AX_CHECK_LINK_FLAG(-rdynamic, [AC_SUBST([INSTR_LINK], [-rdynamic])], [rdynamic=no])
+if test "x$rdynamic" = xno; then
+  AX_CHECK_LINK_FLAG(-Bdynamic, [AC_SUBST([INSTR_LINK], [-Bdynamic])], [bdynamic=no])
+  if test "x$bdynamic = xno"; then
+    AC_MSG_WARN([Dynamic linking flag not found: Auto-instrumentation may not work properly])
+  fi
+fi
+
+AM_CONDITIONAL([HAVE_INSTRFLAG], [test "x$finstrf" = xyes || test "x$minstrf" = xyes])
+if test "x$finstrf" = xyes; then
+  AC_SUBST([INSTRFLAG],[-finstrument-functions])
+elif test "x$minstrf" = xyes; then
+  AC_SUBST([INSTRFLAG],[-Minstrument:functions])
+fi
 
 # Check for times.
 AC_CHECK_FUNC([times],

@@ -176,13 +176,9 @@ int gptlpr_summary (int *fcomm)
   int ret;
 
 #ifdef HAVE_LIBMPI
-#ifdef HAVE_COMM_F2C
   MPI_Comm ccomm;
   ccomm = MPI_Comm_f2c (*fcomm);
   ret = GPTLpr_summary (ccomm);
-#else
-  ret = GPTLerror ("HAVE_COMM_F2C not set so cannot call GPTLpr_summary\n");
-#endif
 #else
   ret = GPTLpr_summary (0);
 #endif
@@ -195,15 +191,11 @@ int gptlpr_summary_file (int *fcomm, char *outfile, int nc)
   int ret;
 
 #ifdef HAVE_LIBMPI
-#ifdef HAVE_COMM_F2C
   MPI_Comm ccomm;
 
   snprintf (locfile, nc+1, "%s", outfile);
   ccomm = MPI_Comm_f2c (*fcomm);
   ret = GPTLpr_summary_file (ccomm, locfile);
-#else
-  ret = GPTLerror ("HAVE_COMM_F2C not set so cannot call GPTLpr_summary_file\n");
-#endif
 #else
   snprintf (locfile, nc+1, "%s", outfile);
   ret = GPTLpr_summary_file (0, locfile);
@@ -213,7 +205,7 @@ int gptlpr_summary_file (int *fcomm, char *outfile, int nc)
 
 int gptlbarrier (int *fcomm, char *name, int nc)
 {
-#if ( defined HAVE_LIBMPI && defined HAVE_COMM_F2C )
+#ifdef HAVE_LIBMPI
   MPI_Comm ccomm;
   char cname[nc+1];
 
@@ -222,7 +214,7 @@ int gptlbarrier (int *fcomm, char *name, int nc)
   ccomm = MPI_Comm_f2c (*fcomm);
   return GPTLbarrier (ccomm, cname);
 #else
-  return GPTLerror ("Either HAVE_COMM_F2C or HAVE_LIBMPI not set so cannot call GPTLbarrier\n");
+  return GPTLerror ("Either HAVE_LIBMPI not set so cannot call GPTLbarrier\n");
 #endif
 }
 

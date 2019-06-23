@@ -7,6 +7,9 @@ AM_CPPFLAGS = -I$(top_srcdir)/include
 # Need optimization disabled for correct behavior of some tests
 CFLAGS += -g -O0 $(OPENMP_CFLAGS)
 
+INSTRFLAG = @INSTRFLAG@
+INSTR_LINK = @INSTR_LINK@
+
 # Link to GPTL library.
 AM_LDFLAGS = ${top_builddir}/src/libgptl.la
 
@@ -17,30 +20,23 @@ noinst_PROGRAMS = gran_overhead printwhileon imperfect_nest
 check_PROGRAMS = tst_simple global
 TESTS = tst_simple global
 
+if HAVE_INSTRFLAG
+TESTS             += cygprofile
+noinst_PROGRAMS   += cygprofile
+# Hack found online to compile cygprofilesubs.c differently than cygprofile.c: Use a lib
+noinst_LIBRARIES   = libcyg.a
+cygprofile_LDADD   = libcyg.a
+cygprofile_SOURCES = cygprofile.c
+libcyg_a_SOURCES   = cygprofilesubs.c
+libcyg_a_CFLAGS    = $(INSTRFLAG)
+endif
+
 # Test autoprofiling if either HAVE_LIBUNWIND or HAVE_BACKTRACE
 if HAVE_LIBUNWIND
-  AM_LDFLAGS        += -rdynamic -lunwind
-#  check_PROGRAMS    += cygprofile
-  TESTS             += cygprofile
-  noinst_PROGRAMS   += cygprofile
-# Hack found online to compile cygprofilesubs.c differently than cygprofile.c: Use a lib
-  noinst_LIBRARIES   = libcyg.a
-  cygprofile_LDADD   = libcyg.a
-  cygprofile_SOURCES = cygprofile.c
-  libcyg_a_SOURCES   = cygprofilesubs.c
-  libcyg_a_CFLAGS    = -fno-inline -finstrument-functions
+  AM_LDFLAGS        += $(INSTR_LINK) -lunwind
 else
 if HAVE_BACKTRACE
-  AM_LDFLAGS        += -rdynamic
-#  check_PROGRAMS    += cygprofile
-  TESTS             += cygprofile
-  noinst_PROGRAMS   += cygprofile
-# Hack found online to compile cygprofilesubs.c differently than cygprofile.c: Use a lib
-  noinst_LIBRARIES   = libcyg.a
-  cygprofile_LDADD   = libcyg.a
-  cygprofile_SOURCES = cygprofile.c
-  libcyg_a_SOURCES   = cygprofilesubs.c
-  libcyg_a_CFLAGS    = -fno-inline -finstrument-functions
+  AM_LDFLAGS        += $(INSTR_LINK)
 endif
 endif
 

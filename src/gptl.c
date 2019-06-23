@@ -1319,12 +1319,6 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 #ifdef HAVE_LIBMPI
   fprintf (fp, "HAVE_LIBMPI was true\n");
 
-#ifdef HAVE_COMM_F2C
-  fprintf (fp, "  HAVE_COMM_F2C was true\n");
-#else
-  fprintf (fp, "  HAVE_COMM_F2C was false\n");
-#endif
-
 #ifdef ENABLE_PMPI
   fprintf (fp, "  ENABLE_PMPI was true\n");
 #else
