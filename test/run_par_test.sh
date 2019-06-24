@@ -7,6 +7,6 @@
 set -e
 echo
 echo "Testing MPI summary..."
-mpiexec -n 2 ./summary
+@MPIEXEC@ -n 2 ./summary
 echo "SUCCESS!"
 exit 0

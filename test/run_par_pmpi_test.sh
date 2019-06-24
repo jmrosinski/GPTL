@@ -7,6 +7,6 @@
 set -e
 echo
 echo "Testing MPI functionality..."
-mpiexec -n 2 ./pmpi
+@MPIEXEC@ -n 2 ./pmpi
 echo "SUCCESS!"
 exit 0
