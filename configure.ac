@@ -238,10 +238,16 @@ if test "x$useunwind" = xyes || test "x$usebacktrace" = xyes; then
 fi
 
 # Auto-instrumentation often requires a special link flag
+rdynamic=yes
+bdynamic=yes
 AX_CHECK_LINK_FLAG(-rdynamic, [AC_SUBST([INSTR_LINK], [-rdynamic])], [rdynamic=no])
-if test "x$rdynamic" = xno; then
+if test "$rdynamic" = yes; then
+  AC_MSG_NOTICE([-rdynamic link flag may be needed for auto-instrumentation])
+else
   AX_CHECK_LINK_FLAG(-Bdynamic, [AC_SUBST([INSTR_LINK], [-Bdynamic])], [bdynamic=no])
-  if test "x$bdynamic = xno"; then
+  if test "$bdynamic" = yes; then
+    AC_MSG_NOTICE([-Bdynamic link flag may be needed for auto-instrumentation])
+  else
     AC_MSG_WARN([Dynamic linking flag not found: Auto-instrumentation may not work properly])
   fi
 fi
