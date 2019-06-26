@@ -62,7 +62,7 @@ TESTS += summary run_par_test.sh
 if ENABLE_PMPI
 check_PROGRAMS += pmpi
 noinst_PROGRAMS += pmpi
-TESTS += run_par_pmpi_test.sh
+TESTS += pmpi run_par_pmpi_test.sh
 endif
 endif
 

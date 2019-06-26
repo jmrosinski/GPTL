@@ -307,6 +307,15 @@ if test -z "$DOXYGEN"; then
    AC_MSG_WARN([Doxygen not found - documentation will not be built])
 fi
 
+# Did the user specify an MPI launcher other than mpiexec?
+AC_MSG_CHECKING([whether a user specified program to run mpi programs])
+AC_ARG_WITH([mpiexec],
+              [AS_HELP_STRING([--with-mpiexec=<command>],
+                              [Specify command to launch MPI parallel tests.])],
+            [MPIEXEC=$with_mpiexec], [MPIEXEC=mpiexec])
+AC_MSG_RESULT([$MPIEXEC])
+AC_SUBST([MPIEXEC], [$MPIEXEC])
+
 # This is a list of files to be built.
 AC_CONFIG_FILES([Makefile
                  include/Makefile
@@ -314,6 +323,8 @@ AC_CONFIG_FILES([Makefile
                  src/Makefile
                  bin/Makefile
 	       ])
+AC_CONFIG_FILES([test/run_par_test.sh], [chmod ugo+x test/run_par_test.sh])
+AC_CONFIG_FILES([test/run_par_pmpi_test.sh], [chmod ugo+x test/run_par_pmpi_test.sh])
 
 # Build the files listed above.
 AC_OUTPUT()

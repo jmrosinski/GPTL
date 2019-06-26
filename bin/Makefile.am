@@ -4,7 +4,8 @@
 # Ed Hartnett, 5/20/18
 
 # Install script in $(bindir) and distribute it.
-dist_bin_SCRIPTS = parsegptlout.pl
+# No longer needed
+#dist_bin_SCRIPTS = parsegptlout.pl
 
 
 
