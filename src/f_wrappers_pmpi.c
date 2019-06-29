@@ -223,7 +223,7 @@ void mpi_wait (MPI_Fint *request, MPI_Fint *status, MPI_Fint *__ierr)
 ** a better solution.
 */
 void mpi_waitall (MPI_Fint *count, MPI_Fint array_of_requests[], 
-                  MPI_Fint array_of_statuses[][MPI_STATUS_SIZE], 
+                  MPI_Fint array_of_statuses[][MPI_STATUS_SIZE_IN_INTS], 
                   MPI_Fint *__ierr)
 {
   const int LOCAL_ARRAY_SIZE = 128;
@@ -232,11 +232,11 @@ void mpi_waitall (MPI_Fint *count, MPI_Fint array_of_requests[],
   MPI_Status c_status[LOCAL_ARRAY_SIZE];
   static const char *thisfunc = "GPTL's mpi_waitall";
 
-  if (MPI_STATUS_SIZE != sizeof(MPI_Status)/sizeof(int)) {
+  if (MPI_STATUS_SIZE_IN_INTS != sizeof(MPI_Status)/sizeof(int)) {
     /* Warning - */
     fprintf (stderr, "%s ERROR: mpi_waitall expected sizeof MPI_Status\n"
 	     "to be %d integers but it is %d. Rebuild GPTL after ensuring that the\n"
-	     "correct value is found and set in macros.make\n", thisfunc, MPI_STATUS_SIZE,
+	     "correct value is found and set in macros.make\n", thisfunc, MPI_STATUS_SIZE_IN_INTS,
 	     (int) (sizeof(MPI_Status)/sizeof(int)) );
     fprintf (stderr, "Aborting...\n");
     (void) MPI_Abort (MPI_COMM_WORLD, -1);
