@@ -118,7 +118,7 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   startstop = startstop_ohdgpu[0] / gpu_hz;
   fprintf (fp, "Total overhead of 1 GPTLstart_gpu + GPTLstop_gpu pair call=%7.1e seconds\n", startstop);
   fprintf (fp, "Components of the pair are as follows (Fortran layer ignored):\n");
-  fprintf (fp, "NOTE: sum of percentages should be near 100\% but not necessarily exact.\n");
+  fprintf (fp, "NOTE: sum of percentages should be near 100 percent but not necessarily exact\n");
   fprintf (fp, "This is because start/stop timing est. is done separately from components\n");
 
   gwn = 2.*get_warp_num_ohdgpu[0] / gpu_hz;  // 2. is due to calls from both start and stop

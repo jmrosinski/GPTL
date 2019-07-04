@@ -19,7 +19,8 @@
 
 extern "C" {
 
-__host__ int GPTLprint_rusage (const char *str)
+__host__
+int GPTLprint_rusage (const char *str)
 {
   struct rusage usage;
   static const char *thisfunc = "GPTLprint_rusage";

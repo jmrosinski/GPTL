@@ -1,9 +1,8 @@
 //#define _GLIBCXX_CMATH
-#include <math.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>          /* sqrt */
 
 #include "private.h"
 #include "gptl.h"
@@ -11,6 +10,14 @@
 /* MPI summary stats */
 typedef struct {
   unsigned long totcalls;  /* number of calls to the region across threads and tasks */
+#ifdef HAVE_PAPI
+  double papimax[MAX_AUX]; /* max counter value across threads, tasks */
+  double papimin[MAX_AUX]; /* max counter value across threads, tasks */
+  int papimax_p[MAX_AUX];  /* task producing papimax */
+  int papimax_t[MAX_AUX];  /* thread producing papimax */
+  int papimin_p[MAX_AUX];  /* task producing papimin */
+  int papimin_t[MAX_AUX];  /* thread producing papimin */
+#endif
   unsigned int notstopped; /* number of ranks+threads for whom the timer is ON */
   unsigned int tottsk;     /* number of tasks which invoked this region */
   float wallmax;           /* max time across threads, tasks */
@@ -24,9 +31,10 @@ typedef struct {
   char name[MAX_CHARS+1];  /* timer name */
 } Global;
 
-static int nthreads; // Used by both GPTLpr_summary() and get_threadstats()
-
 extern "C" {
+static void get_threadstats (int, char *, Timer **, Global *);
+static Timer *getentry_slowway (Timer *, char *);
+static int nthreads; // Used by both GPTLpr_summary() and get_threadstats()
 
 __host__ static void get_threadstats (int, char *, Timer **, Global *);
 __host__ static Timer *getentry_slowway (Timer *, char *);
@@ -48,9 +56,9 @@ __host__ static Timer *getentry_slowway (Timer *, char *);
 **   outfile: name of file to be written
 */
 
-#ifdef HAVE_MPI
-#include <mpi.h>
-__host__ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
+#ifdef HAVE_LIBMPI
+__host__
+int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
 {
   int ret;             /* return code */
   int iam;             /* my rank */
@@ -82,6 +90,9 @@ __host__ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
   static const int nbytes = sizeof (Global);            /* number of bytes to be sent/recvd */
   static const char *thisfunc = "GPTLpr_summary_file";  /* this function */
   FILE *fp = 0;        /* file handle to write to */
+#ifdef HAVE_PAPI
+  int e;               /* event index */
+#endif
 
   if ( ! GPTLis_initialized ())
     return GPTLerror ("%s: GPTLinitialize() has not been called\n", thisfunc);
@@ -216,6 +227,20 @@ __host__ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
             delta * delta * ((float) global_p[n].tottsk * global[nn].tottsk) / tsksum;
           global[nn].tottsk = tsksum;
 
+#ifdef HAVE_PAPI
+          for (e = 0; e < GPTLnevents; ++e) {
+            if (global_p[n].papimax[e] > global[nn].papimax[e]) {
+              global[nn].papimax[e]   = global_p[n].papimax[e];
+              global[nn].papimax_p[e] = global_p[n].papimax_p[e];
+              global[nn].papimax_t[e] = global_p[n].papimax_t[e];
+            }
+            if (global_p[n].papimin[e] < global[nn].papimin[e]) {
+              global[nn].papimin[e]   = global_p[n].papimin[e];
+              global[nn].papimin_p[e] = global_p[n].papimin_p[e];
+              global[nn].papimin_t[e] = global_p[n].papimin_t[e];
+            }
+          }
+#endif
         }
       }
       free (global_p); /* done with received data this iteration */
@@ -256,6 +281,19 @@ __host__ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
       fprintf (fp, "thread");
     fprintf (fp, ")");
 
+#ifdef HAVE_PAPI
+    for (e = 0; e < GPTLnevents; ++e) {
+      fprintf (fp, " %8.8smax (rank  ", GPTLeventlist[e].str8);
+      if (multithread)
+        fprintf (fp, "thread");
+      fprintf (fp, ")");
+
+      fprintf (fp, " %8.8smin (rank  ", GPTLeventlist[e].str8);
+      if (multithread)
+        fprintf (fp, "thread");
+      fprintf (fp, ")");
+    }
+#endif
     fprintf (fp, "\n");
 
     /* Loop over regions and print summarized timing stats */
@@ -307,6 +345,25 @@ __host__ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
         }
       }
 
+#ifdef HAVE_PAPI
+      for (e = 0; e < GPTLnevents; ++e) {
+        if (multithread)
+          fprintf (fp, " %8.2e    (%6d %5d)", 
+                   global[n].papimax[e], global[n].papimax_p[e], 
+                   global[n].papimax_t[e]);
+        else
+          fprintf (fp, " %8.2e    (%6d)", 
+                   global[n].papimax[e], global[n].papimax_p[e]);
+
+        if (multithread)
+          fprintf (fp, " %8.2e    (%6d %5d)", 
+                   global[n].papimin[e], global[n].papimin_p[e], 
+                   global[n].papimin_t[e]);
+        else
+          fprintf (fp, " %8.2e    (%6d)", 
+                   global[n].papimin[e], global[n].papimin_p[e]);
+      }
+#endif
       fprintf (fp, "\n");
     }
     if (fp != stderr && fclose (fp) != 0)
@@ -316,7 +373,8 @@ __host__ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
   return 0;
 }
 
-__host__ int GPTLpr_summary (MPI_Comm comm)       /* communicator */
+__host__
+int GPTLpr_summary (MPI_Comm comm)       /* communicator */
 {
   static const char *outfile = "timing.summary";   /* file to write to */
 
@@ -326,7 +384,7 @@ __host__ int GPTLpr_summary (MPI_Comm comm)       /* communicator */
 #else
 
 /* No MPI. Mimic MPI version but for only one rank */
-__host__ int GPTLpr_summary_file (const char *outfile)
+int GPTLpr_summary_file (MPI_Comm dummy, const char *outfile)
 {
   FILE *fp = 0;        /* file handle */
   Timer **timers;
@@ -334,6 +392,9 @@ __host__ int GPTLpr_summary_file (const char *outfile)
   int mnl;             /* max name length across all threads */
   int extraspace;      /* for padding to length of longest name */
   int n;
+#ifdef HAVE_PAPI
+  int e;               /* event index */
+#endif
   Global global;       /* stats to be printed */
   Timer *ptr;
   static const char *thisfunc = "GPTLpr_summary_file";  /* this function */
@@ -373,6 +434,14 @@ __host__ int GPTLpr_summary_file (const char *outfile)
   else
     fprintf (fp, "   ncalls   walltim");
 
+#ifdef HAVE_PAPI
+  for (e = 0; e < GPTLnevents; ++e) {
+    if (multithread)
+      fprintf (fp, " %8.8smax (thred) %8.8smin (thred)", GPTLeventlist[e].str8, GPTLeventlist[e].str8);
+    else
+      fprintf (fp, " %8.8s", GPTLeventlist[e].str8);
+  }
+#endif
   fprintf (fp, "\n");
 
   for (ptr = timers[0]->next; ptr; ptr = ptr->next) {
@@ -407,6 +476,17 @@ __host__ int GPTLpr_summary_file (const char *outfile)
 	fprintf (fp, " %8.1e %9.3f", (float) global.totcalls, global.wallmax);
       }
     }
+#ifdef HAVE_PAPI
+    for (e = 0; e < GPTLnevents; ++e) {
+      if (multithread)
+	fprintf (fp, " %8.2e    (%5d)", global.papimax[e], global.papimax_t[e]);
+      else
+	fprintf (fp, " %8.2e",          global.papimax[e]);
+
+      if (multithread)
+	fprintf (fp, " %8.2e    (%5d)", global.papimin[e], global.papimin_t[e]);
+    }
+#endif
     fprintf (fp, "\n");
   }
   if (fp != stderr && fclose (fp) != 0)
@@ -415,14 +495,15 @@ __host__ int GPTLpr_summary_file (const char *outfile)
   return 0;
 }
 
-__host__ int GPTLpr_summary (void)       /* communicator */
+__host__
+int GPTLpr_summary (MPI_Comm dummy)       // communicator
 {
   static const char *outfile = "timing.summary";   /* file to write to */
 
-  return GPTLpr_summary_file (outfile);
+  return GPTLpr_summary_file (dummy, outfile);
 }
 
-#endif  /* False branch of HAVE_MPI */
+#endif  /* False branch of HAVE_LIBMPI */
 
 
 
@@ -437,13 +518,15 @@ __host__ int GPTLpr_summary (void)       /* communicator */
 ** Output arguments:
 **   global: max/min stats over all threads
 */
-__host__ static void get_threadstats (int iam,
-				      char *name,
-				      Timer **timers,
-				      Global *global)
+__host__
+static void get_threadstats (int iam,
+			     char *name,
+			     Timer **timers,
+			     Global *global)
 {
   int t;                /* thread index */
   Timer *ptr;
+  static const char *thisfunc = "get_threadstats";
 
   /* This memset fortuitiously initializes the process values to master (0) */
   memset (global, 0, sizeof (Global));
@@ -469,11 +552,34 @@ __host__ static void get_threadstats (int iam,
         global->wallmin_p = iam;
         global->wallmin_t = t;
       }
+#ifdef HAVE_PAPI
+      int e;
+      for (e = 0; e < GPTLnevents; ++e) {
+        double value;
+        if (GPTL_PAPIget_eventvalue (GPTLeventlist[e].namestr, &ptr->aux, &value) != 0) {
+          fprintf (stderr, "GPTL: %s: Bad return from GPTL_PAPIget_eventvalue\n", thisfunc);
+          return;
+        }
+        if (value > global->papimax[e]) {
+          global->papimax[e]   = value;
+          global->papimax_p[e] = iam;
+          global->papimax_t[e] = t;
+        }
+        
+	/* First thread value in global is zero */
+        if (value < global->papimin[e] || global->papimin[e] == 0.) {
+          global->papimin[e]   = value;
+          global->papimin_p[e] = iam;
+          global->papimin_t[e] = t;
+        }
+      }
+#endif
     }
   }
 }
 
-__host__ Timer *getentry_slowway (Timer *timer, char *name)
+__host__
+Timer *getentry_slowway (Timer *timer, char *name)
 {
   Timer *ptr = 0;
 

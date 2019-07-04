@@ -1,4 +1,3 @@
-//#define _GLIBCXX_CMATH
 /*
 ** $Id: util.c,v 1.13 2010-01-01 01:34:07 rosinski Exp $
 */
@@ -8,6 +7,7 @@
 #include <stdlib.h>
 
 #include "private.h"
+#include "gptl.h"
 
 static bool abort_on_error = false;  /* flag says to abort on any error */
 static int max_errors = 10;          /* max number of error print msgs */
@@ -26,19 +26,16 @@ extern "C" {
 **
 ** Return value: -1 (failure)
 */
-__host__ int GPTLerror (const char *fmt, ...)
+__host__
+int GPTLerror (const char *fmt, ...)
 {
   va_list args;
   
   va_start (args, fmt);
   
   if (fmt != NULL && num_errors < max_errors) {
-#ifdef HAVE_VPRINTF
     (void) fprintf (stderr, "GPTL error:");
     (void) vfprintf (stderr, fmt, args);
-#else
-    (void) fprintf (stderr, "GPTLerror: no vfprintf: fmt is %s\n", fmt);
-#endif
     if (num_errors == max_errors)
       (void) fprintf (stderr, "Truncating further error print now after %d msgs",
 		      num_errors);
@@ -61,19 +58,16 @@ __host__ int GPTLerror (const char *fmt, ...)
 **   fmt: format string
 **   variable list of additional arguments for vfprintf
 */
-__host__ void GPTLwarn (const char *fmt, ...)
+__host__
+void GPTLwarn (const char *fmt, ...)
 {
   va_list args;
   
   va_start (args, fmt);
   
   if (fmt != NULL && num_warn < max_warn) {
-#ifdef HAVE_VPRINTF
     (void) fprintf (stderr, "GPTL warning:");
     (void) vfprintf (stderr, fmt, args);
-#else
-    (void) fprintf (stderr, "GPTLwarning: no vfprintf: fmt is %s\n", fmt);
-#endif
     if (num_warn == max_warn)
       (void) fprintf (stderr, "Truncating further warning print now after %d msgs",
 		      num_warn);
@@ -91,19 +85,16 @@ __host__ void GPTLwarn (const char *fmt, ...)
 **   fmt: format string
 **   variable list of additional arguments for vfprintf
 */
-__host__ void GPTLnote (const char *fmt, ...)
+__host__
+void GPTLnote (const char *fmt, ...)
 {
   va_list args;
   
   va_start (args, fmt);
   
   if (fmt != NULL) {
-#ifdef HAVE_VPRINTF
     (void) fprintf (stderr, "GPTL note:");
     (void) vfprintf (stderr, fmt, args);
-#else
-    (void) fprintf (stderr, "GPTLnote: no vfprintf: fmt is %s\n", fmt);
-#endif
   }
   
   va_end (args);
@@ -115,7 +106,8 @@ __host__ void GPTLnote (const char *fmt, ...)
 ** Input arguments:
 **   val: true (abort on error) or false (don't)
 */
-__host__ void GPTLset_abort_on_error (bool val)
+__host__
+void GPTLset_abort_on_error (bool val)
 {
   abort_on_error = val;
 }
@@ -124,7 +116,8 @@ __host__ void GPTLset_abort_on_error (bool val)
 ** GPTLreset_errors: reset error state to no errors
 **
 */
-__host__ void GPTLreset_errors (void)
+__host__
+void GPTLreset_errors (void)
 {
   num_errors = 0;
 }
@@ -133,7 +126,8 @@ __host__ void GPTLreset_errors (void)
 ** GPTLnum_errors: User-visible routine returns number of times GPTLerror() called
 **
 */
-__host__ int GPTLnum_errors (void)
+__host__
+int GPTLnum_errors (void)
 {
   return num_errors;
 }
@@ -142,7 +136,8 @@ __host__ int GPTLnum_errors (void)
 ** GPTLnum_errors: User-visible routine returns number of times GPTLerror() called
 **
 */
-__host__ int GPTLnum_warn (void)
+__host__
+int GPTLnum_warn (void)
 {
   return num_warn;
 }
@@ -155,7 +150,8 @@ __host__ int GPTLnum_warn (void)
 **
 ** Return value: pointer to the new space (or NULL)
 */
-__host__ void *GPTLallocate (const int nbytes, const char *caller)
+__host__
+void *GPTLallocate (const int nbytes, const char *caller)
 {
   void *ptr;
 
@@ -165,4 +161,30 @@ __host__ void *GPTLallocate (const int nbytes, const char *caller)
   return ptr;
 }
 
+/* 
+** GPTLbarrier: When MPI enabled, set and time an MPI barrier
+**
+** Input arguments:
+**   comm: commuicator (e.g. MPI_COMM_WORLD). If zero, use MPI_COMM_WORLD
+**   name: region name
+**
+** Return value: 0 (success)
+*/
+__host__
+int GPTLbarrier (MPI_Comm comm, const char *name)
+{
+  static const char *thisfunc = "GPTLbarrier";
+
+#ifdef HAVE_LIBMPI
+  int ret;
+
+  ret = GPTLstart (name);
+  if ((ret = MPI_Barrier (comm)) != MPI_SUCCESS)
+    return GPTLerror ("%s: Bad return from MPI_Barrier=%d", thisfunc, ret);
+  ret = GPTLstop (name);
+  return ret;
+#else
+  return GPTLerror ("%s: Need to build GPTL with #define HAVE_LIBMPI\n", thisfunc);
+#endif    /* HAVE_LIBMPI */
+}
 }

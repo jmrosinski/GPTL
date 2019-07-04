@@ -1,4 +1,3 @@
-//#define _GLIBCXX_CMATH
 /*
 ** memusage.c
 **
@@ -46,11 +45,12 @@ static double convert2mb = 0.;  /* convert pages to MB (init to unset) */
 extern "C" {
 __host__ static int set_convert2mb (void);
 
-__host__ int GPTLget_memusage (int *size_out,        /* process size in MB */
-			       int *rss_out,         /* resident set size in MB */ 
-			       int *share_out,       /* share segment size in MB */
-			       int *text_out,        /* text segment size in MB */
-			       int *datastack_out)   /* datastack segment size in MB */
+__host__
+int GPTLget_memusage (int *size_out,        /* process size in MB */
+		      int *rss_out,         /* resident set size in MB */ 
+		      int *share_out,       /* share segment size in MB */
+		      int *text_out,        /* text segment size in MB */
+		      int *datastack_out)   /* datastack segment size in MB */
 {
   int size;  /* raw process size returned from system */
   int rss;   /* raw rss returned from system */
@@ -110,16 +110,14 @@ __host__ int GPTLget_memusage (int *size_out,        /* process size in MB */
 
 #else
 
-  struct rusage usage;         /* structure filled in by getrusage */
-
   if (getrusage (RUSAGE_SELF, &usage) < 0)
     return GPTLerror ("%s: Failure from getrusage", thisfunc);
   
-  *size      = -1;
-  *rss_out   = (int) (usage.ru_maxrss * convert2mb);
-  *share     = -1;
-  *text      = -1;
-  *datastack = -1;
+  *size_out      = -1;
+  *rss_out       = (int) (usage.ru_maxrss * convert2mb);
+  *share_out     = -1;
+  *text_out      = -1;
+  *datastack_out = -1;
 #ifdef IRIX64
   *datastack = (int) ((usage.ru_idrss + usage.ru_isrss) * convert2mb);
 #endif
@@ -137,7 +135,8 @@ __host__ int GPTLget_memusage (int *size_out,        /* process size in MB */
 **                 -1 = failure
 */
 
-__host__ int GPTLprint_memusage (const char *str)
+__host__
+int GPTLprint_memusage (const char *str)
 {
   int size;      /* process size (returned from OS) */
   int rss;       /* resident set size (returned from OS) */
@@ -160,7 +159,8 @@ __host__ int GPTLprint_memusage (const char *str)
 **
 **   Determine if possible the size of a page
 */
-__host__ static int set_convert2mb ()
+__host__
+static int set_convert2mb ()
 {
 #if (defined HAVE_SLASHPROC)
   int pagesize;

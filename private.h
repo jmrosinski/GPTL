@@ -6,6 +6,9 @@
 ** Contains definitions private to GPTL and inaccessible to invoking user environment
 */
 
+#ifndef _GPTL_PRIVATE_
+#define _GPTL_PRIVATE_
+
 #include <stdio.h>
 #include <sys/time.h>
 // MAX_CHARS is needed from devicehost.h
@@ -26,6 +29,12 @@
 
 /* Maximum allowed callstack depth */
 #define MAX_STACK 128
+
+// Longest allowed symbol name for libunwind
+#define MAX_SYMBOL_NAME 255
+
+// A non-zero non-error flag for start/stop
+#define DONE 1
 
 /* 
 ** max allowable number of PAPI counters, or derived events. For convenience,
@@ -74,6 +83,12 @@ typedef struct {
 } Pr_event;
 
 typedef struct TIMER {
+#ifdef ENABLE_PMPI
+  double nbytes;            /* number of bytes for MPI call */
+#endif
+#ifdef HAVE_PAPI
+  Papistats aux;            /* PAPI stats  */
+#endif 
   Cpustats cpu;             /* cpu stats */
   Wallstats wall;           /* wallclock stats */
   unsigned long count;      /* number of start/stop calls */
@@ -100,6 +115,9 @@ typedef struct {
 /* array of thread ids */
 #if ( defined THREADED_OMP )
 extern volatile int *GPTLthreadid_omp;
+#elif ( defined THREADED_PTHREADS )
+#include <pthread.h>
+extern volatile pthread_t *GPTLthreadid;
 #else
 extern int GPTLthreadid;
 #endif
@@ -126,6 +144,7 @@ extern int GPTLget_overhead (FILE *,                       /* file descriptor */
 			     Timer ***,                    /* callstack */
 			     const Hashentry *,            /* hashtable */
 			     const int,                    /* tablesize */
+			     bool,                         /* dousepapi */
 			     int,                          /* imperfect_nest */
 			     double *,                     /* self_ohd */
 			     double *);                    /* parent_ohd */
@@ -136,6 +155,34 @@ extern Timer **GPTLget_timersaddr (void);
 extern void __cyg_profile_func_enter (void *, void *);
 extern void __cyg_profile_func_exit (void *, void *);
 
+/* These are needed for communication between gptl.c and other files (mainly gptl_papi.c) */
+#ifdef HAVE_PAPI
+extern Entry GPTLeventlist[];          /* list of PAPI-based events to be counted */
+extern int GPTLnevents;                /* number of PAPI events (init to 0) */
+
+extern int GPTL_PAPIsetoption (const int, const int);
+extern int GPTL_PAPIinitialize (const int, const bool, int *, Entry *);
+extern int GPTL_PAPIstart (const int, Papistats *);
+extern int GPTL_PAPIstop (const int, Papistats *);
+extern void GPTL_PAPIprstr (FILE *);
+extern void GPTL_PAPIpr (FILE *, const Papistats *, const int, const int, const double);
+extern void GPTL_PAPIadd (Papistats *, const Papistats *);
+extern void GPTL_PAPIfinalize (int);
+extern void GPTL_PAPIquery (const Papistats *, long long *, int);
+extern int GPTL_PAPIget_eventvalue (const char *, const Papistats *, double *);
+extern bool GPTL_PAPIis_multiplexed (void);
+extern void GPTL_PAPIprintenabled (FILE *);
+extern void read_counters1000 (void);
+extern int GPTLget_npapievents (void);
+extern int GPTLcreate_and_start_events (const int);
+#endif
+
+#ifdef ENABLE_PMPI
+extern Timer *GPTLgetentry (const char *);
+extern int GPTLpmpi_setoption (const int, const int);
+#endif
+
 __host__ extern void GPTLprint_gpustats (FILE *, int, int, double, int);
 
 }
+#endif /* _GPTL_PRIVATE_ */
