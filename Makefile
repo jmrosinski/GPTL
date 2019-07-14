@@ -146,8 +146,9 @@ uninstall:
 	$(RM) -f $(INSTALLDIR)/include/gptl.h $(INSTALLDIR)/include/gptl.inc $(INSTALLDIR)/include/gptl.mod $(INSTALLDIR)/include/GPTL.mod
 	$(RM) -f $(MANDIR)/man/man3/GPTL*.3
 
+INTERMED_FILES = *.mod *.ii *.ptx *.cudafe1.* *.fatbin* *.module_id
 clean:
-	$(RM) -f $(OBJS) $(FOBJS) lib$(LIBNAME).a *.mod
+	$(RM) -f $(OBJS) $(FOBJS) lib$(LIBNAME).a $(INTERMED_FILES)
 	$(MAKE) -C cuda clean
 	$(MAKE) -C acctests clean
 	$(MAKE) -C cutests clean

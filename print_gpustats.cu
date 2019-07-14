@@ -43,6 +43,7 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   double gwn;
   double utr;
   double startstop;
+  double tot;
   double startmisc, stopmisc;
 #ifdef HAVE_MPI
   int myrank = 0;
@@ -118,25 +119,24 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   startstop = startstop_ohdgpu[0] / gpu_hz;
   fprintf (fp, "Total overhead of 1 GPTLstart_gpu + GPTLstop_gpu pair call=%7.1e seconds\n", startstop);
   fprintf (fp, "Components of the pair are as follows (Fortran layer ignored):\n");
-  fprintf (fp, "NOTE: sum of percentages should be near 100 percent but not necessarily exact\n");
+  fprintf (fp, "NOTE: sum of overheads should be near start+stop but not necessarily exact\n");
   fprintf (fp, "This is because start/stop timing est. is done separately from components\n");
 
-  gwn = 2.*get_warp_num_ohdgpu[0] / gpu_hz;  // 2. is due to calls from both start and stop
-  fprintf (fp, "Get warp number:                %7.1e = %5.1f%% of total\n", gwn, 100.*(gwn/startstop));
-
-  utr = 2.*utr_ohdgpu[0] / gpu_hz;           // 2. is due to calls from both start and stop
-  fprintf (fp, "Underlying timing routine+SMID: %7.1e = %5.1f%% of total\n", utr, 100.*(utr/startstop));
-
+  gwn       = 2.*get_warp_num_ohdgpu[0] / gpu_hz;  // 2. is due to calls from both start and stop
+  utr       = 2.*utr_ohdgpu[0] / gpu_hz;           // 2. is due to calls from both start and stop
   startmisc = start_misc_ohdgpu[0] / gpu_hz;
+  stopmisc  = stop_misc_ohdgpu[0] / gpu_hz;
+  tot       = gwn + utr + startmisc + stopmisc;
+
+  fprintf (fp, "Get warp number:                %7.1e = %5.1f%% of total\n", gwn, 100.*(gwn/tot));
+  fprintf (fp, "Underlying timing routine+SMID: %7.1e = %5.1f%% of total\n", utr, 100.*(utr/tot));
   fprintf (fp, "Misc calcs in GPTL_start_gpu:   %7.1e = %5.1f%% of total\n",
-	   startmisc, 100.*(startmisc/startstop));
-
-  stopmisc = stop_misc_ohdgpu[0] / gpu_hz;
+	   startmisc, 100.*(startmisc/tot));
   fprintf (fp, "Misc calcs in GPTL_stop_gpu:    %7.1e = %5.1f%% of total\n",
-	   stopmisc, 100.*(stopmisc/startstop));
-
+	   stopmisc, 100.*(stopmisc/tot));
   fprintf (fp, "\n");
 
+  fprintf (fp, "These 2 are called only by GPTLinit_handle_gpu, thus not part of overhead:\n");
   fprintf (fp, "my_strlen:                      %7.1e (name=GPTL_ROOT)\n",
 	   my_strlen_ohdgpu[0] / gpu_hz);
   fprintf (fp, "STRMATCH:                       %7.1e (matched name=GPTL_ROOT)\n",
@@ -153,8 +153,8 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   fprintf (fp, "%d = max warpId examined\n", maxwarpid_timed[0]);
   fprintf (fp, "Only warps which were timed are counted in the following stats\n");
   fprintf (fp, "Overhead estimates self_OH and parent_OH are for warp with \'maxcount\' calls\n");
-  fprintf (fp, "OHD estimate assumes Fortran, and non-handle routines used\n");
-  fprintf (fp, "Actual overhead can be reduced by using \'handle\' routines and \'_c\' Fortran routines\n\n");
+  fprintf (fp, "Assuming SMs are always busy computing, GPTL overhead can be vaguely estimated by this calculation:\n");
+  fprintf (fp, "(num warps allocated / num warps on device) * (self_OH + parent_OH)\n");
 
   fprintf (fp, "name            = region name\n");
   fprintf (fp, "calls           = number of invocations across all examined warps\n");

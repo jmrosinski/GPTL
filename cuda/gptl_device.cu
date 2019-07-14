@@ -23,7 +23,6 @@ __device__ __constant__ static int maxtimers;   // max number of timers
 __device__ static int maxwarps = -1;            // max warps
 __device__ static int maxwarpid_found = 0;      // number of warps found : init to 0
 __device__ static int maxwarpid_timed = 0;      // number of warps analyzed : init to 0
-__device__ static bool disabled = false;        // Timers disabled?
 __device__ static bool initialized = false;     // GPTLinitialize has been called
 __device__ static bool verbose = false;         // output verbosity
 __device__ static double gpu_hz = 0.;           // clock freq
@@ -155,7 +154,6 @@ __global__ void GPTLfinalize_gpu (void)
   timers = 0;
   timernames = 0;
   max_name_len = 0;
-  disabled = false;
   initialized = false;
   verbose = false;
 }
@@ -178,9 +176,6 @@ __device__ int GPTLinit_handle_gpu (const char *name,     // timer name
   int mywarp;        // my warp number
   int i;
   static const char *thisfunc = "GPTLinit_handle_gpu";
-
-  if (disabled)
-    return SUCCESS;
 
   // Guts of this function are run only by thread 0 of warp 0 due to loop over warps below. 
   // Need to have each timer have the same index for all warps.
@@ -229,13 +224,8 @@ __device__ int GPTLstart_gpu (const int handle)
   Timer *ptr;        // linked list pointer
   int w;             // warp index (of this thread)
   int wi;            // flattened 2d index for warp number and timer name
-  long long tp2;     // time stamp
-  volatile uint smid;
 
   static const char *thisfunc = "GPTLstart_gpu";
-
-  if (disabled)
-    return SUCCESS;
 
   if ( ! initialized)
     return GPTLerror_1s1d ("%s handle=%d: GPTLinitialize_gpu has not been called\n", 
@@ -273,12 +263,10 @@ __device__ int GPTLstart_gpu (const int handle)
   // IMPORTANT: Issue the cmds in sequence because SM changing between clock64() call and getting
   // the SM number would be bad.
   // NOTE: Timing value will be thrown away if SM changes upon stop() call.
-  tp2 = clock64 ();
-  asm volatile ("mov.u32 %0, %smid;" : "=r"(smid));
-
-  ptr->smid = smid;
-  ptr->wall.last = tp2;
+  ptr->wall.last = clock64 ();
+  asm volatile ("mov.u32 %0, %smid;" : "=r"(ptr->smid));
   ptr->onflg = true;
+
   return SUCCESS;
 }
 
@@ -299,9 +287,6 @@ __device__ int GPTLstop_gpu (const int handle)
   int wi;
   uint smid;                 // SM id
   static const char *thisfunc = "GPTLstop_gpu";
-
-  if (disabled)
-    return SUCCESS;
 
   if ( ! initialized)
     return GPTLerror_1s ("%s: GPTLinitialize_gpu has not been called\n", thisfunc);
@@ -423,22 +408,6 @@ __device__ static inline int update_stats_gpu (const int handle,
   }
 
   return SUCCESS;
-}
-
-/*
-** GPTLenable_gpu: enable timers
-*/
-__global__ void GPTLenable_gpu (void)
-{
-  disabled = false;
-}
-
-/*
-** GPTLdisable_gpu: disable timers
-*/
-__global__ void GPTLdisable_gpu (void)
-{
-  disabled = true;
 }
 
 /*
@@ -785,9 +754,6 @@ __device__ static void start_misc (int w, const int handle)
   Timer *ptr;
   static const char *thisfunc = "startmisc";
 
-  if (disabled)
-    printf ("%s: disabled true\n", thisfunc);
-
   if ( ! initialized)
     printf ("%s: ! initialized\n", thisfunc);
 
@@ -814,9 +780,6 @@ __device__ static void stop_misc (int w, const int handle)
   int wi;
   Timer *ptr;
   static const char *thisfunc = "stopmisc";
-
-  if (disabled)
-    printf ("%s: disabled true\n", thisfunc);
 
   if ( ! initialized)
     printf ("%s: ! initialized\n", thisfunc);

@@ -41,5 +41,6 @@ gptl.o: gptl_cuda.h private.h
 gptl_acc.o: gptl_acc.F90
 util.o: private.h
 
+INTERMED_FILES = *.ii *.ptx *.cudafe1.* *.fatbin* *.module_id
 clean:
-	$(RM) $(OBJS) *.mod lib$(GPULIB).a
+	$(RM) $(OBJS) *.mod lib$(GPULIB).a $(INTERMED_FILES)

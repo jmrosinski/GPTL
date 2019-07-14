@@ -14,5 +14,6 @@ driver_serial: $(OBJS) ../libgptl.a ../cuda/libgptl_cuda.a
 test1: test1.cu ../libgptl.a ../cuda/libgptl_cuda.a
 	$(CU) -o $@ test1.cu $(LDFLAGS)
 
+INTERMED_FILES = *.ii *.ptx *.cudafe1.* *.fatbin* *.module_id *_dlink.*
 clean:
-	$(RM) $(OBJS) $(OBJS) driver_serial
+	$(RM) $(OBJS) driver_serial $(INTERMED_FILES)

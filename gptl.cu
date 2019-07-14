@@ -1123,7 +1123,6 @@ __host__
 int GPTLenable (void)
 {
   disabled = false;
-  GPTLenable_gpu<<<1,1>>>();
   return 0;
 }
 
@@ -1135,7 +1134,6 @@ int GPTLenable (void)
 int GPTLdisable (void)
 {
   disabled = true;
-  GPTLdisable_gpu<<<1,1>>>();
   return 0;
 }
 

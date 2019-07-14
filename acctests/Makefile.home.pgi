@@ -39,8 +39,9 @@ driver_mpi: $(OBJS2) ../libgptl.a ../cuda/libgptl_cuda.a
 driver_vdmints3: $(OBJS3) ../libgptl.a ../cuda/libgptl_cuda.a
 	$(FC) -o $@ $(OBJS3) $(LDFLAGS)
 
+INTERMED_FILES = *.mod *.gpu *.ii *.ptx *.cudafe1.* *.fatbin* *.module_id
 clean:
-	$(RM) $(MPROG1) $(MPROG2) $(OBJS1) $(OBJS2) $(OBJS3) *.mod *.gpu driver_serial driver_mpi driver_vdmints3 vdmints3_sim.f90
+	$(RM) $(MPROG1) $(MPROG2) $(OBJS1) $(OBJS2) $(OBJS3) driver_serial driver_mpi driver_vdmints3 vdmints3_sim.f90 $(INTERMED_FILES)
 
 $(MPROG1): getval.o
 $(MPROG2): getval.o
