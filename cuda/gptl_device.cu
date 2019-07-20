@@ -15,8 +15,8 @@
 
 #define FLATTEN_TIMERS(SUB1,SUB2) (SUB1)*maxtimers + (SUB2)
 
-__device__ static Timer *timers = 0;            // linked list of timers
-__device__ static Timername *timernames;
+__device__ static Timer *timers = 0;            // array (also linked list) of timers
+__device__ static Timername *timernames;        // array of timer names
 __device__ static int max_name_len;             // max length of timer name
 __device__ static int ntimers = 0;              // number of timers
 __device__ __constant__ static int maxtimers;   // max number of timers
@@ -282,9 +282,9 @@ __device__ int GPTLstart_gpu (const int handle)
 __device__ int GPTLstop_gpu (const int handle)
 {
   register long long tp1;    // time stamp
-  Timer *ptr;                // linked list pointer
+  Timer timer;               // local copy of timers[wi]: gives some speedup vs. global array
   int w;                     // warp number for this process
-  int wi;
+  int wi;                    // flattened (1-d) index into 2-d array [timer][warp]
   uint smid;                 // SM id
   static const char *thisfunc = "GPTLstop_gpu";
 
@@ -310,9 +310,9 @@ __device__ int GPTLstop_gpu (const int handle)
   asm ("mov.u32 %0, %smid;" : "=r"(smid));
 
   wi = FLATTEN_TIMERS (w, handle);
-  ptr = &timers[wi];
+  timer = timers[wi];
 
-  if ( ! ptr->onflg )
+  if ( ! timer.onflg )
     return GPTLerror_2s ("%s: timer %s was already off.\n", thisfunc, timernames[handle].name);
 
   /* 
@@ -320,17 +320,20 @@ __device__ int GPTLstop_gpu (const int handle)
   ** because we don't want to stop the timer.  We want the reported time for
   ** the timer to reflect the outermost layer of recursion.
   */
-  if (ptr->recurselvl > 0) {
-    --ptr->recurselvl;
-    ++ptr->count;
+  if (timer.recurselvl > 0) {
+    --timer.recurselvl;
+    ++timer.count;
+    timers[wi] = timer;
     return SUCCESS;
   }
 
-  if (update_stats_gpu (handle, ptr, tp1, w, smid) != 0)
+  if (update_stats_gpu (handle, &timer, tp1, w, smid) != 0)
     return GPTLerror_1s ("%s: error from update_stats_gpu\n", thisfunc);
 #ifdef DEBUG_PRINT
-  printf ("%s: handle=%d count=%d\n", thisfunc, handle, (int) ptr->count);
+  printf ("%s: handle=%d count=%d\n", thisfunc, handle, (int) timer.count);
 #endif
+  timers[wi] = timer;
+  
   return SUCCESS;
 }
 
@@ -778,7 +781,7 @@ __device__ static void start_misc (int w, const int handle)
 __device__ static void stop_misc (int w, const int handle)
 {
   int wi;
-  Timer *ptr;
+  Timer timer;
   static const char *thisfunc = "stopmisc";
 
   if ( ! initialized)
@@ -791,18 +794,19 @@ __device__ static void stop_misc (int w, const int handle)
     printf ("%s: bad handle value\n", handle);
 
   wi = FLATTEN_TIMERS (w, handle);
-  ptr = &timers[wi];
+  timer = timers[wi];
 
-  if ( ptr->onflg )
+  if ( timer.onflg )
     printf ("%s: onflg was on\n", thisfunc); // Invert logic for better OHD est.
 
-  if (ptr->recurselvl > 0) {
-    --ptr->recurselvl;
-    ++ptr->count;
+  if (timer.recurselvl > 0) {
+    --timer.recurselvl;
+    ++timer.count;
   }
 
-  if (update_stats_gpu (handle, ptr, 0L, 0, 0) != 0)  // Last 3 args are timestampe, w, smid
+  if (update_stats_gpu (handle, &timer, 0LL, 0, 0) != 0)  // Last 3 args are timestamp, w, smid
     printf ("%s: problem with update_stats_gpu\n", thisfunc);
+  timers[wi] = timer;
 }
 
 __global__ void GPTLget_memstats_gpu (float *regionmem, float *timernamemem)
