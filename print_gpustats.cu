@@ -45,6 +45,7 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   double startstop;
   double tot;
   double startmisc, stopmisc;
+  double scalefac;
 #ifdef HAVE_MPI
   int myrank = 0;
   int mpi_active;
@@ -115,19 +116,21 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
 				  STRMATCH_ohdgpu);
   cudaDeviceSynchronize();
 
-  fprintf (fp, "Underlying timing routine was clock64() assumed @ %f Ghz\n", gpu_hz * 1.e-9);
-  startstop = startstop_ohdgpu[0] / gpu_hz;
-  fprintf (fp, "Total overhead of 1 GPTLstart_gpu + GPTLstop_gpu pair call=%7.1e seconds\n", startstop);
-  fprintf (fp, "Components of the pair are as follows (Fortran layer ignored):\n");
-  fprintf (fp, "NOTE: sum of overheads should be near start+stop but not necessarily exact\n");
-  fprintf (fp, "This is because start/stop timing est. is done separately from components\n");
-
   gwn       = 2.*get_warp_num_ohdgpu[0] / gpu_hz;  // 2. is due to calls from both start and stop
   utr       = 2.*utr_ohdgpu[0] / gpu_hz;           // 2. is due to calls from both start and stop
   startmisc = start_misc_ohdgpu[0] / gpu_hz;
   stopmisc  = stop_misc_ohdgpu[0] / gpu_hz;
   tot       = gwn + utr + startmisc + stopmisc;
 
+  startstop = startstop_ohdgpu[0] / gpu_hz;
+  scalefac  = startstop / tot;
+
+  fprintf (fp, "Underlying timing routine was clock64() assumed @ %f Ghz\n", gpu_hz * 1.e-9);
+  fprintf (fp, "Total overhead of 1 GPTLstart_gpu + GPTLstop_gpu pair call=%7.1e seconds\n", startstop);
+  fprintf (fp, "Components of the pair are as follows (Fortran layer ignored):\n");
+  fprintf (fp, "Sum of overheads should be near start+stop but not necessarily exact (scalefac = %6.2f)\n",
+	   scalefac);
+  fprintf (fp, "This is because start/stop timing est. is done separately from components\n");
   fprintf (fp, "Get warp number:                %7.1e = %5.1f%% of total\n", gwn, 100.*(gwn/tot));
   fprintf (fp, "Underlying timing routine+SMID: %7.1e = %5.1f%% of total\n", utr, 100.*(utr/tot));
   fprintf (fp, "Misc calcs in GPTL_start_gpu:   %7.1e = %5.1f%% of total\n",
@@ -159,7 +162,7 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   fprintf (fp, "name            = region name\n");
   fprintf (fp, "calls           = number of invocations across all examined warps\n");
   fprintf (fp, "warps           = number of examined warps for which region was timed at least once\n");
-  fprintf (fp, "holes           = number of examined warps for which region was never executed (maxwarpid_timed + 1 - nwarps(region)\n");
+  fprintf (fp, "holes           = number of examined warps for which region was never executed (maxwarpid_timed + 1 - warps\n");
   fprintf (fp, "wallmax (warp)  = max wall time (sec) taken by any timed warp for this region, followed by the warp number\n");
   fprintf (fp, "wallmin (warp)  = min wall time (sec) taken by any timed warp for this region, followed by the warp number\n");
   fprintf (fp, "maxcount (warp) = max number of times region invoked by any timed warp, followed by the warp number\n");
@@ -203,14 +206,14 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
     
     count_max = gpustats[n].count_max;
     if (count_max < PRTHRESH)
-      fprintf (fp, "|%8d ", count_max);                   // max count for region "name"
+      fprintf (fp, "|%8d ", count_max);                  // max count for region "name"
     else
       fprintf (fp, "|%8.1e ", (float) count_max);
     fprintf (fp, "%6d ",gpustats[n].count_max_warp);     // warp which accounted for max times
     
     count_min = gpustats[n].count_min;                
     if (count_min < PRTHRESH)
-      fprintf (fp, "|%8d ", count_min);                   // min count for region "name"
+      fprintf (fp, "|%8d ", count_min);                  // min count for region "name"
     else
       fprintf (fp, "|%8.1e ", (float) count_min);
     fprintf (fp, "%6d ",gpustats[n].count_min_warp);     // warp which accounted for max times
@@ -221,8 +224,8 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
       fprintf (fp, "   -   ");
     } else {
       fprintf (fp, "|%8d ", gpustats[n].negdelta_count_max);      // max negcount for "stop" region "name"
-      fprintf (fp, "%6d ", gpustats[n].negdelta_count_max_warp); // warp which accounted for negdelta_count_max
-      fprintf (fp, "%6d ", gpustats[n].negdelta_nwarps);         // number of warps which had > 0 negatives
+      fprintf (fp, "%6d ", gpustats[n].negdelta_count_max_warp);  // warp which accounted for negdelta_count_max
+      fprintf (fp, "%6d ", gpustats[n].negdelta_nwarps);          // number of warps which had > 0 negatives
     }
 
     if (gpustats[n].badsmid_count == 0)
@@ -231,12 +234,14 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
       fprintf (fp, "|%6d |", gpustats[n].badsmid_count);      // number of times SM changed on "stop" call
 
     self = (gpustats[n].count_max * self_ohdgpu[0]) / gpu_hz; // self ohd est
+    self *= scalefac;                                         // try to get a closer estimate
     if (self < 0.01)
       fprintf (fp, "%8.2e  ", self);
     else
       fprintf (fp, "%8.3f  ", self);	       
     
     parent = (gpustats[n].count_max * parent_ohdgpu[0]) / gpu_hz; // parent ohd est
+    parent *= scalefac;                                           // try to get a closer estimate
     if (self < 0.01)
       fprintf (fp, "%8.2e ", parent);
     else
