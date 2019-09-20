@@ -1,4 +1,5 @@
-FC   = mpif90
+FC = pgfortran
+MPIWRAPPER = mpicc
 GPTL = ..
 # Using -Mcuda=cc60 instead of -Mcuda=cuda8 fixes the static memory address compiler bug
 FFLAGS  = -g -O0 -I$(GPTL) -I$(GPTL)/cuda -acc -Minfo=accel -Minfo -ta=tesla:cc60,keepptx -m64
@@ -24,7 +25,12 @@ OBJS3 = driver_vdmints3.o vdmints3_sim.o getval.o
 %.o: %.F90
 	$(FC) -c $< $(FFLAGS)
 
-all: driver_serial driver_mpi driver_vdmints3
+# Don't build MPI codes
+#all: driver_serial driver_mpi driver_vdmints3
+all: driver_serial driver_vdmints3
+
+driver_mpi.o: driver_mpi.F90
+	$(FC) -c $< $(FFLAGS)
 
 vdmints3_sim.o: vdmints3_sim.F90
 	gfortran -E $(CPPFLAGS) $< > vdmints3_sim.f90
@@ -33,8 +39,9 @@ vdmints3_sim.o: vdmints3_sim.F90
 driver_serial: $(OBJS1) ../libgptl.a ../cuda/libgptl_cuda.a
 	$(FC) -o $@ $(OBJS1) $(LDFLAGS)
 
+# Hardwire settings for openmpi
 driver_mpi: $(OBJS2) ../libgptl.a ../cuda/libgptl_cuda.a
-	$(FC) -o $@ $(OBJS2) $(LDFLAGS)
+	env OMPI_FC=$(FC) $(MPIWRAPPER) -o $@ $(OBJS2) $(LDFLAGS)
 
 driver_vdmints3: $(OBJS3) ../libgptl.a ../cuda/libgptl_cuda.a
 	$(FC) -o $@ $(OBJS3) $(LDFLAGS)
