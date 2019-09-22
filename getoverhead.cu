@@ -209,22 +209,23 @@ int GPTLget_overhead (FILE *fp,
     misc_ohd = 0.001 * (t2 - t1);
   }
 
+  // Multiply by 2 for start+stop
   total_ohd = ftn_ohd + get_thread_num_ohd + genhashidx_ohd + getentry_ohd + 
               utr_ohd + misc_ohd + papi_ohd;
-  fprintf (fp, "Total overhead of 1 GPTL start or GPTLstop call=%g seconds\n", total_ohd);
+  fprintf (fp, "Total overhead of 1 GPTLstart + GPTLstop call=%g seconds\n", 2.*total_ohd);
   fprintf (fp, "Components are as follows:\n");
   fprintf (fp, "Fortran layer:             %7.1e = %5.1f%% of total\n", 
-	  ftn_ohd, ftn_ohd / total_ohd * 100.);
+	   2.*ftn_ohd, ftn_ohd / total_ohd * 100.);
   fprintf (fp, "Get thread number:         %7.1e = %5.1f%% of total\n", 
-	  get_thread_num_ohd, get_thread_num_ohd / total_ohd * 100.);
+	   2.*get_thread_num_ohd, get_thread_num_ohd / total_ohd * 100.);
   fprintf (fp, "Generate hash index:       %7.1e = %5.1f%% of total\n", 
-	  genhashidx_ohd, genhashidx_ohd / total_ohd * 100.);
+	   2.*genhashidx_ohd, genhashidx_ohd / total_ohd * 100.);
   fprintf (fp, "Find hashtable entry:      %7.1e = %5.1f%% of total\n", 
-	  getentry_ohd, getentry_ohd / total_ohd * 100.);
+	   2.*getentry_ohd, getentry_ohd / total_ohd * 100.);
   fprintf (fp, "Underlying timing routine: %7.1e = %5.1f%% of total\n", 
-	  utr_ohd, utr_ohd / total_ohd * 100.);
+	   2.*utr_ohd, utr_ohd / total_ohd * 100.);
   fprintf (fp, "Misc start/stop functions: %7.1e = %5.1f%% of total\n", 
-	  misc_ohd, misc_ohd / total_ohd * 100.);
+	   2.*misc_ohd, misc_ohd / total_ohd * 100.);
 #ifdef HAVE_PAPI
   if (dousepapi) {
     fprintf (fp, "Read PAPI counters:        %7.1e = %5.1f%% of total\n", 
