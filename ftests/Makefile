@@ -28,7 +28,7 @@ ifeq ($(HAVE_PAPI),yes)
 endif
 EXES = $(TESTS) errtest utrtest overhead
 
-LDFLAGS = -g -L.. -l$(LIBNAME) $(ABIFLAGS)
+LDFLAGS = -g -L.. -l$(LIBNAME)
 
 #For gptlf.mod
 FFLAGS += -I..

@@ -1,13 +1,12 @@
-FC   = mpif90
+FC = pgfortran
 GPTL = ..
 # Using -Mcuda=cc60 instead of -Mcuda=cuda8 fixes the static memory address compiler bug
-# For some reason, theia requires -Mcuda=cc60 (kernel launch failure) but home pc does not
-FFLAGS  = -g -O0 -I$(GPTL) -I$(GPTL)/cuda -acc -Minfo=accel -Minfo -Mcuda=cc60 -ta=tesla:cc60,keepgpu -m64
+FFLAGS  = -g -O0 -I$(GPTL) -I$(GPTL)/cuda -acc -Minfo=accel -Minfo -ta=tesla:cc60,keepgpu -m64
 CPPFLAGS = -I$(GPTL) -I$(GPTL)/cuda -D_OPENACC -DPAR_WRK=1 -DVEC_LEN=96 -DNZ=96
 FFLAGS_VDM = -g -O0 -I$(GPTL) -I$(GPTL)/cuda -traceback -Meh_frame -D_OPENACC -DPAR_WRK=1 \
-             -DVEC_LEN=96 -DNZ=96 -acc -Minfo=accel -Mcuda=cc60 -ta=tesla,cc60,ptxinfo,gvmode,maxregcount:96 -m64
+             -DVEC_LEN=96 -DNZ=96 -acc -Minfo=accel -ta=tesla,cc60,ptxinfo,gvmode -m64
 # -Mcuda=cc60 still results in address changes, though only with large values of threads and blocks
-# But it seems to be required to avoid unsatisfied externals.
+# But it seems to be required to avoid unsatisfied externals. 
 
 # stdc++ needed only for debug builds for some reason
 LDFLAGS = -L$(GPTL) -lgptl -L$(GPTL)/cuda -lgptl_cuda -Mcuda=cc60 -ta=tesla:cc60 -m64 -lstdc++
@@ -25,7 +24,9 @@ OBJS3 = driver_vdmints3.o vdmints3_sim.o getval.o
 %.o: %.F90
 	$(FC) -c $< $(FFLAGS)
 
-all: driver_serial driver_mpi driver_vdmints3
+# Don't build MPI codes
+#all: driver_serial driver_mpi driver_vdmints3
+all: driver_serial driver_vdmints3
 
 vdmints3_sim.o: vdmints3_sim.F90
 	gfortran -E $(CPPFLAGS) $< > vdmints3_sim.f90
@@ -34,14 +35,12 @@ vdmints3_sim.o: vdmints3_sim.F90
 driver_serial: $(OBJS1) ../libgptl.a ../cuda/libgptl_cuda.a
 	$(FC) -o $@ $(OBJS1) $(LDFLAGS)
 
-driver_mpi: $(OBJS2) ../libgptl.a ../cuda/libgptl_cuda.a
-	$(FC) -o $@ $(OBJS2) $(LDFLAGS)
-
 driver_vdmints3: $(OBJS3) ../libgptl.a ../cuda/libgptl_cuda.a
 	$(FC) -o $@ $(OBJS3) $(LDFLAGS)
 
+INTERMED_FILES = *.mod *.gpu *.ii *.ptx *.cudafe1.* *.fatbin* *.module_id
 clean:
-	$(RM) $(MPROG1) $(MPROG2) $(OBJS1) $(OBJS2) $(OBJS3) *.mod *.gpu driver_serial driver_mpi driver_vdmints3 vdmints3_sim.f90
+	$(RM) $(MPROG1) $(MPROG2) $(OBJS1) $(OBJS2) $(OBJS3) driver_serial driver_mpi driver_vdmints3 vdmints3_sim.f90 $(INTERMED_FILES)
 
 $(MPROG1): getval.o
 $(MPROG2): getval.o

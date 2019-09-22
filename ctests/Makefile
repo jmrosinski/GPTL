@@ -25,7 +25,7 @@ else
   LIBNAME = gptl
 endif
 
-LDFLAGS = $(CFLAGS) -L.. -l$(LIBNAME) $(ABIFLAGS) -lm
+LDFLAGS = $(CFLAGS) -L.. -l$(LIBNAME) -lm
 ifeq ($(ENABLE_ACC),yes)
   LDFLAGS += -L../cuda -l$(GPULIB)
 endif
