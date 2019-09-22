@@ -42,7 +42,10 @@ __device__ static void start_misc (int, const int);
 __device__ static void stop_misc (int w, const int handle);
 __device__ static void init_gpustats (Gpustats *, int);
 __device__ static void fill_gpustats (Gpustats *, int, int);
-#ifdef DEBUG_PRINT
+// Defining PRINTNEG will print to stdout whenever a negative interval (stop minus start) is
+// encountered. Only useful when non-zero negative intervals are reported in timing output
+#undef PRINTNEG
+#ifdef PRINTNEG
 __device__ static void prbits8 (uint64_t);
 #endif
 
@@ -355,8 +358,8 @@ __device__ static inline int update_stats_gpu (const int handle,
 					       const uint smid)
 {
   register long long delta;           // time diff from start()
-#ifdef DEBUG_PRINT
   static const char *thisfunc = "update_stats_gpu";
+#ifdef DEBUG_PRINT
   printf ("%s: ptr=%p setting onflg=false\n", thisfunc, ptr);
 #endif
 
@@ -373,7 +376,7 @@ __device__ static inline int update_stats_gpu (const int handle,
   }
 
   if (delta < 0) {
-#ifdef DEBUG_PRINT
+#ifdef PRINTNEG
     bool isSet; 
     // Use critical section so printf from multiple SMs don't get scrambled
     do {
@@ -382,7 +385,7 @@ __device__ static inline int update_stats_gpu (const int handle,
       isSet = atomicCAS ((int *) &mutex, 0, 1) == 0; 
       if (isSet) {  // critical section starts here
 	printf ("GPTL: %s name=%s w=%d WARNING NEGATIVE DELTA ENCOUNTERED: %lld-%lld=%lld=%g seconds: IGNORING\n", 
-		thisfunc, ptr->name, w, tp1, ptr->wall.last, delta, delta / (-gpu_hz));
+		thisfunc, timernames[handle].name, w, tp1, ptr->wall.last, delta, delta / (-gpu_hz));
 	printf ("Bit pattern old:");
 	prbits8 ((uint64_t) ptr->wall.last);
 
@@ -804,7 +807,8 @@ __device__ static void stop_misc (int w, const int handle)
     ++timer.count;
   }
 
-  if (update_stats_gpu (handle, &timer, 0LL, 0, 0) != 0)  // Last 3 args are timestamp, w, smid
+  // Last 3 args are timestamp, w, smid
+  if (update_stats_gpu (handle, &timer, timer.wall.last, 0, 0) != 0)
     printf ("%s: problem with update_stats_gpu\n", thisfunc);
   timers[wi] = timer;
 }
@@ -843,7 +847,7 @@ __device__ void GPTLdummy_gpu ()
   return;
 }
 
-#ifdef DEBUG_PRINT
+#ifdef PRINTNEG
 __device__ static void prbits8 (uint64_t val)
 {
   uint64_t mask = 1;
