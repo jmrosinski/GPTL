@@ -11,8 +11,6 @@ __global__ void doalot (int, int, int, int, int,
 			float *, float *, double *,
 			int *, int *, int *,
 			int *, int *);
-__global__ void doalot (int, int, int, int, int, 
-			float *, float *, double *, int *, int *);
 
 __device__ int *total_gputime;
 __device__ int *donothing_handle;

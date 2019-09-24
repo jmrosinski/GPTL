@@ -66,7 +66,6 @@ static int khz = -1;
 static int warpsize = -1;
 
 static time_t ref_gettimeofday = -1;   /* ref start point for gettimeofday */
-static time_t ref_clock_gettime = -1;  /* ref start point for clock_gettime */
 #ifdef _AIX
 static time_t ref_read_real_time = -1; /* ref start point for read_real_time */
 #endif
@@ -135,14 +134,12 @@ __host__ static inline int get_thread_num (void);         /* get 0-based thread 
 /* These are the (possibly) supported underlying wallclock timers */
 __host__ static inline double utr_nanotime (void);
 __host__ static inline double utr_mpiwtime (void);
-__host__ static inline double utr_clock_gettime (void);
 __host__ static inline double utr_read_real_time (void);
 __host__ static inline double utr_gettimeofday (void);
 __host__ static inline double utr_placebo (void);
 
 __host__ static int init_nanotime (void);
 __host__ static int init_mpiwtime (void);
-__host__ static int init_clock_gettime (void);
 __host__ static int init_read_real_time (void);
 __host__ static int init_gettimeofday (void);
 __host__ static int init_placebo (void);
@@ -168,7 +165,6 @@ static Funcentry funclist[] = {
   {GPTLgettimeofday,   utr_gettimeofday,   init_gettimeofday,  "gettimeofday"},
   {GPTLnanotime,       utr_nanotime,       init_nanotime,      "nanotime"},
   {GPTLmpiwtime,       utr_mpiwtime,       init_mpiwtime,      "MPI_Wtime"},
-  {GPTLclockgettime,   utr_clock_gettime,  init_clock_gettime, "clock_gettime"},
   {GPTLread_real_time, utr_read_real_time, init_read_real_time,"read_real_time"},     /* AIX only */
   {GPTLplacebo,        utr_placebo,        init_placebo,       "placebo"}      /* does nothing */
 };
@@ -552,7 +548,6 @@ int GPTLfinalize (void)
   dopr_multparent = true;
   dopr_collision = true;
   ref_gettimeofday = -1;
-  ref_clock_gettime = -1;
 #ifdef _AIX
   ref_read_real_time = -1;
 #endif
@@ -3245,39 +3240,6 @@ static inline double utr_mpiwtime ()
   return MPI_Wtime ();
 #else
   static const char *thisfunc = "utr_mpiwtime";
-  (void) GPTLerror ("GPTL: %s: not enabled\n", thisfunc);
-  return -1.;
-#endif
-}
-
-/* 
-** Probably need to link with -lrt for this one to work 
-*/
-__host__
-static int init_clock_gettime ()
-{
-  static const char *thisfunc = "init_clock_gettime";
-#ifdef HAVE_LIBRT
-  struct timespec tp;
-  (void) clock_gettime (CLOCK_REALTIME, &tp);
-  ref_clock_gettime = tp.tv_sec;
-  if (verbose)
-    printf ("GPTL: %s: ref_clock_gettime=%ld\n", thisfunc, (long) ref_clock_gettime);
-  return 0;
-#else
-  return GPTLerror ("GPTL: %s: not enabled\n", thisfunc);
-#endif
-}
-
-__host__
-static inline double utr_clock_gettime ()
-{
-#ifdef HAVE_LIBRT
-  struct timespec tp;
-  (void) clock_gettime (CLOCK_REALTIME, &tp);
-  return (tp.tv_sec - ref_clock_gettime) + 1.e-9*tp.tv_nsec;
-#else
-  static const char *thisfunc = "utr_clock_gettime";
   (void) GPTLerror ("GPTL: %s: not enabled\n", thisfunc);
   return -1.;
 #endif

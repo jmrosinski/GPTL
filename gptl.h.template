@@ -77,7 +77,6 @@ typedef enum {
   GPTLgettimeofday   = #GPTLgettimeofday, /* the default */
   GPTLnanotime       = #GPTLnanotime, /* only available on x86 */
   GPTLmpiwtime       = #GPTLmpiwtime, /* MPI_Wtime */
-  GPTLclockgettime   = #GPTLclockgettime, /* clock_gettime */
   GPTLpapitime       = #GPTLpapitime,  /* only if PAPI is available */
   GPTLplacebo        = #GPTLplacebo,  /* do-nothing */
   GPTLread_real_time = #GPTLread_real_time  /* AIX only */
