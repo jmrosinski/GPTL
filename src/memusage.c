@@ -41,9 +41,9 @@
 #include "gptl.h"       /* function prototypes */
 #include "private.h"
 
-static int set_convert2mb (void);
-
 static double convert2mb = 0.;  /* convert pages to MB (init to unset) */
+
+static int set_convert2mb (void);
 
 int GPTLget_memusage (int *size_out,        /* process size in MB */
 		      int *rss_out,         /* resident set size in MB */ 

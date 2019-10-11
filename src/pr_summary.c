@@ -33,7 +33,7 @@ typedef struct {
 
 static void get_threadstats (int, char *, Timer **, Global *);
 static Timer *getentry_slowway (Timer *, char *);
-static int nthreads;  /* Used by both GPTLpr_summary() and get_threadstats() */
+static int nthreads; // Used by both GPTLpr_summary() and get_threadstats()
 
 /* 
 ** GPTLpr_summary_file: Subsumes what used to be GPTLpr_summary() into a new routine
@@ -53,7 +53,7 @@ static int nthreads;  /* Used by both GPTLpr_summary() and get_threadstats() */
 */
 
 #ifdef HAVE_LIBMPI
-int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)       /* communicator */
+int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
 {
   int ret;             /* return code */
   int iam;             /* my rank */

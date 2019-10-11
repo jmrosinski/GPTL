@@ -17,11 +17,6 @@
 #include <string.h>        /* memset, strcmp (via STRMATCH) */
 #include <ctype.h>         /* isdigit */
 #include <sys/types.h>     /* u_int8_t, u_int16_t */
-#include <assert.h>
-
-#ifdef HAVE_PAPI
-#include <papi.h>          /* PAPI_get_real_usec */
-#endif
 
 #ifdef HAVE_LIBRT
 #include <time.h>
@@ -78,7 +73,6 @@ static time_t ref_clock_gettime = -1;  /* ref start point for clock_gettime */
 #ifdef _AIX
 static time_t ref_read_real_time = -1; /* ref start point for read_real_time */
 #endif
-static long long ref_papitime = -1;    /* ref start point for PAPI_get_real_usec */
 
 #if ( defined THREADED_OMP )
 
@@ -158,7 +152,6 @@ static inline int get_thread_num (void);         /* get 0-based thread number */
 static inline double utr_nanotime (void);
 static inline double utr_mpiwtime (void);
 static inline double utr_clock_gettime (void);
-static inline double utr_papitime (void);
 static inline double utr_read_real_time (void);
 static inline double utr_gettimeofday (void);
 static inline double utr_placebo (void);
@@ -166,7 +159,6 @@ static inline double utr_placebo (void);
 static int init_nanotime (void);
 static int init_mpiwtime (void);
 static int init_clock_gettime (void);
-static int init_papitime (void);
 static int init_read_real_time (void);
 static int init_gettimeofday (void);
 static int init_placebo (void);
@@ -193,7 +185,6 @@ static Funcentry funclist[] = {
   {GPTLnanotime,       utr_nanotime,       init_nanotime,      "nanotime"},
   {GPTLmpiwtime,       utr_mpiwtime,       init_mpiwtime,      "MPI_Wtime"},
   {GPTLclockgettime,   utr_clock_gettime,  init_clock_gettime, "clock_gettime"},
-  {GPTLpapitime,       utr_papitime,       init_papitime,      "PAPI_get_real_usec"},
   {GPTLread_real_time, utr_read_real_time, init_read_real_time,"read_real_time"},     /* AIX only */
   {GPTLplacebo,        utr_placebo,        init_placebo,       "placebo"}      /* does nothing */
 };
@@ -201,16 +192,16 @@ static const int nfuncentries = sizeof (funclist) / sizeof (Funcentry);
 
 static double (*ptr2wtimefunc)() = 0;    /* init to invalid */
 static char unknown[] = "unknown";
+
 #ifdef HAVE_NANOTIME
-static int funcidx = 1;                  // default timer is x86 register read (nanotime)
 static float cpumhz = -1.;               // init to bad value
 static double cyc2sec = -1;              // init to bad value
 static inline long long nanotime (void); // read counter (assembler)
 static float get_clockfreq (void);       // cycles/sec
 static char *clock_source = unknown;     // where clock found
-#else
-static int funcidx = 0;                  // default timer is gettimeofday
 #endif
+
+static int funcidx = 0;                  // default timer is gettimeofday
 
 #define DEFAULT_TABLE_SIZE 1023
 static int tablesize = DEFAULT_TABLE_SIZE;  /* per-thread size of hash table (settable parameter) */
@@ -319,7 +310,6 @@ int GPTLsetoption (const int option,  /* option */
   case GPTLtablesize:
     if (val < 1)
       return GPTLerror ("%s: tablesize must be positive. %d is invalid\n", thisfunc, val);
-
     tablesize = val;
     tablesizem1 = val - 1;
     if (verbose)
@@ -333,7 +323,6 @@ int GPTLsetoption (const int option,  /* option */
     if (verbose)
       printf ("%s: boolean sync_mpi = %d\n", thisfunc, val);
     return 0;
-
   case GPTLmaxthreads:
     if (val < 1)
       return GPTLerror ("%s: maxthreads must be positive. %d is invalid\n", thisfunc, val);
@@ -470,7 +459,6 @@ int GPTLinitialize (void)
     t2 = (*ptr2wtimefunc) ();
     if (t1 > t2)
       fprintf (stderr, "%s: negative delta-t=%g\n", thisfunc, t2-t1);
-
     printf ("Per call overhead est. t2-t1=%g should be near zero\n", t2-t1);
     printf ("Underlying wallclock timing routine is %s\n", funclist[funcidx].name);
   }
@@ -553,7 +541,6 @@ int GPTLfinalize (void)
 #ifdef _AIX
   ref_read_real_time = -1;
 #endif
-  ref_papitime = -1;
   funcidx = 0;
 #ifdef HAVE_NANOTIME
   cpumhz= 0;
@@ -2541,10 +2528,7 @@ int GPTLget_nregions (int t,
   if ( ! initialized)
     return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
   
-  /*
-  ** If t is < 0, assume the request is for the current thread
-  */
-  
+  // If t is < 0, assume the request is for the current thread
   if (t < 0) {
     if ((t = get_thread_num ()) < 0)
       return GPTLerror ("%s: get_thread_num failure\n", thisfunc);
@@ -2584,10 +2568,7 @@ int GPTLget_regionname (int t,      /* thread number */
   if ( ! initialized)
     return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
   
-  /*
-  ** If t is < 0, assume the request is for the current thread
-  */
-  
+  // If t is < 0, assume the request is for the current thread
   if (t < 0) {
     if ((t = get_thread_num ()) < 0)
       return GPTLerror ("%s: get_thread_num failure\n", thisfunc);
@@ -2648,7 +2629,6 @@ static inline Timer *getentry_instr (const Hashentry *hashtable, /* hash table *
   ** align functions on even boundaries
   */
   *indx = (((unsigned long) self) >> 4) % tablesize;
-
   for (i = 0; i < hashtable[*indx].nument; ++i) {
     if (hashtable[*indx].entries[i]->address == self) {
       ptr = hashtable[*indx].entries[i];
@@ -3197,33 +3177,6 @@ static inline double utr_mpiwtime ()
   return MPI_Wtime ();
 #else
   static const char *thisfunc = "utr_mpiwtime";
-  (void) GPTLerror ("GPTL: %s: not enabled\n", thisfunc);
-  return -1.;
-#endif
-}
-
-/*
-** PAPI_get_real_usec requires PAPI lib.
-*/
-static int init_papitime ()
-{
-  static const char *thisfunc = "init_papitime";
-#ifdef HAVE_PAPI
-  ref_papitime = PAPI_get_real_usec ();
-  if (verbose)
-    printf ("GPTL: %s: ref_papitime=%ld\n", thisfunc, (long) ref_papitime);
-  return 0;
-#else
-  return GPTLerror ("GPTL: %s: not enabled\n", thisfunc);
-#endif
-}
-  
-static inline double utr_papitime ()
-{
-#ifdef HAVE_PAPI
-  return (PAPI_get_real_usec () - ref_papitime) * 1.e-6;
-#else
-  static const char *thisfunc = "utr_papitime";
   (void) GPTLerror ("GPTL: %s: not enabled\n", thisfunc);
   return -1.;
 #endif

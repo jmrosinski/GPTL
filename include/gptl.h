@@ -47,9 +47,6 @@ typedef enum {
   ** These are derived counters based on PAPI counters. All default to false
   */
   GPTL_IPC           = 17, /* Instructions per cycle */
-  GPTL_CI            = 18, /* Computational intensity */
-  GPTL_FPC           = 19, /* FP ops per cycle */
-  GPTL_FPI           = 20, /* FP ops per instruction */
   GPTL_LSTPI         = 21, /* Load-store instruction fraction */
   GPTL_DCMRT         = 22, /* L1 miss rate (fraction) */
   GPTL_LSTPDCM       = 23, /* Load-stores per L1 miss */

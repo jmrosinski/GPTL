@@ -14,11 +14,17 @@
 #include <stdlib.h>  // for free()
 #include "private.h"
 
+static bool initialized = true;
+static bool disabled = false;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// Local prototypes
 static int gptlstart_sim (char *, int);
 static Timer *getentry_instr_sim (const Hashentry *,void *, unsigned int *, const int);
 static void misc_sim (Nofalse *, Timer ***, int);
-static bool initialized = true;
-static bool disabled = false;
 
 /*
 ** All routines in this file are non-public
@@ -323,3 +329,6 @@ static void misc_sim (Nofalse *stackidx, Timer ***callstack, int t)
   return;
 }
 
+#ifdef __cplusplus
+};
+#endif

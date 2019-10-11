@@ -140,9 +140,6 @@ static Pr_event pr_event[MAX_AUX];        /* list of events (PAPI or derived) */
 /* Derived events */
 static const Entry derivedtable [] = {
   {GPTL_IPC,    "GPTL_IPC",     "IPC     ", "Instr_per_cycle ", "Instructions per cycle"},
-  {GPTL_CI,     "GPTL_CI",      "CI      ", "Comp_Intensity  ", "Computational intensity"},
-  {GPTL_FPC,    "GPTL_FPC",     "Flop/Cyc", "FP_Ops_per_cycle", "Floating point ops per cycle"},
-  {GPTL_FPI,    "GPTL_FPI",     "Flop/Ins", "FP_Ops_per_instr", "Floating point ops per instruction"},
   {GPTL_LSTPI,  "GPTL_LSTPI",   "LST_frac", "LST_fraction    ", "Load-store instruction fraction"},
   {GPTL_DCMRT,  "GPTL_DCMRT",   "DCMISRAT", "L1_Miss_Rate    ", "L1 miss rate (fraction)"},
   {GPTL_LSTPDCM,"GPTL_LSTPDCM", "LSTPDCM ", "LST_per_L1_miss ", "Load-store instructions per L1 miss"},
@@ -263,57 +260,6 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
     pr_event[nevents].denomidx = enable (PAPI_TOT_CYC);
     if (verbose)
       printf ("%s: enabling derived event %s = PAPI_TOT_INS / PAPI_TOT_CYC\n", 
-	      thisfunc, pr_event[nevents].event.namestr);
-    ++nevents;
-    return 0;
-  case GPTL_CI:
-    idx = getderivedidx (GPTL_CI);
-    if (canenable2 (PAPI_FP_OPS, PAPI_LST_INS)) {
-      pr_event[nevents].event    = derivedtable[idx];
-      pr_event[nevents].numidx   = enable (PAPI_FP_OPS);
-      pr_event[nevents].denomidx = enable (PAPI_LST_INS);
-      if (verbose)
-	printf ("%s: enabling derived event %s = PAPI_FP_OPS / PAPI_LST_INS\n", 
-		thisfunc, pr_event[nevents].event.namestr);
-    } else if (canenable2 (PAPI_FP_OPS, PAPI_L1_DCA)) {
-      pr_event[nevents].event    = derivedtable[idx];
-      pr_event[nevents].numidx   = enable (PAPI_FP_OPS);
-      pr_event[nevents].denomidx = enable (PAPI_L1_DCA);
-#ifdef DEBUG
-      printf ("%s: pr_event %d is derived and will be PAPI event %d / %d\n", 
-	      thisfunc, nevents, pr_event[nevents].numidx, pr_event[nevents].denomidx);
-#endif
-      if (verbose)
-	printf ("%s: enabling derived event %s = PAPI_FP_OPS / PAPI_L1_DCA\n", 
-		thisfunc, pr_event[nevents].event.namestr);
-    } else {
-      return GPTLerror ("%s: GPTL_CI unavailable\n", thisfunc);
-    }
-    ++nevents;
-    return 0;
-  case GPTL_FPC:
-    if ( ! canenable2 (PAPI_FP_OPS, PAPI_TOT_CYC))
-      return GPTLerror ("%s: GPTL_FPC unavailable\n", thisfunc);
-
-    idx = getderivedidx (GPTL_FPC);
-    pr_event[nevents].event    = derivedtable[idx];
-    pr_event[nevents].numidx   = enable (PAPI_FP_OPS);
-    pr_event[nevents].denomidx = enable (PAPI_TOT_CYC);
-    if (verbose)
-      printf ("%s: enabling derived event %s = PAPI_FP_OPS / PAPI_TOT_CYC\n", 
-	      thisfunc, pr_event[nevents].event.namestr);
-    ++nevents;
-    return 0;
-  case GPTL_FPI:
-    if ( ! canenable2 (PAPI_FP_OPS, PAPI_TOT_INS))
-      return GPTLerror ("%s: GPTL_FPI unavailable\n", thisfunc);
-
-    idx = getderivedidx (GPTL_FPI);
-    pr_event[nevents].event    = derivedtable[idx];
-    pr_event[nevents].numidx   = enable (PAPI_FP_OPS);
-    pr_event[nevents].denomidx = enable (PAPI_TOT_INS);
-    if (verbose)
-      printf ("%s: enabling derived event %s = PAPI_FP_OPS / PAPI_TOT_INS\n", 
 	      thisfunc, pr_event[nevents].event.namestr);
     ++nevents;
     return 0;
@@ -558,7 +504,7 @@ int canenable2 (int counter1, int counter2)
 ** papievent_is_enabled: determine whether a PAPI counter has already been
 **   enabled. Used internally to keep track of PAPI counters enabled. A given
 **   PAPI counter may occur in the computation of multiple derived events, as
-**   well as output directly. E.g. PAPI_FP_OPS is used to compute
+**   well as output directly. E.g. PAPI_SP_OPS is used to compute
 **   computational intensity, and floating point ops per instruction.
 **
 ** Input args: 

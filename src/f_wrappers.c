@@ -170,7 +170,6 @@ int gptlpr_file (char *file, int nc)
   return ret;
 }
 
-// Some pretty nasty combinations of ifdef logic in next 3 routines--can it be cleaned up?
 int gptlpr_summary (int *fcomm)
 {
   int ret;

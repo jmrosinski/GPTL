@@ -28,9 +28,6 @@
       integer GPTLmaxthreads
 
       integer GPTL_IPC
-      integer GPTL_CI
-      integer GPTL_FPC
-      integer GPTL_FPI
       integer GPTL_LSTPI
       integer GPTL_DCMRT
       integer GPTL_LSTPDCM
@@ -72,9 +69,6 @@
       parameter (GPTLmaxthreads     = 51)
 
       parameter (GPTL_IPC           = 17)
-      parameter (GPTL_CI            = 18)
-      parameter (GPTL_FPC           = 19)
-      parameter (GPTL_FPI           = 20)
       parameter (GPTL_LSTPI         = 21)
       parameter (GPTL_DCMRT         = 22)
       parameter (GPTL_LSTPDCM       = 23)
