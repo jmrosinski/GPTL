@@ -213,7 +213,7 @@ int gptlbarrier (int *fcomm, char *name, int nc)
   ccomm = MPI_Comm_f2c (*fcomm);
   return GPTLbarrier (ccomm, cname);
 #else
-  return GPTLerror ("Either HAVE_LIBMPI not set so cannot call GPTLbarrier\n");
+  return GPTLerror ("gptlbarrier: MPI library not found so cannot call GPTLbarrier\n");
 #endif
 }
 

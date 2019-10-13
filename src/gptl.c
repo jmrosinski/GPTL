@@ -199,9 +199,10 @@ static double cyc2sec = -1;              // init to bad value
 static inline long long nanotime (void); // read counter (assembler)
 static float get_clockfreq (void);       // cycles/sec
 static char *clock_source = unknown;     // where clock found
-#endif
-
+static int funcidx = 1;                  // default timer is nanotime
+#else
 static int funcidx = 0;                  // default timer is gettimeofday
+#endif
 
 #define DEFAULT_TABLE_SIZE 1023
 static int tablesize = DEFAULT_TABLE_SIZE;  /* per-thread size of hash table (settable parameter) */

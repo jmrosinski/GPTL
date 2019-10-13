@@ -175,6 +175,6 @@ int GPTLbarrier (MPI_Comm comm, const char *name)
   ret = GPTLstop (name);
   return ret;
 #else
-  return GPTLerror ("%s: Need to build GPTL with #define HAVE_LIBMPI\n", thisfunc);
+  return GPTLerror ("%s: MPI library not found so this routine does nothing\n", thisfunc);
 #endif    /* HAVE_LIBMPI */
 }

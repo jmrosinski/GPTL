@@ -33,24 +33,6 @@ int main ()
     ret = GPTLfinalize ();
   }
 
-  if (GPTLsetoption (GPTL_CI, 1) == 0) {
-    printf("%-20s %-10d %s\n", "GPTL_CI", GPTL_CI, "Computational intensity");
-    ret = GPTLinitialize ();
-    ret = GPTLfinalize ();
-  }
-
-  if (GPTLsetoption (GPTL_FPC, 1) == 0) {
-    printf("%-20s %-10d %s\n", "GPTL_FPC", GPTL_FPC, "FP Ops per cycle");
-    ret = GPTLinitialize ();
-    ret = GPTLfinalize ();
-  }
-
-  if (GPTLsetoption (GPTL_FPI, 1) == 0) {
-    printf("%-20s %-10d %s\n", "GPTL_FPI", GPTL_FPI, "FP Ops per instruction");
-    ret = GPTLinitialize ();
-    ret = GPTLfinalize ();
-  }
-
   if (GPTLsetoption (GPTL_LSTPI, 1) == 0) {
     printf("%-20s %-10d %s\n", "GPTL_LSTPI", GPTL_LSTPI, "Load-store instruction fraction");
     ret = GPTLinitialize ();

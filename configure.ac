@@ -222,15 +222,6 @@ fi
 AM_CONDITIONAL([HAVE_LIBUNWIND], [test x$useunwind = xyes])
 AM_CONDITIONAL([HAVE_BACKTRACE], [test x$usebacktrace = xyes])
 
-# Did the user specify an MPI launcher other than mpiexec?
-AC_MSG_CHECKING([whether a user specified program to run mpi programs])
-AC_ARG_WITH([mpiexec],
-              [AS_HELP_STRING([--with-mpiexec=<command>],
-                              [Specify command to launch MPI parallel tests.])],
-            [MPIEXEC=$with_mpiexec], [MPIEXEC=mpiexec])
-AC_MSG_RESULT([$MPIEXEC])
-AC_SUBST([MPIEXEC], [$MPIEXEC])
-
 # See if auto-instrumentation flag is available. If so, set INSTRFLAG for testing
 if test "x$useunwind" = xyes || test "x$usebacktrace" = xyes; then
   AX_CHECK_COMPILE_FLAG([-finstrument-functions], [finstrf=yes], [finstrf=no])
@@ -288,6 +279,15 @@ if test "x$have_libmpi" = xyes; then
 fi
 AM_CONDITIONAL([HAVE_LIBMPI], [test "x$have_libmpi" = xyes])
 
+# Did the user specify an MPI launcher other than mpiexec?
+AC_MSG_CHECKING([whether a user specified program to run mpi programs])
+AC_ARG_WITH([mpiexec],
+              [AS_HELP_STRING([--with-mpiexec=<command>],
+                              [Specify command to launch MPI parallel tests.])],
+            [MPIEXEC=$with_mpiexec], [MPIEXEC=mpiexec])
+AC_MSG_RESULT([$MPIEXEC])
+AC_SUBST([MPIEXEC], [$MPIEXEC])
+
 # Do we have function MPI_Comm_f2c?
 # For some reason this check trips up titan even though it exists. Just define it for now,
 # since it has been part of the MPI standard for some time.
@@ -312,15 +312,6 @@ AC_CHECK_PROGS([DOXYGEN], [doxygen])
 if test -z "$DOXYGEN"; then
    AC_MSG_WARN([Doxygen not found - documentation will not be built])
 fi
-
-# Did the user specify an MPI launcher other than mpiexec?
-AC_MSG_CHECKING([whether a user specified program to run mpi programs])
-AC_ARG_WITH([mpiexec],
-              [AS_HELP_STRING([--with-mpiexec=<command>],
-                              [Specify command to launch MPI parallel tests.])],
-            [MPIEXEC=$with_mpiexec], [MPIEXEC=mpiexec])
-AC_MSG_RESULT([$MPIEXEC])
-AC_SUBST([MPIEXEC], [$MPIEXEC])
 
 # This is a list of files to be built.
 AC_CONFIG_FILES([Makefile
