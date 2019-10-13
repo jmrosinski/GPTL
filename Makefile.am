@@ -18,7 +18,7 @@ install-data-hook:
 
 	@echo ''
 	@echo '+-------------------------------------------------------------+'
-	@echo '| Congratulations! You have successfully installed GPTL!      |'
+	@echo '| GPTL installation successful                                |'
 	@echo '|                                                             |'
 	@echo '| CAUTION:                                                    |'
 	@echo '|                                                             |'

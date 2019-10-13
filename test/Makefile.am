@@ -18,7 +18,7 @@ noinst_PROGRAMS = gran_overhead printwhileon imperfect_nest
 
 # Test programs that will be built for all configurations.
 check_PROGRAMS = tst_simple global
-TESTS = tst_simple global
+TESTS = tst_simple
 
 if HAVE_INSTRFLAG
 TESTS             += cygprofile
@@ -33,10 +33,10 @@ endif
 
 # Test autoprofiling if either HAVE_LIBUNWIND or HAVE_BACKTRACE
 if HAVE_LIBUNWIND
-  AM_LDFLAGS        += $(INSTR_LINK) -lunwind
+  AM_LDFLAGS += $(INSTR_LINK) -lunwind
 else
 if HAVE_BACKTRACE
-  AM_LDFLAGS        += $(INSTR_LINK)
+  AM_LDFLAGS += $(INSTR_LINK)
 endif
 endif
 
@@ -56,14 +56,19 @@ endif
 
 # Build these tests if MPI is present.
 if HAVE_LIBMPI
+noinst_PROGRAMS += global
+TESTS += run_par_global_test.sh
+
 check_PROGRAMS += summary
 noinst_PROGRAMS += summary
-TESTS += summary run_par_test.sh
+TESTS += run_par_summary_test.sh
 if ENABLE_PMPI
 check_PROGRAMS += pmpi
 noinst_PROGRAMS += pmpi
 TESTS += pmpi run_par_pmpi_test.sh
 endif
+else
+TESTS += global
 endif
 
 # Build these if the user selected --enable-nestedomp during configure.

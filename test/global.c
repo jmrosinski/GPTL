@@ -19,24 +19,20 @@ int main (int argc, char **argv)
   int iter;
   int tnum = 0;
   MPI_Comm comm;
-#ifdef HAVE_PAPI
-  int code;
-#endif
   int ret;
   useconds_t msec_sleep;  /* number of msec to sleep */
 
 #ifdef HAVE_PAPI
+  int code;
   int sub (int, int);
-#endif
 
   /* ret = GPTLsetoption (GPTLabort_on_error, 1); */
-#ifdef HAVE_PAPI
-  ret = GPTLevent_name_to_code ("PAPI_FP_OPS", &code);
+  ret = GPTLevent_name_to_code ("PAPI_SP_OPS", &code);
   if (ret == 0) {
-    printf ("Enabling option PAPI_FP_OPS\n");
+    printf ("Enabling option PAPI_SP_OPS\n");
     ret = GPTLsetoption (code, 1);
   } else {
-    printf ("Unable to get option for PAPI_FP_OPS\n");
+    printf ("Unable to get option for PAPI_SP_OPS\n");
   }
 #endif
 
@@ -101,7 +97,6 @@ int main (int argc, char **argv)
   return 0;
 }
 
-#ifdef HAVE_PAPI
 int sub (int iam, int tnum)
 {
   float sum;
@@ -113,4 +108,3 @@ int sub (int iam, int tnum)
   printf ("sum=%f\n", sum);
   return 0;
 }
-#endif
