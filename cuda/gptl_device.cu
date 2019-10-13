@@ -448,14 +448,15 @@ __global__ void GPTLreset_gpu (void)
 
 __device__ static inline int get_warp_num ()
 {
+  int threadId;
   int warpId;
-  int blockId = blockIdx.x 
-    + blockIdx.y * gridDim.x 
-    + gridDim.x * gridDim.y * blockIdx.z; 
-  int threadId = blockId * (blockDim.x * blockDim.y * blockDim.z)
-    + (threadIdx.z * (blockDim.x * blockDim.y))
-    + (threadIdx.y * blockDim.x)
-    + threadIdx.x;
+
+  threadId = threadIdx.x
+        +  blockDim.x  * threadIdx.y
+        +  blockDim.x  *  blockDim.y  * threadIdx.z
+        +  blockDim.x  *  blockDim.y  *  blockDim.z  * blockIdx.x
+        +  blockDim.x  *  blockDim.y  *  blockDim.z  *  gridDim.x  * blockIdx.y
+        +  blockDim.x  *  blockDim.y  *  blockDim.z  *  gridDim.x  *  gridDim.y  * blockIdx.z;
 
   // Only thread 0 of the warp will be timed
   if (threadId % WARPSIZE != 0)
