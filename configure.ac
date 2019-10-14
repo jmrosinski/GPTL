@@ -134,6 +134,7 @@ if test x$enable_papi = xyes; then
   AC_CHECK_LIB([papi], [PAPI_library_init])
   AC_MSG_CHECKING([whether system can support PAPI])
   if test "x$ac_cv_lib_papi_PAPI_library_init" = xyes; then
+    have_papi=yes
     # If we have PAPI library, check /proc/sys/kernel/perf_event_paranoid
     # to see if we have permissions.
     if test -f /proc/sys/kernel/perf_event_paranoid; then
@@ -144,7 +145,6 @@ if test x$enable_papi = xyes; then
     fi
     AC_DEFINE([HAVE_PAPI], [1], [PAPI library is present and usable])
     LDFLAGS="$LDFLAGS -lpapi"
-    have_papi=yes
   else
     have_papi=no
   fi
@@ -261,6 +261,8 @@ AC_CHECK_FUNC([gettimeofday],
 # Do we have MPI?
 AC_CHECK_FUNC([MPI_Init], [have_libmpi=yes], [have_libmpi=no])
 if test "x$have_libmpi" = xyes; then
+# Modify FCFLAGS in case Fortran support is enabled
+  FCFLAGS="-DHAVE_LIBMPI $FCFLAGS"
   AC_DEFINE([HAVE_LIBMPI], [1], [found MPI library])
 # Need MPI_STATUS_SIZE for Fortran wrappers
   AC_CHECK_SIZEOF([int])
@@ -329,9 +331,25 @@ AC_CONFIG_FILES([tests/run_par_global_test.sh], [chmod ugo+x tests/run_par_globa
 AC_ARG_ENABLE([fortran], [AS_HELP_STRING([--disable-fortran],
               [Enable fortran support. Only disable this if it causes problems])],,[enable_fortran=yes])
 if test "x$enable_fortran" = "xyes"; then
+  AC_LANG_PUSH(Fortran)
   AC_PROG_FC()
 # Make sure this file is copied to build directories for tests to work.
   AC_CONFIG_LINKS([fortran/tests/gptlnl:fortran/tests/gptlnl])
+# Test OMP for Fortran and set flags accordingly. AC_OPENMP sets OPENMP_FFLAGS not OPENMP_FCFLAGS
+  AC_OPENMP
+  if test "x$ac_cv_prog_fc_openmp" != xunsupported; then
+    FCFLAGS="-DTHREADED_OMP $FCFLAGS $OPENMP_FFLAGS"
+  fi
+
+# Modify FCFLAGS for MPI
+  if test "x$have_libmpi" = xyes; then
+    FCFLAGS="-DHAVE_LIBMPI $FCFLAGS"
+  fi
+# Modify FCFLAGS for PAPI
+  if test "x$have_papi" = xyes; then
+    FCFLAGS="-DHAVE_PAPI $FCFLAGS"
+  fi
+  
 # This is a list of files to be built.
   AC_CONFIG_FILES([fortran/Makefile
                    fortran/include/Makefile
@@ -340,8 +358,9 @@ if test "x$enable_fortran" = "xyes"; then
 	  	 ])
   AC_CONFIG_FILES([fortran/tests/run_par_pmpi_test.sh], [chmod ugo+x fortran/tests/run_par_pmpi_test.sh])
   AC_CONFIG_FILES([fortran/tests/run_par_summary_test.sh], [chmod ugo+x fortran/tests/run_par_summary_test.sh])
+  AC_LANG_POP()
 fi
-AM_CONDITIONAL([ENABLE_FORTRAN], [test x$enable_fortran = xyes])
+AM_CONDITIONAL([ENABLE_FORTRAN], [test x$enable_fortran = "xyes"])
 
 # Build the files listed above.
 AC_OUTPUT()
