@@ -5,8 +5,9 @@ program utrtest
 
   external :: sub
 
-  double precision :: sum
+  double precision :: sum = 0.
   integer :: ret
+  integer :: n
   integer :: handle1
   integer :: handle2
   integer :: handle3
@@ -16,19 +17,28 @@ program utrtest
   integer :: handle7
   integer :: handle8
 
-  sum = 0.
-
-  write(6,*) 'Purpose: estimate overhead of GPTL timing (UTR)'
-  ret = gptlsetoption (gptlabort_on_error, 0)
-  ret = gptlsetoption (gptlverbose, 1)
-!  ret = gptlsetoption (gptltablesize, 111)
-  
-!  ret = gptlsetutr (gptlmpiwtime)
-  ret = gptlsetutr (gptlread_real_time)
-  ret = gptlsetutr (gptlclockgettime)
-  ret = gptlsetutr (gptlgettimeofday)
-  ret = gptlsetutr (gptlpapitime)
-  ret = gptlsetutr (gptlnanotime)
+  write(6,*) 'Purpose: estimate overhead of GPTL underlying timing routine (UTR)'
+  write(6,*) 'Enter 1 for gettimeofday (slow, coarse grained, works everywhere)'
+  write(6,*) 'Enter 2 for nanotime (fast, fine grained, requires x86, counts cycles not seconds)'
+  write(6,*) 'Enter 3 for MPI_Wtime (requires MPI)'
+  write(6,*) 'Enter 4 for clock_gettime (hardly ever use this one)'
+  write(6,*) 'Enter 5 for a do-nothing placebo (potentially useful if run under "time" for overhead)'
+  read (5,*) n
+  select case (n)
+  case (1)
+    ret = gptlsetutr (gptlgettimeofday)
+  case (2)
+    ret = gptlsetutr (gptlnanotime)
+  case (3)
+    ret = gptlsetutr (gptlmpiwtime)
+  case (4)
+    ret = gptlsetutr (gptlclockgettime)
+  case (5)
+    ret = gptlsetutr (gptlplacebo)
+  case default
+    write(6,*)'Input value (',n,') is not between 1 and 5'
+    stop 1
+  end select
   
   ret = gptlinitialize ()
 
@@ -54,7 +64,7 @@ program utrtest
   !      ret = gptlenable ()
   ret = gptlstop ("total")
 
-  ret = gptlpr (0)
+  ret = gptlpr (-1)  ! negative number means write to stderr
   stop 0
 end program utrtest
 

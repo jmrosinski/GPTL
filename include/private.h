@@ -130,6 +130,7 @@ extern int GPTLthreadid;
 /* Function prototypes */
 extern int GPTLerror (const char *, ...);                  /* print error msg and return */
 extern void GPTLwarn (const char *, ...);                  /* print warning msg and return */
+extern void GPTLnote (const char *, ...);                  /* print warning msg and return */
 extern void GPTLset_abort_on_error (bool val);             /* set flag to abort on error */
 extern void GPTLreset_errors (void);                       /* num_errors to zero */
 extern void *GPTLallocate (const int, const char *);       /* malloc wrapper */

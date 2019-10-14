@@ -1215,15 +1215,18 @@ int GPTLreset_timer (char *name)
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-int GPTLpr (const int id)   /* output file will be named "timing.<id>" */
+int GPTLpr (const int id) // output file will be named "timing.<id>" or stderr if negative or huge
 {
-  char outfile[14];         /* name of output file: timing.xxxxxx */
+  char outfile[14];       // name of output file: timing.xxxxxx
   static const char *thisfunc = "GPTLpr";
 
-  if (id < 0 || id > 999999)
-    return GPTLerror ("%s: bad id=%d for output file. Must be >= 0 and < 1000000\n", thisfunc, id);
-
-  sprintf (outfile, "timing.%d", id);
+  // Not great hack to force output to stderr: input a negative or huge number
+  if (id < 0 || id > 999999) {
+    GPTLnote ("%s id=%d means output will be written to stderr\n", thisfunc, id);
+    sprintf (outfile, "stderr");
+  } else {
+    sprintf (outfile, "timing.%d", id);
+  }
 
   if (GPTLpr_file (outfile) != 0)
     return GPTLerror ("%s: Error in GPTLpr_file\n", thisfunc);
@@ -1262,7 +1265,8 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   if ( ! initialized)
     return GPTLerror ("%s: GPTLinitialize() has not been called\n", thisfunc);
 
-  if ( ! (fp = fopen (outfile, "w")))
+  // Not great hack to force output to stderr: "output" is the string "stderr"
+  if (STRMATCH (outfile, "stderr") || ! (fp = fopen (outfile, "w")))
     fp = stderr;
 
   /* Print a warning if GPTLerror() was ever called */

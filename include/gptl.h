@@ -66,8 +66,7 @@ typedef enum {
   GPTLnanotime       = 2, /* only available on x86 */
   GPTLmpiwtime       = 4, /* MPI_Wtime */
   GPTLclockgettime   = 5, /* clock_gettime */
-  GPTLpapitime       = 6,  /* only if PAPI is available */
-  GPTLplacebo        = 7,  /* do-nothing */
+  GPTLplacebo        = 7, /* do-nothing */
   GPTLread_real_time = 3  /* AIX only */
 } Funcoption;
 

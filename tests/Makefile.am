@@ -14,7 +14,10 @@ INSTR_LINK = @INSTR_LINK@
 AM_LDFLAGS = ${top_builddir}/src/libgptl.la
 
 # These programs will be built but not installed.
-noinst_PROGRAMS = gran_overhead printwhileon imperfect_nest
+noinst_PROGRAMS = printwhileon imperfect_nest
+
+# Begin list of programs to be installed
+bin_PROGRAMS = gran_overhead
 
 # Test programs that will be built for all configurations.
 check_PROGRAMS = tst_simple global
@@ -46,9 +49,9 @@ endif
 
 # Build these tests if PAPI is present.
 if HAVE_PAPI
-check_PROGRAMS += avail testpapi
-TESTS += avail testpapi
-noinst_PROGRAMS += knownflopcount
+check_PROGRAMS += testpapi
+TESTS += testpapi
+bin_PROGRAMS += gptl_avail knownflopcount
 if HAVE_OPENMP
 noinst_PROGRAMS += papiomptest
 endif

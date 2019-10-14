@@ -40,7 +40,6 @@ module gptl
   integer, parameter :: GPTLnanotime       = 2
   integer, parameter :: GPTLmpiwtime       = 4
   integer, parameter :: GPTLclockgettime   = 5
-  integer, parameter :: GPTLpapitime       = 6
   integer, parameter :: GPTLplacebo        = 7
   integer, parameter :: GPTLread_real_time = 3
 					                

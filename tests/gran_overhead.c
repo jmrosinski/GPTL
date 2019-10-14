@@ -20,7 +20,6 @@ int main (int argc, char **argv)
 		 {"nanotime",       GPTLnanotime},
 		 /*		 {"mpiwtime",       GPTLmpiwtime}, */
 		 {"clockgettime",   GPTLclockgettime},
-		 {"papitime",       GPTLpapitime},
 		 {"read_real_time", GPTLread_real_time}};
   static const int nvals = sizeof (vals) / sizeof (Vals);
     

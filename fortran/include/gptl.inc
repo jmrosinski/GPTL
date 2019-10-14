@@ -39,7 +39,6 @@
       integer GPTLmpiwtime
       integer GPTLclockgettime
       integer GPTLgettimeofday
-      integer GPTLpapitime
       integer GPTLplacebo
       integer GPTLread_real_time
 
@@ -80,7 +79,6 @@
       parameter (GPTLnanotime       = 2)
       parameter (GPTLmpiwtime       = 4)
       parameter (GPTLclockgettime   = 5)
-      parameter (GPTLpapitime       = 6)
       parameter (GPTLplacebo        = 7)
       parameter (GPTLread_real_time = 3)
 
