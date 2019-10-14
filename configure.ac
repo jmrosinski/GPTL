@@ -6,7 +6,7 @@
 AC_PREREQ([2.59])
 
 # Initialize autoconf.
-AC_INIT([GPTL], [5.6.0_experimental], [rosinski@ucar.edu])
+AC_INIT([GPTL], [7.0.0], [rosinski@ucar.edu])
 
 # Find out about the host we're building on.
 AC_CANONICAL_HOST
@@ -316,13 +316,32 @@ fi
 # This is a list of files to be built.
 AC_CONFIG_FILES([Makefile
                  include/Makefile
-                 test/Makefile
+                 tests/Makefile
                  src/Makefile
                  bin/Makefile
 	       ])
-AC_CONFIG_FILES([test/run_par_summary_test.sh], [chmod ugo+x test/run_par_summary_test.sh])
-AC_CONFIG_FILES([test/run_par_pmpi_test.sh], [chmod ugo+x test/run_par_pmpi_test.sh])
-AC_CONFIG_FILES([test/run_par_global_test.sh], [chmod ugo+x test/run_par_global_test.sh])
+AC_CONFIG_FILES([tests/run_par_summary_test.sh], [chmod ugo+x tests/run_par_summary_test.sh])
+AC_CONFIG_FILES([tests/run_par_pmpi_test.sh], [chmod ugo+x tests/run_par_pmpi_test.sh])
+AC_CONFIG_FILES([tests/run_par_global_test.sh], [chmod ugo+x tests/run_par_global_test.sh])
+
+# See if Fortran support is requested (default yes). If so check for working compiler and add
+# Fortran directories
+AC_ARG_ENABLE([fortran], [AS_HELP_STRING([--disable-fortran],
+              [Enable fortran support. Only disable this if it causes problems])],,[enable_fortran=yes])
+if test "x$enable_fortran" = "xyes"; then
+  AC_PROG_FC()
+# Make sure this file is copied to build directories for tests to work.
+  AC_CONFIG_LINKS([fortran/tests/gptlnl:fortran/tests/gptlnl])
+# This is a list of files to be built.
+  AC_CONFIG_FILES([fortran/Makefile
+                   fortran/include/Makefile
+                   fortran/src/Makefile
+                   fortran/tests/Makefile
+	  	 ])
+  AC_CONFIG_FILES([fortran/tests/run_par_pmpi_test.sh], [chmod ugo+x fortran/tests/run_par_pmpi_test.sh])
+  AC_CONFIG_FILES([fortran/tests/run_par_summary_test.sh], [chmod ugo+x fortran/tests/run_par_summary_test.sh])
+fi
+AM_CONDITIONAL([ENABLE_FORTRAN], [test x$enable_fortran = xyes])
 
 # Build the files listed above.
 AC_OUTPUT()

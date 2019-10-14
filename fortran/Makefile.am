@@ -1,26 +1,21 @@
-## This is a automake file, part of the GPTL package.
-# Copyright 2018, see the COPYING file for more information.
-
-# This is the main automake file for GPTL.
-# Ed Hartnett, 5/18/18
+# This is the main automake file for the GPTL fortran API.
+# Ed Hartnett, 5/21/18
 
 # This directory stores libtool macros, put there by aclocal.
 ACLOCAL_AMFLAGS = -I m4
 
 # These files get added to the distribution.
-EXTRA_DIST = COPYING README
+EXTRA_DIST = COPYING
 
-# This is the list of subdirs for which Makefiles will be constructed and run
-SUBDIRS = include src tests bin
-if ENABLE_FORTRAN
-SUBDIRS += fortran
-endif
+# This is the list of subdirs for which Makefiles will be constructed
+# and run.
+SUBDIRS = src tests include
 
 install-data-hook:
 
 	@echo ''
 	@echo '+-------------------------------------------------------------+'
-	@echo '| GPTL installation successful                                |'
+	@echo '| GPTL fortran wrappers installation successful               |'
 	@echo '|                                                             |'
 	@echo '| CAUTION:                                                    |'
 	@echo '|                                                             |'

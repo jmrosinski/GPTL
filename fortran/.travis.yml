@@ -1,0 +1,48 @@
+language: c
+dist: trusty
+sudo: false
+
+branches:
+  only:
+  - master
+
+addons:
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test
+    packages:
+    - pkg-config netcdf-bin libnetcdf-dev openmpi-bin libopenmpi-dev gfortran
+
+before_install:
+  - test -n $CC && unset CC
+  - test -n $FC && unset FC
+  - test -n $CPPFLAGS && unset CPPFLAGS
+  - test -n FCFLAGS && unset FCFLAGS
+
+before_script:
+  - export CC=mpicc
+  - export FC=mpif90
+  - export CPPFLAGS='-I/usr/include'
+  - export FCFLAGS=''
+  - wget https://github.com/jmrosinski/GPTL/releases/download/v5.6.0/gptl-5.6.0.tar.gz
+  - tar zxf gptl-5.6.0.tar.gz
+  - pushd gptl-5.6.0
+  - ./configure --prefix=/usr
+  - sudo make -j install
+  - popd
+
+env:
+  global:
+    - CC=mpicc
+    - FC=mpif90
+    - CPPFLAGS='-I/usr/include'
+    - FCFLAGS='-fcray-pointer -fdefault-double-8 -fdefault-real-8 -Waliasing -ffree-line-length-none -fno-range-check'
+    - LDFLAGS='-L/usr/lib'
+  
+script:
+  - autoreconf -i
+  - ./configure
+  - make -j distcheck
+
+
+ 
