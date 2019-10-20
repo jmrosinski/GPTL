@@ -190,17 +190,17 @@ module gptl
        character(len=*) :: name
      end function gptlget_regionname
 
-     integer function gptlget_memusage (size, rss, share, text, datastack)
-       integer :: size, rss, share, text, datastack
+     integer function gptlget_memusage (rss)
+       real :: rss
      end function gptlget_memusage
 
      integer function gptlprint_memusage (str)
        character(len=*) :: str
      end function gptlprint_memusage
 
-     integer function gptlprint_rusage (str)
-       character(len=*) :: str
-     end function gptlprint_rusage
+     integer function gptlget_procsiz (procsiz, rss)
+       real :: procsiz, rss
+     end function gptlget_procsiz
 
      integer function gptlnum_errors ()
      end function gptlnum_errors

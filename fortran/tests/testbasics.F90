@@ -10,7 +10,7 @@ program testbasics
   integer(8), allocatable :: iarr8(:)
   real(8) :: wc, usr, sys ! for gptlquery
   character(len=80) :: str
-  integer :: size, rss, share, text, datastack
+  real :: procsiz, rss
   
   write(6,*)'testbasics: Testing basic GPTL usage...'
   write(6,*)'Testing gptlinitialize...'
@@ -49,11 +49,18 @@ program testbasics
   write(6,*)'Success: wc=', wc
   
   write(6,*)'Testing gptlget_memusage...'
-  if (gptlget_memusage (size, rss, share, text, datastack) /= 0) then
+  if (gptlget_memusage (rss) /= 0) then
     write(6,*)'Failure in gptlget_memusage'
     call exit(1)
   end if
-  write(6,*)'Success: size=', size, ' rss=', rss
+  write(6,*)'Success: rss=', rss
+
+  write(6,*)'Testing gptlget_procsiz...'
+  if (gptlget_procsiz (procsiz, rss) /= 0) then
+    write(6,*)'Failure in gptlget_procsiz'
+    call exit(1)
+  end if
+  write(6,*)'Success: procsiz=', procsiz, ' rss=', rss
 
   write(6,*)'Testing gptlprint_memusage...'
   str = 'testbasics before allocating 100 MB'
@@ -68,11 +75,6 @@ program testbasics
   str = 'testbasics after allocating 100 MB'
   if (gptlprint_memusage (trim(str)) /= 0) then
     write(6,*)'Failure in gptlprint_memusage'
-    call exit(1)
-  end if
-  
-  if (gptlprint_rusage (trim(str)) /= 0) then
-    write(6,*)'Failure in gptlprint_rusage'
     call exit(1)
   end if
   

@@ -158,20 +158,22 @@ AM_CONDITIONAL([HAVE_PAPI], [test "x$have_papi" = xyes])
 # applications with -lrt
 AC_CHECK_LIB([rt], [clock_gettime])
 
-# Check for existence of /proc, used for memory checking
-# Must disable this when cross-compiling
+# If getrusage is found then HAVE_GETRUSAGE will automatically be defined for obtaining RSS
+AC_CHECK_FUNCS(getrusage)
+
+# Check for existence of /proc, used for obtaining process size
+# Must be disabled when cross-compiling
 AC_ARG_ENABLE([slashproc], [AS_HELP_STRING([--disable-slashproc],
               [check for existence of /proc file system: must be disabled when cross-compiling])])
 
 test "x$enable_slashproc" != xno && enable_slashproc=yes
 if test "$enable_slashproc" = yes; then
   AC_CHECK_FILE([/proc],
-        [AC_DEFINE([HAVE_SLASHPROC], [1], [/proc exists. Will use that for memory checking])])
+        [AC_DEFINE([HAVE_SLASHPROC], [1], [/proc exists. Memory checking via /proc enabled])])
 fi
 
 # We need the math library for some tests.
-AC_CHECK_LIB([m], [floor], [],
-                  [AC_MSG_ERROR([Can't find or link to the math library.])])
+AC_CHECK_LIB([m], [floor], [], [AC_MSG_ERROR([Can't find or link to the math library.])])
 
 # AC_CHECK_LIB doesn't work for libunwind due to funkiness in the lib so use AC_CHECK_HEADER
 AC_MSG_CHECKING([for libunwind])

@@ -17,6 +17,7 @@ endif
 # This is our output. The GPTL-fortran library.
 lib_LTLIBRARIES = libgptlf.la
 libgptlf_la_SOURCES = gptlf.F90 process_namelist.F90
+libgptlf_la_LDFLAGS = -version-info 1:0:0
 
 # Each mod file depends on the .o file.
 gptl.mod: gptlf.$(OBJEXT)

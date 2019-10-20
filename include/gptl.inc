@@ -109,7 +109,7 @@
       integer gptlfinalize
       integer gptlget_memusage
       integer gptlprint_memusage
-      integer gptlprint_rusage
+      integer gptlget_procsiz
       integer gptlenable
       integer gptldisable
       integer gptlsetutr
@@ -147,7 +147,7 @@
       external gptlfinalize
       external gptlget_memusage
       external gptlprint_memusage
-      external gptlprint_rusage
+      external gptlget_procsiz
       external gptlenable
       external gptldisable
       external gptlsetutr

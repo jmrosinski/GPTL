@@ -12,7 +12,7 @@ INSTR_LINK = @INSTR_LINK@
 # Link to GPTL fortran library.
 AM_LDFLAGS = ${top_builddir}/fortran/src/libgptlf.la $(INSTRFLAG)
 
-LDADD = ${top_builddir}/../GPTL/src/libgptl.la
+LDADD = ${top_builddir}/src/libgptl.la
 if HAVE_LIBUNWIND
 LDADD += -lunwind
 endif

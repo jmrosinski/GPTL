@@ -49,7 +49,7 @@
 #define gptlget_regionname gptlget_regionname_
 #define gptlget_memusage gptlget_memusage_
 #define gptlprint_memusage gptlprint_memusage_
-#define gptlprint_rusage gptlprint_rusage_
+#define gptlget_procsiz gptlget_procsiz_
 #define gptlnum_errors gptlnum_errors_
 #define gptlnum_warn gptlnum_warn_
 #define gptlget_count gptlget_count_
@@ -89,7 +89,7 @@
 #define gptlget_regionname gptlget_regionname__
 #define gptlget_memusage gptlget_memusage__
 #define gptlprint_memusage gptlprint_memusage__
-#define gptlprint_rusage gptlprint_rusage__
+#define gptlget_procsiz gptlget_procsiz__
 #define gptlnum_errors gptlnum_errors__
 #define gptlnum_warn gptlnum_warn__
 #define gptlget_count gptlget_count__
@@ -131,9 +131,9 @@ int gptlget_eventvalue (const char *timername, const char *eventname, int *t, do
 			int nc1, int nc2);
 int gptlget_nregions (int *t, int *nregions);
 int gptlget_regionname (int *t, int *region, char *name, int nc);
-int gptlget_memusage (int *size, int *rss, int *share, int *text, int *datastack);
+int gptlget_memusage (float *);
 int gptlprint_memusage (const char *str, int nc);
-int gptlprint_rusage (const char *str, int nc);
+int gptlget_procsiz (float *, float *);
 int gptlnum_errors (void);
 int gptlnum_warn (void);
 int gptlget_count (char *, int *, int *, int);
@@ -393,9 +393,9 @@ int gptlget_regionname (int *t, int *region, char *name, int nc)
   return ret;
 }
 
-int gptlget_memusage (int *size, int *rss, int *share, int *text, int *datastack)
+int gptlget_memusage (float *rss)
 {
-  return GPTLget_memusage (size, rss, share, text, datastack);
+  return GPTLget_memusage (rss);
 }
 
 int gptlprint_memusage (const char *str, int nc)
@@ -407,13 +407,9 @@ int gptlprint_memusage (const char *str, int nc)
   return GPTLprint_memusage (cname);
 }
 
-int gptlprint_rusage (const char *str, int nc)
+int gptlget_procsiz (float *procsiz, float *rss)
 {
-  char cname[nc+1];
-
-  strncpy (cname, str, nc);
-  cname[nc] = '\0';
-  return GPTLprint_rusage (cname);
+  return GPTLget_procsiz (procsiz, rss);
 }
 
 int gptlnum_errors (void)

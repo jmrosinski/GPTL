@@ -1258,7 +1258,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   bool first;               /* flag 1st time entry found */
   double self_ohd;          /* estimated library overhead in self timer */
   double parent_ohd;        /* estimated library overhead due to self in parent timer */
-  int size, rss, share, text, datastack; /* returned from GPTLget_memusage */
+  float procsiz, rss;       // returned from GPTLget_procsiz
 
   static const char *thisfunc = "GPTLpr_file";
 
@@ -1376,8 +1376,8 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   }
 
   /* Print the process size at time of call to GPTLpr_file */
-  (void) GPTLget_memusage (&size, &rss, &share, &text, &datastack);
-  fprintf (fp, "Process size=%d MB rss=%d MB\n\n", size, rss);
+  (void) GPTLget_procsiz (&procsiz, &rss);
+  fprintf (fp, "Process size=%f MB rss=%f MB\n\n", procsiz, rss);
 
   sum = (float *) GPTLallocate (nthreads * sizeof (float), thisfunc);
   
@@ -2732,8 +2732,7 @@ void __func_trace_enter (const char *function_name,
                          int line_number,
                          void **const user_data)
 {
-  char msg[MSGSIZ];
-  int size, rss, share, text, datastack;
+  float rss;
   int world_iam;
 #ifdef HAVE_LIBMPI
   int flag = 0;
@@ -2741,7 +2740,7 @@ void __func_trace_enter (const char *function_name,
 #endif
 
   if (dopr_memusage && get_thread_num() == 0) {
-    (void) GPTLget_memusage (&size, &rss, &share, &text, &datastack);
+    (void) GPTLget_memusage (&rss);
     if (rss > rssmax) {
       rssmax = rss;
       world_iam = 0;
@@ -2750,8 +2749,7 @@ void __func_trace_enter (const char *function_name,
       if (ret == MPI_SUCCESS && flag) 
 	ret = MPI_Comm_rank (MPI_COMM_WORLD, &world_iam);
 #endif
-      snprintf (msg, MSGSIZ, "world_iam=%d begin %s rss grew", world_iam, function_name);
-      (void) GPTLprint_memusage (msg);
+      printf ("World_iam=%d begin %s rss grew to %f MB", world_iam, function_name, rss);
     }
   }
   (void) GPTLstart (function_name);
@@ -2762,8 +2760,7 @@ void __func_trace_exit (const char *function_name,
                         int line_number,
                         void **const user_data)
 {
-  char msg[MSGSIZ];
-  int size, rss, share, text, datastack;
+  float rss;
   int world_iam;
 #ifdef HAVE_LIBMPI
   int flag = 0;
@@ -2773,7 +2770,7 @@ void __func_trace_exit (const char *function_name,
   (void) GPTLstop (function_name);
 
   if (dopr_memusage && get_thread_num() == 0) {
-    (void) GPTLget_memusage (&size, &rss, &share, &text, &datastack);
+    (void) GPTLget_memusage (&rss);
     if (rss > rssmax) {
       rssmax = rss;
       world_iam = 0;
@@ -2782,8 +2779,7 @@ void __func_trace_exit (const char *function_name,
       if (ret == MPI_SUCCESS && flag) 
 	ret = MPI_Comm_rank (MPI_COMM_WORLD, &world_iam);
 #endif
-      snprintf (msg, MSGSIZ, "world_iam=%d end %s rss grew", world_iam, function_name);
-      (void) GPTLprint_memusage (msg);
+      printf ("World_iam=%d end %s rss grew to %f MB", world_iam, function_name, rss);
     }
   }
 }
@@ -2795,8 +2791,7 @@ void __func_trace_exit (const char *function_name,
 void __cyg_profile_func_enter (void *this_fn,
                                void *call_site)
 {
-  char msg[MSGSIZ];
-  int size, rss, share, text, datastack;
+  float rss;
   int world_iam;
   int t;             // thread index
   int symsize;       // number of characters in symbol
@@ -2922,7 +2917,7 @@ void __cyg_profile_func_enter (void *this_fn,
   }
 
   if (dopr_memusage && t == 0) {
-    (void) GPTLget_memusage (&size, &rss, &share, &text, &datastack);
+    (void) GPTLget_memusage (&rss);
     if (rss > rssmax) {
       rssmax = rss;
       world_iam = 0;
@@ -2931,12 +2926,11 @@ void __cyg_profile_func_enter (void *this_fn,
       if (ret == MPI_SUCCESS && flag) 
 	ret = MPI_Comm_rank (MPI_COMM_WORLD, &world_iam);
 #endif
-      snprintf (msg, MSGSIZ, "world_iam=%d begin %s rss grew", world_iam, symnam);
-      (void) GPTLprint_memusage (msg);
+      printf ("World_iam=%d begin %s rss grew to %f MB", world_iam, symnam, rss);
     }
   }
 #ifdef HAVE_BACKTRACE
-  if ( ! strings)
+  if (strings)
     free (strings);
 #endif
 
@@ -2981,8 +2975,7 @@ char *extract_name (char *str)
 void __cyg_profile_func_exit (void *this_fn,
                               void *call_site)
 {
-  char msg[MSGSIZ];
-  int size, rss, share, text, datastack;
+  float rss;
   int world_iam;
   int t;             // thread index
   unsigned int indx; // hash table index
@@ -3030,7 +3023,7 @@ void __cyg_profile_func_exit (void *this_fn,
   }
 
   if (dopr_memusage && t == 0) {
-    (void) GPTLget_memusage (&size, &rss, &share, &text, &datastack);
+    (void) GPTLget_memusage (&rss);
     if (rss > rssmax) {
       rssmax = rss;
       world_iam = 0;
@@ -3039,8 +3032,7 @@ void __cyg_profile_func_exit (void *this_fn,
       if (ret == MPI_SUCCESS && flag) 
 	ret = MPI_Comm_rank (MPI_COMM_WORLD, &world_iam);
 #endif
-      snprintf (msg, MSGSIZ, "world_iam=%d end %s rss grew", world_iam, ptr->name);
-      (void) GPTLprint_memusage (msg);
+      printf ("World_iam=%d end %s rss grew to %f MB", world_iam, ptr->name, rss);
     }
   }
 #ifdef DEBUG
