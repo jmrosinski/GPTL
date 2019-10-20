@@ -2870,11 +2870,16 @@ void __cyg_profile_func_enter (void *this_fn,
 #elif defined HAVE_BACKTRACE
 
     nptrs = backtrace (buffer, 2);
-    strings = backtrace_symbols (buffer, nptrs);
-    if (nptrs < 2) {
-      GPTLwarn ("%s backtrace failed\n", thisfunc);
+    if (nptrs != 2) {
+      GPTLwarn ("%s backtrace failed nptrs should be 2 but is %d\n", thisfunc, nptrs);
       return;
     }
+
+    if (!(strings = backtrace_symbols (buffer, nptrs))) {
+      GPTLwarn ("%s backtrace_symbols failed strings is null\n", thisfunc);
+      return;
+    }
+    
     symnam = extract_name (strings[1]);
     // If meaningful name not found, store the function address as a string
     if (symnam == unknown) {
