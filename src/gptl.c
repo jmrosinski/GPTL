@@ -209,7 +209,7 @@ static int tablesize = DEFAULT_TABLE_SIZE;  /* per-thread size of hash table (se
 static int tablesizem1 = DEFAULT_TABLE_SIZE - 1;
 
 #define MSGSIZ MAX_CHARS+40                 /* max size of msg printed when dopr_memusage=true */
-static int rssmax = 0;                      /* max rss of the process */
+static float rssmax = 0;                    // max rss of the process
 static bool imperfect_nest;                 /* e.g. start(A),start(B),stop(A) */
 static const int indent_chars = 2;          // Number of chars to indent
 
@@ -2812,7 +2812,7 @@ void __cyg_profile_func_enter (void *this_fn,
   int nptrs;
   char **strings = 0;
   char addrstr[MAX_CHARS+1];          // function address as a string
-  extern char *extract_name (char *);
+  char *extract_name (char *);
 #endif
 
 #ifdef HAVE_LIBMPI
@@ -2821,6 +2821,9 @@ void __cyg_profile_func_enter (void *this_fn,
 #endif
   static const char *thisfunc = "__cyg_profile_func_enter";
 
+  // Call preamble_start rather than just get_thread_num because preamble_stop is needed for
+  // other reasons in __cyg_profile_func_exit, and the preamble* functions need to mirror each
+  // other.
   if (preamble_start (&t, unknown, thisfunc) != 0)
     return;
 
@@ -2931,7 +2934,7 @@ void __cyg_profile_func_enter (void *this_fn,
       if (ret == MPI_SUCCESS && flag) 
 	ret = MPI_Comm_rank (MPI_COMM_WORLD, &world_iam);
 #endif
-      printf ("World_iam=%d begin %s rss grew to %f MB", world_iam, symnam, rss);
+      printf ("World_iam=%d begin %s rss grew to %f MB", world_iam, ptr->name, rss);
     }
   }
 #ifdef HAVE_BACKTRACE
