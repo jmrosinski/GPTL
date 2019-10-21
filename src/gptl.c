@@ -118,13 +118,13 @@ static Nofalse *stackidx;        /* index into callstack: */
 
 static Method method = GPTLfull_tree;  /* default parent/child printing mechanism */
 
-// Local function prototypes
-
 typedef struct {
   int max_depth;
   int max_namelen;
   int max_chars2pr;
 } Outputfmt;
+
+// Local function prototypes
 
 static inline int preamble_start (int *, const char *, const char *);
 static inline int preamble_stop (int *, double *, long *, long *, const char *, const char *);
@@ -172,6 +172,7 @@ static inline int update_stats (Timer *, const double, const long, const long, c
 static int update_ll_hash (Timer *, int, unsigned int);
 static inline int update_ptr (Timer *, const int);
 static int construct_tree (Timer *, Method);
+static inline void set_fp_procsiz (void);
 
 typedef struct {
   const Funcoption option;
@@ -208,10 +209,12 @@ static int funcidx = 0;                  // default timer is gettimeofday
 static int tablesize = DEFAULT_TABLE_SIZE;  /* per-thread size of hash table (settable parameter) */
 static int tablesizem1 = DEFAULT_TABLE_SIZE - 1;
 
-#define MSGSIZ MAX_CHARS+40                 /* max size of msg printed when dopr_memusage=true */
-static float rssmax = 0;                    // max rss of the process
-static bool imperfect_nest;                 /* e.g. start(A),start(B),stop(A) */
-static const int indent_chars = 2;          // Number of chars to indent
+#define MSGSIZ MAX_CHARS+40              // max size of msg printed when dopr_memusage=true
+static float rssmax = 0;                 // max rss of the process
+static bool imperfect_nest;              // e.g. start(A),start(B),stop(A)
+static const int indent_chars = 2;       // Number of chars to indent
+static FILE *fp_procsiz = 0;             // process size file pointer: init to 0 to use stderr
+static int mpi_is_initialized = 0;       // Flag set after MPI has been initialized
 
 /* VERBOSE is a debugging ifdef local to the rest of this file */
 #undef VERBOSE
@@ -1225,7 +1228,7 @@ int GPTLpr (const int id) // output file will be named "timing.<id>" or stderr i
     GPTLnote ("%s id=%d means output will be written to stderr\n", thisfunc, id);
     sprintf (outfile, "stderr");
   } else {
-    sprintf (outfile, "timing.%d", id);
+    sprintf (outfile, "timing.%6.6d", id);
   }
 
   if (GPTLpr_file (outfile) != 0)
@@ -2733,23 +2736,20 @@ void __func_trace_enter (const char *function_name,
                          void **const user_data)
 {
   float rss;
-  int world_iam;
-#ifdef HAVE_LIBMPI
-  int flag = 0;
-  int ret;
-#endif
 
   if (dopr_memusage && get_thread_num() == 0) {
     (void) GPTLget_memusage (&rss);
-    if (rss > rssmax) {
+    // Notify user when rss has grown by more than 1%
+    if (rss > rssmax*1.01) {
       rssmax = rss;
-      world_iam = 0;
-#ifdef HAVE_LIBMPI
-      ret = MPI_Initialized (&flag);
-      if (ret == MPI_SUCCESS && flag) 
-	ret = MPI_Comm_rank (MPI_COMM_WORLD, &world_iam);
-#endif
-      printf ("World_iam=%d begin %s rss grew to %f MB", world_iam, function_name, rss);
+      // Once MPI is initialized, set file pointer for process size to rank-specific file      
+      set_fp_procsiz ();
+      if (fp_procsiz) {
+	fprintf (fp_procsiz, "Begin %s rss grew to %8.2f MB\n", function_name, rss);
+	fflush (fp_procsiz);  // Not clear when this file needs to be closed, so flush
+      } else {
+	fprintf (stderr, "Begin %s rss grew to %8.2f MB\n", function_name, rss);
+      }
     }
   }
   (void) GPTLstart (function_name);
@@ -2761,25 +2761,22 @@ void __func_trace_exit (const char *function_name,
                         void **const user_data)
 {
   float rss;
-  int world_iam;
-#ifdef HAVE_LIBMPI
-  int flag = 0;
-  int ret;
-#endif
 
   (void) GPTLstop (function_name);
 
   if (dopr_memusage && get_thread_num() == 0) {
     (void) GPTLget_memusage (&rss);
-    if (rss > rssmax) {
+    // Notify user when rss has grown by more than 1%
+    if (rss > rssmax*1.01) {
       rssmax = rss;
-      world_iam = 0;
-#ifdef HAVE_LIBMPI
-      ret = MPI_Initialized (&flag);
-      if (ret == MPI_SUCCESS && flag) 
-	ret = MPI_Comm_rank (MPI_COMM_WORLD, &world_iam);
-#endif
-      printf ("World_iam=%d end %s rss grew to %f MB", world_iam, function_name, rss);
+      // Once MPI is initialized, change file pointer for process size to rank-specific file      
+      set_fp_procsiz ();
+      if (fp_procsiz) {
+	fprintf (fp_procsiz, "End %s rss grew to %8.2f MB\n", function_name, rss);
+	fflush (fp_procsiz);  // Not clear when this file needs to be closed, so flush
+      } else {
+	fprintf (stderr, "End %s rss grew to %8.2f MB\n", function_name, rss);
+      }
     }
   }
 }
@@ -2792,13 +2789,13 @@ void __cyg_profile_func_enter (void *this_fn,
                                void *call_site)
 {
   float rss;
-  int world_iam;
   int t;             // thread index
   int symsize;       // number of characters in symbol
   char *symnam;      // symbol name whether using unwind or backtrace
   int numchars;      // number of characters in function name
   unsigned int indx; // hash table index
   Timer *ptr;        // pointer to entry if it already exists
+  static const char *thisfunc = "__cyg_profile_func_enter";
 
 #ifdef HAVE_LIBUNWIND
   char symbol[MAX_SYMBOL_NAME+1];
@@ -2814,12 +2811,6 @@ void __cyg_profile_func_enter (void *this_fn,
   char addrstr[MAX_CHARS+1];          // function address as a string
   char *extract_name (char *);
 #endif
-
-#ifdef HAVE_LIBMPI
-  int flag = 0;
-  int ret;
-#endif
-  static const char *thisfunc = "__cyg_profile_func_enter";
 
   // Call preamble_start rather than just get_thread_num because preamble_stop is needed for
   // other reasons in __cyg_profile_func_exit, and the preamble* functions need to mirror each
@@ -2926,26 +2917,23 @@ void __cyg_profile_func_enter (void *this_fn,
 
   if (dopr_memusage && t == 0) {
     (void) GPTLget_memusage (&rss);
-    if (rss > rssmax) {
+    // Notify user when rss has grown by more than 1%
+    if (rss > rssmax*1.01) {
       rssmax = rss;
-      world_iam = 0;
-#ifdef HAVE_LIBMPI
-      ret = MPI_Initialized (&flag);
-      if (ret == MPI_SUCCESS && flag) 
-	ret = MPI_Comm_rank (MPI_COMM_WORLD, &world_iam);
-#endif
-      printf ("World_iam=%d begin %s rss grew to %f MB", world_iam, ptr->name, rss);
+      // Once MPI is initialized, change file pointer for process size to rank-specific file      
+      set_fp_procsiz ();
+      if (fp_procsiz) {
+	fprintf (fp_procsiz, "Begin %s rss grew to %8.2f MB\n", ptr->name, rss);
+	fflush (fp_procsiz);  // Not clear when this file needs to be closed, so flush
+      } else {
+	fprintf (stderr, "Begin %s rss grew to %8.2f MB\n", ptr->name, rss);
+      }
     }
   }
 #ifdef HAVE_BACKTRACE
   if (strings)
     free (strings);
 #endif
-
-#ifdef DEBUG
-  // print_callstack (0, "end __cyg_profile_func_enter");
-#endif
-  return;
 }
 
 #ifdef HAVE_BACKTRACE
@@ -2984,17 +2972,12 @@ void __cyg_profile_func_exit (void *this_fn,
                               void *call_site)
 {
   float rss;
-  int world_iam;
   int t;             // thread index
   unsigned int indx; // hash table index
   Timer *ptr;        // pointer to entry if it already exists
   double tp1 = 0.0;          /* time stamp */
   long usr = 0;              /* user time (returned from get_cpustamp) */
   long sys = 0;              /* system time (returned from get_cpustamp) */
-#ifdef HAVE_LIBMPI
-  int flag = 0;
-  int ret;
-#endif
   static const char *thisfunc = "__cyg_profile_func_exit";
 
   if (preamble_stop (&t, &tp1, &usr, &sys, unknown, thisfunc) != 0)
@@ -3032,20 +3015,19 @@ void __cyg_profile_func_exit (void *this_fn,
 
   if (dopr_memusage && t == 0) {
     (void) GPTLget_memusage (&rss);
-    if (rss > rssmax) {
+    // Notify user when rss has grown by more than 1%
+    if (rss > rssmax*1.01) {
       rssmax = rss;
-      world_iam = 0;
-#ifdef HAVE_LIBMPI
-      ret = MPI_Initialized (&flag);
-      if (ret == MPI_SUCCESS && flag) 
-	ret = MPI_Comm_rank (MPI_COMM_WORLD, &world_iam);
-#endif
-      printf ("World_iam=%d end %s rss grew to %f MB", world_iam, ptr->name, rss);
+      // Once MPI is initialized, change file pointer for process size to rank-specific file      
+      set_fp_procsiz ();
+      if (fp_procsiz) {
+	fprintf (fp_procsiz, "End %s rss grew to %8.2f MB\n", ptr->name, rss);
+	fflush (fp_procsiz);  // Not clear when this file needs to be closed, so flush
+      } else {
+	fprintf (stderr, "End %s rss grew to %8.2f MB\n", ptr->name, rss);
+      }
     }
   }
-#ifdef DEBUG
-  //  print_callstack (0, "end __cyg_profile_func_exit");
-#endif
 }
 #endif // HAVE_LIBUNWIND || HAVE_BACKTRACE
 #endif // _AIX false branch
@@ -3053,6 +3035,30 @@ void __cyg_profile_func_exit (void *this_fn,
 #ifdef __cplusplus
 };
 #endif
+
+/*
+** set_fp_procsiz: Change file pointer from stderr to point to "procsiz.<rank>" once
+**   MPI has been initialized
+*/
+static inline void set_fp_procsiz ()
+{
+#ifdef HAVE_LIBMPI
+  int ret;
+  int world_iam;
+  int flag;
+  char outfile[15];
+  
+  if ( ! mpi_is_initialized) {
+    ret = MPI_Initialized (&flag);
+    if (flag) {
+      mpi_is_initialized = true;
+      ret = MPI_Comm_rank (MPI_COMM_WORLD, &world_iam);
+      sprintf (outfile, "procsiz.%6.6d", world_iam);
+      fp_procsiz = fopen (outfile, "w");
+    }
+  }
+#endif
+}
 
 #ifdef HAVE_NANOTIME
 /* Copied from PAPI library */
