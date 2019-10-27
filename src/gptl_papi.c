@@ -10,8 +10,6 @@
 #include "private.h"
 #include "gptl.h"
 
-#ifdef HAVE_PAPI
-
 #include <papi.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -1197,20 +1195,4 @@ int GPTLget_npapievents (void)
 {
   return npapievents;
 }
-
-#else
-
-/*
-** HAVE_PAPI not defined branch: "Should not be called" entry points for public routines
-*/
-int GPTLevent_name_to_code (const char *name, int *code)
-{
-  return GPTLerror ("GPTLevent_name_to_code: PAPI not enabled\n");
-}
-
-int GPTLevent_code_to_name (int code, char *name)
-{
-  return GPTLerror ("GPTLevent_code_to_name: PAPI not enabled\n");
-}
-
 #endif  /* HAVE_PAPI */

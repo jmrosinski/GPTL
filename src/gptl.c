@@ -173,6 +173,9 @@ static int update_ll_hash (Timer *, int, unsigned int);
 static inline int update_ptr (Timer *, const int);
 static int construct_tree (Timer *, Method);
 static inline void set_fp_procsiz (void);
+static void check_memusage (const char *, const char *);
+
+bool GPTLonlypr_rank0 = false;    // flag says only print from MPI rank 0 (default false)
 
 typedef struct {
   const Funcoption option;
@@ -214,7 +217,6 @@ static float rssmax = 0;                 // max rss of the process
 static bool imperfect_nest;              // e.g. start(A),start(B),stop(A)
 static const int indent_chars = 2;       // Number of chars to indent
 static FILE *fp_procsiz = 0;             // process size file pointer: init to 0 to use stderr
-static int mpi_is_initialized = 0;       // Flag set after MPI has been initialized
 
 /* VERBOSE is a debugging ifdef local to the rest of this file */
 #undef VERBOSE
@@ -323,15 +325,22 @@ int GPTLsetoption (const int option,  /* option */
 #ifdef ENABLE_PMPI
     if (GPTLpmpi_setoption (option, val) != 0)
       fprintf (stderr, "%s: GPTLpmpi_setoption failure\n", thisfunc);
-#endif
     if (verbose)
       printf ("%s: boolean sync_mpi = %d\n", thisfunc, val);
+#else
+    fprintf (stderr, "%s: option GPTLsync_mpi requires MPI\n", thisfunc);
+#endif
     return 0;
   case GPTLmaxthreads:
     if (val < 1)
       return GPTLerror ("%s: maxthreads must be positive. %d is invalid\n", thisfunc, val);
 
     maxthreads = val;
+    return 0;
+  case GPTLonlyprint_rank0:
+    GPTLonlypr_rank0 = (bool) val; 
+    if (verbose)
+      printf ("%s: onlypr_rank0 = %d\n", thisfunc, val);
     return 0;
     
   case GPTLmultiplex:
@@ -617,6 +626,9 @@ int GPTLstart (const char *name)               /* timer name */
 
   if (update_ptr (ptr, t) != 0)
     return GPTLerror ("%s: update_ptr error\n", thisfunc);
+
+  if (dopr_memusage && t == 0)
+    check_memusage ("Begin", ptr->name);
 
   return 0;
 }
@@ -921,6 +933,9 @@ int GPTLstop (const char *name)               /* timer name */
   if (update_stats (ptr, tp1, usr, sys, t) != 0)
     return GPTLerror ("%s: error from update_stats\n", thisfunc);
 
+  if (dopr_memusage && t == 0)
+    check_memusage ("End", ptr->name);
+
   return 0;
 }
 
@@ -1078,7 +1093,7 @@ static inline int update_stats (Timer *ptr,
       else
 	GPTLwarn ("%s: Imperfect nest detected: Got timer=%s expected btm of call stack=%p\n",
 		  thisfunc, ptr->name, bptr);
-      print_callstack (t, thisfunc);
+      //      print_callstack (t, thisfunc);
     }
   }
 
@@ -2163,52 +2178,6 @@ int GPTLquery (const char *name,
 }
 
 /*
-** GPTLquerycounters: return current PAPI counters for a timer.
-** THIS ROUTINE IS DEPRECATED. USE GPTLget_eventvalue() instead
-** 
-** Input args:
-**   name: timer name
-**   t:    thread number (if < 0, the request is for the current thread)
-**
-** Output args:
-**   papicounters_out: accumulated PAPI counters
-*/
-int GPTLquerycounters (const char *name, 
-                       int t,
-                       long long *papicounters_out)
-{
-  Timer *ptr;            /* linked list pointer */
-  unsigned int indx;     /* hash index returned from getentry */
-  static const char *thisfunc = "GPTLquery_counters";
-  
-  if ( ! initialized)
-    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
-  
-  /*
-  ** If t is < 0, assume the request is for the current thread
-  */
-  
-  if (t < 0) {
-    if ((t = get_thread_num ()) < 0)
-      return GPTLerror ("%s: get_thread_num failure\n", thisfunc);
-  } else {
-    if (t >= maxthreads)
-      return GPTLerror ("%s: requested thread %d is too big\n", thisfunc, t);
-  }
-
-  indx = genhashidx (name);
-  ptr = getentry (hashtable[t], name, indx);
-  if ( !ptr)
-    return GPTLerror ("%s: requested timer %s does not have a name hash\n", thisfunc, name);
-
-#ifdef HAVE_PAPI
-  /* MAX_AUX is the max possible number of PAPI-based events */
-  GPTL_PAPIquery (&ptr->aux, papicounters_out, MAX_AUX);
-#endif
-  return 0;
-}
-
-/*
 ** GPTLget_wallclock: return wallclock accumulation for a timer.
 ** 
 ** Input args:
@@ -2725,9 +2694,6 @@ static inline Timer *getentry (const Hashentry *hashtable, /* hash table */
 ** pgcc:             -Minstrument:functions
 ** xlc:              -qdebug=function_trace
 */
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #ifdef _AIX
 void __func_trace_enter (const char *function_name,
@@ -2735,23 +2701,8 @@ void __func_trace_enter (const char *function_name,
                          int line_number,
                          void **const user_data)
 {
-  float rss;
-
-  if (dopr_memusage && get_thread_num() == 0) {
-    (void) GPTLget_memusage (&rss);
-    // Notify user when rss has grown by more than 1%
-    if (rss > rssmax*1.01) {
-      rssmax = rss;
-      // Once MPI is initialized, set file pointer for process size to rank-specific file      
-      set_fp_procsiz ();
-      if (fp_procsiz) {
-	fprintf (fp_procsiz, "Begin %s rss grew to %8.2f MB\n", function_name, rss);
-	fflush (fp_procsiz);  // Not clear when this file needs to be closed, so flush
-      } else {
-	fprintf (stderr, "Begin %s rss grew to %8.2f MB\n", function_name, rss);
-      }
-    }
-  }
+  if (dopr_memusage && get_thread_num() == 0)
+    check_memusage ("Begin", function_name);
   (void) GPTLstart (function_name);
 }
   
@@ -2760,25 +2711,9 @@ void __func_trace_exit (const char *function_name,
                         int line_number,
                         void **const user_data)
 {
-  float rss;
-
   (void) GPTLstop (function_name);
-
-  if (dopr_memusage && get_thread_num() == 0) {
-    (void) GPTLget_memusage (&rss);
-    // Notify user when rss has grown by more than 1%
-    if (rss > rssmax*1.01) {
-      rssmax = rss;
-      // Once MPI is initialized, change file pointer for process size to rank-specific file      
-      set_fp_procsiz ();
-      if (fp_procsiz) {
-	fprintf (fp_procsiz, "End %s rss grew to %8.2f MB\n", function_name, rss);
-	fflush (fp_procsiz);  // Not clear when this file needs to be closed, so flush
-      } else {
-	fprintf (stderr, "End %s rss grew to %8.2f MB\n", function_name, rss);
-      }
-    }
-  }
+  if (dopr_memusage && get_thread_num() == 0)
+    check_memusage ("End", function_name);
 }
   
 #else
@@ -2788,7 +2723,6 @@ void __func_trace_exit (const char *function_name,
 void __cyg_profile_func_enter (void *this_fn,
                                void *call_site)
 {
-  float rss;
   int t;             // thread index
   int symsize;       // number of characters in symbol
   char *symnam;      // symbol name whether using unwind or backtrace
@@ -2875,6 +2809,7 @@ void __cyg_profile_func_enter (void *this_fn,
     }
     
     symnam = extract_name (strings[1]);
+    free (strings);
     // If meaningful name not found, store the function address as a string
     if (symnam == unknown) {
       snprintf (addrstr, MAX_CHARS+1, "%lx", (unsigned long) this_fn);
@@ -2915,25 +2850,8 @@ void __cyg_profile_func_enter (void *this_fn,
     return;
   }
 
-  if (dopr_memusage && t == 0) {
-    (void) GPTLget_memusage (&rss);
-    // Notify user when rss has grown by more than 1%
-    if (rss > rssmax*1.01) {
-      rssmax = rss;
-      // Once MPI is initialized, change file pointer for process size to rank-specific file      
-      set_fp_procsiz ();
-      if (fp_procsiz) {
-	fprintf (fp_procsiz, "Begin %s rss grew to %8.2f MB\n", ptr->name, rss);
-	fflush (fp_procsiz);  // Not clear when this file needs to be closed, so flush
-      } else {
-	fprintf (stderr, "Begin %s rss grew to %8.2f MB\n", ptr->name, rss);
-      }
-    }
-  }
-#ifdef HAVE_BACKTRACE
-  if (strings)
-    free (strings);
-#endif
+  if (dopr_memusage && t == 0)
+    check_memusage ("Begin", ptr->name);
 }
 
 #ifdef HAVE_BACKTRACE
@@ -3013,28 +2931,30 @@ void __cyg_profile_func_exit (void *this_fn,
     return;
   }
 
-  if (dopr_memusage && t == 0) {
-    (void) GPTLget_memusage (&rss);
-    // Notify user when rss has grown by more than 1%
-    if (rss > rssmax*1.01) {
-      rssmax = rss;
-      // Once MPI is initialized, change file pointer for process size to rank-specific file      
-      set_fp_procsiz ();
-      if (fp_procsiz) {
-	fprintf (fp_procsiz, "End %s rss grew to %8.2f MB\n", ptr->name, rss);
-	fflush (fp_procsiz);  // Not clear when this file needs to be closed, so flush
-      } else {
-	fprintf (stderr, "End %s rss grew to %8.2f MB\n", ptr->name, rss);
-      }
-    }
-  }
+  if (dopr_memusage && t == 0)
+    check_memusage ("End", ptr->name);
 }
 #endif // HAVE_LIBUNWIND || HAVE_BACKTRACE
 #endif // _AIX false branch
 
-#ifdef __cplusplus
-};
-#endif
+static void check_memusage (const char *str, const char *funcnam)
+{
+  float rss;
+
+  (void) GPTLget_memusage (&rss);
+  // Notify user when rss has grown by more than 1%
+  if (rss > rssmax*1.01) {
+    rssmax = rss;
+    // Once MPI is initialized, change file pointer for process size to rank-specific file      
+    set_fp_procsiz ();
+    if (fp_procsiz) {
+      fprintf (fp_procsiz, "%s %s rss grew to %8.2f MB\n", str, funcnam, rss);
+      fflush (fp_procsiz);  // Not clear when this file needs to be closed, so flush
+    } else {
+      fprintf (stderr, "%s %s rss grew to %8.2f MB\n", str, funcnam, rss);
+    }
+  }
+}
 
 /*
 ** set_fp_procsiz: Change file pointer from stderr to point to "procsiz.<rank>" once
@@ -3044,14 +2964,16 @@ static inline void set_fp_procsiz ()
 {
 #ifdef HAVE_LIBMPI
   int ret;
-  int world_iam;
   int flag;
+  static bool check_mpi_init = true; // whether to check if MPI has been init (init to true)
   char outfile[15];
-  
-  if ( ! mpi_is_initialized) {
+
+  // Must only open the file once. Also more efficient to only make MPI lib inquiries once
+  if (check_mpi_init) {
     ret = MPI_Initialized (&flag);
     if (flag) {
-      mpi_is_initialized = true;
+      int world_iam;
+      check_mpi_init = false;
       ret = MPI_Comm_rank (MPI_COMM_WORLD, &world_iam);
       sprintf (outfile, "procsiz.%6.6d", world_iam);
       fp_procsiz = fopen (outfile, "w");

@@ -16,9 +16,10 @@ static int num_errors = 0;           /* number of times GPTLerror was called */
 static int max_warn = 10;            /* max number of warning messages */
 static int num_warn = 0;             /* number of times GPTLwarn was called */
 
+static inline bool doprint(void);
+
 /*
-** GPTLerror: error return routine to print a message and return a failure
-** value.
+** GPTLerror: error return routine to print a message and return a failure value.
 **
 ** Input arguments:
 **   fmt: format string
@@ -30,28 +31,28 @@ int GPTLerror (const char *fmt, ...)
 {
   va_list args;
   
-  va_start (args, fmt);
-  
-  if (fmt != NULL && num_errors < max_errors) {
-    (void) fprintf (stderr, "GPTL error:");
-    (void) vfprintf (stderr, fmt, args);
-    if (num_errors == max_errors)
-      (void) fprintf (stderr, "Truncating further error print now after %d msgs",
-		      num_errors);
+  if (doprint()) {
+    va_start (args, fmt);
+    if (fmt != NULL && num_errors < max_errors) {
+      (void) fprintf (stderr, "GPTL error:");
+      (void) vfprintf (stderr, fmt, args);
+      if (num_errors == max_errors)
+	(void) fprintf (stderr, "Truncating further error print now after %d msgs",
+			num_errors);
+    }
+    va_end (args);
   }
   
-  va_end (args);
-  
-  if (abort_on_error)
+  if (abort_on_error) {
+    (void) fprintf (stderr, "GPTL error:");
     exit (-1);
-
+  }
   ++num_errors;
   return (-1);
 }
 
 /*
 ** GPTLwarn: print a warning message
-** value.
 **
 ** Input arguments:
 **   fmt: format string
@@ -61,17 +62,17 @@ void GPTLwarn (const char *fmt, ...)
 {
   va_list args;
   
-  va_start (args, fmt);
-  
-  if (fmt != NULL && num_warn < max_warn) {
-    (void) fprintf (stderr, "GPTL warning:");
-    (void) vfprintf (stderr, fmt, args);
-    if (num_warn == max_warn)
-      (void) fprintf (stderr, "Truncating further warning print now after %d msgs",
-		      num_warn);
+  if (doprint()) {
+    va_start (args, fmt);
+    if (fmt != NULL && num_warn < max_warn) {
+      (void) fprintf (stderr, "GPTL warning:");
+      (void) vfprintf (stderr, fmt, args);
+      if (num_warn == max_warn)
+	(void) fprintf (stderr, "Truncating further warning print now after %d msgs",
+			num_warn);
+    }
+    va_end (args);
   }
-  
-  va_end (args);
   
   ++num_warn;
 }
@@ -87,14 +88,37 @@ void GPTLnote (const char *fmt, ...)
 {
   va_list args;
   
-  va_start (args, fmt);
-  
-  if (fmt != NULL) {
-    (void) fprintf (stderr, "GPTL note:");
-    (void) vfprintf (stderr, fmt, args);
+  if (doprint()) {
+    va_start (args, fmt);
+    if (fmt != NULL) {
+      (void) fprintf (stderr, "GPTL note:");
+      (void) vfprintf (stderr, fmt, args);
+    }
+    va_end (args);
   }
-  
-  va_end (args);
+}
+
+static inline bool doprint()
+{
+#ifdef HAVE_LIBMPI
+  static int world_iam = 0;  // MPI rank
+  int flag;
+  int ret;
+  static bool check_mpi_init = true;
+
+  // Only need to change GPTLworld_iam from 0 in MPI jobs, when flag set to only print 
+  // from rank 0, and when MPI_Initialize hasn't already been invoked
+  if (GPTLonlypr_rank0 && check_mpi_init) {
+    ret = MPI_Initialized (&flag);
+    if (flag) {
+      check_mpi_init = false;
+      ret = MPI_Comm_rank (MPI_COMM_WORLD, &world_iam);
+    }
+  }
+  return world_iam == 0;
+#else
+  return true;  // Always return true when no MPI
+#endif
 }
 
 /*
@@ -153,6 +177,7 @@ void *GPTLallocate (const int nbytes, const char *caller)
   return ptr;
 }
 
+#ifdef HAVE_LIBMPI
 /* 
 ** GPTLbarrier: When MPI enabled, set and time an MPI barrier
 **
@@ -166,7 +191,6 @@ int GPTLbarrier (MPI_Comm comm, const char *name)
 {
   static const char *thisfunc = "GPTLbarrier";
 
-#ifdef HAVE_LIBMPI
   int ret;
 
   ret = GPTLstart (name);
@@ -174,7 +198,5 @@ int GPTLbarrier (MPI_Comm comm, const char *name)
     return GPTLerror ("%s: Bad return from MPI_Barrier=%d", thisfunc, ret);
   ret = GPTLstop (name);
   return ret;
-#else
-  return GPTLerror ("%s: MPI library not found so this routine does nothing\n", thisfunc);
-#endif    /* HAVE_LIBMPI */
 }
+#endif    /* HAVE_LIBMPI */

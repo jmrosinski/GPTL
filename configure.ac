@@ -260,9 +260,14 @@ AC_CHECK_FUNC([times],
 AC_CHECK_FUNC([gettimeofday],
         [AC_DEFINE([HAVE_GETTIMEOFDAY], [1], [gettimeofday function is available])])
 
+# Initialize gptl.h. It will be augmented if MPI is enabled
+cp -f include/gptl.h.in include/gptl.h
+
 # Do we have MPI?
 AC_CHECK_FUNC([MPI_Init], [have_libmpi=yes], [have_libmpi=no])
 if test "x$have_libmpi" = xyes; then
+# Add MPI functions to header file
+  cat include/gptlmpi.h.in >> include/gptl.h
 # Modify FCFLAGS in case Fortran support is enabled
   FCFLAGS="-DHAVE_LIBMPI $FCFLAGS"
   AC_DEFINE([HAVE_LIBMPI], [1], [found MPI library])
@@ -281,6 +286,10 @@ if test "x$have_libmpi" = xyes; then
     AC_MSG_WARN([Could not determine MPI_STATUS_SIZE_IN_INTS -- GUESSING 5])
   fi
 fi
+
+# Need a #endif to terminate the #ifndef GPTL_H at the top of gptl.h
+echo "#endif" >> include/gptl.h
+
 AM_CONDITIONAL([HAVE_LIBMPI], [test "x$have_libmpi" = xyes])
 
 # Did the user specify an MPI launcher other than mpiexec?
@@ -311,30 +320,21 @@ if test "$enable_pmpi" = yes; then
 fi
 AC_MSG_RESULT($enable_pmpi)
 
-# Is doxygen installed?
-AC_CHECK_PROGS([DOXYGEN], [doxygen])
-if test -z "$DOXYGEN"; then
-   AC_MSG_WARN([Doxygen not found - documentation will not be built])
-fi
-
-# This is a list of files to be built.
-AC_CONFIG_FILES([Makefile
-                 include/Makefile
-                 tests/Makefile
-                 src/Makefile
-                 bin/Makefile
-	       ])
-AC_CONFIG_FILES([tests/run_par_summary_test.sh], [chmod ugo+x tests/run_par_summary_test.sh])
-AC_CONFIG_FILES([tests/run_par_pmpi_test.sh], [chmod ugo+x tests/run_par_pmpi_test.sh])
-AC_CONFIG_FILES([tests/run_par_global_test.sh], [chmod ugo+x tests/run_par_global_test.sh])
-
 # See if Fortran support is requested (default yes). If so check for working compiler and add
 # Fortran directories
 AC_ARG_ENABLE([fortran], [AS_HELP_STRING([--disable-fortran],
               [Enable fortran support. Only disable this if it causes problems])],,[enable_fortran=yes])
+
 if test "x$enable_fortran" = "xyes"; then
   AC_LANG_PUSH(Fortran)
   AC_PROG_FC()
+
+# Create gptl.inc, and augment if MPI is enabled
+  cp -f fortran/include/gptl.inc.in fortran/include/gptl.inc
+  if test "x$have_libmpi" = xyes; then
+    cat fortran/include/gptlmpi.inc.in >> fortran/include/gptl.inc
+  fi
+
 # Make sure this file is copied to build directories for tests to work.
   AC_CONFIG_LINKS([fortran/tests/gptlnl:fortran/tests/gptlnl])
 # Test OMP for Fortran and set flags accordingly. AC_OPENMP sets OPENMP_FFLAGS not OPENMP_FCFLAGS
@@ -352,7 +352,7 @@ if test "x$enable_fortran" = "xyes"; then
     FCFLAGS="-DHAVE_PAPI $FCFLAGS"
   fi
   
-# This is a list of files to be built.
+# This is a list of files to be built when Fortran support enabled
   AC_CONFIG_FILES([fortran/Makefile
                    fortran/include/Makefile
                    fortran/src/Makefile
@@ -362,7 +362,24 @@ if test "x$enable_fortran" = "xyes"; then
   AC_CONFIG_FILES([fortran/tests/run_par_summary_test.sh], [chmod ugo+x fortran/tests/run_par_summary_test.sh])
   AC_LANG_POP()
 fi
-AM_CONDITIONAL([ENABLE_FORTRAN], [test x$enable_fortran = "xyes"])
+AM_CONDITIONAL([HAVE_FORTRAN], [test x$enable_fortran = "xyes"])
+
+# This is a list of C files to be built
+AC_CONFIG_FILES([Makefile
+                 include/Makefile
+                 tests/Makefile
+                 src/Makefile
+                 bin/Makefile
+	       ])
+AC_CONFIG_FILES([tests/run_par_summary_test.sh], [chmod ugo+x tests/run_par_summary_test.sh])
+AC_CONFIG_FILES([tests/run_par_pmpi_test.sh], [chmod ugo+x tests/run_par_pmpi_test.sh])
+AC_CONFIG_FILES([tests/run_par_global_test.sh], [chmod ugo+x tests/run_par_global_test.sh])
+
+# Is doxygen installed?
+AC_CHECK_PROGS([DOXYGEN], [doxygen])
+if test -z "$DOXYGEN"; then
+   AC_MSG_WARN([Doxygen not found - documentation will not be built])
+fi
 
 # Build the files listed above.
 AC_OUTPUT()

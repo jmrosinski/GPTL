@@ -12,7 +12,7 @@ EXTRA_DIST = COPYING README
 
 # This is the list of subdirs for which Makefiles will be constructed and run
 SUBDIRS = include src tests bin
-if ENABLE_FORTRAN
+if HAVE_FORTRAN
 SUBDIRS += fortran
 endif
 

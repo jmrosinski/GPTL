@@ -26,6 +26,7 @@
       integer GPTLprint_method
       integer GPTLtablesize
       integer GPTLmaxthreads
+      integer GPTLonlyprint_rank0
 
       integer GPTL_IPC
       integer GPTL_LSTPI
@@ -67,6 +68,7 @@
       parameter (GPTLprint_method   = 16)
       parameter (GPTLtablesize      = 50)
       parameter (GPTLmaxthreads     = 51)
+      parameter (GPTLonlyprint_rank0= 52)
 
       parameter (GPTL_IPC           = 17)
       parameter (GPTL_LSTPI         = 21)
@@ -101,9 +103,6 @@
       integer gptlstamp 
       integer gptlpr
       integer gptlpr_file
-      integer gptlpr_summary
-      integer gptlpr_summary_file
-      integer gptlbarrier
       integer gptlreset 
       integer gptlreset_timer
       integer gptlfinalize
@@ -114,7 +113,6 @@
       integer gptldisable
       integer gptlsetutr
       integer gptlquery
-      integer gptlquerycounters
       integer gptlget_wallclock
       integer gptlget_wallclock_latest
       integer gptlget_threadwork
@@ -139,9 +137,6 @@
       external gptlstamp 
       external gptlpr
       external gptlpr_file
-      external gptlpr_summary
-      external gptlpr_summary_file
-      external gptlbarrier
       external gptlreset 
       external gptlreset_timer
       external gptlfinalize
@@ -152,7 +147,6 @@
       external gptldisable
       external gptlsetutr
       external gptlquery
-      external gptlquerycounters
       external gptlget_wallclock
       external gptlget_wallclock_latest
       external gptlget_threadwork

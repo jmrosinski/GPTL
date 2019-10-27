@@ -39,7 +39,6 @@
 #define gptldisable gptldisable_
 #define gptlsetutr gptlsetutr_
 #define gptlquery gptlquery_
-#define gptlquerycounters gptlquerycounters_
 #define gptlget_wallclock gptlget_wallclock_
 #define gptlget_wallclock_latest gptlget_wallclock_latest_
 #define gptlget_threadwork gptlget_threadwork_
@@ -79,7 +78,6 @@
 #define gptldisable gptldisable_
 #define gptlsetutr gptlsetutr_
 #define gptlquery gptlquery_
-#define gptlquerycounters gptlquerycounters_
 #define gptlget_wallclock gptlget_wallclock__
 #define gptlget_wallclock_latest gptlget_wallclock_latest__
 #define gptlget_threadwork gptlget_threadwork__
@@ -104,9 +102,11 @@ int gptlinitialize (void);
 int gptlfinalize (void);
 int gptlpr (int *procid);
 int gptlpr_file (char *file, int nc);
+#ifdef HAVE_LIBMPI
 int gptlpr_summary (int *fcomm);
 int gptlpr_summary_file (int *fcomm, char *name, int nc);
 int gptlbarrier (int *fcomm, char *name, int nc);
+#endif
 int gptlreset (void);
 int gptlreset_timer (char *name, int nc);
 int gptlstamp (double *wall, double *usr, double *sys);
@@ -122,7 +122,6 @@ int gptlsetutr (int *option);
 int gptlquery (const char *name, int *t, int *count, int *onflg, double *wallclock, 
 	       double *usr, double *sys, long long *papicounters_out, int *maxcounters, 
 	       int nc);
-int gptlquerycounters (const char *name, int *t, long long *papicounters_out, int nc);
 int gptlget_wallclock (const char *name, int *t, double *value, int nc);
 int gptlget_wallclock_last (const char *name, int *t, double *value, int nc);
 int gptlget_threadwork (const char *name, double *maxwork, double *imbal, int nc);
@@ -170,41 +169,31 @@ int gptlpr_file (char *file, int nc)
   return ret;
 }
 
+#ifdef HAVE_LIBMPI
 int gptlpr_summary (int *fcomm)
 {
   int ret;
 
-#ifdef HAVE_LIBMPI
   MPI_Comm ccomm;
   ccomm = MPI_Comm_f2c (*fcomm);
   ret = GPTLpr_summary (ccomm);
-#else
-  ret = GPTLpr_summary (0);
-#endif
   return ret;
 }
 
 int gptlpr_summary_file (int *fcomm, char *outfile, int nc)
 {
+  MPI_Comm ccomm;
   char locfile[nc+1];
   int ret;
-
-#ifdef HAVE_LIBMPI
-  MPI_Comm ccomm;
 
   snprintf (locfile, nc+1, "%s", outfile);
   ccomm = MPI_Comm_f2c (*fcomm);
   ret = GPTLpr_summary_file (ccomm, locfile);
-#else
-  snprintf (locfile, nc+1, "%s", outfile);
-  ret = GPTLpr_summary_file (0, locfile);
-#endif
   return ret;
 }
 
 int gptlbarrier (int *fcomm, char *name, int nc)
 {
-#ifdef HAVE_LIBMPI
   MPI_Comm ccomm;
   char cname[nc+1];
 
@@ -212,10 +201,8 @@ int gptlbarrier (int *fcomm, char *name, int nc)
   cname[nc] = '\0';
   ccomm = MPI_Comm_f2c (*fcomm);
   return GPTLbarrier (ccomm, cname);
-#else
-  return GPTLerror ("gptlbarrier: MPI library not found so cannot call GPTLbarrier\n");
-#endif
 }
+#endif
 
 int gptlreset (void)
 {
@@ -310,15 +297,6 @@ int gptlquery (const char *name, int *t, int *count, int *onflg, double *wallclo
   strncpy (cname, name, nc);
   cname[nc] = '\0';
   return GPTLquery (cname, *t, count, onflg, wallclock, usr, sys, papicounters_out, *maxcounters);
-}
-
-int gptlquerycounters (const char *name, int *t, long long *papicounters_out, int nc)
-{
-  char cname[nc+1];
-
-  strncpy (cname, name, nc);
-  cname[nc] = '\0';
-  return GPTLquerycounters (cname, *t, papicounters_out);
 }
 
 int gptlget_wallclock (const char *name, int *t, double *value, int nc)

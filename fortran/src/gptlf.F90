@@ -27,6 +27,7 @@ module gptl
   integer, parameter :: GPTLprint_method   = 16
   integer, parameter :: GPTLtablesize      = 50
   integer, parameter :: GPTLmaxthreads     = 51
+  integer, parameter :: GPTLonlyprint_rank0= 52
 
   integer, parameter :: GPTL_IPC           = 17
   integer, parameter :: GPTL_LSTPI         = 21
@@ -71,6 +72,7 @@ module gptl
        character(len=*) :: file
      end function gptlpr_file
 
+#ifdef HAVE_LIBMPI
      integer function gptlpr_summary (fcomm)
        integer :: fcomm
      end function gptlpr_summary
@@ -84,6 +86,7 @@ module gptl
        integer :: fcomm
        character(len=*) :: name
      end function gptlbarrier
+#endif     
 
      integer function gptlreset ()
      end function gptlreset
@@ -142,12 +145,6 @@ module gptl
        integer(8) :: papicounters_out
        integer :: maxcounters
      end function gptlquery
-
-     integer function gptlquerycounters (name, t, papicounters_out)
-       character(len=*) :: name
-       integer :: t
-       integer(8) :: papicounters_out
-     end function gptlquerycounters
 
      integer function gptlget_wallclock (name, t, value)
        character(len=*) :: name

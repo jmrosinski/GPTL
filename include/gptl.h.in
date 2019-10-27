@@ -6,14 +6,6 @@
 #ifndef GPTL_H
 #define GPTL_H
 
-// mpi.h needed for MPI_Comm type
-// When MPI not enabled, use an int as a placeholder
-#ifdef HAVE_LIBMPI
-#include <mpi.h>
-#else
-typedef int MPI_Comm;
-#endif
-
 /*
 ** Options settable by a call to GPTLsetoption() (default in parens)
 ** These numbers need to be small integers because GPTLsetoption can
@@ -43,6 +35,7 @@ typedef enum {
 			       most frequent, or full tree (most frequent) */
   GPTLtablesize       = 50, /* per-thread size of hash table */
   GPTLmaxthreads      = 51, /* maximum number of threads */
+  GPTLonlyprint_rank0 = 52, // Restrict printout to rank 0 when MPI enabled
   /*
   ** These are derived counters based on PAPI counters. All default to false
   */
@@ -62,7 +55,7 @@ typedef enum {
 */
 
 typedef enum {
-  GPTLgettimeofday   = 1, /* the default */
+  GPTLgettimeofday   = 1, /* ubiquitous but slow */
   GPTLnanotime       = 2, /* only available on x86 */
   GPTLmpiwtime       = 4, /* MPI_Wtime */
   GPTLclockgettime   = 5, /* clock_gettime */
@@ -84,11 +77,6 @@ typedef enum {
 /*
 ** Function prototypes
 */
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 extern int GPTLsetoption (const int, const int);
 extern int GPTLinitialize (void);
 extern int GPTLstart (const char *);
@@ -99,11 +87,6 @@ extern int GPTLstop_handle (const char *, int *);
 extern int GPTLstamp (double *, double *, double *);
 extern int GPTLpr (const int);
 extern int GPTLpr_file (const char *);
-
-extern int GPTLpr_summary (MPI_Comm);
-extern int GPTLpr_summary_file (MPI_Comm, const char *);
-extern int GPTLbarrier (MPI_Comm, const char *);
-
 extern int GPTLreset (void);
 extern int GPTLreset_timer (char *);
 extern int GPTLfinalize (void);
@@ -116,23 +99,16 @@ extern int GPTLdisable (void);
 extern int GPTLsetutr (const int);
 extern int GPTLquery (const char *, int, int *, int *, double *, double *, double *,
 		      long long *, const int);
-extern int GPTLquerycounters (const char *, int, long long *);
 extern int GPTLget_wallclock (const char *, int, double *);
 extern int GPTLget_wallclock_latest (const char *, int, double *);
 extern int GPTLget_threadwork (const char *, double *, double *);
 extern int GPTLstartstop_val (const char *, double);
-extern int GPTLget_eventvalue (const char *, const char *, int, double *);
 extern int GPTLget_nregions (int, int *);
 extern int GPTLget_regionname (int, int, char *, int);
 extern int GPTL_PAPIlibraryinit (void);
 extern int GPTLevent_name_to_code (const char *, int *);
 extern int GPTLevent_code_to_name (const int, char *);
+extern int GPTLget_eventvalue (const char *, const char *, int, double *);
 extern int GPTLnum_errors (void);
 extern int GPTLnum_warn (void);
 extern int GPTLget_count (const char *, int, int *);
-
-#ifdef __cplusplus
-};
-#endif
-
-#endif

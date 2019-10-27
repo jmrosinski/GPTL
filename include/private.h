@@ -167,10 +167,11 @@ extern void __cyg_profile_func_exit (void *, void *);
 };
 #endif
 
+extern bool GPTLonlypr_rank0;     // flag says ignore all stdout/stderr print from non-zero ranks
 /* These are needed for communication between gptl.c and other files (mainly gptl_papi.c) */
 #ifdef HAVE_PAPI
-extern Entry GPTLeventlist[];          /* list of PAPI-based events to be counted */
-extern int GPTLnevents;                /* number of PAPI events (init to 0) */
+extern Entry GPTLeventlist[];     // list of PAPI-based events to be counted
+extern int GPTLnevents;           // number of PAPI events (init to 0)
 
 extern int GPTL_PAPIsetoption (const int, const int);
 extern int GPTL_PAPIinitialize (const int, const bool, int *, Entry *);

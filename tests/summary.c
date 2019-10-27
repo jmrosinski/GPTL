@@ -33,6 +33,7 @@ int main (int argc, char **argv)
 
   while ((c = getopt (argc, argv, "p:")) != -1) {
     switch (c) {
+#ifdef HAVE_PAPI
     case 'p':
       if ((ret = GPTLevent_name_to_code (optarg, &counter)) != 0) {
 	printf ("Failure from GPTLevent_name_to_code\n");
@@ -43,6 +44,7 @@ int main (int argc, char **argv)
 	return 1;
       }
       break;
+ #endif
     default:
       printf ("unknown option %c\n", c);
       printf ("Usage: %s [-p option_name]\n", argv[0]);

@@ -92,9 +92,6 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
   if ( ! GPTLis_initialized ())
     return GPTLerror ("%s: GPTLinitialize() has not been called\n", thisfunc);
 
-  if (((int) comm) == 0)
-    comm = MPI_COMM_WORLD;
-
   if ((ret = MPI_Comm_rank (comm, &iam)) != MPI_SUCCESS)
     return GPTLerror ("%s: Bad return from MPI_Comm_rank=%d\n", thisfunc, ret);
 
@@ -375,129 +372,7 @@ int GPTLpr_summary (MPI_Comm comm)       /* communicator */
   return GPTLpr_summary_file (comm, outfile);
 }
 
-#else
-
-/* No MPI. Mimic MPI version but for only one rank */
-int GPTLpr_summary_file (MPI_Comm dummy, const char *outfile)
-{
-  FILE *fp = 0;        /* file handle */
-  Timer **timers;
-  int multithread;     /* flag indicates multithreaded or not */
-  int mnl;             /* max name length across all threads */
-  int extraspace;      /* for padding to length of longest name */
-  int n;
-#ifdef HAVE_PAPI
-  int e;               /* event index */
 #endif
-  Global global;       /* stats to be printed */
-  Timer *ptr;
-  static const char *thisfunc = "GPTLpr_summary_file";  /* this function */
-
-  if ( ! GPTLis_initialized ())
-    return GPTLerror ("%s: GPTLinitialize() has not been called\n", thisfunc);
-
-  nthreads = GPTLget_nthreads ();   /* get_threadstats() needs to know this value too */
-  multithread = (nthreads > 1);
-
-  if ( ! (fp = fopen (outfile, "w"))) {
-    fp = stderr;
-    printf ("%s: WARNING: file=%s cannot be opened for writing. Using stderr instead\n",
-	    thisfunc, outfile);
-  }
-
-  /* Print heading */
-  fprintf (fp, "GPTLpr_summary: GPTL was built W/O MPI\n");
-  fprintf (fp, "CAUTION: Calling with multiple MPI tasks will not produce the behavior you want.\n");
-  fprintf (fp, "This is because all invoking tasks will write to the same file in a race condition.\n");
-  fprintf (fp, "nthreads=%d\n", nthreads);
-  fprintf (fp, "'ncalls': number of times the region was invoked across threads.\n");
-
-  fprintf (fp, "\nname");
-
-  mnl = 0;
-  timers = GPTLget_timersaddr ();
-  for (ptr = timers[0]->next; ptr; ptr = ptr->next)
-    mnl = MAX (strlen (ptr->name), mnl);
-
-  extraspace = mnl - strlen ("name");
-  for (n = 0; n < extraspace; ++n)
-    fprintf (fp, " ");
-
-  if (multithread)
-    fprintf (fp, "   ncalls   wallmax (thred)   wallmin (thred)");
-  else
-    fprintf (fp, "   ncalls   walltim");
-
-#ifdef HAVE_PAPI
-  for (e = 0; e < GPTLnevents; ++e) {
-    if (multithread)
-      fprintf (fp, " %8.8smax (thred) %8.8smin (thred)", GPTLeventlist[e].str8, GPTLeventlist[e].str8);
-    else
-      fprintf (fp, " %8.8s", GPTLeventlist[e].str8);
-  }
-#endif
-  fprintf (fp, "\n");
-
-  for (ptr = timers[0]->next; ptr; ptr = ptr->next) {
-    get_threadstats (0, ptr->name, timers, &global);
-    extraspace = mnl - strlen (global.name);
-
-    fprintf (fp, "%s", global.name);
-    for (n = 0; n < extraspace; ++n)
-      fprintf (fp, " ");
-
-    /* 
-    ** Don't print stats if the timer is currently on for any thread or task: too dangerous 
-    ** since the timer needs to be stopped to have currently accurate timings
-    */
-    if (global.notstopped > 0) {
-      fprintf (fp, " NOT PRINTED: timer is currently ON for %d threads\n", global.notstopped);
-      continue;
-    }
-
-    if (multithread) {
-      if (global.totcalls < PRTHRESH) {
-	fprintf (fp, " %8lu %9.3f (%5d) %9.3f (%5d)", 
-		 global.totcalls, global.wallmax, global.wallmax_t, global.wallmin, global.wallmin_t);
-      } else {
-	fprintf (fp, " %8.1e %9.3f (%5d) %9.3f (%5d)", 
-		 (float) global.totcalls, global.wallmax, global.wallmax_t, global.wallmin, global.wallmin_t);
-      }
-    } else {  /* No threads */
-      if (global.totcalls < PRTHRESH) {
-	fprintf (fp, " %8lu %9.3f",          global.totcalls, global.wallmax);
-      } else {
-	fprintf (fp, " %8.1e %9.3f", (float) global.totcalls, global.wallmax);
-      }
-    }
-#ifdef HAVE_PAPI
-    for (e = 0; e < GPTLnevents; ++e) {
-      if (multithread)
-	fprintf (fp, " %8.2e    (%5d)", global.papimax[e], global.papimax_t[e]);
-      else
-	fprintf (fp, " %8.2e",          global.papimax[e]);
-
-      if (multithread)
-	fprintf (fp, " %8.2e    (%5d)", global.papimin[e], global.papimin_t[e]);
-    }
-#endif
-    fprintf (fp, "\n");
-  }
-  if (fp != stderr && fclose (fp) != 0)
-    fprintf (stderr, "Attempt to close %s failed\n", outfile);
-
-  return 0;
-}
-
-int GPTLpr_summary (MPI_Comm dummy)       // communicator
-{
-  static const char *outfile = "timing.summary";   /* file to write to */
-
-  return GPTLpr_summary_file (dummy, outfile);
-}
-
-#endif  /* False branch of HAVE_LIBMPI */
-
 
 
 /* 

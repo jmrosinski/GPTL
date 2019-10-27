@@ -24,7 +24,7 @@ noinst_PROGRAMS = overhead handle
 bin_PROGRAMS = utrtest
 
 # Test programs that will be built for all configurations.
-check_PROGRAMS = testbasics errtest nlreader outoforder summary
+check_PROGRAMS = testbasics errtest nlreader outoforder
 TESTS          = testbasics errtest nlreader outoforder
 
 # Test dependencies needed.
@@ -61,6 +61,7 @@ endif
 
 # MPI program tests
 if HAVE_LIBMPI
+check_PROGRAMS += summary
 bin_PROGRAMS += print_mpistatus_size
 print_mpistatus_size_SOURCES = print_mpistatus_size.F90 
 TESTS += run_par_summary_test.sh
@@ -70,8 +71,6 @@ check_PROGRAMS += pmpi
 TESTS          += run_par_pmpi_test.sh
 pmpi_SOURCES = pmpi.F90 ${MODFILE}
 endif
-else
-TESTS += summary
 endif
 
 # Test output to be deleted.

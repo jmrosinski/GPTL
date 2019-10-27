@@ -5,6 +5,7 @@
 
 #ifdef HAVE_LIBMPI
 #include <mpi.h>
+MPI_Comm comm;
 #endif
 
 #ifdef THREADED_OMP
@@ -18,7 +19,6 @@ int main (int argc, char **argv)
   int nthreads = 1;  /* number of threads (default 1) */
   int iter;
   int tnum = 0;
-  MPI_Comm comm;
   int ret;
   useconds_t msec_sleep;  /* number of msec to sleep */
 
@@ -82,12 +82,12 @@ int main (int argc, char **argv)
   ret = GPTLstop ("total");
   ret = GPTLpr (iam);
 
+#ifdef HAVE_LIBMPI
   if (iam == 0)
     printf ("global: testing GPTLpr_summary...\n");
 
   if (GPTLpr_summary (comm) != 0)
     return 1;
-#ifdef HAVE_LIBMPI
   ret = MPI_Finalize ();
 #endif
 

@@ -1,2 +1,2 @@
-include_HEADERS = gptl.h gptl.inc
+include_HEADERS = gptl.h
 noinst_HEADERS = private.h

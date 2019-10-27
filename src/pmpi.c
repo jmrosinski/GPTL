@@ -9,8 +9,6 @@
 #include "config.h" /* Must be first include. */
 #include "private.h"
 #include "gptl.h"
-
-#ifdef ENABLE_PMPI
 #include <mpi.h>
 
 static bool sync_mpi = false;
@@ -595,14 +593,4 @@ int MPI_Test (MPI_Request *request, int *flag, MPI_Status *status)
   ignoreret = GPTLstop ("MPI_Test");
   return ret;
 }
-
-#else   /* ENABLE_PMPI not set */
-
-int GPTLpmpi_setoption (const int option,
-			const int val)
-{
-  return GPTLerror ("GPTLpmpi_setoption: GPTL needs to be built with ./configure --enable-pmpi "
-		    "to set option %d\n", option);
-}
-
 #endif
