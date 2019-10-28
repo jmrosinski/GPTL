@@ -31,9 +31,15 @@ typedef struct {
   char name[MAX_CHARS+1];  /* timer name */
 } Global;
 
+static int nthreads; // Used by both GPTLpr_summary() and get_threadstats()
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// Local prototypes
 static void get_threadstats (int, char *, Timer **, Global *);
 static Timer *getentry_slowway (Timer *, char *);
-static int nthreads; // Used by both GPTLpr_summary() and get_threadstats()
 
 /* 
 ** GPTLpr_summary_file: Subsumes what used to be GPTLpr_summary() into a new routine
@@ -187,7 +193,7 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
 
         if (nn == nregions) {  /* new region: reallocate and copy stats */
           ++nregions;
-          sptr = realloc (global, nregions * sizeof (Global));
+          sptr = (Global *) realloc (global, nregions * sizeof (Global));
           if ( ! sptr)
             return GPTLerror ("%s: realloc error", thisfunc);
           global = sptr;
@@ -457,3 +463,7 @@ Timer *getentry_slowway (Timer *timer, char *name)
   }
   return ptr;
 }
+
+#ifdef __cplusplus
+}
+#endif

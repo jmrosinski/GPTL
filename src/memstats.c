@@ -2,6 +2,10 @@
 
 #include "private.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 static void print_threadmapping (FILE *, int); /* print mapping of thread ids */
 
 void GPTLprint_memstats (FILE *fp, Timer **timers, int nthreads, int tablesize, int maxthreads)
@@ -76,4 +80,8 @@ static void print_threadmapping (FILE *fp, int nthreads)
   fprintf (fp, "GPTLthreadid[0] = 0\n");
 }
 
+#endif
+
+#ifdef __cplusplus
+}
 #endif

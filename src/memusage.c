@@ -20,6 +20,10 @@
 #include "gptl.h"       /* function prototypes */
 #include "private.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int GPTLget_memusage (float *rss_out)       // resident set size in MB
 {
   static const float convert2mb = 1./1024.; // getrusage returns results in KB
@@ -75,7 +79,7 @@ int GPTLget_procsiz (float *procsiz_out, float *rss_out)
 #ifdef HAVE_SLASHPROC
   int dum[5];                // placeholders for unused return arguments
   FILE *fd;                  // file descriptor for fopen
-  static char *file = "/proc/self/statm";
+  static const char *file = "/proc/self/statm";
   int share;
   int datastack;
   int pagesize;
@@ -124,3 +128,7 @@ int GPTLget_procsiz (float *procsiz_out, float *rss_out)
 #endif
   return 0;
 }
+
+#ifdef __cplusplus
+}
+#endif

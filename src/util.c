@@ -16,6 +16,10 @@ static int num_errors = 0;           /* number of times GPTLerror was called */
 static int max_warn = 10;            /* max number of warning messages */
 static int num_warn = 0;             /* number of times GPTLwarn was called */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 static inline bool doprint(void);
 
 /*
@@ -200,3 +204,7 @@ int GPTLbarrier (MPI_Comm comm, const char *name)
   return ret;
 }
 #endif    /* HAVE_LIBMPI */
+
+#ifdef __cplusplus
+}
+#endif

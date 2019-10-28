@@ -125,6 +125,11 @@ typedef struct {
 } Outputfmt;
 
 // Local function prototypes
+// All user-callable functions need C linkage due to calling from C or Fortran.
+// But make all functions use C linkage to avoid cascade issues falling into private routines
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 static inline int preamble_start (int *, const char *, const char *);
 static inline int preamble_stop (int *, double *, long *, long *, const char *, const char *);
@@ -222,7 +227,7 @@ static FILE *fp_procsiz = 0;             // process size file pointer: init to 0
 #undef VERBOSE
 
 /**
- * Set option value to true or false.
+ * Set option value
  *
  * @param option option to be set
  * @param val value to which option should be set (nonzero=true, zero=false)
@@ -3008,8 +3013,8 @@ static float get_clockfreq ()
   int is;
   float freq = -1.;             /* clock frequency (MHz) */
   static const char *thisfunc = "get_clockfreq";
-  static char *max_freq_fn = "/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq";
-  static char *cpuinfo_fn = "/proc/cpuinfo";
+  static const char *max_freq_fn = "/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq";
+  static const char *cpuinfo_fn = "/proc/cpuinfo";
 
   /* First look for max_freq, but that isn't guaranteed to exist */
 
@@ -3019,7 +3024,7 @@ static float get_clockfreq ()
       if (verbose)
         printf ("GPTL: %s: Using max clock freq = %f for timing\n", thisfunc, freq);
       (void) fclose (fd);
-      clock_source = max_freq_fn;
+      clock_source = (char *) max_freq_fn;
       return freq;
     } else {
       (void) fclose (fd);
@@ -3045,7 +3050,7 @@ static float get_clockfreq ()
       if (isdigit (buf[is])) {
         freq = (float) atof (&buf[is]);
         (void) fclose (fd);
-        clock_source = cpuinfo_fn;
+        clock_source = (char *) cpuinfo_fn;
         return freq;
       }
     }
@@ -3739,3 +3744,7 @@ static inline int get_thread_num ()
 }
 
 #endif  /* Unthreaded case */
+
+#ifdef __cplusplus
+}
+#endif

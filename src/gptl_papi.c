@@ -159,8 +159,11 @@ static bool persec = true;               /* print PAPI stats per second */
 static bool enable_multiplexing = false; /* whether to try multiplexing */
 static bool verbose = false;             /* output verbosity */
 
-/* Function prototypes */
-
+// Function prototypes: Give C linkage to all
+#ifdef __cplusplus
+extern "C" {
+#endif
+  
 static int canenable (int);
 static int canenable2 (int, int);
 static int papievent_is_enabled (int);
@@ -1196,3 +1199,7 @@ int GPTLget_npapievents (void)
   return npapievents;
 }
 #endif  /* HAVE_PAPI */
+
+#ifdef __cplusplus
+}
+#endif

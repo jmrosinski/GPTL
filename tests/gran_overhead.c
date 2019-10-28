@@ -16,11 +16,11 @@ int main (int argc, char **argv)
   /*
   ** Don't test MPI_Wtime: too complex to get to work everywhere.
   */
-  Vals vals[] = {{"gettimeofday",   GPTLgettimeofday},
-		 {"nanotime",       GPTLnanotime},
-		 /*		 {"mpiwtime",       GPTLmpiwtime}, */
-		 {"clockgettime",   GPTLclockgettime},
-		 {"read_real_time", GPTLread_real_time}};
+  Vals vals[] = {{(char *) "gettimeofday",   GPTLgettimeofday},
+		 {(char *) "nanotime",       GPTLnanotime},
+		 /*		 {(char *) "mpiwtime",       GPTLmpiwtime}, */
+		 {(char *) "clockgettime",   GPTLclockgettime},
+		 {(char *) "read_real_time", GPTLread_real_time}};
   static const int nvals = sizeof (vals) / sizeof (Vals);
     
   int ret;

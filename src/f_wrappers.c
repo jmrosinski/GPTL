@@ -97,7 +97,10 @@
 
 #endif
 
-/* Local function prototypes */
+// Local function prototypes: Everything callable by Fortran requires C linkage
+#ifdef __cplusplus
+extern "C" {
+#endif
 int gptlinitialize (void);
 int gptlfinalize (void);
 int gptlpr (int *procid);
@@ -445,5 +448,9 @@ int gptlevent_code_to_name (int *code, char *str, int nc)
     return GPTLerror ("");
   }
   return 0;
+}
+#endif
+
+#ifdef __cplusplus
 }
 #endif

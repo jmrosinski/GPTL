@@ -44,7 +44,9 @@
 */
 #define MAX_AUX 9
 
-#ifndef __cplusplus
+#ifdef __cplusplus
+extern "C" {
+#else
 typedef enum {false = 0, true = 1} bool;  /* mimic C++ */
 #endif
 
@@ -140,7 +142,7 @@ extern int GPTLstop_instr (void *);                        /* auto-instrumented 
 extern int GPTLis_initialized (void);                      /* needed by MPI_Init wrapper */
 extern int GPTLget_overhead (FILE *,                       /* file descriptor */
 			     double (*)(),                 /* UTR() */
-			     Timer *(),                    /* getentry() */
+			     Timer *(const Hashentry *, const char *, unsigned int),                    /* getentry() */
 			     unsigned int (const char *),  /* genhashidx() */
 			     int (void),                   /* get_thread_num() */
 			     Nofalse *,                    /* stackidx */
@@ -156,16 +158,8 @@ extern void GPTLprint_memstats (FILE *, Timer **, int, int, int);
 extern int GPTLget_nthreads (void);
 extern Timer **GPTLget_timersaddr (void);
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 extern void __cyg_profile_func_enter (void *, void *);
 extern void __cyg_profile_func_exit (void *, void *);
-
-#ifdef __cplusplus
-};
-#endif
 
 extern bool GPTLonlypr_rank0;     // flag says ignore all stdout/stderr print from non-zero ranks
 /* These are needed for communication between gptl.c and other files (mainly gptl_papi.c) */
@@ -193,6 +187,10 @@ extern int GPTLcreate_and_start_events (const int);
 #ifdef ENABLE_PMPI
 extern Timer *GPTLgetentry (const char *);
 extern int GPTLpmpi_setoption (const int, const int);
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif /* _GPTL_PRIVATE_ */

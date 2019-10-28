@@ -3,6 +3,10 @@
 #include "private.h"
 #include <stdio.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 static float meanhashvalue (Hashentry *, int);
 
 void GPTLprint_hashstats (FILE *fp, int nthreads, Hashentry **hashtable, int tablesize)
@@ -91,3 +95,7 @@ static float meanhashvalue (Hashentry *hashtable, int tablesize)
   else
     return sum / totent;
 }
+
+#ifdef __cplusplus
+}
+#endif

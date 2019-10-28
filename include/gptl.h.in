@@ -74,9 +74,11 @@ typedef enum {
   GPTLfull_tree     = 4   /* complete call tree */
 } Method;
 
-/*
-** Function prototypes
-*/
+// User-callable function prototypes: all require C linkage
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern int GPTLsetoption (const int, const int);
 extern int GPTLinitialize (void);
 extern int GPTLstart (const char *);
@@ -112,3 +114,6 @@ extern int GPTLget_eventvalue (const char *, const char *, int, double *);
 extern int GPTLnum_errors (void);
 extern int GPTLnum_warn (void);
 extern int GPTLget_count (const char *, int, int *);
+#ifdef __cplusplus
+}
+#endif

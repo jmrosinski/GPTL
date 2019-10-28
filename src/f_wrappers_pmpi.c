@@ -65,7 +65,10 @@
 #ifdef HAVE_LIBMPI
 #ifdef ENABLE_PMPI
 
-/* Local prototypes */
+// Local function prototypes: Everything callable by Fortran requires C linkage
+#ifdef __cplusplus
+extern "C" {
+#endif
 void mpi_send (void *buf, MPI_Fint *count, MPI_Fint *datatype, MPI_Fint *dest,
 	       MPI_Fint *tag, MPI_Fint *comm, MPI_Fint *__ierr);
 void mpi_recv (void *buf, MPI_Fint *count, MPI_Fint *datatype, 
@@ -427,3 +430,6 @@ void mpi_test (MPI_Fint *request, MPI_Fint *flag, MPI_Fint *status,
 }
 #endif   /* ENABLE_PMPI */
 #endif   /* HAVE_LIBMPI */
+#ifdef __cplusplus
+}
+#endif

@@ -13,6 +13,10 @@
 
 static bool sync_mpi = false;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int GPTLpmpi_setoption (const int option,
 			const int val)
 {
@@ -592,5 +596,9 @@ int MPI_Test (MPI_Request *request, int *flag, MPI_Status *status)
   ret = PMPI_Test (request, flag, status);
   ignoreret = GPTLstop ("MPI_Test");
   return ret;
+}
+#endif
+
+#ifdef __cplusplus
 }
 #endif
