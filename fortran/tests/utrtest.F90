@@ -19,20 +19,32 @@ program utrtest
 
   write(6,*) 'Purpose: estimate overhead of GPTL underlying timing routine (UTR)'
   write(6,*) 'Enter 1 for gettimeofday (slow, coarse grained, works everywhere)'
+#ifdef HAVE_NANOTIME
   write(6,*) 'Enter 2 for nanotime (fast, fine grained, requires x86, counts cycles not seconds)'
+#endif
+#ifdef HAVE_LIBMPI    
   write(6,*) 'Enter 3 for MPI_Wtime (requires MPI)'
+#endif
+#ifdef HAVE_LIBRT
   write(6,*) 'Enter 4 for clock_gettime (hardly ever use this one)'
+#endif
   write(6,*) 'Enter 5 for a do-nothing placebo (potentially useful if run under "time" for overhead)'
   read (5,*) n
   select case (n)
   case (1)
     ret = gptlsetutr (gptlgettimeofday)
+#ifdef HAVE_NANOTIME
   case (2)
     ret = gptlsetutr (gptlnanotime)
+#endif
+#ifdef HAVE_LIBMPI    
   case (3)
     ret = gptlsetutr (gptlmpiwtime)
+#endif
+#ifdef HAVE_LIBRT
   case (4)
     ret = gptlsetutr (gptlclockgettime)
+#endif
   case (5)
     ret = gptlsetutr (gptlplacebo)
   case default

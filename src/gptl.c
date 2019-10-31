@@ -154,19 +154,31 @@ static void threadfinalize (void);               /* finalize threading environme
 static inline int get_thread_num (void);         /* get 0-based thread number */
 
 /* These are the (possibly) supported underlying wallclock timers */
-static inline double utr_nanotime (void);
-static inline double utr_mpiwtime (void);
-static inline double utr_clock_gettime (void);
-static inline double utr_read_real_time (void);
-static inline double utr_gettimeofday (void);
-static inline double utr_placebo (void);
-
+#ifdef HAVE_NANOTIME
 static int init_nanotime (void);
+static inline double utr_nanotime (void);
+#endif
+ 
+#ifdef HAVE_LIBMPI
 static int init_mpiwtime (void);
-static int init_clock_gettime (void);
+static inline double utr_mpiwtime (void);
+#endif
+  
+#ifdef _AIX
 static int init_read_real_time (void);
+static inline double utr_read_real_time (void);
+#endif
+
+#ifdef HAVE_LIBRT
+static int init_clock_gettime (void);
+static inline double utr_clock_gettime (void);
+#endif
+  
 static int init_gettimeofday (void);
+static inline double utr_gettimeofday (void);
+
 static int init_placebo (void);
+static inline double utr_placebo (void);
 
 static inline unsigned int genhashidx (const char *);
 static inline Timer *getentry_instr (const Hashentry *, void *, unsigned int *);
@@ -191,10 +203,22 @@ typedef struct {
 
 static Funcentry funclist[] = {
   {GPTLgettimeofday,   utr_gettimeofday,   init_gettimeofday,  "gettimeofday"},
+#ifdef HAVE_NANOTIME
   {GPTLnanotime,       utr_nanotime,       init_nanotime,      "nanotime"},
+#endif
+
+#ifdef HAVE_LIBMPI
   {GPTLmpiwtime,       utr_mpiwtime,       init_mpiwtime,      "MPI_Wtime"},
+#endif
+
+#ifdef HAVE_LIBRT
   {GPTLclockgettime,   utr_clock_gettime,  init_clock_gettime, "clock_gettime"},
+#endif
+
+#ifdef _AIX
   {GPTLread_real_time, utr_read_real_time, init_read_real_time,"read_real_time"},     /* AIX only */
+#endif
+
   {GPTLplacebo,        utr_placebo,        init_placebo,       "placebo"}      /* does nothing */
 };
 static const int nfuncentries = sizeof (funclist) / sizeof (Funcentry);
@@ -208,10 +232,8 @@ static double cyc2sec = -1;              // init to bad value
 static inline long long nanotime (void); // read counter (assembler)
 static float get_clockfreq (void);       // cycles/sec
 static char *clock_source = unknown;     // where clock found
-static int funcidx = 1;                  // default timer is nanotime
-#else
-static int funcidx = 0;                  // default timer is gettimeofday
 #endif
+static int funcidx = 0;                  // default timer is gettimeofday
 
 #define DEFAULT_TABLE_SIZE 1023
 static int tablesize = DEFAULT_TABLE_SIZE;  /* per-thread size of hash table (settable parameter) */
@@ -1698,14 +1720,14 @@ int construct_tree (Timer *timerst, Method method)
     case GPTLfirst_parent:
       if (ptr->nparent > 0) {
         pptr = ptr->parent[0];
-        if (newchild (pptr, ptr) != 0);
+        if (newchild (pptr, ptr) != 0) {};
       }
       break;
     case GPTLlast_parent:
       if (ptr->nparent > 0) {
         nparent = ptr->nparent;
         pptr = ptr->parent[nparent-1];
-        if (newchild (pptr, ptr) != 0);
+        if (newchild (pptr, ptr) != 0) {};
       }
       break;
     case GPTLmost_frequent:
@@ -1717,13 +1739,13 @@ int construct_tree (Timer *timerst, Method method)
         }
       }
       if (maxcount > 0) {   /* not an orphan */
-        if (newchild (pptr, ptr) != 0);
+        if (newchild (pptr, ptr) != 0) {};
       }
       break;
     case GPTLfull_tree:
       for (n = 0; n < ptr->nparent; ++n) {
         pptr = ptr->parent[n];
-        if (newchild (pptr, ptr) != 0);
+        if (newchild (pptr, ptr) != 0) {};
       }
       break;
     default:
@@ -3016,50 +3038,45 @@ static float get_clockfreq ()
   static const char *max_freq_fn = "/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq";
   static const char *cpuinfo_fn = "/proc/cpuinfo";
 
-  /* First look for max_freq, but that isn't guaranteed to exist */
-
+  // First look for max_freq, but that isn't guaranteed to exist
   if ((fd = fopen (max_freq_fn, "r"))) {
     if (fgets (buf, LEN, fd)) {
       freq = 0.001 * (float) atof (buf);  /* Convert from KHz to MHz */
       if (verbose)
         printf ("GPTL: %s: Using max clock freq = %f for timing\n", thisfunc, freq);
-      (void) fclose (fd);
-      clock_source = (char *) max_freq_fn;
-      return freq;
-    } else {
-      (void) fclose (fd);
     }
+    clock_source = (char *) max_freq_fn;
+    (void) fclose (fd);
+    return freq;
   }
-
+  
   /* 
   ** Next try /proc/cpuinfo. That has the disadvantage that it may give wrong info
   ** for processors that have either idle or turbo mode
   */
+#ifdef HAVE_SLASHPROC
   if (verbose && freq < 0.)
     printf ("GPTL: %s: CAUTION: Can't find max clock freq. Trying %s instead\n",
             thisfunc, cpuinfo_fn);
 
-  if ( ! (fd = fopen (cpuinfo_fn, "r"))) {
-    fprintf (stderr, "GPTL: %s: can't open %s\n", thisfunc, cpuinfo_fn);
-    return -1.;
-  }
-
-  while (fgets (buf, LEN, fd)) {
-    if (strncmp (buf, "cpu MHz", 7) == 0) {
-      for (is = 7; buf[is] != '\0' && !isdigit (buf[is]); is++);
-      if (isdigit (buf[is])) {
-        freq = (float) atof (&buf[is]);
-        (void) fclose (fd);
-        clock_source = (char *) cpuinfo_fn;
-        return freq;
+  if ( (fd = fopen (cpuinfo_fn, "r"))) {
+    while (fgets (buf, LEN, fd)) {
+      if (strncmp (buf, "cpu MHz", 7) == 0) {
+	for (is = 7; buf[is] != '\0' && !isdigit (buf[is]); is++);
+	if (isdigit (buf[is])) {
+	  freq = (float) atof (&buf[is]);
+	  if (verbose)
+	    printf ("GPTL: %s: Using clock freq from /proc/cpuinfo = %f for timing\n", thisfunc, freq);
+	  clock_source = (char *) cpuinfo_fn;
+	  break;
+	}
       }
     }
+    (void) fclose (fd);
   }
-
-  (void) fclose (fd);
-  return -1.;
-}
 #endif
+  return freq;
+}
 
 /*
 ** The following are the set of underlying timing routines which may or may
@@ -3069,7 +3086,6 @@ static float get_clockfreq ()
 static int init_nanotime ()
 {
   static const char *thisfunc = "init_nanotime";
-#ifdef HAVE_NANOTIME
   if ((cpumhz = get_clockfreq ()) < 0)
     return GPTLerror ("%s: Can't get clock freq\n", thisfunc);
 
@@ -3078,86 +3094,61 @@ static int init_nanotime ()
 
   cyc2sec = 1./(cpumhz * 1.e6);
   return 0;
-#else
-  return GPTLerror ("GPTL: %s: not enabled\n", thisfunc);
-#endif
 }
 
 static inline double utr_nanotime ()
 {
-#ifdef HAVE_NANOTIME
   double timestamp;
   timestamp = nanotime () * cyc2sec;
   return timestamp;
-#else
-  static const char *thisfunc = "utr_nanotime";
-  (void) GPTLerror ("GPTL: %s: not enabled\n", thisfunc);
-  return -1.;
-#endif
 }
+#endif
 
 /*
 ** MPI_Wtime requires MPI lib.
 */
+#ifdef HAVE_LIBMPI
 static int init_mpiwtime ()
 {
-#ifdef HAVE_LIBMPI
   return 0;
-#else
-  static const char *thisfunc = "init_mpiwtime";
-  return GPTLerror ("GPTL: %s: not enabled\n", thisfunc);
-#endif
 }
 
 static inline double utr_mpiwtime ()
 {
-#ifdef HAVE_LIBMPI
   return MPI_Wtime ();
-#else
-  static const char *thisfunc = "utr_mpiwtime";
-  (void) GPTLerror ("GPTL: %s: not enabled\n", thisfunc);
-  return -1.;
-#endif
 }
+#endif
 
+#ifdef HAVE_LIBRT
 /* 
 ** Probably need to link with -lrt for this one to work 
 */
 static int init_clock_gettime ()
 {
   static const char *thisfunc = "init_clock_gettime";
-#ifdef HAVE_LIBRT
   struct timespec tp;
   (void) clock_gettime (CLOCK_REALTIME, &tp);
   ref_clock_gettime = tp.tv_sec;
   if (verbose)
     printf ("GPTL: %s: ref_clock_gettime=%ld\n", thisfunc, (long) ref_clock_gettime);
   return 0;
-#else
-  return GPTLerror ("GPTL: %s: not enabled\n", thisfunc);
-#endif
 }
 
 static inline double utr_clock_gettime ()
 {
-#ifdef HAVE_LIBRT
   struct timespec tp;
   (void) clock_gettime (CLOCK_REALTIME, &tp);
   return (tp.tv_sec - ref_clock_gettime) + 1.e-9*tp.tv_nsec;
-#else
-  static const char *thisfunc = "utr_clock_gettime";
-  (void) GPTLerror ("GPTL: %s: not enabled\n", thisfunc);
-  return -1.;
-#endif
 }
+#endif
 
+#ifdef _AIX
 /*
 ** High-res timer on AIX: read_real_time
 */
 static int init_read_real_time ()
 {
   static const char *thisfunc = "init_read_real_time";
-#ifdef _AIX
   timebasestruct_t ibmtime;
   (void) read_real_time (&ibmtime, TIMEBASE_SZ);
   (void) time_base_to_time (&ibmtime, TIMEBASE_SZ);
@@ -3165,53 +3156,39 @@ static int init_read_real_time ()
   if (verbose)
     printf ("GPTL: %s: ref_read_real_time=%ld\n", thisfunc, (long) ref_read_real_time);
   return 0;
-#else
-  return GPTLerror ("GPTL: %s: not enabled\n", thisfunc);
-#endif
 }
 
 static inline double utr_read_real_time ()
 {
-#ifdef _AIX
   timebasestruct_t ibmtime;
   (void) read_real_time (&ibmtime, TIMEBASE_SZ);
   (void) time_base_to_time (&ibmtime, TIMEBASE_SZ);
   return (ibmtime.tb_high - ref_read_real_time) + 1.e-9*ibmtime.tb_low;
-#else
-  static const char *thisfunc = "utr_read_real_time";
-  return GPTLerror ("GPTL: %s: not enabled\n", thisfunc);
-#endif
 }
+#endif
 
+#ifdef HAVE_GETTIMEOFDAY
 /*
 ** Default available most places: gettimeofday
 */
 static int init_gettimeofday ()
 {
   static const char *thisfunc = "init_gettimeofday";
-#ifdef HAVE_GETTIMEOFDAY
   struct timeval tp;
   (void) gettimeofday (&tp, 0);
   ref_gettimeofday = tp.tv_sec;
   if (verbose)
     printf ("GPTL: %s: ref_gettimeofday=%ld\n", thisfunc, (long) ref_gettimeofday);
   return 0;
-#else
-  return GPTLerror ("GPTL: %s: not enabled\n", thisfunc);
-#endif
 }
 
 static inline double utr_gettimeofday ()
 {
-#ifdef HAVE_GETTIMEOFDAY
   struct timeval tp;
   (void) gettimeofday (&tp, 0);
   return (tp.tv_sec - ref_gettimeofday) + 1.e-6*tp.tv_usec;
-#else
-  static const char *thisfunc = "utr_gettimeofday";
-  return GPTLerror ("GPTL: %s: not enabled\n", thisfunc);
-#endif
 }
+#endif
 
 /*
 ** placebo: does nothing and returns zero always. Useful for estimating overhead costs

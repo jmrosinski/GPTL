@@ -41,6 +41,7 @@ AC_MSG_CHECKING([whether x86 nanotime is available])
 AS_CASE([$host], [*86*], [have_nanotime=yes], [have_nanotime=no])
 if test "x$have_nanotime" = xyes; then
    AC_DEFINE([HAVE_NANOTIME], [1], [x86 nanotime capability is present])
+  FCFLAGS="-DHAVE_NANOTIME $FCFLAGS"
 fi
 AC_MSG_RESULT($have_nanotime)
 
@@ -50,13 +51,20 @@ if test "x$ac_cv_sizeof_void_p" = x8; then
    AC_DEFINE([BIT64], [1], [void pointer is 8 bytes])
 fi
 
-# Enable OpenMP support if compiler supports it
-useomp=no;
-AC_OPENMP
-if test "x$ac_cv_prog_c_openmp" != xunsupported; then
-  useomp=yes;
-  AC_DEFINE([THREADED_OMP], [1], [openmp support is present])
-  CFLAGS="$CFLAGS $OPENMP_CFLAGS"
+AC_ARG_ENABLE([openmp], [AS_HELP_STRING([--disable-openmp],
+              [Enable OpenMP support if available. May be necessary to disable on e.g. MacOS using clang+gfortran])])
+
+test "x$enable_openmp" != xno && enable_openmp=yes
+if test "$enable_openmp" = yes; then
+
+# Enable OpenMP support if not told to skip, and compiler supports it
+  useomp=no;
+  AC_OPENMP
+  if test "x$ac_cv_prog_c_openmp" != xunsupported; then
+    useomp=yes;
+    AC_DEFINE([THREADED_OMP], [1], [openmp support is present])
+    CFLAGS="$CFLAGS $OPENMP_CFLAGS"
+  fi
 fi
 AM_CONDITIONAL([HAVE_OPENMP], [test x$useomp = xyes])
 
@@ -156,7 +164,11 @@ AM_CONDITIONAL([HAVE_PAPI], [test "x$have_papi" = xyes])
 # gathering wallclock time stats on some machines. Setting
 # HAVE_LIBRT=yes enables this, but will probably require linking
 # applications with -lrt
-AC_CHECK_LIB([rt], [clock_gettime])
+AC_CHECK_LIB([rt], [clock_gettime], [have_librt = yes], [have_librt=no],)
+if test "$have_librt" = yes; then
+  AC_DEFINE([HAVE_LIBRT],[1],[librt found])
+  FCFLAGS = "-DHAVE_LIBRT $FCFLAGS"
+fi
 
 # If getrusage is found then HAVE_GETRUSAGE will automatically be defined for obtaining RSS
 AC_CHECK_FUNCS(getrusage)
@@ -164,7 +176,7 @@ AC_CHECK_FUNCS(getrusage)
 # Check for existence of /proc, used for obtaining process size
 # Must be disabled when cross-compiling
 AC_ARG_ENABLE([slashproc], [AS_HELP_STRING([--disable-slashproc],
-              [check for existence of /proc file system: must be disabled when cross-compiling])])
+    	      [check for existence of /proc file system: must be disabled when cross-compiling])])
 
 test "x$enable_slashproc" != xno && enable_slashproc=yes
 if test "$enable_slashproc" = yes; then
@@ -337,10 +349,13 @@ if test "x$enable_fortran" = "xyes"; then
 
 # Make sure this file is copied to build directories for tests to work.
   AC_CONFIG_LINKS([fortran/tests/gptlnl:fortran/tests/gptlnl])
-# Test OMP for Fortran and set flags accordingly. AC_OPENMP sets OPENMP_FFLAGS not OPENMP_FCFLAGS
-  AC_OPENMP
-  if test "x$ac_cv_prog_fc_openmp" != xunsupported; then
-    FCFLAGS="-DTHREADED_OMP $FCFLAGS $OPENMP_FFLAGS"
+# Test OMP for Fortran and set flags accordingly, only if OMP support was enabled above for C
+# AC_OPENMP sets OPENMP_FFLAGS not OPENMP_FCFLAGS
+  if test "x$useomp" = "xyes"; then
+    AC_OPENMP
+    if test "x$ac_cv_prog_fc_openmp" != xunsupported; then
+      FCFLAGS="-DTHREADED_OMP $FCFLAGS $OPENMP_FFLAGS"
+    fi
   fi
 
 # Modify FCFLAGS for MPI

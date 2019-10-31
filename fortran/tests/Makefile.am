@@ -4,7 +4,7 @@
 # Ed Hartnett, 5/21/18
 
 # Find include directory and src directory (for .mod file).
-AM_CPPFLAGS = -I$(top_srcdir)/fortran/src
+AM_CPPFLAGS = -I$(top_srcdir)/include -I../src
 
 INSTRFLAG = @INSTRFLAG@
 INSTR_LINK = @INSTR_LINK@

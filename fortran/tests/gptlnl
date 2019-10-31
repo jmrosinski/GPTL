@@ -17,6 +17,7 @@
  dopr_threadsort = .false.
  dopr_multparent = .false.
  dopr_collision  = .false.
+ dopr_memusage = .true.
 
 ! utr, print_method, and eventlist use character variables instead of integer 
 ! to avoid "magic number" settings in the namelist. Leave utr commented

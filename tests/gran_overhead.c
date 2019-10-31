@@ -17,10 +17,16 @@ int main (int argc, char **argv)
   ** Don't test MPI_Wtime: too complex to get to work everywhere.
   */
   Vals vals[] = {{(char *) "gettimeofday",   GPTLgettimeofday},
+#ifdef HAVE_NANOTIME
 		 {(char *) "nanotime",       GPTLnanotime},
-		 /*		 {(char *) "mpiwtime",       GPTLmpiwtime}, */
+#endif
+#ifdef HAVE_LIBRT  
 		 {(char *) "clockgettime",   GPTLclockgettime},
-		 {(char *) "read_real_time", GPTLread_real_time}};
+#endif
+#ifdef _AIX		 
+		 {(char *) "read_real_time", GPTLread_real_time}
+#endif
+  };
   static const int nvals = sizeof (vals) / sizeof (Vals);
     
   int ret;

@@ -13,12 +13,13 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
 ! 'external' in the header. So set return value in output arg 'outret' instead.
 !
   implicit none
+  ! Invoke include file rather than "use gptl" because the module includes an interface to this routine
+  ! which can cause an error with some compilers
+  include '../include/gptl.inc'
 
   character(len=*), intent(in) :: filename  ! Input file containing &gptlnl
   integer, intent(in) :: unitno             ! Fortran unit number to open
   integer, intent(out) :: outret            ! Output return code
-
-#include "gptl.inc"
 
   integer :: j    ! loop index
   integer :: ios  ! status return from file open
@@ -33,8 +34,6 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
   logical, parameter :: def_abort_on_error  = .false.
   logical, parameter :: def_overhead        = .true.
   integer, parameter :: def_depthlimit      = 99999    ! Effectively unlimited
-  integer, parameter :: def_maxthreads      = -1
-  integer, parameter :: def_tablesize       = 1023     ! Needs to match DEFAULT_TABLE_SIZE in gptl.c
   logical, parameter :: def_verbose         = .false.
   logical, parameter :: def_narrowprint     = .true.
   logical, parameter :: def_percent         = .false.
@@ -46,6 +45,9 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
   logical, parameter :: def_dopr_collision  = .true.
   logical, parameter :: def_dopr_memusage   = .false.
   character(len=16), parameter :: def_print_method = 'full_tree       '
+  integer, parameter :: def_tablesize       = 1023     ! Needs to match DEFAULT_TABLE_SIZE in gptl.c
+  integer, parameter :: def_maxthreads      = -1
+  logical, parameter :: def_onlyprint_rank0 = .false.
   character(len=16), parameter :: def_utr          = 'gettimeofday    '
 
 ! Namelist values: initialize to defaults
@@ -69,14 +71,16 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
   logical :: dopr_memusage   = def_dopr_memusage
   character(len=16) :: print_method    = def_print_method
   character(len=16) :: utr             = def_utr
+  logical :: onlyprint_rank0 = def_onlyprint_rank0
   character(len=64) :: eventlist(maxevents) = &
  (/('                                                                ',j=1,maxevents)/)
+
   character(len=20), parameter :: thisfunc = 'gptlprocess_namelist'
   
   namelist /gptlnl/ sync_mpi, wall, cpu, abort_on_error, overhead, depthlimit, &
                     maxthreads, tablesize, verbose, narrowprint, percent, persec, multiplex, &
                     dopr_preamble, dopr_threadsort, dopr_multparent, dopr_collision, &
-                    dopr_memusage, print_method, eventlist, utr
+                    dopr_memusage, print_method, eventlist, utr, onlyprint_rank0
 
   open (unit=unitno, file=filename, status='old', iostat=ios)
   if (ios /= 0) then
@@ -279,6 +283,17 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
     end if
   end if
 
+  if (onlyprint_rank0 .neqv. def_onlyprint_rank0) then
+    if (verbose) then
+      write(6,*) thisfunc, ': setting onlyprint_rank0 to ', onlyprint_rank0
+    end if
+    if (onlyprint_rank0) then
+      ret = gptlsetoption (gptlonlyprint_rank0, 1)
+    else
+      ret = gptlsetoption (gptlonlyprint_rank0, 0)
+    end if
+  end if
+
 ! Character-based variables
   if (utr /= def_utr) then
     if (verbose) then
@@ -294,8 +309,6 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
       ret = gptlsetutr (gptlmpiwtime)
     else if (trim(utr) == 'clockgettime') then
       ret = gptlsetutr (gptlclockgettime)
-    else if (trim(utr) == 'papitime') then
-      ret = gptlsetutr (gptlpapitime)
     else
       write(6,*) thisfunc, ': Underlying timing routine not available: ', trim (utr)
     end if
@@ -333,10 +346,6 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
       end if
     end if
   end do
-#else
-! Comment out this print because it can be very annoying when the MPI task count is large
-!  write(6,*) thisfunc, ': skipping check for PAPI-based events because ', &
-!            'GPTL was built without PAPI support'
 #endif
   close (unit=unitno)
   outret = 0
