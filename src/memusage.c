@@ -80,8 +80,6 @@ int GPTLget_procsiz (float *procsiz_out, float *rss_out)
   int dum[5];                // placeholders for unused return arguments
   FILE *fd;                  // file descriptor for fopen
   static const char *file = "/proc/self/statm";
-  int share;
-  int datastack;
   int pagesize;
   int ret;
   static float convert2mb = 0.;
