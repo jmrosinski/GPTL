@@ -30,15 +30,13 @@ int main (int argc, char **argv)
   papicounters = (long_long *) malloc (maxevents * sizeof (long_long));
   prvcounters  = (long_long *) malloc (maxevents * sizeof (long_long));
 
-  /* Initialize the PAPI library */
-
+  // Initialize the PAPI library
   if ((ret = PAPI_library_init (PAPI_VER_CURRENT)) != PAPI_VER_CURRENT) {
     printf ("%s\n", PAPI_strerror (ret));
     return -1;
   }
 
-  /* Create the eventset */
-
+  // Create the eventset
   if ((ret = PAPI_create_eventset (&EventSet)) != PAPI_OK) {
     printf ("Failure creating eventset: %s\n", PAPI_strerror (ret));
     return -1;
@@ -49,22 +47,19 @@ int main (int argc, char **argv)
     return -1;
   }
 
-  /* Parse arg list */
-
+  // Parse arg list
   while ((c = getopt (argc, argv, "e:")) != -1) {
     switch (c) {
     case 'e':
 
-      /* Convert name to code */
-
+      // Convert name to code
       if ((ret = PAPI_event_name_to_code (optarg, &code)) != PAPI_OK) {
 	printf ("No code found for event %s\n", optarg);
 	printf ("PAPI_strerror says: %s\n", PAPI_strerror (ret));
 	return -1;
       }
 
-      /* Add the event */
-
+      // Add the event
       if ((ret = PAPI_add_event (EventSet, code)) != PAPI_OK) {
 	printf ("%s\n", PAPI_strerror (ret));
 	printf ("Failure adding event %s\n", optarg);
@@ -83,35 +78,30 @@ int main (int argc, char **argv)
     }
   }
 
-  /* Start the eventset */
-
+  // Start the eventset
   if ((ret = PAPI_start (EventSet)) != PAPI_OK)
     printf ("%s\n", PAPI_strerror (ret));
 
   init (arr);
 
-  /* Read counters before computation */
-
+  // Read counters before computation
   if ((ret = PAPI_read (EventSet, prvcounters)) != PAPI_OK) {
     printf ("PAPI_read error\n");
     return -1;
   }
 
-  /* Do computation */
-
+  // Do computation
   for (n = 0; n < niter; ++n)
     for (i = 0; i < arrlen; ++i)
       arr[i] += 0.1e0*arr[i];
 
-  /* Read counters after computation */
-
+  // Read counters after computation
   if ((ret = PAPI_read (EventSet, papicounters)) != PAPI_OK) {
     printf ("PAPI_read error\n");
     return -1;
   }
 
-  /* Print counter information */
-
+  // Print counter information
   printf ("FP_OPS and FP_INS should be 2.e9\n\n");
 
   for (n = 0; n < nevents; ++n) {

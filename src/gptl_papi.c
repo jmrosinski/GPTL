@@ -21,8 +21,7 @@
 #include <pthread.h>
 #endif
 
-/* Mapping of PAPI counters to short and long printed strings */
-
+// Mapping of PAPI counters to strings of various lengths
 static const Entry papitable [] = {
   {PAPI_L1_DCM, "PAPI_L1_DCM", "L1_DCM  ", "L1_Dcache_miss  ", "Level 1 data cache misses"},
   {PAPI_L1_ICM, "PAPI_L1_ICM", "L1_ICM  ", "L1_Icache_miss  ", "Level 1 instruction cache misses"},
@@ -403,14 +402,21 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
 
   /*
   ** A table with predefined names of various lengths does not exist for
-  ** native events. Just truncate eventname.
+  ** native events. Just truncate eventname, except strip off PAPI_ for the shortest
   */
-  if ((numidx = papievent_is_enabled (counter)) >= 0) {
+  numidx = papievent_is_enabled (counter);
+  if (numidx >= 0 || canenable (counter)) {
+    int nchars;
     pr_event[nevents].event.counter = counter;
 
     pr_event[nevents].event.namestr = (char *) GPTLallocate (12+1, thisfunc);
     strncpy (pr_event[nevents].event.namestr, eventname, 12);
     pr_event[nevents].event.namestr[12] = '\0';
+
+    pr_event[nevents].event.str8 = (char *) GPTLallocate (8+1, thisfunc);
+    nchars = MIN (strlen (&eventname[5]), 8);
+    strncpy (pr_event[nevents].event.str8, &eventname[5], nchars);
+    pr_event[nevents].event.str8[nchars] = '\0';
 
     pr_event[nevents].event.str16 = (char *) GPTLallocate (16+1, thisfunc);
     strncpy (pr_event[nevents].event.str16, eventname, 16);
@@ -418,25 +424,15 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
 
     pr_event[nevents].event.longstr = (char *) GPTLallocate (PAPI_MAX_STR_LEN, thisfunc);
     strncpy (pr_event[nevents].event.longstr, eventname, PAPI_MAX_STR_LEN);
+    pr_event[nevents].event.longstr[strlen(eventname)] = '\0';
 
-    pr_event[nevents].numidx = numidx;
-    pr_event[nevents].denomidx = -1;     /* flag says not derived (no denominator) */
-  } else if (canenable (counter)) {
-    pr_event[nevents].event.counter = counter;
-
-    pr_event[nevents].event.namestr = (char *) GPTLallocate (12+1, thisfunc);
-    strncpy (pr_event[nevents].event.namestr, eventname, 12);
-    pr_event[nevents].event.namestr[12] = '\0';
-
-    pr_event[nevents].event.str16 = (char *) GPTLallocate (16+1, thisfunc);
-    strncpy (pr_event[nevents].event.str16, eventname, 16);
-    pr_event[nevents].event.str16[16] = '\0';
-
-    pr_event[nevents].event.longstr = (char *) GPTLallocate (PAPI_MAX_STR_LEN, thisfunc);
-    strncpy (pr_event[nevents].event.longstr, eventname, PAPI_MAX_STR_LEN);
-
-    pr_event[nevents].numidx = enable (counter);
-    pr_event[nevents].denomidx = -1;     /* flag says not derived (no denominator) */
+    if (numidx >= 0) {
+      pr_event[nevents].numidx = numidx;
+      pr_event[nevents].denomidx = -1;     /* flag says not derived (no denominator) */
+    } else {   // canenable (counter) is true
+      pr_event[nevents].numidx = enable (counter);
+      pr_event[nevents].denomidx = -1;     /* flag says not derived (no denominator) */
+    }
   } else {
     return GPTLerror ("%s: Can't enable event %s\n", thisfunc, eventname);
   }
@@ -1146,8 +1142,11 @@ int GPTLevent_name_to_code (const char *name, int *code)
   ** Next check PAPI events--note that PAPI must be initialized before the
   ** name_to_code function can be invoked.
   */
-  if ((ret = GPTL_PAPIlibraryinit ()) < 0)
-    return GPTLerror ("%s: GPTL_PAPIlibraryinit failure\n", thisfunc);
+  if ((ret = PAPI_is_initialized ()) == PAPI_NOT_INITED) {
+    printf ("%s: PAPI not initialized. Calling PAPI_library_init()...\n", thisfunc);
+    if ((ret = GPTL_PAPIlibraryinit ()) < 0)
+      return GPTLerror ("%s: GPTL_PAPIlibraryinit failure\n", thisfunc);
+  }
 
   if ((PAPI_event_name_to_code ((char *) name, code)) != PAPI_OK)
     return GPTLerror ("%s: PAPI_event_name_to_code failure\n", thisfunc);
@@ -1185,8 +1184,11 @@ int GPTLevent_code_to_name (const int code, char *name)
   ** Next check PAPI events--note that PAPI must be initialized before the
   ** code_to_name function can be invoked.
   */
-  if ((ret = GPTL_PAPIlibraryinit ()) < 0)
-    return GPTLerror ("%s: GPTL_PAPIlibraryinit failure\n", thisfunc);
+  if ((ret = PAPI_is_initialized ()) == PAPI_NOT_INITED) {
+    printf ("%s: PAPI not initialized. Calling PAPI_library_init()...\n", thisfunc);
+    if ((ret = GPTL_PAPIlibraryinit ()) < 0)
+      return GPTLerror ("%s: GPTL_PAPIlibraryinit failure\n", thisfunc);
+  }
 
   if (PAPI_event_code_to_name (code, name) != PAPI_OK)
     return GPTLerror ("%s: PAPI_event_code_to_name failure\n", thisfunc);
@@ -1198,8 +1200,6 @@ int GPTLget_npapievents (void)
 {
   return npapievents;
 }
-#endif  /* HAVE_PAPI */
-
 #ifdef __cplusplus
 }
 #endif

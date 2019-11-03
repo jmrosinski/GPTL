@@ -3,44 +3,38 @@ program testpapi
 
   implicit none
 
-  integer :: ret
-  integer :: i, code
-  integer(8) :: pc ! papi counters
+#include <f90papi.h>
+  integer :: narg        ! number of cmd line args
+  integer :: ret         ! return code
+  integer :: i
+  integer :: code        ! PAPI counter code
   real(8) :: sum, val
-  character(len=256) :: name
+  character(len=PAPI_MAX_STR_LEN) :: eventname = "PAPI_TOT_CYC"
+  character(len=PAPI_MAX_STR_LEN) :: eventsave
   character(len=2) :: tooshort
   
   write(6,*)'testpapi: Testing PAPI interface...'
 
-  write(6,*)'Testing enabling gptlverbose...'
-  if (gptlsetoption (gptlverbose, 1) /= 0) then
-    write(6,*)'Failure'
-    call exit(1)
+  ! Parse arg list: Just take the first one
+  narg = command_argument_count()
+  if (narg > 0) then
+    call get_command_argument (1, eventname)
   end if
-  write(6,*)'Success'
 
-  write(6,*)'Calling gptl_papilibraryinit...'
-  if (gptl_papilibraryinit () /= 0) then
-    write(6,*)'Failure from gptl_papilibraryinit...'
-    call exit(1)
-  end if
-  write(6,*)'Success'
-      
-  write(6,*)'Testing gptlevent_name_to_code for PAPI_TOT_CYC...'
-  if (gptlevent_name_to_code ('PAPI_TOT_CYC', code) /= 0) then
+  write(6,*)'Testing gptlevent_name_to_code for ', trim(eventname)
+  if (gptlevent_name_to_code (trim(eventname), code) /= 0) then
     write(6,*)'Failure from gptlevent_name_to_code'
     call exit(1)
   end if
-  write(6,*)'Success: PAPI_TOT_CYC=',code
+  write(6,*)'Success: code for ',trim(eventname),'=',code
 
-  write(6,*)'Testing passing PAPI_TOT_CYC to gptlsetoption...'
+  write(6,*)'Testing gptlsetoption(',code,',1)'
   if (gptlsetoption (code, 1) /= 0) then
     write(6,*)'Failure'
     call exit(1)
   end if
-  write(6,*)'Success'
   
-  write(6,*)'Testing duplicate enable PAPI_TOT_CYC...'
+  write(6,*)'Testing duplicate enable ', trim(eventname)
   if (gptlsetoption (code, 1) == 0) then
     write(6,*)'Failure to fail!'
     call exit(1)
@@ -54,17 +48,16 @@ program testpapi
   end if
   write(6,*)'Succeeded at failing!'
   
-  write(6,*)'Testing gptlevent_code_to_name for PAPI_TOT_CYC...'
-  if (gptlevent_code_to_name (code, name) /= 0) then
+  write(6,*)'Testing gptlevent_code_to_name for ', trim(eventname)
+  if (gptlevent_code_to_name (code, eventsave) /= 0) then
     write(6,*)'Failure from gptlevent_code_to_name'
     call exit(1)
   end if
 
-  if (trim(name) == 'PAPI_TOT_CYC') then
+  if (trim(eventsave) == trim(eventname)) then
     write(6,*)'Success'
   else
-    write(6,*)'Failure: got ',trim(name)
-    write(6,*)'Expected PAPI_TOT_CYC'
+    write(6,*)'Failure: got ',trim(eventsave),' expected ',trim(eventname)
     call exit(1)
   end if
   
@@ -84,7 +77,7 @@ program testpapi
   
   write(6,*)'Testing bogus input to gptlevent_code_to_name...'
   code = -1
-  if (gptlevent_code_to_name (code, name) == 0) then
+  if (gptlevent_code_to_name (code, eventsave) == 0) then
     write(6,*)'Failure of gptlevent_code_to_name to fail'
     call exit(1)
   end if
@@ -95,34 +88,46 @@ program testpapi
     write(6,*)'Failure'
     call exit(1)
   end if
-  write(6,*)'Success'
   
+  write(6,*) 'testing GPTLstart'
   ret = gptlstart ('sum')
+  if (ret /= 0) then
+    write(6,*)'Unexpected failure from gptlstart'
+    call exit(3)
+  end if
+
   sum = 0.
   do i=1,1000000
     sum = sum + i
   end do
+
+  write(6,*) 'testing GPTLstop'
   ret = gptlstop ('sum')
-  
-  write(6,*)'Testing gptlquerycounters...'
-  if (gptlquerycounters ('sum', 0, pc) /= 0) then
-    write(6,*)'Failure'
-    call exit(1)
+  if (ret /= 0) then
+    write(6,*)'Unexpected failure from gptlstop'
+    call exit(3)
   end if
-  write(6,*)'Success: pc=', pc
   
   write(6,*)'Testing gptlget_eventvalue...'
-  if (gptlget_eventvalue ('sum', 'PAPI_TOT_CYC', 0, val) /= 0) then
+  if (gptlget_eventvalue ('sum', trim(eventname), 0, val) /= 0) then
     write(6,*)'Failure'
     call exit(1)
   end if
-  write(6,*)'Success: val=', val
-  
-  write(6,*)'sum,pc=',sum, pc
-  if (pc < 1 .or. pc > 1.e9) then
-    write(6,*)'Suspicious pc value=',pc
-    call exit(1)
-  else
-    write(6,*)'Success'
-  end if  
+  write(6,*)'Success: counter=', val
+
+  if (trim(eventname) == "PAPI_TOT_CYC") then
+    write(6,*) "testing reasonableness of PAPI counters..."
+    if (val < 1 .or. val > 1.e9) then
+      write(6,*)'Suspicious val=',val
+      call exit(1)
+    end if
+  end if
+
+  if (gptlpr (0) /= 0) then
+    write(6,*) "bad return from GPTLpr(0)"
+    stop 6;
+  end if
+
+  write(6,*) "All tests successful"
+  stop 0
 end program testpapi
