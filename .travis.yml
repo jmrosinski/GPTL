@@ -27,6 +27,7 @@ before_script:
 #  - wget https://github.com/jmrosinski/GPTL/releases/download/v5.6.0/gptl-5.6.0.tar.gz
 #  - tar zxf gptl-5.6.0.tar.gz
 #  - pushd gptl-5.6.0
+  - autoreconf -i
   - ./configure --prefix=/usr
   - sudo make -j install
 #  - popd
