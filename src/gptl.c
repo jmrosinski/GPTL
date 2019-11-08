@@ -67,6 +67,7 @@ static bool dopr_threadsort = true;    /* whether to print sorted thread stats *
 static bool dopr_multparent = true;    /* whether to print multiple parent info */
 static bool dopr_collision = true;     /* whether to print hash collision info */
 static bool dopr_memusage = false;     /* whether to include memusage print when auto-profiling */
+static bool dopr_longname = false;     // whether to print long names when MAX_CHARS exceeded
 
 static time_t ref_gettimeofday = -1;   /* ref start point for gettimeofday */
 static time_t ref_clock_gettime = -1;  /* ref start point for clock_gettime */
@@ -116,7 +117,7 @@ static long ticks_per_sec;       /* clock ticks per second */
 static Timer ***callstack;       /* call stack */
 static Nofalse *stackidx;        /* index into callstack: */
 
-static Method method = GPTLfull_tree;  /* default parent/child printing mechanism */
+static Method method = GPTLmost_frequent;  // default parent/child printing mechanism
 
 typedef struct {
   int max_depth;
@@ -131,8 +132,9 @@ typedef struct {
 extern "C" {
 #endif
 
-static inline int preamble_start (int *, const char *, const char *);
-static inline int preamble_stop (int *, double *, long *, long *, const char *, const char *);
+static inline int preamble_start (int *, const char *, const char *, void *);
+static inline int preamble_stop (int *, double *, long *, long *, const char *,
+				 const char *, void *);
 static int get_longest_omp_namelen (void);
 static int get_outputfmt (const Timer *, const int, const int, Outputfmt *);
 static void fill_output (int, int, int, Outputfmt *);
@@ -334,6 +336,11 @@ int GPTLsetoption (const int option,  /* option */
     dopr_memusage = (bool) val; 
     if (verbose)
       printf ("%s: boolean dopr_memusage = %d\n", thisfunc, val);
+    return 0;
+  case GPTLdopr_longname: 
+    dopr_longname = (bool) val; 
+    if (verbose)
+      printf ("%s: boolean dopr_longname = %d\n", thisfunc, val);
     return 0;
   case GPTLprint_method:
     method = (Method) val; 
@@ -609,7 +616,7 @@ int GPTLstart (const char *name)               /* timer name */
   unsigned int indx; /* hash table index */
   static const char *thisfunc = "GPTLstart";
   
-  ret = preamble_start (&t, name, thisfunc);
+  ret = preamble_start (&t, name, thisfunc, (void *) 0);
   if (ret == DONE)
     return 0;
   else if (ret != 0)
@@ -660,14 +667,20 @@ int GPTLstart (const char *name)               /* timer name */
   return 0;
 }
 
-static inline int preamble_start (int *t, const char *name, const char *caller)
+static inline int preamble_start (int *t, const char *name, const char *caller, void *address)
 {
   if (disabled)
     return DONE;
 
-  if ( ! initialized)
-    return GPTLerror ("%s name=%s: GPTLinitialize has not been called\n", caller, name);
-
+  // Only print error message for manual instrumentation: too hard to ensure
+  // GPTLinitialize() has been called for auto-instrumented code
+  if ( ! initialized) {
+    if (address)
+      return -1;
+    else
+      return GPTLerror ("%s name=%s: GPTLinitialize has not been called\n", caller, name);
+  }
+  
   if ((*t = get_thread_num ()) < 0)
     return GPTLerror ("%s: bad return from get_thread_num\n", caller);
 
@@ -721,7 +734,7 @@ int GPTLstart_handle (const char *name,  /* timer name */
   int numchars;                          /* number of characters to copy */
   static const char *thisfunc = "GPTLstart_handle";
 
-  ret = preamble_start (&t, name, thisfunc);
+  ret = preamble_start (&t, name, thisfunc, (void *) 0);
   if (ret == DONE)
     return 0;
   else if (ret != 0)
@@ -931,7 +944,7 @@ int GPTLstop (const char *name)               /* timer name */
   long sys = 0;              /* system time (returned from get_cpustamp) */
   static const char *thisfunc = "GPTLstop";
 
-  ret = preamble_stop (&t, &tp1, &usr, &sys, name, thisfunc);  
+  ret = preamble_stop (&t, &tp1, &usr, &sys, name, thisfunc, (void *) 0);
   if (ret == DONE)
     return 0;
   else if (ret != 0)
@@ -967,13 +980,19 @@ int GPTLstop (const char *name)               /* timer name */
 }
 
 static inline int preamble_stop (int *t, double *tp1, long *usr, long *sys,
-				 const char *name, const char *caller)
+				 const char *name, const char *caller, void *address)
 {
   if (disabled)
     return DONE;
 
-  if ( ! initialized)
-    return GPTLerror ("%s: GPTLinitialize has not been called\n", caller);
+  // Only print error message for manual instrumentation: too hard to ensure
+  // GPTLinitialize() has been called for auto-instrumented code
+  if ( ! initialized) {
+    if (address)
+      return -1;
+    else
+      return GPTLerror ("%s: GPTLinitialize has not been called\n", caller);
+  }
 
   // Get the timestamp
   if (wallstats.enabled) {
@@ -1015,7 +1034,7 @@ int GPTLstop_handle (const char *name,     /* timer name */
   unsigned int indx;
   static const char *thisfunc = "GPTLstop_handle";
 
-  ret = preamble_stop (&t, &tp1, &usr, &sys, name, thisfunc);  
+  ret = preamble_stop (&t, &tp1, &usr, &sys, name, thisfunc, (void *) 0);
   if (ret == DONE)
     return 0;
   else if (ret != 0)
@@ -2059,6 +2078,8 @@ static void printstats (const Timer *timer,
 #endif
 
   fprintf (fp, "\n");
+  if (dopr_longname && timer->longname)
+    fprintf (fp, "Long name=%s\n", timer->longname);
 }
 
 /* 
@@ -2080,16 +2101,28 @@ void print_multparentinfo (FILE *fp,
   }
 
   for (n = 0; n < ptr->nparent; ++n) {
-    if (ptr->parent_count[n] < PRTHRESH)
-      fprintf (fp, "%8d %-32s\n", ptr->parent_count[n], ptr->parent[n]->name);
+    char *parentname;
+    if (ptr->parent[n]->longname)
+      parentname = ptr->parent[n]->longname;
     else
-      fprintf (fp, "%8.1e %-32s\n", (float) ptr->parent_count[n], ptr->parent[n]->name);
+      parentname = ptr->parent[n]->name;
+    
+    if (ptr->parent_count[n] < PRTHRESH)
+      fprintf (fp, "%8d %-s\n", ptr->parent_count[n], parentname);
+    else
+      fprintf (fp, "%8.1e %-s\n", (float) ptr->parent_count[n], parentname);
   }
 
   if (ptr->count < PRTHRESH)
-    fprintf (fp, "%8lu   %-32s\n\n", ptr->count, ptr->name);
+    if (ptr->longname)
+      fprintf (fp, "%8lu   %-s\n\n", ptr->count, ptr->longname);
+    else
+      fprintf (fp, "%8lu   %-s\n\n", ptr->count, ptr->name);
   else
-    fprintf (fp, "%8.1e   %-32s\n\n", (float) ptr->count, ptr->name);
+    if (ptr->longname)
+      fprintf (fp, "%8.1e   %-s\n\n", (float) ptr->count, ptr->longname);
+    else
+      fprintf (fp, "%8.1e   %-s\n\n", (float) ptr->count, ptr->name);
 }
 
 /* 
@@ -2752,33 +2785,30 @@ void __cyg_profile_func_enter (void *this_fn,
 {
   int t;             // thread index
   int symsize;       // number of characters in symbol
-  char *symnam;      // symbol name whether using unwind or backtrace
+  char *symnam = 0;  // symbol name whether using unwind or backtrace
   int numchars;      // number of characters in function name
   unsigned int indx; // hash table index
   Timer *ptr;        // pointer to entry if it already exists
+  int ret;
   static const char *thisfunc = "__cyg_profile_func_enter";
 
-#ifdef HAVE_LIBUNWIND
-  char symbol[MAX_SYMBOL_NAME+1];
-  unw_cursor_t cursor;
-  unw_context_t context;
-  unw_word_t offset, pc;
-#endif
+  int get_symnam (void *, char **);
 
-#ifdef HAVE_BACKTRACE
-  void *buffer[2];
-  int nptrs;
-  char **strings = 0;
-  char addrstr[MAX_CHARS+1];          // function address as a string
-  char *extract_name (char *);
-#endif
+  // In debug mode, get symbol name up front to diagnose function name
+  // Otherwise live with "unknown" because get_symnam is very expensive
 
   // Call preamble_start rather than just get_thread_num because preamble_stop is needed for
   // other reasons in __cyg_profile_func_exit, and the preamble* functions need to mirror each
   // other.
-  if (preamble_start (&t, unknown, thisfunc) != 0)
+  
+  if (preamble_start (&t, unknown, thisfunc, this_fn) != 0) {
+#ifdef DEBUG
+    if (get_symnam (this_fn, &symnam) == 0) {
+      printf ("%s: 'unknown' symbol= %s\n", thisfunc, symnam);
+    }
+#endif
     return;
-
+  }
   ptr = getentry_instr (hashtable[t], this_fn, &indx);
 
   /* 
@@ -2803,62 +2833,39 @@ void __cyg_profile_func_enter (void *this_fn,
   if ( ! ptr) {     // Add a new entry and initialize
     ptr = (Timer *) GPTLallocate (sizeof (Timer), thisfunc);
     memset (ptr, 0, sizeof (Timer));
-
-#ifdef HAVE_LIBUNWIND
-    // Initialize cursor to current frame for local unwinding.
-    unw_getcontext (&context);
-    unw_init_local (&cursor, &context);
-
-    if (unw_step (&cursor) <= 0) { // unw_step failed: give up
-      GPTLwarn ("%s: unw_step failed\n", thisfunc);
+    if (get_symnam (this_fn, &symnam) != 0) {
+      printf ("%s: failed to find symbol for address %p\n", thisfunc, this_fn);
       return;
     }
-
-    unw_get_reg (&cursor, UNW_REG_IP, &pc);
-    if (unw_get_proc_name (&cursor, symbol, sizeof(symbol), &offset) != 0) {
-      // Symbol not found: give up
-      GPTLwarn ("%s unwind pgm counter=0x%lx symbol name not found\n", thisfunc, pc);
-      return;
-    }
-    symnam = symbol;
-
-#elif defined HAVE_BACKTRACE
-
-    nptrs = backtrace (buffer, 2);
-    if (nptrs != 2) {
-      GPTLwarn ("%s backtrace failed nptrs should be 2 but is %d\n", thisfunc, nptrs);
-      return;
-    }
-
-    if (!(strings = backtrace_symbols (buffer, nptrs))) {
-      GPTLwarn ("%s backtrace_symbols failed strings is null\n", thisfunc);
-      return;
-    }
-    
-    symnam = extract_name (strings[1]);
-    free (strings);
-    // If meaningful name not found, store the function address as a string
-    if (symnam == unknown) {
-      snprintf (addrstr, MAX_CHARS+1, "%lx", (unsigned long) this_fn);
-      symnam = addrstr;
-    }
-#endif
-
     symsize = strlen (symnam);
-    if (symsize > MAX_CHARS) {
-      GPTLwarn ("%s: symsize=%d exceeds MAX_CHARS=%d. Suggest rebuild GPTL with MAX_CHARS at least symsize\n",
-		thisfunc, symsize, MAX_CHARS);
-    }
 
+    // For long names, save the full name for diagnostic printing
+    if (symsize > MAX_CHARS) {
+      ptr->longname = (char *) malloc (symsize+1);
+      strcpy (ptr->longname, symnam);
+    }
     numchars = MIN (symsize, MAX_CHARS);
     strncpy (ptr->name, symnam, numchars);
     ptr->name[numchars] = '\0';
     ptr->address = this_fn;
+    free (symnam);
 
 #ifdef DEBUG
     if (ptr->name[0] == ' ' || ptr->name[0] == '\0')
       fprintf (stderr,"%s name=%s address=%p numchars=%d\n",
 	       thisfunc, ptr->name, ptr->address, numchars);
+
+    Timer *testtimer;
+    for (testtimer = timers[t]; testtimer; testtimer = testtimer->next) {
+      // Print a msg if a "new" autoprofiled entry has a name that matches an existing entry
+      if (testtimer->address && testtimer->address != ptr->address &&
+	  STRMATCH(testtimer->name,ptr->name)) {
+	printf ("Autoprofiled name=%s at new address=%p matches name at existing address=%p\n",
+		ptr->name, ptr->address, testtimer->address);
+	if (ptr->longname)
+	  printf ("Longame=%s\n", ptr->longname);
+      }
+    }
 #endif
 
     if (update_ll_hash (ptr, t, indx) != 0) {
@@ -2882,34 +2889,96 @@ void __cyg_profile_func_enter (void *this_fn,
 }
 
 #ifdef HAVE_BACKTRACE
+int get_symnam (void *this_fn, char **symnam)
+{
+  char **strings = 0;
+  void *buffer[3];
+  int nptrs;
+  char addrstr[MAX_CHARS+1];          // function address as a string
+  static const char *thisfunc = "get_symnam(backtrace)";
+
+  void extract_name (char *, char **);
+
+  nptrs = backtrace (buffer, 3);
+  if (nptrs != 3) {
+    GPTLwarn ("%s backtrace failed nptrs should be 2 but is %d\n", thisfunc, nptrs);
+    return -1;
+  }
+
+  if (!(strings = backtrace_symbols (buffer, nptrs))) {
+    GPTLwarn ("%s backtrace_symbols failed strings is null\n", thisfunc);
+    return -1;
+  }
+
+  extract_name (strings[2], symnam);
+  free (strings);
+  return 0;
+}
+
 // Backtrace strings have a bunch of extra stuff in them.
 // Find the start and end of the function name and return a pointer to the function name
 // Note a null terminator is added to str after the name, but we don't care
-char *extract_name (char *str)
+void extract_name (char *str, char **symnam)
 {
   char *cstart;
   char *cend;
-  
+  int nchars;
+
   for (cstart = str; *cstart != '(' && *cstart != '\0'; ++cstart);
   if (*cstart == '\0') {
     cend = cstart;
-#ifdef DEBUG
-    fprintf(stderr, "extract_name 1 returning unknown for str=%s\n", str);
-#endif
   } else {
     ++cstart;
     for (cend = cstart; *cend != '+' && *cend != '\0'; ++cend);
     if (cend == cstart) {
-#ifdef DEBUG
-      fprintf(stderr, "extract_name 2 returning unknown for str=%s\n", str);
-#endif
     }
     *cend = '\0';
   }
-  if (cend == cstart)
-    return unknown;
-  else
-    return cstart;
+  if (cend == cstart) {
+    *symnam = (char *) malloc (strlen (unknown) + 1);
+    strcpy (*symnam, unknown);
+  } else {
+    nchars = (int) (cend - cstart);
+    *symnam = (char *) malloc (nchars + 1);
+    strncpy (*symnam, cstart, nchars+1);
+  }
+}
+#endif
+
+#ifdef HAVE_LIBUNWIND
+int get_symnam (void *this_fn, char **symnam)
+{
+  char symbol[MAX_SYMBOL_NAME+1];
+  unw_cursor_t cursor;
+  unw_context_t context;
+  unw_word_t offset, pc;
+  static const char *thisfunc = "get_symnam(unwind)";
+
+  // sanity check
+  if (*symnam)
+    abort();
+  
+  // Initialize cursor to current frame for local unwinding.
+  unw_getcontext (&context);
+  unw_init_local (&cursor, &context);
+
+  // Need to unwind 2 levels to get to function of interest
+  for (int n = 0; n < 2; ++n) {
+    if (unw_step (&cursor) <= 0) { // unw_step failed: give up
+      GPTLwarn ("%s: unw_step failed\n", thisfunc);
+      return -1;
+    }
+  }
+
+  unw_get_reg (&cursor, UNW_REG_IP, &pc);
+  if (unw_get_proc_name (&cursor, symbol, sizeof(symbol), &offset) != 0) {
+    // Symbol not found: give up
+    GPTLwarn ("%s unwind pgm counter=0x%lx symbol name not found\n", thisfunc, pc);
+    return -1;
+  }
+  *symnam = malloc (strlen (symbol) + 1);
+  strcpy (*symnam, symbol);
+  return 0;
 }
 #endif
 
@@ -2925,7 +2994,7 @@ void __cyg_profile_func_exit (void *this_fn,
   long sys = 0;              /* system time (returned from get_cpustamp) */
   static const char *thisfunc = "__cyg_profile_func_exit";
 
-  if (preamble_stop (&t, &tp1, &usr, &sys, unknown, thisfunc) != 0)
+  if (preamble_stop (&t, &tp1, &usr, &sys, unknown, thisfunc, this_fn) != 0)
     return;
        
   ptr = getentry_instr (hashtable[t], this_fn, &indx);

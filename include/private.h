@@ -29,7 +29,7 @@
 #define MAX_STACK 128
 
 /* longest timer name allowed (probably safe to just change) */
-#define MAX_CHARS 127
+#define MAX_CHARS 63
 
 // Longest allowed symbol name for libunwind
 #define MAX_SYMBOL_NAME 255
@@ -111,6 +111,7 @@ typedef struct TIMER {
   unsigned int norphan;     /* number of times this timer was an orphan */
   bool onflg;               /* timer currently on or off */
   char name[MAX_CHARS+1];   /* timer name (user input) */
+  char *longname;           // For autoprofiled names, full name for diagnostic printing
 } Timer;
 
 typedef struct {

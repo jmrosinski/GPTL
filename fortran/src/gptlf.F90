@@ -25,6 +25,7 @@ module gptl
   integer, parameter :: GPTLdopr_collision = 15
   integer, parameter :: GPTLdopr_memusage  = 27
   integer, parameter :: GPTLprint_method   = 16
+  integer, parameter :: GPTLdopr_longname  = 28
   integer, parameter :: GPTLtablesize      = 50
   integer, parameter :: GPTLmaxthreads     = 51
   integer, parameter :: GPTLonlyprint_rank0= 52

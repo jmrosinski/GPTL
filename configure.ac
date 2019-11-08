@@ -206,7 +206,7 @@ AC_ARG_ENABLE([libunwind],
     AS_HELP_STRING([--enable-libunwind], [Enable auto-profiling capability via libunwind]))
 
 AC_ARG_ENABLE([backtrace],
-    AS_HELP_STRING([--enable-backtrace], [Enable auto-profiling capability via backtrace]))
+    AS_HELP_STRING([--disable-backtrace], [Disable auto-profiling capability via backtrace]))
 
 # Default is to enable auto-profiling capability via backtrace
 # Default is to disnable auto-profiling capability via libunwind.
@@ -219,7 +219,7 @@ if test "x$enable_backtrace" != xno; then
   if test "x$found_backtrace" = xyes; then
     usebacktrace=yes;
     AC_DEFINE([HAVE_BACKTRACE], [1], [backtrace will be used])
-    AC_MSG_NOTICE([backtrace enabled for auto-profiling: dynamic linking flag (see below) probably also needed])
+    AC_MSG_NOTICE([backtrace enabled for auto-profiling: dynamic linking flag (see below) possibly also needed])
   fi
 fi
 
@@ -228,7 +228,7 @@ if test "x$enable_libunwind" = xyes; then
   if test "x$found_libunwind" = xyes; then
     useunwind=yes;
     AC_DEFINE([HAVE_LIBUNWIND], [1], [libunwind will be used])
-    AC_MSG_NOTICE([libunwind enabled for auto-profiling: dynamic linking flag (see below) probably also needed])
+    AC_MSG_NOTICE([libunwind enabled for auto-profiling: -lunwind and dynamic linking flag (see below) possibly also needed])
   fi
 fi
 
