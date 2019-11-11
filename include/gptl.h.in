@@ -33,7 +33,6 @@ typedef enum {
   GPTLdopr_memusage   = 27, /* Call GPTLprint_memusage when auto-instrumented */
   GPTLprint_method    = 16, /* Tree print method: first parent, last parent
 			       most frequent, or full tree (most frequent) */
-  GPTLdopr_longname   = 28, // whether to print long names when length exceeds MAX_CHARS
   GPTLtablesize       = 50, /* per-thread size of hash table */
   GPTLmaxthreads      = 51, /* maximum number of threads */
   GPTLonlyprint_rank0 = 52, // Restrict printout to rank 0 when MPI enabled

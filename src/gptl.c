@@ -15,6 +15,7 @@
 #include <unistd.h>        /* gettimeofday, syscall */
 #include <stdio.h>
 #include <string.h>        /* memset, strcmp (via STRMATCH) */
+#include <strings.h>       // index
 #include <ctype.h>         /* isdigit */
 #include <sys/types.h>     /* u_int8_t, u_int16_t */
 
@@ -67,7 +68,6 @@ static bool dopr_threadsort = true;    /* whether to print sorted thread stats *
 static bool dopr_multparent = true;    /* whether to print multiple parent info */
 static bool dopr_collision = true;     /* whether to print hash collision info */
 static bool dopr_memusage = false;     /* whether to include memusage print when auto-profiling */
-static bool dopr_longname = false;     // whether to print long names when MAX_CHARS exceeded
 
 static time_t ref_gettimeofday = -1;   /* ref start point for gettimeofday */
 static time_t ref_clock_gettime = -1;  /* ref start point for clock_gettime */
@@ -133,8 +133,7 @@ extern "C" {
 #endif
 
 static inline int preamble_start (int *, const char *, const char *, void *);
-static inline int preamble_stop (int *, double *, long *, long *, const char *,
-				 const char *, void *);
+static inline int preamble_stop (int *, double *, long *, long *, const char *, void *);
 static int get_longest_omp_namelen (void);
 static int get_outputfmt (const Timer *, const int, const int, Outputfmt *);
 static void fill_output (int, int, int, Outputfmt *);
@@ -193,6 +192,8 @@ static inline int update_ptr (Timer *, const int);
 static int construct_tree (Timer *, Method);
 static inline void set_fp_procsiz (void);
 static void check_memusage (const char *, const char *);
+static int rename_duplicate_addresses (void);
+static void translate_long_names (int, FILE *);
 
 bool GPTLonlypr_rank0 = false;    // flag says only print from MPI rank 0 (default false)
 
@@ -336,11 +337,6 @@ int GPTLsetoption (const int option,  /* option */
     dopr_memusage = (bool) val; 
     if (verbose)
       printf ("%s: boolean dopr_memusage = %d\n", thisfunc, val);
-    return 0;
-  case GPTLdopr_longname: 
-    dopr_longname = (bool) val; 
-    if (verbose)
-      printf ("%s: boolean dopr_longname = %d\n", thisfunc, val);
     return 0;
   case GPTLprint_method:
     method = (Method) val; 
@@ -643,7 +639,7 @@ int GPTLstart (const char *name)               /* timer name */
   if (++stackidx[t].val > MAX_STACK-1)
     return GPTLerror ("%s: stack too big\n", thisfunc);
 
-  if ( ! ptr) { /* Add a new entry and initialize */
+  if ( ! ptr) {   // Add a new entry and initialize. longname only needed for auto-profiling
     ptr = (Timer *) GPTLallocate (sizeof (Timer), thisfunc);
     memset (ptr, 0, sizeof (Timer));
 
@@ -944,7 +940,7 @@ int GPTLstop (const char *name)               /* timer name */
   long sys = 0;              /* system time (returned from get_cpustamp) */
   static const char *thisfunc = "GPTLstop";
 
-  ret = preamble_stop (&t, &tp1, &usr, &sys, name, thisfunc, (void *) 0);
+  ret = preamble_stop (&t, &tp1, &usr, &sys, thisfunc, (void *) 0);
   if (ret == DONE)
     return 0;
   else if (ret != 0)
@@ -980,7 +976,7 @@ int GPTLstop (const char *name)               /* timer name */
 }
 
 static inline int preamble_stop (int *t, double *tp1, long *usr, long *sys,
-				 const char *name, const char *caller, void *address)
+				 const char *caller, void *address)
 {
   if (disabled)
     return DONE;
@@ -1034,7 +1030,7 @@ int GPTLstop_handle (const char *name,     /* timer name */
   unsigned int indx;
   static const char *thisfunc = "GPTLstop_handle";
 
-  ret = preamble_stop (&t, &tp1, &usr, &sys, name, thisfunc, (void *) 0);
+  ret = preamble_stop (&t, &tp1, &usr, &sys, thisfunc, (void *) 0);
   if (ret == DONE)
     return 0;
   else if (ret != 0)
@@ -1314,6 +1310,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   Timer sumstats;           /* sum of same timer stats over threads */
   Outputfmt outputfmt;      // max depth, namelen, chars2pr
   int n, t;                 /* indices */
+  int ndup;                 // number of duplicate auto-instrumented addresses
   unsigned long totcount;   /* total timer invocations */
   float *sum;               /* sum of overhead values (per thread) */
   float osum;               /* sum of overhead over threads */
@@ -1333,6 +1330,15 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   if (STRMATCH (outfile, "stderr") || ! (fp = fopen (outfile, "w")))
     fp = stderr;
 
+  // Rename auto-instrumented entries with same name but different address due to lopping
+  if ((ndup = rename_duplicate_addresses ()) > 0) {
+    fprintf (fp, "%d duplicate auto-instrumented addresses were found and @<num> added to name",
+	     ndup);
+    if (ndup > 255) {
+      fprintf (fp, "%d did NOT have @<num> added because there were too many\n", ndup);
+      fprintf (fp, "Consider increasing the value of MAX_CHARS in private.h next run\n");
+    }
+  }
   /* Print a warning if GPTLerror() was ever called */
   if (GPTLnum_errors () > 0) {
     fprintf (fp, "WARNING: GPTLerror was called at least once during the run.\n");
@@ -1446,6 +1452,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   sum = (float *) GPTLallocate (nthreads * sizeof (float), thisfunc);
   
   for (t = 0; t < nthreads; ++t) {
+    translate_long_names (t, fp);
     print_titles (t, fp, &outputfmt);
     /*
     ** Print timing stats. If imperfect nesting was detected, print stats by going through
@@ -1605,10 +1612,56 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   return 0;
 }
 
+static void translate_long_names (int t, FILE *fp)
+{
+  Timer *ptr;
+
+  fprintf (fp, "thread %d long name translations (empty when no auto-instrumentation):\n", t);
+  for (ptr = timers[t]->next; ptr; ptr = ptr->next) {
+    if (ptr->longname)
+      fprintf (fp, "%s = %s\n", ptr->name, ptr->longname);
+  }
+}
+
+static int rename_duplicate_addresses ()
+{
+  Timer *ptr;
+  Timer *testptr;
+  int nfound = 0;
+  static const char *thisfunc = "rename_duplicate_addresses";
+
+  for (int t = 0; t < nthreads; ++t) {
+    for (ptr = timers[t]; ptr; ptr = ptr->next) {
+      char idx = 0;
+      // Check only entries with a longname that don't have '@' in their name.
+      // The former means auto-instrumented
+      // The latter means the name has already had the proper '@<number' appended.
+      if (ptr->longname && ! index (ptr->name, '@')) {
+	for (testptr = ptr->next; testptr; testptr = testptr->next) {
+	  if (testptr->longname && STRMATCH (ptr->name, testptr->name)) {
+	    // Add string "@<idx>" to end of testptr->name to indicate duplicate auto-profiled
+	    // name for multiple addresses. Probable inlining issue.
+	    if (++idx < 256) {  // 255 is the max integer printable in hex form in 2 chars
+	      snprintf (&testptr->name[MAX_CHARS-3], 4, "@%X", idx);
+	    } else {     // Limit of 16 is due to %1X in snprintf just above
+	      GPTLwarn ("%s: Too many duplicate addresses for %X. Not checking further\n",
+			thisfunc, ptr->address);
+	      break; // skip rest of testptr iterations, got to nex iteration of ptr
+	    }
+	  }
+	}
+	// 1-256 has been added to duplicates. Now add 0 to original
+	snprintf (&ptr->name[MAX_CHARS-3], 4, "@%X", 0);
+	nfound = MAX (nfound, idx);
+      }
+    }
+  }
+  return nfound;
+}
+
 /*
 ** get_longest_omp_namelen: Discover longest name shared across threads
 */
-
 static int get_longest_omp_namelen (void)
 {
   Timer *ptr;
@@ -2078,8 +2131,6 @@ static void printstats (const Timer *timer,
 #endif
 
   fprintf (fp, "\n");
-  if (dopr_longname && timer->longname)
-    fprintf (fp, "Long name=%s\n", timer->longname);
 }
 
 /* 
@@ -2802,11 +2853,6 @@ void __cyg_profile_func_enter (void *this_fn,
   // other.
   
   if (preamble_start (&t, unknown, thisfunc, this_fn) != 0) {
-#ifdef DEBUG
-    if (get_symnam (this_fn, &symnam) == 0) {
-      printf ("%s: 'unknown' symbol= %s\n", thisfunc, symnam);
-    }
-#endif
     return;
   }
   ptr = getentry_instr (hashtable[t], this_fn, &indx);
@@ -2839,7 +2885,8 @@ void __cyg_profile_func_enter (void *this_fn,
     }
     symsize = strlen (symnam);
 
-    // For long names, save the full name for diagnostic printing
+    // For names longer than MAX_CHARS, need the full name to avoid misrepresenting
+    // names with stripped off characters as duplicates
     if (symsize > MAX_CHARS) {
       ptr->longname = (char *) malloc (symsize+1);
       strcpy (ptr->longname, symnam);
@@ -2849,24 +2896,6 @@ void __cyg_profile_func_enter (void *this_fn,
     ptr->name[numchars] = '\0';
     ptr->address = this_fn;
     free (symnam);
-
-#ifdef DEBUG
-    if (ptr->name[0] == ' ' || ptr->name[0] == '\0')
-      fprintf (stderr,"%s name=%s address=%p numchars=%d\n",
-	       thisfunc, ptr->name, ptr->address, numchars);
-
-    Timer *testtimer;
-    for (testtimer = timers[t]; testtimer; testtimer = testtimer->next) {
-      // Print a msg if a "new" autoprofiled entry has a name that matches an existing entry
-      if (testtimer->address && testtimer->address != ptr->address &&
-	  STRMATCH(testtimer->name,ptr->name)) {
-	printf ("Autoprofiled name=%s at new address=%p matches name at existing address=%p\n",
-		ptr->name, ptr->address, testtimer->address);
-	if (ptr->longname)
-	  printf ("Longame=%s\n", ptr->longname);
-      }
-    }
-#endif
 
     if (update_ll_hash (ptr, t, indx) != 0) {
       GPTLwarn ("%s: update_ll_hash error\n", thisfunc);
@@ -2897,7 +2926,7 @@ int get_symnam (void *this_fn, char **symnam)
   char addrstr[MAX_CHARS+1];          // function address as a string
   static const char *thisfunc = "get_symnam(backtrace)";
 
-  void extract_name (char *, char **);
+  void extract_name (char *, char **, void *);
 
   nptrs = backtrace (buffer, 3);
   if (nptrs != 3) {
@@ -2910,7 +2939,7 @@ int get_symnam (void *this_fn, char **symnam)
     return -1;
   }
 
-  extract_name (strings[2], symnam);
+  extract_name (strings[2], symnam, this_fn);
   free (strings);
   return 0;
 }
@@ -2918,12 +2947,13 @@ int get_symnam (void *this_fn, char **symnam)
 // Backtrace strings have a bunch of extra stuff in them.
 // Find the start and end of the function name and return a pointer to the function name
 // Note a null terminator is added to str after the name, but we don't care
-void extract_name (char *str, char **symnam)
+void extract_name (char *str, char **symnam, void *this_fn)
 {
   char *cstart;
   char *cend;
   int nchars;
 
+  
   for (cstart = str; *cstart != '(' && *cstart != '\0'; ++cstart);
   if (*cstart == '\0') {
     cend = cstart;
@@ -2935,8 +2965,9 @@ void extract_name (char *str, char **symnam)
     *cend = '\0';
   }
   if (cend == cstart) {
-    *symnam = (char *) malloc (strlen (unknown) + 1);
-    strcpy (*symnam, unknown);
+    // Name not found: write function address into symnam. Allow 16 characters to hold address
+    *symnam = (char *) malloc (16+1);
+    snprintf (*symnam, 16+1,"%16p", this_fn);
   } else {
     nchars = (int) (cend - cstart);
     *symnam = (char *) malloc (nchars + 1);
@@ -2994,7 +3025,7 @@ void __cyg_profile_func_exit (void *this_fn,
   long sys = 0;              /* system time (returned from get_cpustamp) */
   static const char *thisfunc = "__cyg_profile_func_exit";
 
-  if (preamble_stop (&t, &tp1, &usr, &sys, unknown, thisfunc, this_fn) != 0)
+  if (preamble_stop (&t, &tp1, &usr, &sys, thisfunc, this_fn) != 0)
     return;
        
   ptr = getentry_instr (hashtable[t], this_fn, &indx);
