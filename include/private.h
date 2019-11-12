@@ -130,7 +130,7 @@ extern volatile pthread_t *GPTLthreadid;
 extern int GPTLthreadid;
 #endif
 
-/* Function prototypes */
+// Function prototypes
 extern int GPTLerror (const char *, ...);                  /* print error msg and return */
 extern void GPTLwarn (const char *, ...);                  /* print warning msg and return */
 extern void GPTLnote (const char *, ...);                  /* print warning msg and return */
@@ -158,12 +158,14 @@ extern void GPTLprint_hashstats (FILE *, int, Hashentry **, int);
 extern void GPTLprint_memstats (FILE *, Timer **, int, int, int);
 extern int GPTLget_nthreads (void);
 extern Timer **GPTLget_timersaddr (void);
+// For now this one is local to gptl.c but that may change if needs calling from pr_summary
+extern int GPTLrename_duplicate_addresses (void);
 
 extern void __cyg_profile_func_enter (void *, void *);
 extern void __cyg_profile_func_exit (void *, void *);
 
 extern bool GPTLonlypr_rank0;     // flag says ignore all stdout/stderr print from non-zero ranks
-/* These are needed for communication between gptl.c and other files (mainly gptl_papi.c) */
+
 #ifdef HAVE_PAPI
 extern Entry GPTLeventlist[];     // list of PAPI-based events to be counted
 extern int GPTLnevents;           // number of PAPI events (init to 0)

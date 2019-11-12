@@ -58,7 +58,6 @@ static Timer *getentry_slowway (Timer *, char *);
 **   outfile: name of file to be written
 */
 
-#ifdef HAVE_LIBMPI
 int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
 {
   int ret;             /* return code */
@@ -377,9 +376,6 @@ int GPTLpr_summary (MPI_Comm comm)       /* communicator */
 
   return GPTLpr_summary_file (comm, outfile);
 }
-
-#endif
-
 
 /* 
 ** get_threadstats: gather stats for timer "name" over all threads

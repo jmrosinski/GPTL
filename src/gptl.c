@@ -192,8 +192,7 @@ static inline int update_ptr (Timer *, const int);
 static int construct_tree (Timer *, Method);
 static inline void set_fp_procsiz (void);
 static void check_memusage (const char *, const char *);
-static int rename_duplicate_addresses (void);
-static void translate_long_names (int, FILE *);
+static void translate_truncated_names (int, FILE *);
 
 bool GPTLonlypr_rank0 = false;    // flag says only print from MPI rank 0 (default false)
 
@@ -637,7 +636,7 @@ int GPTLstart (const char *name)               /* timer name */
   ** behavior when GPTLstop decrements stackidx[t] unconditionally.
   */
   if (++stackidx[t].val > MAX_STACK-1)
-    return GPTLerror ("%s: stack too big\n", thisfunc);
+    return GPTLerror ("%s: stack too big: NOT starting timer for %s\n", thisfunc, name);
 
   if ( ! ptr) {   // Add a new entry and initialize. longname only needed for auto-profiling
     ptr = (Timer *) GPTLallocate (sizeof (Timer), thisfunc);
@@ -769,7 +768,7 @@ int GPTLstart_handle (const char *name,  /* timer name */
   ** behavior when GPTLstop decrements stackidx[t] unconditionally.
   */
   if (++stackidx[t].val > MAX_STACK-1)
-    return GPTLerror ("%s: stack too big\n", thisfunc);
+    return GPTLerror ("%s: stack too big: NOT starting timer for %s\n", thisfunc, name);
 
   if ( ! ptr) { /* Add a new entry and initialize */
     ptr = (Timer *) GPTLallocate (sizeof (Timer), thisfunc);
@@ -1124,17 +1123,32 @@ static inline int update_stats (Timer *ptr,
 
   // Verify that the timer being stopped is at the bottom of the call stack
   if ( ! imperfect_nest) {
+    char *name;        //  found name
+    char *bname;       //  expected name
+
     bidx = stackidx[t].val;
     bptr = callstack[t][bidx];
     if (ptr != bptr) {
       imperfect_nest = true;
-      // Sometimes imperfect_nest can cause bptr to be NULL so check for that
-      if (bptr)
-	GPTLwarn ("%s: Imperfect nest detected: Got timer=%s expected btm of call stack=%s\n",
-		  thisfunc, ptr->name, bptr->name);
+      if (ptr->longname)
+	name = ptr->longname;
       else
-	GPTLwarn ("%s: Imperfect nest detected: Got timer=%s expected btm of call stack=%p\n",
-		  thisfunc, ptr->name, bptr);
+	name = ptr->name;
+      
+      // Print to stderr as well due to debugging importance, and warn/error have limits on the
+      // number of calls that can be made
+      fprintf (stderr, "%s: Imperfect nest detected: Got timer %s\n", thisfunc, name);      
+      GPTLwarn ("%s: Imperfect nest detected: Got timer %s\n", thisfunc, name);
+      if (bptr) {
+	if (bptr->longname)
+	  bname = bptr->longname;
+	else
+	  bname = bptr->name;
+	fprintf (stderr, "Expected btm of call stack %s\n", bname);
+      } else {
+	// Sometimes imperfect_nest can cause bptr to be NULL
+	fprintf (stderr, "Expected btm of call stack but bptr is NULL\n");
+      }
       //      print_callstack (t, thisfunc);
     }
   }
@@ -1331,7 +1345,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
     fp = stderr;
 
   // Rename auto-instrumented entries with same name but different address due to lopping
-  if ((ndup = rename_duplicate_addresses ()) > 0) {
+  if ((ndup = GPTLrename_duplicate_addresses ()) > 0) {
     fprintf (fp, "%d duplicate auto-instrumented addresses were found and @<num> added to name",
 	     ndup);
     if (ndup > 255) {
@@ -1452,7 +1466,6 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   sum = (float *) GPTLallocate (nthreads * sizeof (float), thisfunc);
   
   for (t = 0; t < nthreads; ++t) {
-    translate_long_names (t, fp);
     print_titles (t, fp, &outputfmt);
     /*
     ** Print timing stats. If imperfect nesting was detected, print stats by going through
@@ -1566,6 +1579,10 @@ int GPTLpr_file (const char *outfile) /* output file to write */
     }
   }
 
+  // For auto-instrumented apps, translate names which have been truncated for output formatting
+  for (t = 0; t < nthreads; ++t)
+    translate_truncated_names (t, fp);
+  
   /* 
   ** Print info about timers with multiple parents ONLY if imperfect nesting was not discovered
   */
@@ -1612,7 +1629,54 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   return 0;
 }
 
-static void translate_long_names (int t, FILE *fp)
+/* 
+** GPTLrename_duplcicate_addresses: Create unique name for auto-profiled entries that are 
+**                                  now duplicates due to truncation
+**
+** Return value: max number of duplicates found
+*/
+int GPTLrename_duplicate_addresses ()
+{
+  Timer *ptr;       // iterate through timers
+  Timer *testptr;   // start at ptr, iterate through remaining timers
+  int nfound = 0;   // number of duplicates found
+  int t;            // thread index
+  static const char *thisfunc = "GPTLrename_duplicate_addresses";
+
+  for (t = 0; t < nthreads; ++t) {
+    for (ptr = timers[t]; ptr; ptr = ptr->next) {
+      unsigned int idx = 0;
+      // Check only entries with a longname and don't have '@' in their name
+      // The former means auto-instrumented
+      // The latter means the name hasn't yet had the proper '@<number>' appended.
+      if (ptr->longname && ! index (ptr->name, '@')) {
+	for (testptr = ptr->next; testptr; testptr = testptr->next) {
+	  if (testptr->longname && STRMATCH (ptr->name, testptr->name)) {
+	    // Add string "@<idx>" to end of testptr->name to indicate duplicate auto-profiled
+	    // name for multiple addresses. Probable inlining issue.
+	    if (++idx < 4096)    // 4095 is the max integer printable in 3 hex chars
+	      snprintf (&testptr->name[MAX_CHARS-4], 5, "@%X", idx);
+	    else
+	      snprintf (&testptr->name[MAX_CHARS-4], 5, "@MAX");
+	  }
+	}
+	// @<number> has been added to duplicates. Now add @0 to original
+	snprintf (&ptr->name[MAX_CHARS-4], 5, "@%X", 0);
+	nfound = MAX (nfound, idx);
+      }
+    }
+  }
+  return nfound;
+}
+
+/* 
+** translate_truncated_names: For auto-profiled entries, print to output file the translation of
+**                            truncated names to full signature
+**
+** Input args: t=thread number
+**             fp=file pointer
+*/
+static void translate_truncated_names (int t, FILE *fp)
 {
   Timer *ptr;
 
@@ -1621,42 +1685,6 @@ static void translate_long_names (int t, FILE *fp)
     if (ptr->longname)
       fprintf (fp, "%s = %s\n", ptr->name, ptr->longname);
   }
-}
-
-static int rename_duplicate_addresses ()
-{
-  Timer *ptr;
-  Timer *testptr;
-  int nfound = 0;
-  static const char *thisfunc = "rename_duplicate_addresses";
-
-  for (int t = 0; t < nthreads; ++t) {
-    for (ptr = timers[t]; ptr; ptr = ptr->next) {
-      char idx = 0;
-      // Check only entries with a longname that don't have '@' in their name.
-      // The former means auto-instrumented
-      // The latter means the name has already had the proper '@<number' appended.
-      if (ptr->longname && ! index (ptr->name, '@')) {
-	for (testptr = ptr->next; testptr; testptr = testptr->next) {
-	  if (testptr->longname && STRMATCH (ptr->name, testptr->name)) {
-	    // Add string "@<idx>" to end of testptr->name to indicate duplicate auto-profiled
-	    // name for multiple addresses. Probable inlining issue.
-	    if (++idx < 256) {  // 255 is the max integer printable in hex form in 2 chars
-	      snprintf (&testptr->name[MAX_CHARS-3], 4, "@%X", idx);
-	    } else {     // Limit of 16 is due to %1X in snprintf just above
-	      GPTLwarn ("%s: Too many duplicate addresses for %X. Not checking further\n",
-			thisfunc, ptr->address);
-	      break; // skip rest of testptr iterations, got to nex iteration of ptr
-	    }
-	  }
-	}
-	// 1-256 has been added to duplicates. Now add 0 to original
-	snprintf (&ptr->name[MAX_CHARS-3], 4, "@%X", 0);
-	nfound = MAX (nfound, idx);
-      }
-    }
-  }
-  return nfound;
 }
 
 /*
@@ -2983,18 +3011,15 @@ int get_symnam (void *this_fn, char **symnam)
   unw_cursor_t cursor;
   unw_context_t context;
   unw_word_t offset, pc;
+  int n;
   static const char *thisfunc = "get_symnam(unwind)";
 
-  // sanity check
-  if (*symnam)
-    abort();
-  
   // Initialize cursor to current frame for local unwinding.
   unw_getcontext (&context);
   unw_init_local (&cursor, &context);
 
   // Need to unwind 2 levels to get to function of interest
-  for (int n = 0; n < 2; ++n) {
+  for (n = 0; n < 2; ++n) {
     if (unw_step (&cursor) <= 0) { // unw_step failed: give up
       GPTLwarn ("%s: unw_step failed\n", thisfunc);
       return -1;
@@ -3002,13 +3027,14 @@ int get_symnam (void *this_fn, char **symnam)
   }
 
   unw_get_reg (&cursor, UNW_REG_IP, &pc);
-  if (unw_get_proc_name (&cursor, symbol, sizeof(symbol), &offset) != 0) {
-    // Symbol not found: give up
-    GPTLwarn ("%s unwind pgm counter=0x%lx symbol name not found\n", thisfunc, pc);
-    return -1;
+  if (unw_get_proc_name (&cursor, symbol, sizeof(symbol), &offset) == 0) {
+    *symnam = malloc (strlen (symbol) + 1);
+    strcpy (*symnam, symbol);
+  } else {
+    // Name not found: write function address into symnam. Allow 16 characters to hold address
+    *symnam = (char *) malloc (16+1);
+    snprintf (*symnam, 16+1,"%16p", this_fn);
   }
-  *symnam = malloc (strlen (symbol) + 1);
-  strcpy (*symnam, symbol);
   return 0;
 }
 #endif
@@ -3435,7 +3461,8 @@ static int threadinit (void)
     maxthreads = MAX ((1), (omp_get_max_threads ()));
 
   if ( ! (GPTLthreadid_omp = (int *) GPTLallocate (maxthreads * sizeof (int), thisfunc)))
-    return GPTLerror ("OMP %s: malloc failure for %d elements of GPTLthreadid_omp\n", thisfunc, maxthreads);
+    return GPTLerror ("OMP %s: malloc failure for %d elements of GPTLthreadid_omp\n",
+		      thisfunc, maxthreads);
 
   /*
   ** Initialize threadid array to flag values for use by get_thread_num().
