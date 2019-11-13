@@ -66,7 +66,7 @@ static bool percent = false;           /* print wallclock also as percent of 1st
 static bool dopr_preamble = true;      /* whether to print preamble info */
 static bool dopr_threadsort = true;    /* whether to print sorted thread stats */
 static bool dopr_multparent = true;    /* whether to print multiple parent info */
-static bool dopr_collision = true;     /* whether to print hash collision info */
+static bool dopr_collision = false;    /* whether to print hash collision info */
 static bool dopr_memusage = false;     /* whether to include memusage print when auto-profiling */
 
 static time_t ref_gettimeofday = -1;   /* ref start point for gettimeofday */
@@ -241,7 +241,6 @@ static int funcidx = 0;                  // default timer is gettimeofday
 static int tablesize = DEFAULT_TABLE_SIZE;  /* per-thread size of hash table (settable parameter) */
 static int tablesizem1 = DEFAULT_TABLE_SIZE - 1;
 
-#define MSGSIZ MAX_CHARS+40              // max size of msg printed when dopr_memusage=true
 static float rssmax = 0;                 // max rss of the process
 static bool imperfect_nest;              // e.g. start(A),start(B),stop(A)
 static const int indent_chars = 2;       // Number of chars to indent

@@ -68,7 +68,7 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
   int n, nn;           /* region index */
   int i;               /* index */
   Timer *ptr;          /* linked list pointer */
-  Timer **timers;
+  Timer **timers;      // array of timers
   int incr;            /* increment for tree sum */
   int twoincr;         /* 2*incr */
   int dosend;          /* logical indicating whether to send this iteration */
@@ -103,11 +103,18 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
   if ((ret = MPI_Comm_size (comm, &nranks)) != MPI_SUCCESS)
     return GPTLerror ("%s rank %d: Bad return from MPI_Comm_size=%d\n", thisfunc, iam, ret);
 
-  /* Examine only thread 0 regions */
-  ret = GPTLget_nregions (0, &nregions);
+  // Examine only thread 0 regions that have not been renamed due to long name (only applies
+  // to auto-profiled routines). The "longname" caveat is important because the naming truncation
+  // algorithm may have named the SAME region differently for different ranks
+  timers = GPTLget_timersaddr ();
+  nregions = 0;
+  for (ptr = timers[0]->next; ptr && ! ptr->longname; ptr = ptr->next) 
+    ++nregions;
+
   if (nregions < 1)
     GPTLwarn ("%s rank %d: nregions = 0\n", thisfunc, iam);
-  global = (Global *) GPTLallocate (nregions * sizeof (Global), thisfunc);
+  else
+    global = (Global *) GPTLallocate (nregions * sizeof (Global), thisfunc);
 
   /*
   ** Gather per-thread stats based on thread 0 list.
@@ -115,11 +122,10 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
   */
   n = 0;
   mnl = 0;
-  timers = GPTLget_timersaddr ();
   nthreads = GPTLget_nthreads ();   /* get_threadstats() needs to know this value too */
   multithread = (nthreads > 1);
 
-  for (ptr = timers[0]->next; ptr; ptr = ptr->next) {
+  for (ptr = timers[0]->next; ptr && ! ptr->longname; ptr = ptr->next) {
     get_threadstats (iam, ptr->name, timers, &global[n]);
     mnl = MAX (strlen (ptr->name), mnl);
 
@@ -129,8 +135,6 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
     global[n].tottsk = 1;
     ++n;
   }
-  if (n != nregions)
-    GPTLwarn ("%s rank %d: Bad logic caused n=%d and nregions=%d\n", thisfunc, iam, n, nregions);
 
   /*
   ** If all ranks participate in a region, could use MPI_Reduce to get mean and variance.
@@ -160,10 +164,14 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
 
       if ((ret = MPI_Send (&nregions, 1, MPI_INT, sendto, tag, comm)) != MPI_SUCCESS)
         return GPTLerror ("%s rank %d: Bad return from MPI_Send=%d\n", thisfunc, iam, ret);
-      if ((ret = MPI_Send (&multithread, 1, MPI_INT, sendto, tag, comm)) != MPI_SUCCESS)
-        return GPTLerror ("%s rank %d: Bad return from MPI_Send=%d\n", thisfunc, iam, ret);
-      if ((ret = MPI_Send (global, nbytes*nregions, MPI_BYTE, sendto, tag, comm)) != MPI_SUCCESS)
-        return GPTLerror ("%s rank %d: Bad return from MPI_Send=%d\n", thisfunc, iam, ret);
+      // if nregions=0, don't send other info because "global" wasn't even allocated
+      // Same logic MUST also be applied on the receiving end
+      if (nregions > 0) {
+	if ((ret = MPI_Send (&multithread, 1, MPI_INT, sendto, tag, comm)) != MPI_SUCCESS)
+	  return GPTLerror ("%s rank %d: Bad return from MPI_Send=%d\n", thisfunc, iam, ret);
+	if ((ret = MPI_Send (global, nbytes*nregions, MPI_BYTE, sendto, tag, comm)) != MPI_SUCCESS)
+	  return GPTLerror ("%s rank %d: Bad return from MPI_Send=%d\n", thisfunc, iam, ret);
+      }
     }
 
     if (dorecv) {
@@ -172,25 +180,31 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
 
       if ((ret = MPI_Recv (&nregions_p, 1, MPI_INT, p, tag, comm, &status)) != MPI_SUCCESS)
         return GPTLerror ("%s rank %d: Bad return from MPI_Recv=%d\n", thisfunc, iam, ret);
-      if ((ret = MPI_Recv (&multithread_p, 1, MPI_INT, p, tag, comm, &status)) != MPI_SUCCESS)
-        return GPTLerror ("%s rank %d: Bad return from MPI_Recv=%d\n", thisfunc, iam, ret);
-      if (multithread_p)
-        multithread = true;
+      if (nregions_p > 0) {
+	if ((ret = MPI_Recv (&multithread_p, 1, MPI_INT, p, tag, comm, &status)) != MPI_SUCCESS)
+	  return GPTLerror ("%s rank %d: Bad return from MPI_Recv=%d\n", thisfunc, iam, ret);
+	if (multithread_p)
+	  multithread = true;
 
-      global_p = (Global *) GPTLallocate (nregions_p * sizeof (Global), thisfunc);
-      ret = MPI_Recv (global_p, nbytes*nregions_p, MPI_BYTE, p, tag, comm, &status);
-      if (ret != MPI_SUCCESS)
-        return GPTLerror ("%s rank %d: Bad return from MPI_Recv=%d\n", thisfunc, iam, ret);
+	global_p = (Global *) GPTLallocate (nregions_p * sizeof (Global), thisfunc);
+	ret = MPI_Recv (global_p, nbytes*nregions_p, MPI_BYTE, p, tag, comm, &status);
+	if (ret != MPI_SUCCESS)
+	  return GPTLerror ("%s rank %d: Bad return from MPI_Recv=%d\n", thisfunc, iam, ret);
+      }
       
-      /* Merge stats for task p with our current stats */
+      // Merge stats for task p with our current stats. Note nregions_p and/or nregions may be 0
       for (n = 0; n < nregions_p; ++n) {
         for (nn = 0; nn < nregions; ++nn) {
           if (STRMATCH (global_p[n].name, global[nn].name)) {
             break;
           }
         }
-
-        if (nn == nregions) {  /* new region: reallocate and copy stats */
+	
+        if (nn == nregions) {
+	  // "received" region is for a region not on our rank. Allocate additional space and 
+	  // copy the data that was just received. Note nregions (local to our rank) can be 0, 
+	  // in which case nn will certainly be 0. Our rank still needs to participate, passing
+	  // along the just received data.
           ++nregions;
           sptr = (Global *) realloc (global, nregions * sizeof (Global));
           if ( ! sptr)
@@ -200,7 +214,7 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
           global[nn] = global_p[n];
           mnl = MAX (strlen (global[nn].name), mnl);
 
-        } else {               /* adjust stats for region */
+        } else {  // A matching name was just received: Adjust stats accordingly
 
 	  /* Won't print this entry if it was on for any rank or thread */
 	  global[nn].notstopped += global_p[n].notstopped;
@@ -240,10 +254,12 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
 #endif
         }
       }
-      free (global_p); /* done with received data this iteration */
-    }
-  }
+      if (global_p)
+	free (global_p); // done with received data this iteration
+    }                    // End of "if (dorecv) {" block
+  }                      // End of "for (incr =..." loop
 
+  // Rank 0 contains the final results. Print them
   if (iam == 0) {
     if ( ! (fp = fopen (outfile, "w"))) {
       fp = stderr;

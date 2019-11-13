@@ -22,7 +22,7 @@ int main (int argc, char **argv)
 {
   char pname[MPI_MAX_PROCESSOR_NAME];
 
-  int iter;
+  int t;
   int counter;
   int c;
   int tnum = 0;
@@ -62,7 +62,6 @@ int main (int argc, char **argv)
   }
 
   ret = GPTLinitialize ();
-  ret = GPTLstart ("total");
 	 
   ret = MPI_Comm_rank (MPI_COMM_WORLD, &iam);
   ret = MPI_Comm_size (MPI_COMM_WORLD, &nproc);
@@ -72,18 +71,19 @@ int main (int argc, char **argv)
 
 #ifdef THREADED_OMP
   nthreads = omp_get_max_threads ();
-#pragma omp parallel for private (iter, ret, tnum)
+#pragma omp parallel for private (t, ret, tnum)
 #endif
 
-  for (iter = 1; iter <= nthreads; iter++) {
+  for (t = 0; t < nthreads; ++t) {
 #ifdef THREADED_OMP
     tnum = omp_get_thread_num ();
 #endif
     printf ("Thread %d of rank %d on processor %s\n", tnum, iam, pname);
-    value = sub (iter);
+    // Have rank 1 not have any regions.
+    if (iam != 1)
+      value = sub (t);
   }
 
-  ret = GPTLstop ("total");
   ret = GPTLpr (iam);
 
   if (iam == 0) {
@@ -108,19 +108,20 @@ int main (int argc, char **argv)
   return 0;
 }
 
-double sub (int iter)
+double sub (int t)
 {
   unsigned long usec;
-  unsigned long looplen = iam*iter*100000;
+  unsigned long looplen = iam*t*100000;
   unsigned long i;
   double sum;
   int ret;
 
   ret = GPTLstart ("sub");
   /* Sleep msec is mpi rank + thread number */
-  usec = 1000 * (iam * iter);
+  usec = 1000 * (iam + t)*10;
 
   ret = GPTLstart ("sleep");
+  printf ("iam %d thread %d sleeping %d ms\n", iam, omp_get_thread_num(), usec/1000);
   usleep (usec);
   ret = GPTLstop ("sleep");
 

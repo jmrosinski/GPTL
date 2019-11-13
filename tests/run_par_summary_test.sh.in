@@ -7,6 +7,6 @@
 set -e
 echo
 echo "Testing MPI summary..."
-env OMP_NUM_THREADS=2 @MPIEXEC@ -n 2 ./summary
+env OMP_NUM_THREADS=2 @MPIEXEC@ -n 5 ./summary
 echo "SUCCESS!"
 exit 0
