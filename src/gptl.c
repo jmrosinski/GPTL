@@ -2994,7 +2994,7 @@ void extract_name (char *str, char **symnam, void *this_fn)
   if (cend == cstart) {
     // Name not found: write function address into symnam. Allow 16 characters to hold address
     *symnam = (char *) malloc (16+1);
-    snprintf (*symnam, 16+1,"%16p", this_fn);
+    snprintf (*symnam, 16+1,"%-16p", this_fn);
   } else {
     nchars = (int) (cend - cstart);
     *symnam = (char *) malloc (nchars + 1);

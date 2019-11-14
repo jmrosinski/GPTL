@@ -108,8 +108,9 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
   // algorithm may have named the SAME region differently for different ranks
   timers = GPTLget_timersaddr ();
   nregions = 0;
-  for (ptr = timers[0]->next; ptr && ! ptr->longname; ptr = ptr->next) 
-    ++nregions;
+  for (ptr = timers[0]->next; ptr; ptr = ptr->next)
+    if ( ! ptr->longname)
+      ++nregions;
 
   if (nregions < 1)
     GPTLwarn ("%s rank %d: nregions = 0\n", thisfunc, iam);
@@ -125,15 +126,17 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
   nthreads = GPTLget_nthreads ();   /* get_threadstats() needs to know this value too */
   multithread = (nthreads > 1);
 
-  for (ptr = timers[0]->next; ptr && ! ptr->longname; ptr = ptr->next) {
-    get_threadstats (iam, ptr->name, timers, &global[n]);
-    mnl = MAX (strlen (ptr->name), mnl);
+  for (ptr = timers[0]->next; ptr; ptr = ptr->next) {
+    if ( ! ptr->longname) {
+      get_threadstats (iam, ptr->name, timers, &global[n]);
+      mnl = MAX (strlen (ptr->name), mnl);
 
-    /* Initialize for calculating mean, st. dev. */
-    global[n].mean   = global[n].wallmax;
-    global[n].m2     = 0.;
-    global[n].tottsk = 1;
-    ++n;
+      /* Initialize for calculating mean, st. dev. */
+      global[n].mean   = global[n].wallmax;
+      global[n].m2     = 0.;
+      global[n].tottsk = 1;
+      ++n;
+    }
   }
 
   /*
