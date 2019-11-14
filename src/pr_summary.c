@@ -80,8 +80,8 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
   int extraspace;      /* for padding to length of longest name */
   int multithread;     /* flag indicates multithreaded or not for any task */
   int multithread_p;   /* recvd flag for other processor indicates multithreaded or not */
-  Global *global;      /* stats to be printed accumulated across tasks */
-  Global *global_p;    /* stats to be printed for a single task */
+  Global *global = 0;  // stats to be printed accumulated across tasks
+  Global *global_p = 0;// stats to be printed for a single task
   Global *sptr;        /* realloc intermediate */
   float delta;         /* from Chan, et. al. */
   float sigma;         /* st. dev. */
@@ -385,7 +385,8 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
     if (fp != stderr && fclose (fp) != 0)
       fprintf (stderr, "Attempt to close %s failed\n", outfile);
   }
-  free (global);
+  if (global)
+    free (global);
   return 0;
 }
 

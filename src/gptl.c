@@ -208,19 +208,15 @@ static Funcentry funclist[] = {
 #ifdef HAVE_NANOTIME
   {GPTLnanotime,       utr_nanotime,       init_nanotime,      "nanotime"},
 #endif
-
 #ifdef HAVE_LIBMPI
   {GPTLmpiwtime,       utr_mpiwtime,       init_mpiwtime,      "MPI_Wtime"},
 #endif
-
 #ifdef HAVE_LIBRT
   {GPTLclockgettime,   utr_clock_gettime,  init_clock_gettime, "clock_gettime"},
 #endif
-
 #ifdef _AIX
   {GPTLread_real_time, utr_read_real_time, init_read_real_time,"read_real_time"},     /* AIX only */
 #endif
-
   {GPTLplacebo,        utr_placebo,        init_placebo,       "placebo"}      /* does nothing */
 };
 static const int nfuncentries = sizeof (funclist) / sizeof (Funcentry);
@@ -246,8 +242,10 @@ static bool imperfect_nest;              // e.g. start(A),start(B),stop(A)
 static const int indent_chars = 2;       // Number of chars to indent
 static FILE *fp_procsiz = 0;             // process size file pointer: init to 0 to use stderr
 
-/* VERBOSE is a debugging ifdef local to the rest of this file */
+// VERBOSE is a debugging ifdef local to the rest of this file
 #undef VERBOSE
+// APPEND_ADDRESS is an autoprofiling debugging ifdef that will append function address to name
+#undef APPEND_ADDRESS
 
 /**
  * Set option value
@@ -2879,9 +2877,8 @@ void __cyg_profile_func_enter (void *this_fn,
   // other reasons in __cyg_profile_func_exit, and the preamble* functions need to mirror each
   // other.
   
-  if (preamble_start (&t, unknown, thisfunc, this_fn) != 0) {
+  if (preamble_start (&t, unknown, thisfunc, this_fn) != 0)
     return;
-  }
   ptr = getentry_instr (hashtable[t], this_fn, &indx);
 
   /* 
@@ -2979,7 +2976,6 @@ void extract_name (char *str, char **symnam, void *this_fn)
   char *cstart;
   char *cend;
   int nchars;
-
   
   for (cstart = str; *cstart != '(' && *cstart != '\0'; ++cstart);
   if (*cstart == '\0') {
@@ -2997,8 +2993,16 @@ void extract_name (char *str, char **symnam, void *this_fn)
     snprintf (*symnam, 16+1,"%-16p", this_fn);
   } else {
     nchars = (int) (cend - cstart);
+#ifdef APPEND_ADDRESS
+    char addrname[16+2];
+    *symnam = (char *) malloc (nchars+16+2);  // 16 is nchars, +2 is for '#' and '\0'
+    strncpy (*symnam, cstart, nchars+1);
+    snprintf (addrname, 16+2, "#%-16p", this_fn);
+    strcat (*symnam, addrname);
+#else
     *symnam = (char *) malloc (nchars + 1);
     strncpy (*symnam, cstart, nchars+1);
+#endif
   }
 }
 #endif
@@ -3011,6 +3015,7 @@ int get_symnam (void *this_fn, char **symnam)
   unw_context_t context;
   unw_word_t offset, pc;
   int n;
+  int nchars;
   static const char *thisfunc = "get_symnam(unwind)";
 
   // Initialize cursor to current frame for local unwinding.
@@ -3027,12 +3032,21 @@ int get_symnam (void *this_fn, char **symnam)
 
   unw_get_reg (&cursor, UNW_REG_IP, &pc);
   if (unw_get_proc_name (&cursor, symbol, sizeof(symbol), &offset) == 0) {
-    *symnam = malloc (strlen (symbol) + 1);
-    strcpy (*symnam, symbol);
+    char addrname[16+2];
+    nchars = strlen (symbol);
+#ifdef APPEND_ADDRESS
+    *symnam = malloc (nchars+16+2);  // 16 is nchars, +2 is for '#' and '\0'
+    strncpy (*symnam, symbol, nchars+1);
+    snprintf (addrname, 16+2, "#%-16p", this_fn);
+    strcat (*symnam, addrname);
+#else
+    *symnam = malloc (nchars + 1);
+    strncpy (*symnam, symbol, nchars+1);
+#endif
   } else {
     // Name not found: write function address into symnam. Allow 16 characters to hold address
     *symnam = (char *) malloc (16+1);
-    snprintf (*symnam, 16+1,"%16p", this_fn);
+    snprintf (*symnam, 16+1, "%-16p", this_fn);
   }
   return 0;
 }
