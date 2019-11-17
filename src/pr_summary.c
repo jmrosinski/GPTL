@@ -6,6 +6,7 @@
 
 #include "private.h"
 #include "gptl.h"
+#include "gptlmpi.h"
 
 /* MPI summary stats */
 typedef struct {

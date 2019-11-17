@@ -5,6 +5,7 @@
 
 #ifdef HAVE_LIBMPI
 #include <mpi.h>
+#include "gptlmpi.h"
 MPI_Comm comm;
 #endif
 

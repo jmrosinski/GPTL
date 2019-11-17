@@ -9,7 +9,7 @@ EXTRA_DIST = COPYING
 
 # This is the list of subdirs for which Makefiles will be constructed
 # and run.
-SUBDIRS = src tests include
+SUBDIRS = include src tests
 
 install-data-hook:
 
@@ -23,7 +23,6 @@ install-data-hook:
 	@echo '| recommend you do so. It does not take very long.            |'
 	@echo '|                                                             |'
 	@echo '| GPTL was developed with support from multiple institutions, |'
-	@echo '| including NOAA, NCAR, and ORNL. It is maintained by the GSD |'
-	@echo '| group at NOAA.                                              |'
+	@echo '| including NOAA, NCAR, and ORNL.                             |'
 	@echo '+-------------------------------------------------------------+'
 	@echo ''

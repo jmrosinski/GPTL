@@ -6,7 +6,9 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-
+#ifdef HAVE_LIBMPI
+#include <mpi.h>
+#endif
 #include "private.h"
 #include "gptl.h"
 

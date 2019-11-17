@@ -34,6 +34,9 @@ AC_PROG_CC()
 AC_C_CONST
 AC_C_INLINE
 
+# For gptl.pc
+GPTL_LIBS="-lgptl"
+
 # Only define HAVE_NANOTIME if this is a x86. It provides by far the finest grained,
 # lowest overhead wallclock timer on that architecture.
 # Set HAVE_NANOTIME on x86 systems only.
@@ -272,14 +275,9 @@ AC_CHECK_FUNC([times],
 AC_CHECK_FUNC([gettimeofday],
         [AC_DEFINE([HAVE_GETTIMEOFDAY], [1], [gettimeofday function is available])])
 
-# Initialize gptl.h. It will be augmented if MPI is enabled
-cp -f include/gptl.h.in include/gptl.h
-
 # Do we have MPI?
 AC_CHECK_FUNC([MPI_Init], [have_libmpi=yes], [have_libmpi=no])
 if test "x$have_libmpi" = xyes; then
-# Add MPI functions to header file
-  cat include/gptlmpi.h.in >> include/gptl.h
 # Modify FCFLAGS in case Fortran support is enabled
   FCFLAGS="-DHAVE_LIBMPI $FCFLAGS"
   AC_DEFINE([HAVE_LIBMPI], [1], [found MPI library])
@@ -298,9 +296,6 @@ if test "x$have_libmpi" = xyes; then
     AC_MSG_WARN([Could not determine MPI_STATUS_SIZE_IN_INTS -- GUESSING 5])
   fi
 fi
-
-# Need a #endif to terminate the #ifndef GPTL_H at the top of gptl.h
-echo "#endif" >> include/gptl.h
 
 AM_CONDITIONAL([HAVE_LIBMPI], [test "x$have_libmpi" = xyes])
 
@@ -340,13 +335,8 @@ AC_ARG_ENABLE([fortran], [AS_HELP_STRING([--disable-fortran],
 if test "x$enable_fortran" = "xyes"; then
   AC_LANG_PUSH(Fortran)
   AC_PROG_FC()
-
-# Create gptl.inc, and augment if MPI is enabled
-  cp -f fortran/include/gptl.inc.in fortran/include/gptl.inc
-  if test "x$have_libmpi" = xyes; then
-    cat fortran/include/gptlmpi.inc.in >> fortran/include/gptl.inc
-  fi
-
+# For gptl.pc
+  GPTL_LIBS="-lgptlf $GPTL_LIBS"
 # Make sure this file is copied to build directories for tests to work.
   AC_CONFIG_LINKS([fortran/tests/gptlnl:fortran/tests/gptlnl])
 # Test OMP for Fortran and set flags accordingly, only if OMP support was enabled above for C
@@ -379,8 +369,12 @@ if test "x$enable_fortran" = "xyes"; then
 fi
 AM_CONDITIONAL([HAVE_FORTRAN], [test x$enable_fortran = "xyes"])
 
-# This is a list of C files to be built
+# For gptl.pc
+AC_SUBST([GPTL_LIBS], [$GPTL_LIBS])
+
+# Files to be built
 AC_CONFIG_FILES([Makefile
+                 gptl.pc
                  include/Makefile
                  tests/Makefile
                  src/Makefile

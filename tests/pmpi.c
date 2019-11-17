@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <mpi.h>
 #include "gptl.h"
+#include "gptlmpi.h"
 
 static const MPI_Comm comm = MPI_COMM_WORLD;
 static int iam;

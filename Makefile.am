@@ -16,6 +16,10 @@ if HAVE_FORTRAN
 SUBDIRS += fortran
 endif
 
+# Name and dir to hold pkgconfig info
+pkgconfigdir = ${libdir}/pkgconfig
+pkgconfig_DATA = gptl.pc
+
 install-data-hook:
 
 	@echo ''
@@ -28,7 +32,6 @@ install-data-hook:
 	@echo '| recommend you do so. It does not take very long.            |'
 	@echo '|                                                             |'
 	@echo '| GPTL was developed with support from multiple institutions, |'
-	@echo '| including NOAA, NCAR, and ORNL. It is maintained by the GSD |'
-	@echo '| group at NOAA.                                              |'
+	@echo '| including NOAA, NCAR, and ORNL.                             |'
 	@echo '+-------------------------------------------------------------+'
 	@echo ''

@@ -7,6 +7,7 @@
 #include <string.h>  /* memset */
 
 #include "gptl.h"
+#include "gptlmpi.h"
 
 #ifdef THREADED_OMP
 #include <omp.h>

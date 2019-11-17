@@ -1,8 +1,5 @@
 #include "config.h"
 #include "gptl.h"
-#ifdef HAVE_LIBMPI
-#include <mpi.h>
-#endif
 #include <stdio.h>
 
 int handle; /* for _handle routines--used by both granularity and overhead */

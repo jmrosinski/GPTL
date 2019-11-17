@@ -4,7 +4,8 @@
 # Ed Hartnett, 5/21/18
 
 # Find include directory and src directory (for .mod file).
-AM_CPPFLAGS = -I$(top_srcdir)/include -I../src
+F77=$(FC)
+AM_CPPFLAGS = -I../include -I../src
 
 INSTRFLAG = @INSTRFLAG@
 INSTR_LINK = @INSTR_LINK@
@@ -24,8 +25,8 @@ noinst_PROGRAMS = overhead handle
 bin_PROGRAMS = utrtest
 
 # Test programs that will be built for all configurations.
-check_PROGRAMS = testbasics errtest nlreader outoforder
-TESTS          = testbasics errtest nlreader outoforder
+check_PROGRAMS = testbasics errtest nlreader outoforder legacy
+TESTS          = testbasics errtest nlreader outoforder legacy
 
 # Test dependencies needed.
 testbasics_SOURCES = testbasics.F90 ${MODFILE}
@@ -37,6 +38,7 @@ summary_SOURCES    = summary.F90    ${MODFILE}
 handle_SOURCES     = handle.F90     ${MODFILE}
 overhead_SOURCES   = overhead.F90   ${MODFILE}
 utrtest_SOURCES    = utrtest.F90    ${MODFILE}
+legacy_SOURCES     = legacy.F
 
 if HAVE_OPENMP
 noinst_PROGRAMS  += threadohd

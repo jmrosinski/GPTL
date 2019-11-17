@@ -10,12 +10,13 @@
 
 #ifdef HAVE_LIBMPI
 #include <mpi.h>
+#include "gptlmpi.h"
 #endif
 
 #include <string.h>
 #include <stdlib.h>
 #include "private.h" /* MAX_CHARS, bool */
-#include "gptl.h"    /* function prototypes */
+#include "gptl.h"
 
 #if ( defined FORTRANUNDERSCORE )
 

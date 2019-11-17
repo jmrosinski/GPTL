@@ -1,12 +1,16 @@
 #include "config.h"
 #include <stdio.h>
 #include <unistd.h>
-#ifdef HAVE_LIBMPI
-#include <mpi.h>
-#endif
+
 #ifdef THREADED_OMP
 #include <omp.h>
 #endif
+
+#ifdef HAVE_LIBMPI
+#include <mpi.h>
+#include "gptlmpi.h"
+#endif
+
 #include "gptl.h"
 
 int main (int argc, char **argv)

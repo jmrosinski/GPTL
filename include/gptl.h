@@ -117,3 +117,4 @@ extern int GPTLget_count (const char *, int, int *);
 #ifdef __cplusplus
 }
 #endif
+#endif
