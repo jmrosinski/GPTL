@@ -76,7 +76,7 @@ endif
 endif
 
 # Test output to be deleted.
-CLEANFILES = timing.* *_ohd *.mod
+CLEANFILES = timing.* *_ohd *.mod *.trs *.log
 
 # This file is required for the nlreader test.
 EXTRA_DIST = gptlnl
