@@ -122,7 +122,11 @@ double sub (int t)
   usec = 1000 * (iam + t)*10;
 
   ret = GPTLstart ("sleep");
+#ifdef THREADED_OMP
   printf ("iam %d thread %d sleeping %d ms\n", iam, omp_get_thread_num(), (int) usec/1000);
+#else
+  printf ("iam %d sleeping %d ms\n", iam, (int) usec/1000);
+#endif
   usleep (usec);
   ret = GPTLstop ("sleep");
 
