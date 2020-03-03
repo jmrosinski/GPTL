@@ -5,13 +5,10 @@
 AM_CPPFLAGS = -I$(top_srcdir)/include
 
 # Need optimization disabled for correct behavior of some tests
-CFLAGS += -g -O0 $(OPENMP_CFLAGS)
-
-INSTRFLAG = @INSTRFLAG@
-INSTR_LINK = @INSTR_LINK@
+CFLAGS += -g -O0
 
 # Link to GPTL library.
-AM_LDFLAGS = ${top_builddir}/src/libgptl.la
+AM_LDFLAGS = ${top_builddir}/src/libgptl.la @INSTR_LINK@
 
 # These programs will be built but not installed.
 noinst_PROGRAMS = printwhileon imperfect_nest
@@ -31,20 +28,17 @@ noinst_LIBRARIES   = libcyg.a
 cygprofile_LDADD   = libcyg.a
 cygprofile_SOURCES = cygprofile.c
 libcyg_a_SOURCES   = cygprofilesubs.c
-libcyg_a_CFLAGS    = $(INSTRFLAG)
+libcyg_a_CFLAGS    = @INSTRFLAG@
 endif
 
-# Test autoprofiling if either HAVE_LIBUNWIND or HAVE_BACKTRACE
+# Need unwind library if configure was set up that way
 if HAVE_LIBUNWIND
-  AM_LDFLAGS += $(INSTR_LINK) -lunwind
-else
-if HAVE_BACKTRACE
-  AM_LDFLAGS += $(INSTR_LINK)
-endif
+  AM_LDFLAGS += -lunwind
 endif
 
 if HAVE_OPENMP
-noinst_PROGRAMS += omptest
+check_PROGRAMS += omptest
+TESTS += omptest
 endif
 
 # Build these tests if PAPI is present.
@@ -80,5 +74,7 @@ check_PROGRAMS += nestedomp
 TESTS += nestedomp
 endif
 
-# Test output to be deleted.
-CLEANFILES = timing.* *.trs *.log
+# Test output to be deleted: include ALL possible executables
+ALLEXES = printwhileon imperfect_nest gran_overhead tst_simple global cygprofile omptest \
+          testpapi gptl_avail knownflopcount papiomptest global summary pmpi nestedomp
+CLEANFILES = timing.* *.trs *.log *.o $(ALLEXES)

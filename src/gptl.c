@@ -3035,12 +3035,12 @@ int get_symnam (void *this_fn, char **symnam)
     char addrname[16+2];
     nchars = strlen (symbol);
 #ifdef APPEND_ADDRESS
-    *symnam = malloc (nchars+16+2);  // 16 is nchars, +2 is for '#' and '\0'
+    *symnam = (char *) malloc (nchars+16+2);  // 16 is nchars, +2 is for '#' and '\0'
     strncpy (*symnam, symbol, nchars+1);
     snprintf (addrname, 16+2, "#%-16p", this_fn);
     strcat (*symnam, addrname);
 #else
-    *symnam = malloc (nchars + 1);
+    *symnam = (char *) malloc (nchars + 1);
     strncpy (*symnam, symbol, nchars+1);
 #endif
   } else {

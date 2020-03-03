@@ -7,15 +7,12 @@
 F77=$(FC)
 AM_CPPFLAGS = -I../include -I../src
 
-INSTRFLAG = @INSTRFLAG@
-INSTR_LINK = @INSTR_LINK@
-
 # Link to GPTL fortran library.
-AM_LDFLAGS = ${top_builddir}/fortran/src/libgptlf.la $(INSTRFLAG)
+AM_LDFLAGS = ${top_builddir}/fortran/src/libgptlf.la ${top_builddir}/src/libgptl.la @INSTR_LINK@
 
-LDADD = ${top_builddir}/src/libgptl.la
+# Need unwind library if configure was set up that way
 if HAVE_LIBUNWIND
-LDADD += -lunwind
+  AM_LDFLAGS += -lunwind
 endif
 
 MODFILE = ${top_builddir}/fortran/src/gptl.mod
@@ -41,7 +38,11 @@ utrtest_SOURCES    = utrtest.F90    ${MODFILE}
 legacy_SOURCES     = legacy.F
 
 if HAVE_OPENMP
-noinst_PROGRAMS  += threadohd
+check_PROGRAMS += omptest
+TESTS += omptest
+omptest_SOURCES = omptest.F90 ${MODFILE}
+
+noinst_PROGRAMS += threadohd
 threadohd_SOURCES = threadohd.F90 ${MODFILE}
 endif
 
@@ -75,8 +76,10 @@ pmpi_SOURCES = pmpi.F90 ${MODFILE}
 endif
 endif
 
-# Test output to be deleted.
-CLEANFILES = timing.* *_ohd *.mod *.trs *.log
+# Test output to be deleted: include ALL possible executables
+ALLEXES = overhead handle utrtest testbasics errtest nlreader outoforder legacy omptest \
+          threadohd testbacktrace testinit testpapi summary print_mpistatus_size pmpi
+CLEANFILES = timing.* *_ohd *.mod *.trs *.log *.o $(ALLEXES)
 
 # This file is required for the nlreader test.
 EXTRA_DIST = gptlnl

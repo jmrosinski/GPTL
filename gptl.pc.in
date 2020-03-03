@@ -9,7 +9,8 @@ Name: @PACKAGE@
 Description: GPTL profiling library
 URL: http://github.com/jmrosinski/GPTL
 Version: @PACKAGE_VERSION@
-Libs: -L${libdir} @GPTL_LIBS@ @LDFLAGS@
-Libs.private: -lm
-Cflags: -I${includedir}
-Fflags: -I${includedir}
+Requires.private: @PAPI@
+Libs: -L${libdir} @LDFLAGS_PC@
+Libs.private: @OPENMP_CFLAGS@
+Cflags: -I${includedir} @OPENMP_CFLAGS@
+Fflags: -I${includedir} @OPENMP_FCFLAGS@

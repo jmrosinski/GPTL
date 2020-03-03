@@ -54,12 +54,10 @@ if test "x$ac_cv_sizeof_void_p" = x8; then
    AC_DEFINE([BIT64], [1], [void pointer is 8 bytes])
 fi
 
-AC_ARG_ENABLE([openmp], [AS_HELP_STRING([--disable-openmp],
-              [Enable OpenMP support if available. May be necessary to disable on e.g. MacOS using clang+gfortran])])
+AC_ARG_ENABLE([openmp], [AS_HELP_STRING([--enable-openmp],
+              [Enable OpenMP support if available (default=enabled). May be necessary to disable on e.g. MacOS using clang+gfortran])],,[enable_openmp=yes])
 
-test "x$enable_openmp" != xno && enable_openmp=yes
-if test "$enable_openmp" = yes; then
-
+if test "x$enable_openmp" = xyes; then
 # Enable OpenMP support if not told to skip, and compiler supports it
   useomp=no;
   AC_OPENMP
@@ -69,7 +67,7 @@ if test "$enable_openmp" = yes; then
     CFLAGS="$CFLAGS $OPENMP_CFLAGS"
   fi
 fi
-AM_CONDITIONAL([HAVE_OPENMP], [test x$useomp = xyes])
+AM_CONDITIONAL([HAVE_OPENMP], [test "x$useomp" = xyes])
 
 # for C++ only:
 # CFLAGS="$CFLAGS -fpermissive"
@@ -107,7 +105,7 @@ if test "x$enable_pthread" = xyes; then
 fi
 
 # GPTL only works with EITHER OpenMP OR pthread lib. Barf on attempts to enable both
-if test "$enable_omp" = yes; then
+if test "x$enable_omp" = xyes; then
   if test "x$ac_cv_lib_pthread_pthread_mutex_init" = xyes; then
     AC_MSG_ERROR([OpenMP and pthreads cannot both be enabled: For pthreads use --disable-openmp --enable-pthread])
   fi
@@ -155,11 +153,15 @@ if test x$enable_papi = xyes; then
       fi
     fi
     AC_DEFINE([HAVE_PAPI], [1], [PAPI library is present and usable])
-    LDFLAGS="$LDFLAGS -lpapi"
+    PAPI="papi"
+    PAPI_LINK="-l${PAPI}"
   else
     have_papi=no
+    PAPI=""
+    PAPI_LINK=""
   fi
   AC_MSG_RESULT($have_papi)
+  AC_SUBST([PAPI], [$PAPI])
 fi
 AM_CONDITIONAL([HAVE_PAPI], [test "x$have_papi" = xyes])
 
@@ -170,7 +172,7 @@ AM_CONDITIONAL([HAVE_PAPI], [test "x$have_papi" = xyes])
 AC_CHECK_LIB([rt], [clock_gettime], [have_librt = yes], [have_librt=no],)
 if test "$have_librt" = yes; then
   AC_DEFINE([HAVE_LIBRT],[1],[librt found])
-  FCFLAGS = "-DHAVE_LIBRT $FCFLAGS"
+  FCFLAGS="-DHAVE_LIBRT $FCFLAGS"
 fi
 
 # If getrusage is found then HAVE_GETRUSAGE will automatically be defined for obtaining RSS
@@ -250,10 +252,12 @@ rdynamic=yes
 bdynamic=yes
 AX_CHECK_LINK_FLAG(-rdynamic, [AC_SUBST([INSTR_LINK], [-rdynamic])], [rdynamic=no])
 if test "$rdynamic" = yes; then
+  INSTR_LINK="-rdynamic"
   AC_MSG_NOTICE([-rdynamic link flag may be needed for auto-instrumentation])
 else
   AX_CHECK_LINK_FLAG(-Bdynamic, [AC_SUBST([INSTR_LINK], [-Bdynamic])], [bdynamic=no])
   if test "$bdynamic" = yes; then
+    INSTR_LINK="-Bdynamic"
     AC_MSG_NOTICE([-Bdynamic link flag may be needed for auto-instrumentation])
   else
     AC_MSG_WARN([Dynamic linking flag not found: Auto-instrumentation may not work properly])
@@ -262,9 +266,11 @@ fi
 
 AM_CONDITIONAL([HAVE_INSTRFLAG], [test "x$finstrf" = xyes || test "x$minstrf" = xyes])
 if test "x$finstrf" = xyes; then
-  AC_SUBST([INSTRFLAG],[-finstrument-functions])
+  INSTRFLAG="-finstrument-functions"
+  AC_SUBST([INSTRFLAG],[$INSTRFLAG])
 elif test "x$minstrf" = xyes; then
-  AC_SUBST([INSTRFLAG],[-Minstrument:functions])
+  INSTRFLAG="-Minstrument:functions"
+  AC_SUBST([INSTRFLAG],[$INSTRFLAG])
 fi
 
 # Check for times.
@@ -340,13 +346,16 @@ if test "x$enable_fortran" = "xyes"; then
 # Make sure this file is copied to build directories for tests to work.
   AC_CONFIG_LINKS([fortran/tests/gptlnl:fortran/tests/gptlnl])
 # Test OMP for Fortran and set flags accordingly, only if OMP support was enabled above for C
-# AC_OPENMP sets OPENMP_FFLAGS not OPENMP_FCFLAGS
+# AC_OPENMP sets OPENMP_FCFLAGS not OPENMP_FFLAGS
+  have_fort_omp=no
   if test "x$useomp" = "xyes"; then
     AC_OPENMP
     if test "x$ac_cv_prog_fc_openmp" != xunsupported; then
-      FCFLAGS="-DTHREADED_OMP $FCFLAGS $OPENMP_FFLAGS"
+      have_fort_omp=yes
+      FCFLAGS="-DTHREADED_OMP $FCFLAGS $OPENMP_FCFLAGS"
     fi
   fi
+  AM_CONDITIONAL([HAVE_OPENMP], [test "x$have_fort_omp" = xyes])
 
 # Modify FCFLAGS for MPI
   if test "x$have_libmpi" = xyes; then
@@ -370,7 +379,16 @@ fi
 AM_CONDITIONAL([HAVE_FORTRAN], [test x$enable_fortran = "xyes"])
 
 # For gptl.pc
-AC_SUBST([GPTL_LIBS], [$GPTL_LIBS])
+if test "x$useunwind" = xyes; then
+  GPTL_LIBS="$GPTL_LIBS -lunwind"
+fi
+LDFLAGS=$PAPI_LINK
+LDFLAGS_PC="$GPTL_LIBS $PAPI_LINK $LDFLAGS $INSTR_LINK"
+AC_SUBST([LDFLAGS], [$LDFLAGS])
+AC_SUBST([LDFLAGS_PC], [$LDFLAGS_PC])
+# These 2 are only needed in gptl.pc.in
+AC_SUBST([OPENMP_CFLAGS], [$OPENMP_CFLAGS])
+AC_SUBST([OPENMP_FCFLAGS], [$OPENMP_FCFLAGS])
 
 # Files to be built
 AC_CONFIG_FILES([Makefile
