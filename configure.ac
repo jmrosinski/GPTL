@@ -192,57 +192,47 @@ fi
 # We need the math library for some tests.
 AC_CHECK_LIB([m], [floor], [], [AC_MSG_ERROR([Can't find or link to the math library.])])
 
-# AC_CHECK_LIB doesn't work for libunwind due to funkiness in the lib so use AC_CHECK_HEADER
-AC_MSG_CHECKING([for libunwind])
-AC_CHECK_HEADER([libunwind.h], found_libunwind=yes;)
-AC_MSG_RESULT([$ac_cv_libunwind_h])
-
-AC_MSG_CHECKING([for backtrace])
-AC_CHECK_FUNC([backtrace_symbols], found_backtrace=yes;)
-AC_MSG_RESULT([$ac_cv_func_backtrace_symbols])
-
-# For auto-profiling, backtrace is the default method to recover current function name.
-# If not available, try libunwind. If neither are available, auto-profiling will not be
-# possible. To use auto auto-profiling with GNU or Intel compilers:
+# For auto-profiling, libunwind is the default method to recover current function name.
+# If disabled or not available, try backtrace. If neither are available, auto-profiling will 
+# not be possible. To use auto auto-profiling with GNU or Intel compilers:
 # Compile application code with -g and appropriate auto-instrumentation flag
 # Probably the appropriate dynamic linking flag (maybe -rdynamic or -Bdynamic) also is needed
 #
 AC_ARG_ENABLE([libunwind],
-    AS_HELP_STRING([--enable-libunwind], [Enable auto-profiling capability via libunwind]))
+    AS_HELP_STRING([--disable-libunwind], [Do not check for libunwind]))
 
-AC_ARG_ENABLE([backtrace],
-    AS_HELP_STRING([--disable-backtrace], [Disable auto-profiling capability via backtrace]))
-
-# Default is to enable auto-profiling capability via backtrace
-# Default is to disable auto-profiling capability via libunwind.
+# Default is to enable auto-profiling capability via libunwind.
 # Cannot have both methods enabled at once
-if test "x$enable_backtrace" != xno; then
-  if test "x$enable_libunwind" = xyes; then
-    AC_MSG_ERROR([--enable-libunwind requires --disable-backtrace])
-  fi
-# Set define for BACKTRACE if user didn't say no and backtrace found
-  if test "x$found_backtrace" = xyes; then
-    usebacktrace=yes;
-    AC_DEFINE([HAVE_BACKTRACE], [1], [backtrace will be used])
-    AC_MSG_NOTICE([backtrace enabled for auto-profiling: dynamic linking flag (see below) possibly also needed])
-  fi
-fi
-
-# Set define for LIBUNWIND if user said yes and backtrace found
-if test "x$enable_libunwind" = xyes; then
+found_libunwind=no
+if test "x$enable_libunwind" != xno; then
+# AC_CHECK_LIB doesn't work for libunwind due to funkiness in the lib so use AC_CHECK_HEADER
+  AC_MSG_CHECKING([for libunwind])
+  AC_CHECK_HEADER([libunwind.h], found_libunwind=yes;)
+  AC_MSG_RESULT([$ac_cv_libunwind_h])
   if test "x$found_libunwind" = xyes; then
-    useunwind=yes;
     AC_DEFINE([HAVE_LIBUNWIND], [1], [libunwind will be used])
     AC_MSG_NOTICE([libunwind enabled for auto-profiling: -lunwind and dynamic linking flag (see below) possibly also needed])
   fi
 fi
 
-# Above logic ensures that both haveunwind and havebacktrace cannot both = yes
-AM_CONDITIONAL([HAVE_LIBUNWIND], [test x$useunwind = xyes])
-AM_CONDITIONAL([HAVE_BACKTRACE], [test x$usebacktrace = xyes])
+found_backtrace=no
+if test "x$found_libunwind" != xyes; then
+  AC_MSG_NOTICE([libunwind disabled or not found])
+  AC_MSG_CHECKING([for backtrace])
+  AC_CHECK_FUNC([backtrace_symbols], found_backtrace=yes;)
+  AC_MSG_RESULT([$ac_cv_func_backtrace_symbols])
+  if test "x$found_backtrace" = xyes; then
+    AC_DEFINE([HAVE_BACKTRACE], [1], [backtrace will be used])
+    AC_MSG_NOTICE([backtrace enabled for auto-profiling: dynamic linking flag (see below) possibly also needed])
+  fi
+fi
+
+# Above logic ensures that both have_libunwind and have_backtrace cannot both = yes
+AM_CONDITIONAL([HAVE_LIBUNWIND], [test "x$found_libunwind" = xyes])
+AM_CONDITIONAL([HAVE_BACKTRACE], [test "x$found_backtrace" = xyes])
 
 # See if auto-instrumentation flag is available. If so, set INSTRFLAG for testing
-if test "x$useunwind" = xyes || test "x$usebacktrace" = xyes; then
+if test "x$found_libunwind" = xyes || test "x$found_backtrace" = xyes; then
   AX_CHECK_COMPILE_FLAG([-finstrument-functions], [finstrf=yes], [finstrf=no])
   AX_CHECK_COMPILE_FLAG([-Minstrument:functions], [minstrf=yes], [minstrf=no])
 fi
@@ -381,7 +371,7 @@ fi
 AM_CONDITIONAL([HAVE_FORTRAN], [test x$enable_fortran = "xyes"])
 
 # For gptl.pc
-if test "x$useunwind" = xyes; then
+if test "x$found_libunwind" = xyes; then
   GPTL_LIBS="$GPTL_LIBS -lunwind"
 fi
 LDFLAGS=$PAPI_LINK

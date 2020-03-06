@@ -27,8 +27,13 @@ int main (int argc, char **argv)
   GPTLpr (0);
 
   printf ("%s: Testing GPTLget_nregions...\n", argv[0]);
-  if (GPTLget_nregions (0, &nregions) < 0) {
+  if ((ret = GPTLget_nregions (0, &nregions)) < 0) {
     printf ("%s: GPTLget_nregions failure\n", argv[0]);
+    return -1;
+  }
+
+  if (nregions < 1) {
+    printf ("%s: nregions should be at least 1 got %d\n", argv[0], nregions);
     return -1;
   }
 
