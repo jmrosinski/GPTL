@@ -21,8 +21,16 @@ check_PROGRAMS = tst_simple global
 TESTS = tst_simple
 
 if HAVE_INSTRFLAG
+if HAVE_LIBUNWIND
 TESTS             += cygprofile
 noinst_PROGRAMS   += cygprofile
+else
+if HAVE_BACKTRACE
+TESTS             += cygprofile
+noinst_PROGRAMS   += cygprofile
+endif
+endif
+
 # Hack found online to compile cygprofilesubs.c differently than cygprofile.c: Use a lib
 noinst_LIBRARIES   = libcyg.a
 cygprofile_LDADD   = libcyg.a
