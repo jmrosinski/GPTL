@@ -214,7 +214,7 @@ AC_ARG_ENABLE([backtrace],
     AS_HELP_STRING([--disable-backtrace], [Disable auto-profiling capability via backtrace]))
 
 # Default is to enable auto-profiling capability via backtrace
-# Default is to disnable auto-profiling capability via libunwind.
+# Default is to disable auto-profiling capability via libunwind.
 # Cannot have both methods enabled at once
 if test "x$enable_backtrace" != xno; then
   if test "x$enable_libunwind" = xyes; then
@@ -265,6 +265,8 @@ else
 fi
 
 AM_CONDITIONAL([HAVE_INSTRFLAG], [test "x$finstrf" = xyes || test "x$minstrf" = xyes])
+
+# The AC_SUBST settings below are used only for gptl.pc
 if test "x$finstrf" = xyes; then
   INSTRFLAG="-finstrument-functions"
   AC_SUBST([INSTRFLAG],[$INSTRFLAG])
