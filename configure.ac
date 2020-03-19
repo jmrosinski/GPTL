@@ -171,7 +171,7 @@ AM_CONDITIONAL([HAVE_PAPI], [test "x$have_papi" = xyes])
 # gathering wallclock time stats on some machines. Setting
 # HAVE_LIBRT=yes enables this, but will probably require linking
 # applications with -lrt
-AC_CHECK_LIB([rt], [clock_gettime], [have_librt = yes], [have_librt=no],)
+AC_CHECK_LIB([rt], [clock_gettime], [have_librt=yes], [have_librt=no],)
 if test "$have_librt" = yes; then
   AC_DEFINE([HAVE_LIBRT],[1],[librt found])
   FCFLAGS="-DHAVE_LIBRT $FCFLAGS"

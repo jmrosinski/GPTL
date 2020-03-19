@@ -1,0 +1,20 @@
+o Get Intel to use -qopenmp. For now -fopenmp works but for how long?
+o Test with PGI
++ Test with clang/gfortran
+  - Gave up on enabling OMP
++ Change default to unwind
+  + Check for libunwind rather than header file
+o Get versioning right for: Currently follows same rules as netcdf
+  o Version in gptl.pc
+  o Naming of .so files
+o How to handle CMake
+  - Mark O. help given output from gptl.pc
+  - Or, create CMake info from configure
+o Test with memusage stats
+x Get rid of warnings from "autoreconf -i" about serial number
++ Parallel make work OK?
++ Libs vs Libs.private
++ Requires vs Requires.private
++ Does -fopenmp belong instead in Cflags and Fflags?
++ Have "make clean" always get rid of all generated files
++ Does gptl.pc need "-finstrument-functions"? I've added it for now
