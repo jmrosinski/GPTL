@@ -34,9 +34,6 @@ AC_PROG_CC()
 AC_C_CONST
 AC_C_INLINE
 
-# For gptl.pc
-GPTL_LIBS="-lgptl"
-
 # Only define HAVE_NANOTIME if this is a x86. It provides by far the finest grained,
 # lowest overhead wallclock timer on that architecture.
 # Set HAVE_NANOTIME on x86 systems only.
@@ -305,6 +302,9 @@ AC_ARG_WITH([mpiexec],
                               [Specify command to launch MPI parallel tests.])],
             [MPIEXEC=$with_mpiexec], [MPIEXEC=mpiexec])
 AC_MSG_RESULT([$MPIEXEC])
+if test "x$have_libmpi" = xyes; then
+  AC_MSG_NOTICE([If \"make check\" encounters MPI failures, try configuring with --with-mpiexec=mpirun or srun,...])
+fi
 AC_SUBST([MPIEXEC], [$MPIEXEC])
 
 # Do we have function MPI_Comm_f2c?
@@ -330,6 +330,9 @@ AC_MSG_RESULT($enable_pmpi)
 # Fortran directories
 AC_ARG_ENABLE([fortran], [AS_HELP_STRING([--disable-fortran],
               [Enable fortran support. Only disable this if it causes problems])],,[enable_fortran=yes])
+
+# For gptl.pc
+GPTL_LIBS="-lgptl"
 
 if test "x$enable_fortran" = "xyes"; then
   AC_LANG_PUSH(Fortran)
