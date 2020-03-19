@@ -57,11 +57,13 @@ fi
 AC_ARG_ENABLE([openmp], [AS_HELP_STRING([--enable-openmp],
               [Enable OpenMP support if available (default=enabled). May be necessary to disable on e.g. MacOS using clang+gfortran])],,[enable_openmp=yes])
 
+useomp=no;
 if test "x$enable_openmp" = xyes; then
 # Enable OpenMP support if not told to skip, and compiler supports it
-  useomp=no;
-  AC_OPENMP
-  if test "x$ac_cv_prog_c_openmp" != xunsupported; then
+  AC_OPENMP()
+  if test "x$ac_cv_prog_c_openmp" = xunsupported; then
+    AC_MSG_NOTICE([OpenMP support not found. If CC is Apple clang you could try CFLAGS=\"-Xpreprocessor -fopenmp\"])
+  else
     useomp=yes;
     AC_DEFINE([THREADED_OMP], [1], [openmp support is present])
     CFLAGS="$CFLAGS $OPENMP_CFLAGS"
@@ -199,16 +201,15 @@ AC_CHECK_LIB([m], [floor], [], [AC_MSG_ERROR([Can't find or link to the math lib
 # Probably the appropriate dynamic linking flag (maybe -rdynamic or -Bdynamic) also is needed
 #
 AC_ARG_ENABLE([libunwind],
-    AS_HELP_STRING([--disable-libunwind], [Do not check for libunwind]))
+    AS_HELP_STRING([--disable-libunwind], [Do not check for libunwind],))
 
 # Default is to enable auto-profiling capability via libunwind.
-# Cannot have both methods enabled at once
+# Cannot have both unwind and backtrace methods enabled at once
 found_libunwind=no
 if test "x$enable_libunwind" != xno; then
-# AC_CHECK_LIB doesn't work for libunwind due to funkiness in the lib so use AC_CHECK_HEADER
   AC_MSG_CHECKING([for libunwind])
-  AC_CHECK_HEADER([libunwind.h], found_libunwind=yes;)
-  AC_MSG_RESULT([$ac_cv_libunwind_h])
+  AC_CHECK_LIB(unwind, [unw_backtrace], [found_libunwind=yes], [found_libunwind=no])
+  AC_MSG_RESULT([$ac_cv_lib_unwind])
   if test "x$found_libunwind" = xyes; then
     AC_DEFINE([HAVE_LIBUNWIND], [1], [libunwind will be used])
     AC_MSG_NOTICE([libunwind enabled for auto-profiling: -lunwind and dynamic linking flag (see below) possibly also needed])
@@ -341,8 +342,10 @@ if test "x$enable_fortran" = "xyes"; then
 # AC_OPENMP sets OPENMP_FCFLAGS not OPENMP_FFLAGS
   have_fort_omp=no
   if test "x$useomp" = "xyes"; then
-    AC_OPENMP
-    if test "x$ac_cv_prog_fc_openmp" != xunsupported; then
+    AC_OPENMP()
+    if test "x$ac_cv_prog_fc_openmp" = xunsupported; then
+      AC_MSG_NOTICE([OpenMP Fortran support not found. Fortran OMP tests will not be exercised but GPTL OMP support is there])
+    else
       have_fort_omp=yes
       FCFLAGS="-DTHREADED_OMP $FCFLAGS $OPENMP_FCFLAGS"
     fi
