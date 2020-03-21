@@ -353,8 +353,10 @@ if test "x$enable_fortran" = "xyes"; then
       have_fort_omp=yes
       FCFLAGS="-DTHREADED_OMP $FCFLAGS $OPENMP_FCFLAGS"
     fi
+  else
+    AC_MSG_NOTICE([Skipping check for Fortran OMP support because it was not found or disabled for C])
   fi
-  AM_CONDITIONAL([HAVE_OPENMP], [test "x$have_fort_omp" = xyes])
+  AM_CONDITIONAL([HAVE_FORT_OPENMP], [test "x$have_fort_omp" = xyes])
 
 # Modify FCFLAGS for MPI
   if test "x$have_libmpi" = xyes; then

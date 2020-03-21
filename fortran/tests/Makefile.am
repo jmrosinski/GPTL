@@ -37,7 +37,7 @@ overhead_SOURCES   = overhead.F90   ${MODFILE}
 utrtest_SOURCES    = utrtest.F90    ${MODFILE}
 legacy_SOURCES     = legacy.F
 
-if HAVE_OPENMP
+if HAVE_FORT_OPENMP
 check_PROGRAMS += omptest
 TESTS += omptest
 omptest_SOURCES = omptest.F90 ${MODFILE}
