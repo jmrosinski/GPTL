@@ -254,13 +254,14 @@ fi
 
 AM_CONDITIONAL([HAVE_INSTRFLAG], [test "x$finstrf" = xyes || test "x$minstrf" = xyes])
 
-# The AC_SUBST settings below are used only for gptl.pc
 if test "x$finstrf" = xyes; then
   INSTRFLAG="-finstrument-functions"
   AC_SUBST([INSTRFLAG],[$INSTRFLAG])
+  AC_MSG_NOTICE([To auto-profile user code, Add compilation flag $INSTRFLAG to desired files])
 elif test "x$minstrf" = xyes; then
   INSTRFLAG="-Minstrument:functions"
   AC_SUBST([INSTRFLAG],[$INSTRFLAG])
+  AC_MSG_NOTICE([To auto-profile user code, Add compilation flag $INSTRFLAG to desired files])
 fi
 
 # Check for times.
@@ -384,7 +385,6 @@ LDFLAGS=$PAPI_LINK
 LDFLAGS_PC="$GPTL_LIBS $PAPI_LINK $LDFLAGS $INSTR_LINK"
 AC_SUBST([LDFLAGS], [$LDFLAGS])
 AC_SUBST([LDFLAGS_PC], [$LDFLAGS_PC])
-# These 2 are only needed in gptl.pc.in
 AC_SUBST([OPENMP_CFLAGS], [$OPENMP_CFLAGS])
 AC_SUBST([OPENMP_FCFLAGS], [$OPENMP_FCFLAGS])
 
