@@ -51,11 +51,11 @@ if test "x$ac_cv_sizeof_void_p" = x8; then
    AC_DEFINE([BIT64], [1], [void pointer is 8 bytes])
 fi
 
-AC_ARG_ENABLE([openmp], [AS_HELP_STRING([--enable-openmp],
-              [Enable OpenMP support if available (default=enabled). May be necessary to disable on e.g. MacOS using clang+gfortran])],,[enable_openmp=yes])
+AC_ARG_ENABLE([openmp], [AS_HELP_STRING([--disable-openmp],
+              [Disable OpenMP support. May be necessary on e.g. MacOS using clang+gfortran])],,[enable_openmp=yes])
 
 useomp=no;
-if test "x$enable_openmp" = xyes; then
+if test "x$enable_openmp" != xno; then
 # Enable OpenMP support if not told to skip, and compiler supports it
   AC_OPENMP()
   if test "x$ac_cv_prog_c_openmp" = xunsupported; then
@@ -92,7 +92,7 @@ AM_CONDITIONAL(ENABLE_NESTEDOMP, [test x$enable_nestedomp = xyes])
 
 # pthread library. default disabled
 AC_ARG_ENABLE([pthread],
-    AS_HELP_STRING([--enable-pthread], [Enable pthread capability]))
+    AS_HELP_STRING([--enable-pthread], [Enable pthread capability instead of OpenMP]))
 
 if test "x$enable_pthread" = xyes; then
   dnl Do the stuff needed for enabling the feature
@@ -132,8 +132,7 @@ if test $enable_debug = yes; then
 fi
 
 AC_MSG_CHECKING([whether PAPI is to be enabled])
-AC_ARG_ENABLE([papi], [AS_HELP_STRING([--enable-papi],
-              [enable papi])])
+AC_ARG_ENABLE([papi], [AS_HELP_STRING([--enable-papi], [enable built-in support for papi library. Requires that PAPI is already installed])])
 test "x$enable_papi" = xyes || enable_papi=no
 AC_MSG_RESULT($enable_papi)
 
@@ -198,7 +197,7 @@ AC_CHECK_LIB([m], [floor], [], [AC_MSG_ERROR([Can't find or link to the math lib
 # Probably the appropriate dynamic linking flag (maybe -rdynamic or -Bdynamic) also is needed
 #
 AC_ARG_ENABLE([libunwind],
-    AS_HELP_STRING([--disable-libunwind], [Do not check for libunwind],))
+    AS_HELP_STRING([--disable-libunwind], [Skip check for libunwind--check for backtrace instead],))
 
 # Default is to enable auto-profiling capability via libunwind.
 # Cannot have both unwind and backtrace methods enabled at once
@@ -318,8 +317,7 @@ AC_DEFINE([HAVE_COMM_F2C], [1], [Hopefully MPI_Comm_f2c is present])
 
 # Does the user want to turn on PMPI?
 AC_MSG_CHECKING([whether PMPI is to be enabled])
-AC_ARG_ENABLE([pmpi], [AS_HELP_STRING([--enable-pmpi],
-              [build with PMPI capability])])
+AC_ARG_ENABLE([pmpi], [AS_HELP_STRING([--enable-pmpi], [build with PMPI support to auto-profile MPI calls])])
 test "x$enable_pmpi" = xyes || enable_pmpi=no
 AM_CONDITIONAL([ENABLE_PMPI], [test x$enable_pmpi = xyes])
 if test "$enable_pmpi" = yes; then
@@ -330,12 +328,12 @@ AC_MSG_RESULT($enable_pmpi)
 # See if Fortran support is requested (default yes). If so check for working compiler and add
 # Fortran directories
 AC_ARG_ENABLE([fortran], [AS_HELP_STRING([--disable-fortran],
-              [Enable fortran support. Only disable this if it causes problems])],,[enable_fortran=yes])
+              [Disable fortran support. Only do this if enabling it causes problems])],,[enable_fortran=yes])
 
 # For gptl.pc
 GPTL_LIBS="-lgptl"
 
-if test "x$enable_fortran" = "xyes"; then
+if test "x$enable_fortran" != "xno"; then
   AC_LANG_PUSH(Fortran)
   AC_PROG_FC()
 # For gptl.pc
