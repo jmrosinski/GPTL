@@ -31,7 +31,7 @@
 extern "C" {
 
 // Local function prototypes
-__device__ int gptlinit_handle_gpu (const char *, int *, int);
+__device__ int gptlinit_handle_gpu (const char *, int *, long long);
 __device__ int gptlstart_gpu (const int *);
 __device__ int gptlstop_gpu (const int *);
 __device__ int gptlmy_sleep (float *);
@@ -39,7 +39,7 @@ __device__ int gptget_wallclock_gpu (const int *, double *, double *, double *);
 /* Fortran wrapper functions start here */
 
 //JR Cannot dimension local cname[nc+1] because nc is an input argument
-__device__ int gptlinit_handle_gpu (const char *name, int *handle, int nc)
+__device__ int gptlinit_handle_gpu (const char *name, int *handle, long long nc)
 {
   char cname[MAX_CHARS+1];
   const char *thisfunc = "gptlinit_handle_gpu";
