@@ -3,15 +3,12 @@
 
 #include <mpi.h>
 
-#ifdef __cplusplus
 extern "C" {
-#endif
+  // In pr_summary.cc:
+  int GPTLpr_summary (MPI_Comm);
+  int GPTLpr_summary_file (MPI_Comm, const char *);
 
-extern int GPTLpr_summary (MPI_Comm);
-extern int GPTLpr_summary_file (MPI_Comm, const char *);
-extern int GPTLbarrier (MPI_Comm, const char *);
-
-#ifdef __cplusplus
+  // In util.cc:
+  int GPTLbarrier (MPI_Comm, const char *);
 }
-#endif
 #endif

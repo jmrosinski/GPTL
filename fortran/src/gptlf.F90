@@ -15,7 +15,6 @@ module gptl
   integer, parameter :: GPTLoverhead       = 4
   integer, parameter :: GPTLdepthlimit     = 5
   integer, parameter :: GPTLverbose        = 6
-  integer, parameter :: GPTLnarrowprint    = 7
   integer, parameter :: GPTLpercent        = 9
   integer, parameter :: GPTLpersec         = 10
   integer, parameter :: GPTLmultiplex      = 11

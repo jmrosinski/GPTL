@@ -1,16 +1,11 @@
-/*
-** $Id: private.h,v 1.74 2011-03-28 20:55:19 rosinski Exp $
-**
-** Author: Jim Rosinski
-**
-** Contains definitions private to GPTL and inaccessible to invoking user environment
-*/
+#ifndef PRIVATE_H
+#define PRIVATE_H
 
-#ifndef _GPTL_PRIVATE_
-#define _GPTL_PRIVATE_
-
+#include "gptl.h"  // GPTL_Option
 #include <stdio.h>
-#include <sys/time.h>
+#include <string.h>
+
+// Things visible only to GPTL namespaces and functions
 
 #ifndef MIN
 #define MIN(X,Y) ((X) < (Y) ? (X) : (Y))
@@ -22,20 +17,20 @@
 
 #define STRMATCH(X,Y) (strcmp((X),(Y)) == 0)
 
-/* Output counts less than PRTHRESH will be printed as integers */
+// Default size of hash table
+#define DEFAULT_TABLE_SIZE 1023
+
+// Output counts less than PRTHRESH will be printed as integers
 #define PRTHRESH 1000000L
 
-/* Maximum allowed callstack depth */
+// Maximum allowed callstack depth
 #define MAX_STACK 128
 
-/* longest timer name allowed (probably safe to just change) */
+// longest timer name allowed (probably safe to just change)
 #define MAX_CHARS 63
 
 // Longest allowed symbol name for libunwind
 #define MAX_SYMBOL_NAME 255
-
-// A non-zero non-error flag for start/stop
-#define DONE 1
 
 /* 
 ** max allowable number of PAPI counters, or derived events. For convenience,
@@ -44,156 +39,127 @@
 */
 #define MAX_AUX 9
 
-#ifdef __cplusplus
-extern "C" {
-#else
-typedef enum {false = 0, true = 1} bool;  /* mimic C++ */
-#endif
-
-typedef struct {
-  int val;                  /* depth in calling tree */
-  int padding[31];          /* padding is to mitigate false cache sharing */
-} Nofalse; 
-
-typedef struct {
-  long last_utime;          /* saved usr time from "start" */
-  long last_stime;          /* saved sys time from "start" */
-  long accum_utime;         /* accumulator for usr time */
-  long accum_stime;         /* accumulator for sys time */
-} Cpustats;
-
-typedef struct {
-  double last;              /* timestamp from last call */
-  double latest;            /* most recent delta */
-  double accum;             /* accumulated time */
-  float max;                /* longest time for start/stop pair */
-  float min;                /* shortest time for start/stop pair */
-} Wallstats;
-
-typedef struct {
-  long long last[MAX_AUX];  /* array of saved counters from "start" */
-  long long accum[MAX_AUX]; /* accumulator for counters */
-} Papistats;
+namespace gptl_private {
+  typedef struct {
+    const GPTL_Option option;  // wall, cpu, etc.
+    const char *str;           // descriptive string for printing
+    bool enabled;              // flag
+  } Settings;
   
-typedef struct {
-  int counter;      /* PAPI or Derived counter */
-  char *namestr;    /* PAPI or Derived counter as string */
-  char *str8;       /* print string for output timers (8 chars) */
-  char *str16;      /* print string for output timers (16 chars) */
-  char *longstr;    /* long descriptive print string */
-} Entry;
+  typedef struct {
+    long last_utime;          // saved usr time from "start"
+    long last_stime;          // saved sys time from "start"
+    long accum_utime;         // accumulator for usr time
+    long accum_stime;         // accumulator for sys time
+  } Cpustats;
 
-typedef struct {
-  Entry event;
-  int numidx;       /* derived event: PAPI counter array index for numerator */
-  int denomidx;     /* derived event: PAPI counter array index for denominator */
-} Pr_event;
-
-typedef struct TIMER {
+  typedef struct {
+    double last;              // timestamp from last call
+    double latest;            // most recent delta
+    double accum;             // accumulated time
+    float max;                // longest time for start/stop pair
+    float min;                // shortest time for start/stop pair
+  } Wallstats;
+  
+  typedef struct {
+    long long last[MAX_AUX];  // array of saved counters from "start"
+    long long accum[MAX_AUX]; // accumulator for counters
+  } Papistats;
+  
+  typedef struct TIMER {
 #ifdef ENABLE_PMPI
-  double nbytes;            /* number of bytes for MPI call */
+    double nbytes;            // number of bytes for MPI call
 #endif
 #ifdef HAVE_PAPI
-  Papistats aux;            /* PAPI stats  */
+    Papistats aux;            // PAPI stats 
 #endif 
-  Cpustats cpu;             /* cpu stats */
-  Wallstats wall;           /* wallclock stats */
-  unsigned long count;      /* number of start/stop calls */
-  unsigned long nrecurse;   /* number of recursive start/stop calls */
-  void *address;            /* address of timer: used only by _instr routines */
-  struct TIMER *next;       /* next timer in linked list */
-  struct TIMER **parent;    /* array of parents */
-  struct TIMER **children;  /* array of children */
-  int *parent_count;        /* array of call counts, one for each parent */
-  unsigned int recurselvl;  /* recursion level */
-  unsigned int nchildren;   /* number of children */
-  unsigned int nparent;     /* number of parents */
-  unsigned int norphan;     /* number of times this timer was an orphan */
-  bool onflg;               /* timer currently on or off */
-  char name[MAX_CHARS+1];   /* timer name (user input) */
-  char *longname;           // For autoprofiled names, full name for diagnostic printing
-} Timer;
+    Cpustats cpu;             // cpu stats
+    Wallstats wall;           // wallclock stats
+    unsigned long count;      // number of start/stop calls
+    unsigned long nrecurse;   // number of recursive start/stop calls
+    void *address;            // address of timer: used only by _instr routines
+    struct TIMER *next;       // next timer in linked list
+    struct TIMER **parent;    // array of parents
+    struct TIMER **children;  // array of children
+    int *parent_count;        // array of call counts, one for each parent
+    unsigned int recurselvl;  // recursion level
+    unsigned int nchildren;   // number of children
+    unsigned int nparent;     // number of parents
+    unsigned int norphan;     // number of times this timer was an orphan
+    bool onflg;               // timer currently on or off
+    char name[MAX_CHARS+1];   // timer name (user input)
+    char *longname;           // For autoprofiled names, full name for diagnostic printing
+  } Timer;
 
-typedef struct {
-  Timer **entries;          /* array of timers hashed to the same value */
-  unsigned int nument;      /* number of entries hashed to the same value */
-} Hashentry;
+  typedef struct {
+    Timer **entries;             // array of timers hashed to the same value
+    unsigned int nument;         // number of entries hashed to the same value
+  } Hashentry;
+  
+  typedef struct {
+    int val;                  // depth in calling tree
+    int padding[31];          // padding is to mitigate false cache sharing
+  } Nofalse; 
+  
+  extern bool disabled;
+  extern bool dousepapi;
+  extern char unknown[];
+  extern Timer **timers;
+  extern Timer **last;
+  extern Settings cpustats;
+  extern Settings wallstats;
+  extern Settings overheadstats;  
+  extern Hashentry **hashtable;  // table of entries
+  extern Timer ***callstack;
+  extern Nofalse *stackidx;
+  extern int tablesize;
+  extern int tablesizem1;
+  extern float rssmax;
+  extern bool imperfect_nest;
+  extern FILE *fp_procsiz;
 
-/* Require external data items */
-/* array of thread ids */
-#if ( defined THREADED_OMP )
-extern volatile int *GPTLthreadid_omp;
-#elif ( defined THREADED_PTHREADS )
-#include <pthread.h>
-extern volatile pthread_t *GPTLthreadid;
-#else
-extern int GPTLthreadid;
+  // Anonymous namespace for local function prototypes
+  namespace {
+    extern "C" {
+#ifdef HAVE_NANOTIME
+      inline long long nanotime (void); // read counter (assembler)
 #endif
-
-// Function prototypes
-extern int GPTLerror (const char *, ...);                  /* print error msg and return */
-extern void GPTLwarn (const char *, ...);                  /* print warning msg and return */
-extern void GPTLnote (const char *, ...);                  /* print warning msg and return */
-extern void GPTLset_abort_on_error (bool val);             /* set flag to abort on error */
-extern void GPTLreset_errors (void);                       /* num_errors to zero */
-extern void *GPTLallocate (const int, const char *);       /* malloc wrapper */
-
-extern int GPTLstart_instr (void *);                       /* auto-instrumented start */
-extern int GPTLstop_instr (void *);                        /* auto-instrumented stop */
-extern int GPTLis_initialized (void);                      /* needed by MPI_Init wrapper */
-extern int GPTLget_overhead (FILE *,                       /* file descriptor */
-			     double (*)(),                 /* UTR() */
-			     Timer *(const Hashentry *, const char *, unsigned int),                    /* getentry() */
-			     unsigned int (const char *),  /* genhashidx() */
-			     int (void),                   /* get_thread_num() */
-			     Nofalse *,                    /* stackidx */
-			     Timer ***,                    /* callstack */
-			     const Hashentry *,            /* hashtable */
-			     const int,                    /* tablesize */
-			     bool,                         /* dousepapi */
-			     int,                          /* imperfect_nest */
-			     double *,                     /* self_ohd */
-			     double *);                    /* parent_ohd */
-extern void GPTLprint_hashstats (FILE *, int, Hashentry **, int);
-extern void GPTLprint_memstats (FILE *, Timer **, int, int, int);
-extern int GPTLget_nthreads (void);
-extern Timer **GPTLget_timersaddr (void);
-// For now this one is local to gptl.c but that may change if needs calling from pr_summary
-extern int GPTLrename_duplicate_addresses (void);
-
-extern void __cyg_profile_func_enter (void *, void *);
-extern void __cyg_profile_func_exit (void *, void *);
-
-extern bool GPTLonlypr_rank0;     // flag says ignore all stdout/stderr print from non-zero ranks
-
-#ifdef HAVE_PAPI
-extern Entry GPTLeventlist[];     // list of PAPI-based events to be counted
-extern int GPTLnevents;           // number of PAPI events (init to 0)
-
-extern int GPTL_PAPIsetoption (const int, const int);
-extern int GPTL_PAPIinitialize (const int, const bool, int *, Entry *);
-extern int GPTL_PAPIstart (const int, Papistats *);
-extern int GPTL_PAPIstop (const int, Papistats *);
-extern void GPTL_PAPIprstr (FILE *);
-extern void GPTL_PAPIpr (FILE *, const Papistats *, const int, const int, const double);
-extern void GPTL_PAPIadd (Papistats *, const Papistats *);
-extern void GPTL_PAPIfinalize (int);
-extern void GPTL_PAPIquery (const Papistats *, long long *, int);
-extern int GPTL_PAPIget_eventvalue (const char *, const Papistats *, double *);
-extern bool GPTL_PAPIis_multiplexed (void);
-extern void GPTL_PAPIprintenabled (FILE *);
-extern void read_counters1000 (void);
-extern int GPTLget_npapievents (void);
-extern int GPTLcreate_and_start_events (const int);
+      void print_callstack (int, const char *);
+      inline int get_cpustamp (long *, long *);
+      inline int get_cpustamp (long *, long *);
+      inline void set_fp_procsiz (void);
+    }
+  }
+  
+  // Function prototypes visible only to GPTL routines
+  extern "C" {
+    extern double (*ptr2wtimefunc)(void);    // The underlying timing routine
+    void check_memusage (const char *, const char *);
+    inline unsigned int genhashidx (const char *);
+    inline Timer *getentry (const Hashentry *, const char *, unsigned int);
+    inline int preamble_start (int *, const char *);
+    inline int update_parent_info (Timer *, Timer **, int);
+    inline int preamble_stop (int *, double *, long *, long *, const char *);
+    inline int update_stats (Timer *, const double, const long, const long, const int);
+    int update_ll_hash (Timer *, int, unsigned int);
+    inline int update_ptr (Timer *, const int);
+    // These are the (possibly) supported underlying wallclock timers
+#ifdef HAVE_NANOTIME
+    inline double utr_nanotime (void);
+#endif 
+#ifdef HAVE_LIBMPI
+    inline double utr_mpiwtime (void);
 #endif
-
-#ifdef ENABLE_PMPI
-extern Timer *GPTLgetentry (const char *);
-extern int GPTLpmpi_setoption (const int, const int);
+#ifdef _AIX
+    inline double utr_read_real_time (void);
 #endif
-
-#ifdef __cplusplus
+#ifdef HAVE_LIBRT
+    inline double utr_clock_gettime (void);
+#endif
+#ifdef HAVE_GETTIMEOFDAY
+    inline double utr_gettimeofday (void);
+#endif
+    inline double utr_placebo (void);
+  }
 }
 #endif
-
-#endif /* _GPTL_PRIVATE_ */

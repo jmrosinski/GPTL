@@ -35,7 +35,6 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
   logical, parameter :: def_overhead        = .true.
   integer, parameter :: def_depthlimit      = 99999    ! Effectively unlimited
   logical, parameter :: def_verbose         = .false.
-  logical, parameter :: def_narrowprint     = .true.
   logical, parameter :: def_percent         = .false.
   logical, parameter :: def_persec          = .true.
   logical, parameter :: def_multiplex       = .false.
@@ -60,7 +59,6 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
   integer :: maxthreads      = def_maxthreads
   integer :: tablesize       = def_tablesize
   logical :: verbose         = def_verbose
-  logical :: narrowprint     = def_narrowprint
   logical :: percent         = def_percent
   logical :: persec          = def_persec
   logical :: multiplex       = def_multiplex
@@ -78,7 +76,7 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
   character(len=20), parameter :: thisfunc = 'gptlprocess_namelist'
   
   namelist /gptlnl/ sync_mpi, wall, cpu, abort_on_error, overhead, depthlimit, &
-                    maxthreads, tablesize, verbose, narrowprint, percent, persec, multiplex, &
+                    maxthreads, tablesize, verbose, percent, persec, multiplex, &
                     dopr_preamble, dopr_threadsort, dopr_multparent, dopr_collision, &
                     dopr_memusage, print_method, eventlist, utr, onlyprint_rank0
 
@@ -182,17 +180,6 @@ subroutine gptlprocess_namelist (filename, unitno, outret)
       write(6,*) thisfunc, ': setting tablesize to ', tablesize
     end if
     ret = gptlsetoption (gptltablesize, tablesize)
-  end if
-
-  if (narrowprint .neqv. def_narrowprint) then
-    if (verbose) then
-      write(6,*) thisfunc, ': setting narrowprint to ', narrowprint
-    end if
-    if (narrowprint) then
-      ret = gptlsetoption (gptlnarrowprint, 1)
-    else
-      ret = gptlsetoption (gptlnarrowprint, 0)
-    end if
   end if
 
   if (percent .neqv. def_percent) then

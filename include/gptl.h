@@ -13,7 +13,6 @@
 ** integer space. PAPI presets are big negative integers, and PAPI
 ** native events are big positive integers.
 */
-
 typedef enum {
   GPTLsync_mpi        = 0,  /* Synchronize before certain MPI calls (PMPI-mode only) */
   GPTLwall            = 1,  /* Collect wallclock stats (true) */
@@ -22,7 +21,6 @@ typedef enum {
   GPTLoverhead        = 4,  /* Estimate overhead of underlying timing routine (true) */
   GPTLdepthlimit      = 5,  /* Only print timers this depth or less in the tree (inf) */
   GPTLverbose         = 6,  /* Verbose output (false) */
-  GPTLnarrowprint     = 7,  /* Print PAPI and derived stats in 8 columns not 16 (true) */
   GPTLpercent         = 9,  /* Add a column for percent of first timer (false) */
   GPTLpersec          = 10, /* Add a PAPI column that prints "per second" stats (true) */
   GPTLmultiplex       = 11, /* Allow PAPI multiplexing (false) */
@@ -36,9 +34,8 @@ typedef enum {
   GPTLtablesize       = 50, /* per-thread size of hash table */
   GPTLmaxthreads      = 51, /* maximum number of threads */
   GPTLonlyprint_rank0 = 52, // Restrict printout to rank 0 when MPI enabled
-  /*
-  ** These are derived counters based on PAPI counters. All default to false
-  */
+
+  // These are derived counters based on PAPI counters. All default to false
   GPTL_IPC           = 17, /* Instructions per cycle */
   GPTL_LSTPI         = 21, /* Load-store instruction fraction */
   GPTL_DCMRT         = 22, /* L1 miss rate (fraction) */
@@ -46,14 +43,13 @@ typedef enum {
   GPTL_L2MRT         = 24, /* L2 miss rate (fraction) */
   GPTL_LSTPL2M       = 25, /* Load-stores per L2 miss */
   GPTL_L3MRT         = 26  /* L3 read miss rate (fraction) */
-} Option;
+} GPTL_Option;
 
 /*
 ** Underlying wallclock timer: optimize for best granularity with least overhead.
 ** These numbers need not be distinct from the above because these are passed
 ** to GPTLsetutr() and the above are passed to GPTLsetoption()
 */
-
 typedef enum {
   GPTLgettimeofday   = 1, /* ubiquitous but slow */
   GPTLnanotime       = 2, /* only available on x86 */
@@ -61,59 +57,69 @@ typedef enum {
   GPTLclockgettime   = 5, /* clock_gettime */
   GPTLplacebo        = 7, /* do-nothing */
   GPTLread_real_time = 3  /* AIX only */
-} Funcoption;
-
-/*
-** How to report parent/child relationships at print time (for children with multiple parents)
-*/
+} GPTL_Funcoption;
 
 typedef enum {
   GPTLfirst_parent  = 1,  /* first parent found */
   GPTLlast_parent   = 2,  /* last parent found */
   GPTLmost_frequent = 3,  /* most frequent parent (default) */
   GPTLfull_tree     = 4   /* complete call tree */
-} Method;
+} GPTL_Method;
 
-// User-callable function prototypes: all require C linkage
+// All User-callable function prototypes except for MPI (see gptlmpi.h)
+// They require C linkage
 #ifdef __cplusplus
 extern "C" {
 #endif
+  // In once.cc:
+  int GPTLsetoption (const int, const int);
+  int GPTLsetutr (const int option);
+  int GPTLinitialize (void);
+  int GPTLfinalize (void);
 
-extern int GPTLsetoption (const int, const int);
-extern int GPTLinitialize (void);
-extern int GPTLstart (const char *);
-extern int GPTLinit_handle (const char *, int *);
-extern int GPTLstart_handle (const char *, int *);
-extern int GPTLstop (const char *);
-extern int GPTLstop_handle (const char *, int *);
-extern int GPTLstamp (double *, double *, double *);
-extern int GPTLpr (const int);
-extern int GPTLpr_file (const char *);
-extern int GPTLreset (void);
-extern int GPTLreset_timer (char *);
-extern int GPTLfinalize (void);
-extern int GPTLget_memusage (float *);
-extern int GPTLprint_memusage (const char *);
-extern int GPTLprint_rusage (const char *);
-extern int GPTLget_procsiz (float *, float *);
-extern int GPTLenable (void);
-extern int GPTLdisable (void);
-extern int GPTLsetutr (const int);
-extern int GPTLquery (const char *, int, int *, int *, double *, double *, double *,
-		      long long *, const int);
-extern int GPTLget_wallclock (const char *, int, double *);
-extern int GPTLget_wallclock_latest (const char *, int, double *);
-extern int GPTLget_threadwork (const char *, double *, double *);
-extern int GPTLstartstop_val (const char *, double);
-extern int GPTLget_nregions (int, int *);
-extern int GPTLget_regionname (int, int, char *, int);
-extern int GPTL_PAPIlibraryinit (void);
-extern int GPTLevent_name_to_code (const char *, int *);
-extern int GPTLevent_code_to_name (const int, char *);
-extern int GPTLget_eventvalue (const char *, const char *, int, double *);
-extern int GPTLnum_errors (void);
-extern int GPTLnum_warn (void);
-extern int GPTLget_count (const char *, int, int *);
+  // In gptl.cc:
+  int GPTLinit_handle (const char *, int *);
+  int GPTLstart (const char *);
+  int GPTLstart_handle (const char *, int *);
+  int GPTLstop (const char *);
+  int GPTLstop_handle (const char *, int *);
+  int GPTLstartstop_val (const char *, double);
+
+  // In getter.cc:
+  int GPTLstamp (double *, double *, double *);
+  int GPTLquery (const char *, int, int *, int *, double *, double *, double *, long long *,
+		 const int);
+  int GPTLget_wallclock (const char *, int, double *);
+  int GPTLget_wallclock_latest (const char *, int, double *);
+  int GPTLget_nregions (int, int *);
+  int GPTLget_regionname (int, int, char *, int);
+  int GPTLget_threadwork (const char *, double *, double *);
+  int GPTLget_eventvalue (const char *, const char *, int, double *);
+  int GPTLget_count (const char *, int, int *);
+  int GPTLnum_errors (void);
+  int GPTLnum_warn (void);
+
+  // In postprocess.cc:
+  int GPTLpr (const int);
+  int GPTLpr_file (const char *);
+  
+  // In setter.cc:
+  int GPTLsetutr (const int);
+  int GPTLreset (void);
+  int GPTLreset_errors (void);
+  int GPTLreset_timer (char *);
+  int GPTLdisable (void);
+  int GPTLenable (void);
+
+  // In memusage.cc:
+  int GPTLget_procsiz (float *, float *);
+  int GPTLprint_memusage (const char *);
+  int GPTLprint_rusage (const char *);
+  int GPTLget_memusage (float *);
+
+  // In gptl_papi.cc:
+  int GPTLevent_name_to_code (const char *, int *);
+  int GPTLevent_code_to_name (const int, char *);
 #ifdef __cplusplus
 }
 #endif

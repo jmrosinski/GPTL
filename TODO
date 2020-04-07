@@ -1,20 +1,29 @@
-o Get Intel to use -qopenmp. For now -fopenmp works but for how long?
-o Test with PGI
-+ Test with clang/gfortran
-  - Gave up on enabling OMP
-+ Change default to unwind
-  + Check for libunwind rather than header file
-o Get versioning right for: Currently follows same rules as netcdf
-  o Version in gptl.pc
-  o Naming of .so files
-o How to handle CMake
-  - Mark O. help given output from gptl.pc
-  - Or, create CMake info from configure
-o Test with memusage stats
-x Get rid of warnings from "autoreconf -i" about serial number
-+ Parallel make work OK?
-+ Libs vs Libs.private
-+ Requires vs Requires.private
-+ Does -fopenmp belong instead in Cflags and Fflags?
-+ Have "make clean" always get rid of all generated files
-+ Does gptl.pc need "-finstrument-functions"? I've added it for now
+o Move enable/disable routines to util.cc
+o Remove GPTLstartstop_val???
+o Straighten out use of int vs. uint
+o cpp-ize all comments
+o Move GPTLeventlist and GPTLnevents to papi.cc?
+o Make a new inline routine "check_for_imperfect_nest" from code in update_stats
+o Rename GPTLrename_duplicate... to rename_duplicate...
++ Remove GPTLget_timersaddr
+o Remove GPTLgetentry: pmpi.cc should be able to call getentry directly now
+o Internal-only files perhaps donn't need extern "C"?
+o Move contents of hashstats.c into postprocess.cc
+o getoverhead.cc will be simplified, esp. GPTLget_overhead won't need all those args.
+o memstats.cc: PERHAPS file not needed. Move thread-specific routines to thread.c, and
+  GPTLprint_memstats (rename to print_memstats) to postprocess.cc
+o Move contents of memusage.c to query.cc
+o Change printing to C++ style
+o Split out papi and MPI components of f_wrappers.c into separate files (removes some ifdefs)
+o Put appropriate prototypes in private.h
+o Generally all arrays starting with "GPTL" can have the "GPTL" part removed
+o GPTLget_nthreads should no longer be needed
+o Use reference vars. where appropriate
+o Replace GPTLallocate with "new" where possible
+o autoinst.cc will need its own preamble_start and preamble_stop due to changes
+o ALL user-visible functions need to be OUTSIDE any namespace (for Fortran)
+  - They'll all be named GPTL...
+  - Most or all private functions will be inside their own namespaces
+  - Try to make it so only the owner of private data changes it
+  
+o There are some namespace issues in gptl.h (e.g. Method, Funcoption) that need to be protected
