@@ -63,6 +63,8 @@ if test "x$enable_openmp" != xno; then
     useomp=yes;
     AC_DEFINE([THREADED_OMP], [1], [openmp support is present])
     CXXFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"
+#TODO: Ensure that C flag for openmp is actually the same as for CXX. CFLAGS needed for tests
+    CFLAGS="$CFLAGS $OPENMP_CXXFLAGS"
   fi
 fi
 AM_CONDITIONAL([HAVE_OPENMP], [test "x$useomp" = xyes])
