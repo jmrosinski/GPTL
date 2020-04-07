@@ -54,33 +54,63 @@ program utrtest
   
   ret = gptlinitialize ()
 
-  ret = gptlinit_handle ('1x1e7', handle1)
-  ret = gptlinit_handle ('10x1e6', handle2)
-  ret = gptlinit_handle ('100x1e5', handle3)
-  ret = gptlinit_handle ('1000x1e4', handle4)
-  ret = gptlinit_handle ('1e4x1000', handle5)
-  ret = gptlinit_handle ('1e5x100', handle6)
-  ret = gptlinit_handle ('1e6x10', handle7)
-  ret = gptlinit_handle ('1e7x1', handle8)
+  ret = gptlstart ('total_startstop')
+  call sub (1, 10000000, "1x1e7", sum)
+  call sub (10, 1000000, "10x1e6", sum)
+  call sub (100, 100000, "100x1e5", sum)
+  call sub (1000, 10000, "1000x1e4", sum)
+  call sub (10000, 1000, "1e4x1000", sum)
+  call sub (100000, 100, "1e5x100", sum)
+  call sub (1000000, 10, "1e6x10", sum)
+  call sub (10000000, 1, "1e7x1", sum)
+  ret = gptlstop ("total_startstop")
+
+  ret = gptlinit_handle ('1x1e7_handle', handle1)
+  ret = gptlinit_handle ('10x1e6_handle', handle2)
+  ret = gptlinit_handle ('100x1e5_handle', handle3)
+  ret = gptlinit_handle ('1000x1e4_handle', handle4)
+  ret = gptlinit_handle ('1e4x1000_handle', handle5)
+  ret = gptlinit_handle ('1e5x100_handle', handle6)
+  ret = gptlinit_handle ('1e6x10_handle', handle7)
+  ret = gptlinit_handle ('1e7x1_handle', handle8)
   
-  ret = gptlstart ('total')
-  !      ret = GPTLdisable ()
-  call sub (1, 10000000, "1x1e7", sum, handle1)
-  call sub (10, 1000000, "10x1e6", sum, handle2)
-  call sub (100, 100000, "100x1e5", sum, handle3)
-  call sub (1000, 10000, "1000x1e4", sum, handle4)
-  call sub (10000, 1000, "1e4x1000", sum, handle5)
-  call sub (100000, 100, "1e5x100", sum, handle6)
-  call sub (1000000, 10, "1e6x10", sum, handle7)
-  call sub (10000000, 1, "1e7x1", sum, handle8)
-  !      ret = gptlenable ()
-  ret = gptlstop ("total")
+  ret = gptlstart ('total_handle')
+  call sub_handle (1, 10000000, "1x1e7_handle", sum, handle1)
+  call sub_handle (10, 1000000, "10x1e6_handle", sum, handle2)
+  call sub_handle (100, 100000, "100x1e5_handle", sum, handle3)
+  call sub_handle (1000, 10000, "1000x1e4_handle", sum, handle4)
+  call sub_handle (10000, 1000, "1e4x1000_handle", sum, handle5)
+  call sub_handle (100000, 100, "1e5x100_handle", sum, handle6)
+  call sub_handle (1000000, 10, "1e6x10_handle", sum, handle7)
+  call sub_handle (10000000, 1, "1e7x1_handle", sum, handle8)
+  ret = gptlstop ("total_handle")
 
   ret = gptlpr (-1)  ! negative number means write to stderr
   stop 0
 end program utrtest
 
-subroutine sub (outer, inner, name, sum, handle)
+subroutine sub (outer, inner, name, sum)
+  use gptl
+
+  implicit none
+
+  integer, intent(in) :: outer
+  integer, intent(in) :: inner
+  character(len=*), intent(in) :: name
+  double precision, intent(inout) :: sum
+  
+  integer :: i, j, ret
+
+  do i=0,outer-1
+    ret = gptlstart (name)
+    do j=0,inner-1
+      sum = sum + j
+    end do
+    ret = gptlstop (name)
+  end do
+end subroutine sub
+
+subroutine sub_handle (outer, inner, name, sum, handle)
   use gptl
 
   implicit none
@@ -100,6 +130,4 @@ subroutine sub (outer, inner, name, sum, handle)
     end do
     ret = gptlstop_handle (name, handle)
   end do
-  
-  return
-end subroutine sub
+end subroutine sub_handle
