@@ -85,4 +85,4 @@ endif
 # Test output to be deleted: include ALL possible executables
 ALLEXES = printwhileon imperfect_nest gran_overhead tst_simple global cygprofile omptest \
           testpapi gptl_avail knownflopcount papiomptest global summary pmpi nestedomp
-CLEANFILES = timing.* *.trs *.log *.o $(ALLEXES)
+CLEANFILES = timing.?????? *.trs *.log *.o $(ALLEXES)
