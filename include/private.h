@@ -3,6 +3,7 @@
 
 #include "gptl.h"  // GPTL_Option
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 // Things visible only to GPTL namespaces and functions
@@ -66,7 +67,8 @@ namespace gptl_private {
     long long accum[MAX_AUX]; // accumulator for counters
   } Papistats;
   
-  typedef struct TIMER {
+  class Timer {
+  public:
 #ifdef ENABLE_PMPI
     double nbytes;            // number of bytes for MPI call
 #endif
@@ -78,9 +80,9 @@ namespace gptl_private {
     unsigned long count;      // number of start/stop calls
     unsigned long nrecurse;   // number of recursive start/stop calls
     void *address;            // address of timer: used only by _instr routines
-    struct TIMER *next;       // next timer in linked list
-    struct TIMER **parent;    // array of parents
-    struct TIMER **children;  // array of children
+    Timer *next;              // next timer in linked list
+    Timer **parent;           // array of parents
+    Timer **children;         // array of children
     int *parent_count;        // array of call counts, one for each parent
     unsigned int recurselvl;  // recursion level
     unsigned int nchildren;   // number of children
@@ -89,8 +91,10 @@ namespace gptl_private {
     bool onflg;               // timer currently on or off
     char name[MAX_CHARS+1];   // timer name (user input)
     char *longname;           // For autoprofiled names, full name for diagnostic printing
-  } Timer;
+    Timer (const char *, void *);
+  };
 
+  
   typedef struct {
     Timer **entries;             // array of timers hashed to the same value
     unsigned int nument;         // number of entries hashed to the same value

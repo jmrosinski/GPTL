@@ -86,10 +86,9 @@ extern "C" {
     }
 
     indx = gptl_private::genhashidx (name);
-    ptr = gptl_private::getentry (gptl_private::hashtable[t], name, indx);
-    if ( !ptr)
-      return error ("%s: requested timer %s does not have a name hash\n",
-			       thisfunc, name);
+    ptr = getentry (gptl_private::hashtable[t], name, indx);
+    if ( ! ptr)
+      return error ("%s: requested timer %s does not have a name hash\n", thisfunc, name);
 
     *onflg     = ptr->onflg;
     *count     = ptr->count;
@@ -122,10 +121,10 @@ extern "C" {
     unsigned int indx;   // hash index returned from getentry (unused)
     static const char *thisfunc = "GPTLget_wallclock";
   
-    if ( ! gptl_once::initialized)
+    if ( ! initialized)
       return error ("%s: GPTLinitialize has not been called\n", thisfunc);
 
-    if ( ! gptl_private::wallstats.enabled)
+    if ( ! wallstats.enabled)
       return error ("%s: wallstats not enabled\n", thisfunc);
   
     // If t is < 0, assume the request is for the current thread
@@ -137,11 +136,11 @@ extern "C" {
 	return error ("%s: requested thread %d is too big\n", thisfunc, t);
     }
   
-    indx = gptl_private::genhashidx (timername);
-    ptr = gptl_private::getentry (hashtable[t], timername, indx);
+    indx = genhashidx (timername);
+    ptr = getentry (hashtable[t], timername, indx);
     if ( ! ptr)
       return error ("%s: requested timer %s does not exist (or auto-instrumented?)\n",
-			       thisfunc, timername);
+		    thisfunc, timername);
     *value = ptr->wall.accum;
     return 0;
   }

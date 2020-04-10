@@ -40,8 +40,10 @@ extern "C" {
   */
   int GPTLstart (const char *name)
   {
+    using namespace gptl_once;
     using namespace gptl_private;
-    Timer *ptr;        // linked list pointer
+    using namespace gptl_util;
+    Timer *ptr;        // linked list entry
     int t;             // thread index (of this thread)
     int ret;           // return value
     int numchars;      // number of characters to copy
@@ -55,8 +57,8 @@ extern "C" {
       return ret;
   
     // ptr will point to the requested timer in the current list, or NULL if this is a new entry
-    indx = gptl_private::genhashidx (name);
-    ptr = gptl_private::getentry (hashtable[t], name, indx);
+    indx = genhashidx (name);
+    ptr = getentry (hashtable[t], name, indx);
 
     /* 
     ** Recursion => increment depth in recursion and return.  We need to return 
@@ -70,29 +72,23 @@ extern "C" {
 
     // Increment stackidx[t] unconditionally. This is necessary to ensure the correct
     // behavior when GPTLstop decrements stackidx[t] unconditionally.
-    if (gptl_private::stackidx[t].val++ > MAX_STACK-1)
-      return gptl_util::error ("%s: stack too big: NOT starting timer for %s\n", thisfunc, name);
+    if (stackidx[t].val++ > MAX_STACK-1)
+      return error ("%s: stack too big: NOT starting timer for %s\n", thisfunc, name);
 
-    if ( ! ptr) {   // Add a new entry and initialize. longname only needed for auto-profiling
-      ptr = (Timer *) gptl_util::allocate (sizeof (Timer), thisfunc);
-      memset (ptr, 0, sizeof (Timer));
-
-      numchars = MIN (strlen (name), MAX_CHARS);
-      strncpy (ptr->name, name, numchars);
-      ptr->name[numchars] = '\0';
-    
-      if (gptl_private::update_ll_hash (ptr, t, indx) != 0)
-	return gptl_util::error ("%s: update_ll_hash error\n", thisfunc);
+    if ( ! ptr) {   // New entry. Pass NULL for longname when not auto-instrumented
+      ptr = new Timer (name, NULL);
+      if (update_ll_hash (ptr, t, indx) != 0)
+	return error ("%s: update_ll_hash error\n", thisfunc);
     }
 
-    if (gptl_private::update_parent_info (ptr, callstack[t], stackidx[t].val) != 0)
-      return gptl_util::error ("%s: update_parent_info error\n", thisfunc);
+    if (update_parent_info (ptr, callstack[t], stackidx[t].val) != 0)
+      return error ("%s: update_parent_info error\n", thisfunc);
 
-    if (gptl_private::update_ptr (ptr, t) != 0)
-      return gptl_util::error ("%s: update_ptr error\n", thisfunc);
+    if (update_ptr (ptr, t) != 0)
+      return error ("%s: update_ptr error\n", thisfunc);
     
-    if (gptl_once::dopr_memusage && t == 0)
-      gptl_private::check_memusage ("Begin", ptr->name);
+    if (dopr_memusage && t == 0)
+      check_memusage ("Begin", ptr->name);
 
     return 0;
   }
@@ -177,15 +173,10 @@ extern "C" {
       return gptl_util::error ("%s: stack too big: NOT starting timer for %s\n", thisfunc, name);
 
     if ( ! ptr) { // Add a new entry and initialize
-      ptr = (Timer *) allocate (sizeof (Timer), thisfunc);
-      memset (ptr, 0, sizeof (Timer));
+      ptr = new Timer (name, NULL);
 
-      numchars = MIN (strlen (name), MAX_CHARS);
-      strncpy (ptr->name, name, numchars);
-      ptr->name[numchars] = '\0';
-
-      if (gptl_private::update_ll_hash (ptr, t, (unsigned int) *handle) != 0)
-	return gptl_util::error ("%s: update_ll_hash error\n", thisfunc);
+      if (update_ll_hash (ptr, t, (unsigned int) *handle) != 0)
+	return error ("%s: update_ll_hash error\n", thisfunc);
     }
 
     if (update_parent_info (ptr, callstack[t], stackidx[t].val) != 0)
@@ -389,8 +380,38 @@ extern "C" {
     return 0;
   }
 }
-  
+
+// Private to GPTL but visible across files
+
 namespace gptl_private {
+  extern "C" {
+    // Unfortunately can't use multiple constructors due to extern "C" requirement,
+    // so non-instrumented callers must pass in NULL for the last 2 args.
+    // symnam and this_fn are non-NULL only when auto-instrumented
+    // this_fn is only non-NULL when size exceeds MAX_CHARS 
+    Timer::Timer (const char *name, void *this_fn)
+    {
+      int numchars;
+      int symsize;
+      
+      memset (this, 0, sizeof (Timer));
+      symsize = strlen (name);
+      numchars = MIN (symsize, MAX_CHARS);
+      strncpy (this->name, name, numchars);
+      this->name[numchars] = '\0';
+      
+      if (this_fn) {
+	this->address = this_fn;
+	// For names longer than MAX_CHARS, need the full name to avoid misrepresenting
+	// names with stripped off characters as duplicates
+	if (symsize > MAX_CHARS) {
+	  this->longname = (char *) malloc (symsize+1);
+	  strcpy (this->longname, name);
+	}
+      }
+    }
+  }
+
   bool disabled = false;
   bool dousepapi = false;         // saves a function call if stays false
   char unknown[] = "unknown";

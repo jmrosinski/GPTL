@@ -47,7 +47,7 @@ namespace gptl_autoinst {
     inline Timer *getentry_instr (const Hashentry *hashtable, void *self, unsigned int *indx)
     {
       using namespace gptl_private;
-      Timer *ptr = 0;  // init to return value when entry not found
+      Timer *ptr = NULL;  // init to return value when entry not found
 
       /*
       ** Hash index is timer address modulo the table size
@@ -89,7 +89,7 @@ namespace gptl_autoinst {
       if (gptl_private::preamble_start (&t, unknown) != 0)
 	return;
 
-      ptr = getentry_instr (gptl_private::hashtable[t], this_fn, &indx);
+      ptr = getentry_instr (hashtable[t], this_fn, &indx);
 
       /* 
       ** Recursion => increment depth in recursion and return.  We need to return 
@@ -101,54 +101,39 @@ namespace gptl_autoinst {
 	return;
       }
 
-      /*
-      ** Increment stackidx[t] unconditionally. This is necessary to ensure the correct
-      ** behavior when GPTLstop_instr decrements stackidx[t] unconditionally.
-      */
-      if (++gptl_private::stackidx[t].val > MAX_STACK-1) {
+      // Increment stackidx[t] unconditionally. This is necessary to ensure the correct
+      // behavior when GPTLstop_instr decrements stackidx[t] unconditionally.
+      if (++stackidx[t].val > MAX_STACK-1) {
 	gptl_util::warn ("%s: stack too big\n", thisfunc);
 	return;
       }
 
       if ( ! ptr) {     // Add a new entry and initialize
-	ptr = (Timer *) gptl_util::allocate (sizeof (Timer), thisfunc);
-	memset (ptr, 0, sizeof (Timer));
 	if (get_symnam (this_fn, &symnam) != 0) {
 	  printf ("%s: failed to find symbol for address %p\n", thisfunc, this_fn);
 	  return;
 	}
-	symsize = strlen (symnam);
-      
-	// For names longer than MAX_CHARS, need the full name to avoid misrepresenting
-	// names with stripped off characters as duplicates
-	if (symsize > MAX_CHARS) {
-	  ptr->longname = (char *) malloc (symsize+1);
-	  strcpy (ptr->longname, symnam);
-	}
-	numchars = MIN (symsize, MAX_CHARS);
-	strncpy (ptr->name, symnam, numchars);
-	ptr->name[numchars] = '\0';
-	ptr->address = this_fn;
+	ptr = new Timer (symnam, this_fn);
 	free (symnam);
       
-	if (gptl_private::update_ll_hash (ptr, t, indx) != 0) {
+	if (update_ll_hash (ptr, t, indx) != 0) {
 	  gptl_util::warn ("%s: update_ll_hash error\n", thisfunc);
 	  return;
 	}
       }
     
-      if (gptl_private::update_parent_info (ptr, callstack[t], stackidx[t].val) != 0) {
+      if (update_parent_info (ptr, callstack[t], stackidx[t].val) != 0) {
 	gptl_util::warn ("%s: update_parent_info error\n", thisfunc);
 	return;
       }
 
-      if (gptl_private::update_ptr (ptr, t) != 0) {
+      if (update_ptr (ptr, t) != 0) {
 	gptl_util::warn ("%s: update_ptr error\n", thisfunc);
 	return;
       }
 
-      if (gptl_once::dopr_memusage && t == 0)
-	gptl_private::check_memusage ("Begin", ptr->name);
+      if (dopr_memusage && t == 0)
+	check_memusage ("Begin", ptr->name);
     }
 
     // Use anonymous namespace for functions private to the outer namespace
@@ -165,12 +150,12 @@ namespace gptl_autoinst {
 
 	nptrs = backtrace (buffer, 3);
 	if (nptrs != 3) {
-	  gptl_util::warn ("%s backtrace failed nptrs should be 2 but is %d\n", thisfunc, nptrs);
+	  warn ("%s backtrace failed nptrs should be 2 but is %d\n", thisfunc, nptrs);
 	  return -1;
 	}
 
-	if (!(strings = backtrace_symbols (buffer, nptrs))) {
-	  gptl_util::warn ("%s backtrace_symbols failed strings is null\n", thisfunc);
+	if ( ! (strings = backtrace_symbols (buffer, nptrs))) {
+	  warn ("%s backtrace_symbols failed strings is null\n", thisfunc);
 	  return -1;
 	}
 
@@ -283,12 +268,12 @@ namespace gptl_autoinst {
 	ptr = getentry_instr (hashtable[t], this_fn, &indx);
 
 	if ( ! ptr) {
-	  gptl_util::warn ("%s: timer for %p had not been started.\n", thisfunc, this_fn);
+	  warn ("%s: timer for %p had not been started.\n", thisfunc, this_fn);
 	  return;
 	}
 
 	if ( ! ptr->onflg ) {
-	  gptl_util::warn ("%s: timer %s was already off.\n", thisfunc, ptr->name);
+	  warn ("%s: timer %s was already off.\n", thisfunc, ptr->name);
 	  return;
 	}
 
@@ -310,8 +295,8 @@ namespace gptl_autoinst {
 	  return;
 	}
 
-	if (gptl_once::dopr_memusage && t == 0)
-	  gptl_private::check_memusage ("End", ptr->name);
+	if (dopr_memusage && t == 0)
+	  check_memusage ("End", ptr->name);
       }
 #endif // HAVE_LIBUNWIND || HAVE_BACKTRACE
       // auto-instrument function for xlc: -qdebug=function_trace
@@ -322,17 +307,21 @@ namespace gptl_autoinst {
       void __func_trace_enter (const char *function_name, const char *file_name, int line_number,
 			       void **const user_data)
       {
-	if (gptl_once::dopr_memusage && get_thread_num() == 0)
-	  gptl_private::check_memusage ("Begin", function_name);
+	using namespace gptl_once;
+	using namespace gptl_private;
+	if (dopr_memusage && get_thread_num() == 0)
+	  check_memusage ("Begin", function_name);
 	(void) GPTLstart (function_name);
       }
   
       void __func_trace_exit (const char *function_name, const char *file_name, int line_number,
 			      void **const user_data)
       {
+	using namespace gptl_once;
+	using namespace gptl_private;
 	(void) GPTLstop (function_name);
-	if (gptl_once::dopr_memusage && get_thread_num() == 0)
-	  gptl_private::check_memusage ("End", function_name);
+	if (dopr_memusage && get_thread_num() == 0)
+	  check_memusage ("End", function_name);
       }
 #endif
     }

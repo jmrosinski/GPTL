@@ -57,7 +57,7 @@ int GPTLpr_file (const char *outfile)
   FILE *fp;                 // file handle to write to
   Timer *ptr;               // walk through master thread linked list
   Timer *tptr;              // walk through slave threads linked lists
-  Timer sumstats;           // sum of same timer stats over threads
+  Timer *sumstats;          // sum of same timer stats over threads
   Outputfmt outputfmt;      // max depth, namelen, chars2pr
   int n, t;                 // indices
   int ndup;                 // number of duplicate auto-instrumented addresses
@@ -260,12 +260,13 @@ int GPTLpr_file (const char *outfile)
 #endif
     fprintf (fp, "\n");
     // Start at next to skip GPTL_ROOT
+    sumstats = new Timer ("none", NULL);
     for (ptr = timers[0]->next; ptr; ptr = ptr->next) {      
       // To print sum stats, first create a new timer then copy thread 0
       // stats into it. then sum using "add", and finally print.
       foundany = false;
       first = true;
-      sumstats = *ptr;
+      *sumstats = *ptr;
       for (t = 1; t < nthreads; ++t) {
         found = false;
         for (tptr = timers[t]->next; tptr && ! found; tptr = tptr->next) {
@@ -280,16 +281,18 @@ int GPTLpr_file (const char *outfile)
             foundany = true;
             fprintf (fp, "%3.3d ", t);
             printstats (tptr, fp, 0, 0, false, self_ohd, parent_ohd, outputfmt);
-            add (&sumstats, tptr);
+            add (sumstats, tptr);
           }
         }
       }
       if (foundany) {
         fprintf (fp, "SUM ");
-        printstats (&sumstats, fp, 0, 0, false, self_ohd, parent_ohd, outputfmt);
+        printstats (sumstats, fp, 0, 0, false, self_ohd, parent_ohd, outputfmt);
         fprintf (fp, "\n");
       }
     }
+    delete sumstats;
+    
     // Repeat overhead print in loop over threads
     if (wallstats.enabled && overheadstats.enabled) {
       osum = 0.;
