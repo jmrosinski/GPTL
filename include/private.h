@@ -91,12 +91,19 @@ namespace gptl_private {
     bool onflg;               // timer currently on or off
     char name[MAX_CHARS+1];   // timer name (user input)
     char *longname;           // For autoprofiled names, full name for diagnostic printing
+
+    // Constructor
     Timer (const char *, void *);
   };
-
   
   typedef struct {
-    Timer **entries;             // array of timers hashed to the same value
+    Timer *timer;
+    char name[MAX_CHARS+1] __attribute__ ((aligned (64)));
+    void *address;
+  } E_array;
+
+  typedef struct {
+    E_array *entries;
     unsigned int nument;         // number of entries hashed to the same value
   } Hashentry;
   

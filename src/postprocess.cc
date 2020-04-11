@@ -897,7 +897,7 @@ namespace {
 	    }
 	    fprintf (fp, "hashtable[%d][%d] had %d entries:", t, i, nument);
 	    for (int ii = 0; ii < nument; ii++)
-	      fprintf (fp, " %s", gptl_private::hashtable[t][i].entries[ii]->name);
+	      fprintf (fp, " %s", gptl_private::hashtable[t][i].entries[ii].name);
 	    fprintf (fp, "\n");
 	  }
 	  switch (nument) {

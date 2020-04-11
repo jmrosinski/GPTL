@@ -1,0 +1,4 @@
+o To build with Intel:
+  % env CXX=icpc CC=icc FC=ifort LIBS="-lstdc++" CXXFLAGS="-fPIC -m64 -g -O3 -fkeep-inline-functions" ./configure
+o GNU:
+  % env LIBS="-lstdc++" CXXFLAGS="-O3 -mavx2 -g -fkeep-inline-functions" ./configure

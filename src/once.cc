@@ -416,7 +416,7 @@ extern "C" {
       hashtable[t] = (Hashentry *) allocate (tablesize * sizeof (Hashentry), thisfunc);
       for (i = 0; i < tablesize; i++) {
 	hashtable[t][i].nument = 0;
-	hashtable[t][i].entries = 0;
+	hashtable[t][i].entries = (E_array *) allocate (1 * sizeof (E_array), thisfunc);
       }
 
       // Make a timer "GPTL_ROOT" to ensure no orphans, and to simplify printing
@@ -496,7 +496,7 @@ extern "C" {
 	}
 	if (ptr->nchildren > 0)
 	  free (ptr->children);
-	free (ptr);
+	delete ptr;
       }
     }
 

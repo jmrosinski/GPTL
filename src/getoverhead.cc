@@ -89,14 +89,14 @@ namespace gptl_overhead {
     // getentry overhead
     // Find the first hashtable entry with a valid name. Start at 1 because 0 is not a valid hash
     for (n = 1; n < tablesize; ++n) {
-      if (hashtable[0][n].nument > 0 && strlen (hashtable[0][n].entries[0]->name) > 0) {
-	hashidx = genhashidx (hashtable[0][n].entries[0]->name);
+      if (hashtable[0][n].nument > 0 && strlen (hashtable[0][n].entries[0].name) > 0) {
+	hashidx = genhashidx (hashtable[0][n].entries[0].name);
 	t1 = (*ptr2wtimefunc)();
 	for (i = 0; i < 1000; ++i)
-	  entry = getentry (hashtable[0], hashtable[0][n].entries[0]->name, hashidx);
+	  entry = getentry (hashtable[0], hashtable[0][n].entries[0].name, hashidx);
 	t2 = (*ptr2wtimefunc)();
 	fprintf (fp, "%s: using hash entry %d=%s for getentry estimate\n", 
-		 thisfunc, n, hashtable[0][n].entries[0]->name);
+		 thisfunc, n, hashtable[0][n].entries[0].name);
 	break;
       }
     }

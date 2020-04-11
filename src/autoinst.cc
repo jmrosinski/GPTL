@@ -56,8 +56,8 @@ namespace gptl_autoinst {
       */
       *indx = (((unsigned long) self) >> 4) % tablesize;
       for (int i = 0; i < hashtable[*indx].nument; ++i) {
-	if (hashtable[*indx].entries[i]->address == self) {
-	  ptr = hashtable[*indx].entries[i];
+	if (hashtable[*indx].entries[i].address == self) {
+	  ptr = hashtable[*indx].entries[i].timer;
 	  break;
 	}
       }

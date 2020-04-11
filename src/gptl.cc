@@ -50,7 +50,7 @@ extern "C" {
     unsigned int indx; // hash table index
     static const char *thisfunc = "GPTLstart";
   
-    ret = gptl_private::preamble_start (&t, name);
+    ret = preamble_start (&t, name);
     if (ret == DONE)
       return 0;
     else if (ret != 0)
@@ -150,9 +150,9 @@ extern "C" {
 #ifdef VERBOSE
       printf ("%s: name=%s thread %d generated handle=%d\n", thisfunc, name, t, *handle);
 #endif
-    } else if ((unsigned int) *handle > gptl_private::tablesizem1) {
+    } else if ((unsigned int) *handle > tablesizem1) {
       return error ("%s: Bad input handle=%u exceeds tablesizem1=%d\n", 
-		    thisfunc, (unsigned int) *handle, gptl_private::tablesizem1);
+		    thisfunc, (unsigned int) *handle, tablesizem1);
     }
 
     ptr = getentry (hashtable[t], name, (unsigned int) *handle);
@@ -275,7 +275,7 @@ extern "C" {
       return ret;
        
     indx = (unsigned int) *handle;
-    if (indx == 0 || indx > gptl_private::tablesizem1) 
+    if (indx == 0 || indx > tablesizem1) 
       return error ("%s: bad input handle=%u for timer %s.\n", thisfunc, indx, name);
   
     if ( ! (ptr = getentry (hashtable[t], name, indx)))
@@ -492,19 +492,25 @@ namespace gptl_private {
     int update_ll_hash (Timer *ptr, int t, unsigned int indx)
     {
       int nument;      // number of entries
-      Timer **eptr;    // for realloc
+      E_array *eptr;   // for realloc
 
       last[t]->next = ptr;
       last[t] = ptr;
       ++hashtable[t][indx].nument;
       nument = hashtable[t][indx].nument;
-  
-      eptr = (Timer **) realloc (hashtable[t][indx].entries, nument * sizeof (Timer *));
-      if ( ! eptr)
-	return gptl_util::error ("update_ll_hash: realloc error\n");
 
-      hashtable[t][indx].entries           = eptr;
-      hashtable[t][indx].entries[nument-1] = ptr;
+      if (nument > 1) {  // First entry had hashtable space pre-allocated
+	eptr = (E_array *) realloc (hashtable[t][indx].entries, nument * sizeof (E_array));
+	if ( ! eptr)
+	  return gptl_util::error ("update_ll_hash: realloc error\n");
+	hashtable[t][indx].entries = eptr;
+      }
+              hashtable[t][indx].entries[nument-1].timer = ptr;
+      // Duplicate timer name in hash entry to avoid a pointer dereference in getentry
+      strcpy (hashtable[t][indx].entries[nument-1].name, ptr->name);
+      // Need to ensure address is NULL because further logic depends on it
+              hashtable[t][indx].entries[nument-1].address = ptr->address;
+      
       return 0;
     }
 
@@ -800,8 +806,8 @@ namespace gptl_private {
       // If nument exceeds 1 there was one or more hash collisions and we must search
       // linearly through the array of names with the same hash for a match
       for (int i = 0; i < hashtable[indx].nument; i++) {
-	if (STRMATCH (name, hashtable[indx].entries[i]->name)) {
-	  ptr = hashtable[indx].entries[i];
+	if (STRMATCH (name, hashtable[indx].entries[i].name)) {
+	  ptr = hashtable[indx].entries[i].timer;
 	  break;
 	}
       }
