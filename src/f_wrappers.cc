@@ -6,7 +6,7 @@
 ** Fortran wrappers for timing library routines
 */
 
-#include "config.h" /* Must be first include. */
+#include "config.h" // Must be first include
 
 #ifdef HAVE_LIBMPI
 #include <mpi.h>
@@ -16,6 +16,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "util.h"
 #include "gptl.h"
 
 #if ( defined FORTRANUNDERSCORE )
@@ -31,7 +32,6 @@
 #define gptlreset_timer gptlreset_timer_
 #define gptlstamp gptlstamp_
 #define gptlstart gptlstart_
-#define gptlinit_handle gptlinit_handle_
 #define gptlstart_handle gptlstart_handle_
 #define gptlstop gptlstop_
 #define gptlstop_handle gptlstop_handle_
@@ -54,8 +54,6 @@
 #define gptlnum_warn gptlnum_warn_
 #define gptlget_count gptlget_count_
 #define gptl_papilibraryinit gptl_papilibraryinit_
-#define gptlevent_name_to_code gptlevent_name_to_code_
-#define gptlevent_code_to_name gptlevent_code_to_name_
 
 #elif ( defined FORTRANDOUBLEUNDERSCORE )
 
@@ -70,7 +68,6 @@
 #define gptlreset_timer gptlreset_timer__
 #define gptlstamp gptlstamp_
 #define gptlstart gptlstart_
-#define gptlinit_handle gptlinit_handle__
 #define gptlstart_handle gptlstart_handle__
 #define gptlstop gptlstop_
 #define gptlstop_handle gptlstop_handle__
@@ -93,8 +90,6 @@
 #define gptlnum_warn gptlnum_warn__
 #define gptlget_count gptlget_count__
 #define gptl_papilibraryinit gptl_papilibraryinit__
-#define gptlevent_name_to_code gptlevent_name_to_code__
-#define gptlevent_code_to_name gptlevent_code_to_name__
 
 #endif
 
@@ -113,7 +108,6 @@ extern "C" {
   int gptlreset_timer (char *name, int nc);
   int gptlstamp (double *wall, double *usr, double *sys);
   int gptlstart (char *name, int nc);
-  int gptlinit_handle (char *name, int *, int nc);
   int gptlstart_handle (char *name, int *, int nc);
   int gptlstop (char *name, int nc);
   int gptlstop_handle (char *name, int *, int nc);
@@ -140,8 +134,6 @@ extern "C" {
   int gptlget_count (char *, int *, int *, int);
 #ifdef HAVE_PAPI
   int gptl_papilibraryinit (void);
-  int gptlevent_name_to_code (const char *str, int *code, int nc);
-  int gptlevent_code_to_name (int *code, char *str, int nc);
 #endif
 
   // Fortran wrapper functions start here
@@ -234,21 +226,15 @@ extern "C" {
     return GPTLstart (cname);
   }
 
-  int gptlinit_handle (char *name, int *handle, int nc)
-  {
-    char cname[nc+1];
-
-    strncpy (cname, name, nc);
-    cname[nc] = '\0';
-    return GPTLinit_handle (cname, handle);
-  }
-
   int gptlstart_handle (char *name, int *handle, int nc)
   {
     char cname[nc+1];
 
-    strncpy (cname, name, nc);
-    cname[nc] = '\0';
+    // Only need name on initial call (*handle=0)
+    if (*handle == 0) {
+      strncpy (cname, name, nc);
+      cname[nc] = '\0';
+    }
     return GPTLstart_handle (cname, handle);
   }
 
@@ -414,39 +400,9 @@ extern "C" {
 
 #ifdef HAVE_PAPI
 #include <papi.h>
-
   int gptl_papilibraryinit (void)
   {
     return GPTL_PAPIlibraryinit ();;
-  }
-
-  int gptlevent_name_to_code (const char *str, int *code, int nc)
-  {
-    char cname[PAPI_MAX_STR_LEN+1];
-    int numchars = MIN (nc, PAPI_MAX_STR_LEN);
-
-    strncpy (cname, str, numchars);
-    cname[numchars] = '\0';
-
-    /* "code" is an int* and is an output variable */
-    return GPTLevent_name_to_code (cname, code);
-  }
-
-  int gptlevent_code_to_name (int *code, char *str, int nc)
-  {
-    int i;
-
-    if (nc < PAPI_MAX_STR_LEN)
-      return GPTLerror ("gptl_event_code_to_name: output name must hold at least %d characters\n",
-			PAPI_MAX_STR_LEN);
-
-    if (GPTLevent_code_to_name (*code, str) == 0) {
-      for (i = strlen(str); i < nc; ++i)
-	str[i] = ' ';
-    } else {
-      return GPTLerror ("");
-    }
-    return 0;
   }
 #endif
 }

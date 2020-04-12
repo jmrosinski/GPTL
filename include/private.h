@@ -18,6 +18,11 @@
 
 #define STRMATCH(X,Y) (strcmp((X),(Y)) == 0)
 
+// Max size of hash table needed due to handle split into hash+collision index which must
+// fit in a 32-bit int
+#define MAX_TABLESIZE 100000
+#define MAX_NUMENT      1000
+
 // Default size of hash table
 #define DEFAULT_TABLE_SIZE 1023
 
@@ -77,17 +82,17 @@ namespace gptl_private {
 #endif 
     Cpustats cpu;             // cpu stats
     Wallstats wall;           // wallclock stats
-    unsigned long count;      // number of start/stop calls
-    unsigned long nrecurse;   // number of recursive start/stop calls
+    long count;               // number of start/stop calls
+    long nrecurse;            // number of recursive start/stop calls
     void *address;            // address of timer: used only by _instr routines
     Timer *next;              // next timer in linked list
     Timer **parent;           // array of parents
     Timer **children;         // array of children
     int *parent_count;        // array of call counts, one for each parent
-    unsigned int recurselvl;  // recursion level
-    unsigned int nchildren;   // number of children
-    unsigned int nparent;     // number of parents
-    unsigned int norphan;     // number of times this timer was an orphan
+    int recurselvl;           // recursion level
+    int nchildren;            // number of children
+    int nparent;              // number of parents
+    int norphan;              // number of times this timer was an orphan
     bool onflg;               // timer currently on or off
     char name[MAX_CHARS+1];   // timer name (user input)
     char *longname;           // For autoprofiled names, full name for diagnostic printing
@@ -96,8 +101,8 @@ namespace gptl_private {
 
   
   typedef struct {
-    Timer **entries;             // array of timers hashed to the same value
-    unsigned int nument;         // number of entries hashed to the same value
+    Timer **entries;          // array of timers hashed to the same value
+    int nument;               // number of entries hashed to the same value
   } Hashentry;
   
   typedef struct {
@@ -139,13 +144,14 @@ namespace gptl_private {
   extern "C" {
     extern double (*ptr2wtimefunc)(void);    // The underlying timing routine
     void check_memusage (const char *, const char *);
-    inline unsigned int genhashidx (const char *);
-    inline Timer *getentry (const Hashentry *, const char *, unsigned int);
+    inline int genhashidx (const char *);
+    inline Timer *getentry (const Hashentry *, const char *, int);
+    inline Timer *getentry_handle (const Hashentry *, const char *, int *, bool *);
     inline int preamble_start (int *, const char *);
     inline int update_parent_info (Timer *, Timer **, int);
     inline int preamble_stop (int *, double *, long *, long *, const char *);
     inline int update_stats (Timer *, const double, const long, const long, const int);
-    int update_ll_hash (Timer *, int, unsigned int);
+    int update_ll_hash (Timer *, int, const int);
     inline int update_ptr (Timer *, const int);
     // These are the (possibly) supported underlying wallclock timers
 #ifdef HAVE_NANOTIME

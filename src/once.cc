@@ -496,7 +496,7 @@ extern "C" {
 	}
 	if (ptr->nchildren > 0)
 	  free (ptr->children);
-	free (ptr);
+	delete ptr;
       }
     }
 

@@ -102,11 +102,6 @@ module gptl
        character(len=*) :: name
      end function gptlstart
 
-     integer function gptlinit_handle (name, handle)
-       character(len=*) :: name
-       integer :: handle
-     end function gptlinit_handle
-
      integer function gptlstart_handle (name, handle)
        character(len=*) :: name
        integer :: handle
@@ -213,16 +208,6 @@ module gptl
 #ifdef HAVE_PAPI
      integer function gptl_papilibraryinit ()
      end function gptl_papilibraryinit
-
-     integer function gptlevent_name_to_code (str, code)
-       character(len=*) :: str
-       integer :: code
-     end function gptlevent_name_to_code
-
-     integer function gptlevent_code_to_name (code, str)
-       integer :: code
-       character(len=*) :: str
-     end function gptlevent_code_to_name
 #endif
 
   end interface

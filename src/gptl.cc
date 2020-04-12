@@ -36,29 +36,29 @@ extern "C" {
   ** Input arguments:
   **   name: timer name
   **
-  ** Return value: 0 (success) or GPTLerror (failure)
+  ** Return value: 0 (success) or gptl_util::error (failure)
   */
   int GPTLstart (const char *name)
   {
     using namespace gptl_once;
     using namespace gptl_private;
     using namespace gptl_util;
-    Timer *ptr;        // linked list entry
-    int t;             // thread index (of this thread)
-    int ret;           // return value
-    int numchars;      // number of characters to copy
-    unsigned int indx; // hash table index
+    Timer *ptr;           // linked list entry
+    int t;                // thread index (of this thread)
+    int ret;              // return value
+    int numchars;         // number of characters to copy
+    int hashidx;          // hash table index
     static const char *thisfunc = "GPTLstart";
   
-    ret = gptl_private::preamble_start (&t, name);
+    ret = preamble_start (&t, name);
     if (ret == DONE)
       return 0;
     else if (ret != 0)
       return ret;
   
     // ptr will point to the requested timer in the current list, or NULL if this is a new entry
-    indx = genhashidx (name);
-    ptr = getentry (hashtable[t], name, indx);
+    hashidx = genhashidx (name);
+    ptr = getentry (hashtable[t], name, hashidx);
 
     /* 
     ** Recursion => increment depth in recursion and return.  We need to return 
@@ -77,7 +77,7 @@ extern "C" {
 
     if ( ! ptr) {   // New entry. Pass NULL for longname when not auto-instrumented
       ptr = new Timer (name, NULL);
-      if (update_ll_hash (ptr, t, indx) != 0)
+      if (update_ll_hash (ptr, t, hashidx) != 0)
 	return error ("%s: update_ll_hash error\n", thisfunc);
     }
 
@@ -94,27 +94,6 @@ extern "C" {
   }
 
   /*
-  ** GPTLinit_handle: Initialize a handle for use by GPTLstart_handle() and GPTLstop_handle()
-  **
-  ** Input arguments:
-  **   name: timer name
-  **
-  ** Output arguments:
-  **   handle: hash value corresponding to "name"
-  **
-  ** Return value: 0 (success) or GPTLerror (failure)
-  */
-  int GPTLinit_handle (const char *name, int *handle)
-  {
-    using namespace gptl_private;
-    if (disabled)
-      return 0;
-
-    *handle = (int) genhashidx (name);
-    return 0;
-  }
-
-  /*
   ** GPTLstart_handle: start a timer based on a handle
   **
   ** Input arguments:
@@ -127,10 +106,12 @@ extern "C" {
   {
     using namespace gptl_private;
     using namespace gptl_util;
-    Timer *ptr;    // linked list pointer
-    int t;         // thread index (of this thread)
-    int ret;       // return value
-    int numchars;  // number of characters to copy
+    Timer *ptr;           // linked list pointer
+    int t;                // thread index (of this thread)
+    int ret;              // return value
+    int numchars;         // number of characters to copy
+    int hashidx;          // hash index
+    bool badhandle;       // true means input handle was bad
     static const char *thisfunc = "GPTLstart_handle";
 
     ret = preamble_start (&t, name);
@@ -139,29 +120,19 @@ extern "C" {
     else if (ret != 0)
       return ret;
 
-    /*
-    ** If handle is zero on input, generate the hash entry and return it to the user.
-    ** Otherwise assume it's a previously generated hash index passed in by the user.
-    ** Don't need a critical section here--worst case multiple threads will generate the
-    ** same handle and store to the same memory location, and this will only happen once.
-    */
-    if (*handle == 0) {
-      *handle = (int) genhashidx (name);
-#ifdef VERBOSE
-      printf ("%s: name=%s thread %d generated handle=%d\n", thisfunc, name, t, *handle);
-#endif
-    } else if ((unsigned int) *handle > gptl_private::tablesizem1) {
-      return error ("%s: Bad input handle=%u exceeds tablesizem1=%d\n", 
-		    thisfunc, (unsigned int) *handle, gptl_private::tablesizem1);
-    }
-
-    ptr = getentry (hashtable[t], name, (unsigned int) *handle);
+    // If input handle is 0, getentry_handle still needs to check if a timer already exists named
+    // "name", in which case ptr will point to the timer and handle will be modified.
+    // More likely, timer "name" will not exist, in which case NULL will be returned and
+    // handle will contain the correct value.
+    // If input handle is not 0, getentry_handle will return a pointer to the timer unless there
+    // is an error, in which case NULL will be returned and badhandle will be true.
+    ptr = getentry_handle (hashtable[t], name, handle, &badhandle);
+    if (badhandle)
+      return error ("%s: non-zero input handle=%d not found: skipping\n", thisfunc, *handle);
   
-    /* 
-    ** Recursion => increment depth in recursion and return.  We need to return 
-    ** because we don't want to restart the timer.  We want the reported time for
-    ** the timer to reflect the outermost layer of recursion.
-    */
+    // Recursion => increment depth in recursion and return.  We need to return 
+    // because we don't want to restart the timer.  We want the reported time for
+    // the timer to reflect the outermost layer of recursion.
     if (ptr && ptr->onflg) {
       ++ptr->recurselvl;
       return 0;
@@ -174,8 +145,8 @@ extern "C" {
 
     if ( ! ptr) { // Add a new entry and initialize
       ptr = new Timer (name, NULL);
-
-      if (update_ll_hash (ptr, t, (unsigned int) *handle) != 0)
+      // shift handle to get hashidx
+      if (update_ll_hash (ptr, t, (*handle)/MAX_NUMENT) != 0)
 	return error ("%s: update_ll_hash error\n", thisfunc);
     }
 
@@ -207,7 +178,7 @@ extern "C" {
     long usr = 0;              // user time (returned from get_cpustamp)
     long sys = 0;              // system time (returned from get_cpustamp)
     int ret;                   // return value
-    unsigned int indx;         // index into hash table
+    int hashidx;               // index into hash table
     static const char *thisfunc = "GPTLstop";
 
     ret = preamble_stop (&t, &tp1, &usr, &sys, name);
@@ -216,8 +187,8 @@ extern "C" {
     else if (ret != 0)
       return ret;
        
-    indx = genhashidx (name);
-    if (! (ptr = getentry (hashtable[t], name, indx)))
+    hashidx = genhashidx (name);
+    if (! (ptr = getentry (hashtable[t], name, hashidx)))
       return error ("%s thread %d: timer for %s had not been started.\n", thisfunc, t, name);
 
     if ( ! ptr->onflg )
@@ -225,11 +196,9 @@ extern "C" {
 
     ++ptr->count;
 
-    /* 
-    ** Recursion => decrement depth in recursion and return.  We need to return
-    ** because we don't want to stop the timer.  We want the reported time for
-    ** the timer to reflect the outermost layer of recursion.
-    */
+    // Recursion => decrement depth in recursion and return.  We need to return
+    // because we don't want to stop the timer.  We want the reported time for
+    // the timer to reflect the outermost layer of recursion.
     if (ptr->recurselvl > 0) {
       ++ptr->nrecurse;
       --ptr->recurselvl;
@@ -265,22 +234,30 @@ extern "C" {
     int ret;                   // return value
     long usr = 0;              // user time (returned from get_cpustamp)
     long sys = 0;              // system time (returned from get_cpustamp)
-    unsigned int indx;
+    int hashidx;
+    int entryidx;
     static const char *thisfunc = "GPTLstop_handle";
-
+    
     ret = preamble_stop (&t, &tp1, &usr, &sys, thisfunc);
     if (ret == DONE)
       return 0;
     else if (ret != 0)
       return ret;
-       
-    indx = (unsigned int) *handle;
-    if (indx == 0 || indx > gptl_private::tablesizem1) 
-      return error ("%s: bad input handle=%u for timer %s.\n", thisfunc, indx, name);
+    
+    hashidx = (*handle) / MAX_NUMENT;
+    if (hashidx == 0 || hashidx > tablesize - 1)
+      return error ("%s: Invalid input handle=%u\n", thisfunc, hashidx);
   
-    if ( ! (ptr = getentry (hashtable[t], name, indx)))
-      return error ("%s: handle=%u has not been set for timer %s.\n", thisfunc, indx, name);
-
+    entryidx = (*handle) - (hashidx * MAX_NUMENT);
+    if (entryidx >= MAX_NUMENT)
+      return error ("%s: %d is too many entries: suggest increasing max_tablesize\n",
+		    thisfunc, entryidx);
+    
+    if (entryidx > hashtable[t][hashidx].nument)
+      return error ("%s: Invalid input handle=%u > nument=%d\n",
+		    thisfunc, entryidx, hashtable[t][hashidx].nument);
+    ptr = hashtable[t][hashidx].entries[entryidx];
+    
     if ( ! ptr->onflg )
       return error ("%s: timer %s was already off.\n", thisfunc, ptr->name);
 
@@ -320,7 +297,7 @@ extern "C" {
     using namespace gptl_util;
     Timer *ptr;                // linked list pointer
     int t;                     // thread number for this process
-    unsigned int indx;         // index into hash table
+    int hashidx;               // index into hash table
     static const char *thisfunc = "GPTLstartstop_val";
 
     if (disabled)
@@ -340,8 +317,8 @@ extern "C" {
       return error ("%s: bad return from get_thread_num\n", thisfunc);
 
     // Find out if the timer already exists
-    indx = genhashidx (name);
-    ptr = getentry (hashtable[t], name, indx);
+    hashidx = genhashidx (name);
+    ptr = getentry (hashtable[t], name, hashidx);
 
     if (ptr) {
       // The timer already exists. Bump the count manually, update the time stamp,
@@ -358,7 +335,7 @@ extern "C" {
 	return error ("%s: Error from GPTLstop\n", thisfunc);
 
       // start/stop pair just called should guarantee ptr will be found
-      if ( ! (ptr = getentry (hashtable[t], name, indx)))
+      if ( ! (ptr = getentry (hashtable[t], name, hashidx)))
 	return error ("%s: Unexpected error from getentry\n", thisfunc);
 
       ptr->wall.min = value; // Since this is the first call, set min to user input
@@ -485,26 +462,27 @@ namespace gptl_private {
     ** Input arguments:
     **   ptr:  pointer to timer
     **   t:    thread index
-    **   indx: hash index
+    **   hashidx: hash index
     **
     ** Return value: 0 (success) or GPTLerror (failure)
     */
-    int update_ll_hash (Timer *ptr, int t, unsigned int indx)
+    int update_ll_hash (Timer *ptr, int t, const int hashidx)
     {
+      using namespace gptl_util;
       int nument;      // number of entries
       Timer **eptr;    // for realloc
 
       last[t]->next = ptr;
       last[t] = ptr;
-      ++hashtable[t][indx].nument;
-      nument = hashtable[t][indx].nument;
+      ++hashtable[t][hashidx].nument;
+      nument = hashtable[t][hashidx].nument;
   
-      eptr = (Timer **) realloc (hashtable[t][indx].entries, nument * sizeof (Timer *));
+      eptr = (Timer **) realloc (hashtable[t][hashidx].entries, nument * sizeof (Timer *));
       if ( ! eptr)
-	return gptl_util::error ("update_ll_hash: realloc error\n");
+	return error ("update_ll_hash: realloc error\n");
 
-      hashtable[t][indx].entries           = eptr;
-      hashtable[t][indx].entries[nument-1] = ptr;
+      hashtable[t][hashidx].entries           = eptr;
+      hashtable[t][hashidx].entries[nument-1] = ptr;
       return 0;
     }
 
@@ -752,35 +730,41 @@ namespace gptl_private {
     ** Return value: hash value
     */
 #define NEWWAY
-    inline unsigned int genhashidx (const char *name)
+    inline int genhashidx (const char *name)
     {
-      const unsigned char *c;       // pointer to elements of "name"
-      unsigned int indx;            // return value of function
+      using namespace gptl_util;
+      const unsigned char *c; // pointer to elements of "name"
+      unsigned int hashidx;   // hash index
+      int ret;                // return value of function
+      static const char *thisfunc = "genhashidx";
 #ifdef NEWWAY
-      unsigned int mididx, lastidx; // mid and final index of name
+      int mididx, lastidx;    // mid and final index of name
 
       lastidx = strlen (name) - 1;
       mididx = lastidx / 2;
 #else
-      int i;                        // iterator (OLDWAY only)
+      int i; // iterator (OLDWAY only)
 #endif
       // Disallow a hash index of zero (by adding 1 at the end) since user input of an 
       // uninitialized value, though an error, has a likelihood to be zero.
 #ifdef NEWWAY
       c = (unsigned char *) name;
-      indx = (MAX_CHARS*c[0] + (MAX_CHARS-mididx)*c[mididx] +
-	      (MAX_CHARS-lastidx)*c[lastidx]) % tablesizem1 + 1;
+      hashidx = (MAX_CHARS*c[0] + (MAX_CHARS-mididx)*c[mididx] +
+		 (MAX_CHARS-lastidx)*c[lastidx]) % tablesizem1 + 1;
 #else
-      indx = 0;
+      hashidx = 0;
       i = MAX_CHARS;
 #pragma unroll(2)
       for (c = (unsigned char *) name; *c && i > 0; ++c) {
-	indx += i*(*c);
+	hashidx += i*(*c);
 	--i;
       }
-      indx = indx % tablesizem1 + 1;
+      hashidx = hashidx % tablesizem1 + 1;
 #endif
-      return indx;
+      ret = (int) hashidx;
+      if (ret < 0)
+	return error ("%s: negative hash index generated\n", thisfunc);
+      return ret;
     }
 
     /*
@@ -793,19 +777,90 @@ namespace gptl_private {
     **
     ** Return value: pointer to the entry, or NULL if not found
     */
-    inline Timer *getentry (const Hashentry *hashtable, const char *name, unsigned int indx)
+    inline Timer *getentry (const Hashentry *hashtable, const char *name, int hashidx)
     {
       Timer *ptr = 0;             // return value when entry not found
 
       // If nument exceeds 1 there was one or more hash collisions and we must search
       // linearly through the array of names with the same hash for a match
-      for (int i = 0; i < hashtable[indx].nument; i++) {
-	if (STRMATCH (name, hashtable[indx].entries[i]->name)) {
-	  ptr = hashtable[indx].entries[i];
+      for (int i = 0; i < hashtable[hashidx].nument; i++) {
+	if (STRMATCH (name, hashtable[hashidx].entries[i]->name)) {
+	  ptr = hashtable[hashidx].entries[i];
 	  break;
 	}
       }
       return ptr;
+    }
+
+    /*
+    ** getentry_handle: find the entry in the hash table and return a pointer to it.
+    **
+    ** Input args:
+    **   hashtable: the hashtable (array)
+    **   name:      name to be hashed
+    **   hashidx:      hashtable index
+    **
+    ** Return value: pointer to the entry, or error if inconsistencies found
+    */
+    inline Timer *getentry_handle (const Hashentry *hashtable, const char *name,
+				   int *handle, bool *badhandle)
+    {
+      using namespace gptl_util;
+      int hashidx;
+      int entryidx;
+      static const char *thisfunc = "getentry_handle";
+
+      *badhandle = false;
+      if (*handle == 0) {
+	hashidx = genhashidx (name);
+	for (int i = 0; i < hashtable[hashidx].nument; ++i) {
+	  if (STRMATCH (name, hashtable[hashidx].entries[i]->name)) {
+	    // name found in hashtable: return its index
+	    // The timer must have already been started by GPTLstart, or GPTLstart_handle where
+	    // again a handle of 0 was passed in.
+	    *handle = MAX_NUMENT*hashidx + i;
+	    return hashtable[hashidx].entries[i];
+	  }
+	}
+	// name not found in hashtable: returned handle will be the "nument" slot
+	// Return NULL so caller knows to add a new entry
+	*handle = MAX_NUMENT*hashidx + hashtable[hashidx].nument;
+	return NULL;
+
+      } else {
+
+	// Use handle to extract hashidx and entryidx
+	hashidx = (*handle) / MAX_NUMENT;
+	entryidx = (*handle) - (hashidx * MAX_NUMENT);
+	if (entryidx >= MAX_NUMENT) {
+	  (void) error ("%s: %d is too many entries: suggest increasing max_tablesize\n",
+			thisfunc, entryidx);
+	  *badhandle = true;
+	}
+	
+	if (entryidx > hashtable[hashidx].nument) {
+	  (void) error ("GPTL %s: Invalid input handle=%d > nument=%d\n",
+			thisfunc, entryidx, hashtable[hashidx].nument);
+	  *badhandle = true;
+	  return NULL;
+	}
+	return hashtable[hashidx].entries[entryidx];
+      }
+    }
+
+    inline int get_entryidx (const Hashentry *hashtable, const unsigned int hashidx,
+			     const char *name)
+    {
+      for (int i = 0; i < hashtable[hashidx].nument; ++i) {
+	if (STRMATCH (name, hashtable[hashidx].entries[i]->name)) {
+	  // name found in hashtable: return its index
+	  // The timer must have already been started by GPTLstart, or GPTLstart_handle where
+	  // again a handle of 0 was passed in.
+	  return i;
+	}
+      }
+      // A new entry is needed in the "nument" slot
+      return hashtable[hashidx].nument;
     }
 
     void check_memusage (const char *str, const char *funcnam)
