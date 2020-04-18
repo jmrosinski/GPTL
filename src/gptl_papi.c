@@ -280,7 +280,7 @@ int GPTL_PAPIsetoption (const int counter, const int val)
   }
 
   if (verbose)
-    printf ("%s: enabling native event %s\n", thisfunc, pr_event[nevents].event.longstr);
+    printf ("%s: enabling native event %s\n", thisfunc, pr_event[nevents].event.namestr);
 
   ++nevents;
   return 0;
@@ -682,7 +682,7 @@ void GPTL_PAPIprstr (FILE *fp)
   int n;
   
   for (n = 0; n < nevents; n++) {
-    fprintf (fp, " %16.16s", pr_event[n].event.str16);
+    fprintf (fp, " %16.16s", pr_event[n].event.str8);
 
     // Test on < 0 says it's a PAPI preset
     if (persec && pr_event[n].event.counter < 0)
