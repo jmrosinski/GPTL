@@ -55,7 +55,6 @@ int main (int argc, char **argv)
   
   ret = GPTLsetoption (GPTLabort_on_error, 1);
   ret = GPTLsetoption (GPTLoverhead, 1);
-  ret = GPTLsetoption (GPTLnarrowprint, 1);
 
   if (MPI_Init (&argc, &argv) != MPI_SUCCESS) {
     printf ("Failure from MPI_Init\n");

@@ -1,35 +1,35 @@
-#include "config.h" /* Must be first include. */
+#include "config.h" // Must be first include.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>          /* sqrt */
+#include <math.h>          // sqrt
 
 #include "private.h"
 #include "gptl.h"
 #include "gptlmpi.h"
 
-/* MPI summary stats */
+// MPI summary stats
 typedef struct {
-  unsigned long totcalls;  /* number of calls to the region across threads and tasks */
+  unsigned long totcalls;  // number of calls to the region across threads and tasks
 #ifdef HAVE_PAPI
-  double papimax[MAX_AUX]; /* max counter value across threads, tasks */
-  double papimin[MAX_AUX]; /* max counter value across threads, tasks */
-  int papimax_p[MAX_AUX];  /* task producing papimax */
-  int papimax_t[MAX_AUX];  /* thread producing papimax */
-  int papimin_p[MAX_AUX];  /* task producing papimin */
-  int papimin_t[MAX_AUX];  /* thread producing papimin */
+  double papimax[MAX_AUX]; // max counter value across threads, tasks
+  double papimin[MAX_AUX]; // max counter value across threads, tasks
+  int papimax_p[MAX_AUX];  // task producing papimax
+  int papimax_t[MAX_AUX];  // thread producing papimax
+  int papimin_p[MAX_AUX];  // task producing papimin
+  int papimin_t[MAX_AUX];  // thread producing papimin
 #endif
-  unsigned int notstopped; /* number of ranks+threads for whom the timer is ON */
-  unsigned int tottsk;     /* number of tasks which invoked this region */
-  float wallmax;           /* max time across threads, tasks */
-  float wallmin;           /* min time across threads, tasks */
-  float mean;              /* accumulated mean */
-  float m2;                /* from Chan, et. al. */
-  int wallmax_p;           /* task producing wallmax */
-  int wallmax_t;           /* thread producing wallmax */
-  int wallmin_p;           /* task producing wallmin */
-  int wallmin_t;           /* thread producing wallmin */
-  char name[MAX_CHARS+1];  /* timer name */
+  unsigned int notstopped; // number of ranks+threads for whom the timer is ON
+  unsigned int tottsk;     // number of tasks which invoked this region
+  float wallmax;           // max time across threads, tasks
+  float wallmin;           // min time across threads, tasks
+  float mean;              // accumulated mean
+  float m2;                // from Chan, et. al.
+  int wallmax_p;           // task producing wallmax
+  int wallmax_t;           // thread producing wallmax
+  int wallmin_p;           // task producing wallmin
+  int wallmin_t;           // thread producing wallmin
+  char name[MAX_CHARS+1];  // timer name
 } Global;
 
 static int nthreads; // Used by both GPTLpr_summary() and get_threadstats()
@@ -43,56 +43,50 @@ static void get_threadstats (int, char *, Timer **, Global *);
 static Timer *getentry_slowway (Timer *, char *);
 
 /* 
-** GPTLpr_summary_file: Subsumes what used to be GPTLpr_summary() into a new routine
-**                      which takes additional argument "outfile". GPTLpr_summary() is
-**                      now simply a wrapper routine which calls GPTLpr_summary_file()
-**                      with outfile="timing.summary", so NO CHANGE TO PREVIOUS API.
-**                      Thanks to Jim Edwards of NCAR for the modification.
-**
-**                      When MPI enabled, gather and print summary stats across threads
-**                      and MPI tasks. The communication algorithm is O(log nranks) so
-**                      it easily scales to thousands of ranks. Added local memory usage 
-**                      is 2*(number_of_regions)*sizeof(Global) on each rank.
+** GPTLpr_summary_file: Gather and print MPI summary stats across threads and tasks.
+**                      The communication algorithm is O(log nranks) so it easily scales to 
+**                      thousands of ranks. Added local memory usage is
+**                      2*(number_of_regions)*sizeof(Global) on each rank.
 **
 ** Input arguments:
-**   comm:    communicator (e.g. MPI_COMM_WORLD). If zero, use MPI_COMM_WORLD
+**   comm:    communicator (e.g. MPI_COMM_WORLD)
 **   outfile: name of file to be written
 */
 
 int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
 {
-  int ret;             /* return code */
-  int iam;             /* my rank */
-  int nranks;          /* number of ranks in communicator */
-  int nregions;        /* number of regions aggregated across all tasks */
-  int nregions_p;      /* number of regions for a single task */
-  int n, nn;           /* region index */
-  int i;               /* index */
-  Timer *ptr;          /* linked list pointer */
+  int ret;             // return code
+  int iam;             // my rank
+  int nranks;          // number of ranks in communicator
+  int nregions;        // number of regions aggregated across all tasks
+  int nregions_p;      // number of regions for a single task
+  int n, nn;           // region index
+  int i;               // index
+  Timer *ptr;          // linked list pointer
   Timer **timers;      // array of timers
-  int incr;            /* increment for tree sum */
-  int twoincr;         /* 2*incr */
-  int dosend;          /* logical indicating whether to send this iteration */
-  int dorecv;          /* logical indicating whether to recv this iteration */
-  int sendto;          /* rank to send to */
-  int p;               /* rank to recv fm */
-  int mnl;             /* max name length across all threads and tasks */
-  MPI_Status status;   /* required by MPI_Recv */
-  int extraspace;      /* for padding to length of longest name */
-  int multithread;     /* flag indicates multithreaded or not for any task */
-  int multithread_p;   /* recvd flag for other processor indicates multithreaded or not */
+  int incr;            // increment for tree sum
+  int twoincr;         // 2*incr
+  int dosend;          // logical indicating whether to send this iteration
+  int dorecv;          // logical indicating whether to recv this iteration
+  int sendto;          // rank to send to
+  int p;               // rank to recv fm
+  int mnl;             // max name length across all threads and tasks
+  MPI_Status status;   // required by MPI_Recv
+  int extraspace;      // for padding to length of longest name
+  int multithread;     // flag indicates multithreaded or not for any task
+  int multithread_p;   // recvd flag for other processor indicates multithreaded or not
   Global *global = 0;  // stats to be printed accumulated across tasks
   Global *global_p = 0;// stats to be printed for a single task
-  Global *sptr;        /* realloc intermediate */
-  float delta;         /* from Chan, et. al. */
-  float sigma;         /* st. dev. */
-  unsigned int tsksum; /* part of Chan, et. al. equation */
-  static const int tag = 98789;                         /* tag for MPI message */
-  static const int nbytes = sizeof (Global);            /* number of bytes to be sent/recvd */
-  static const char *thisfunc = "GPTLpr_summary_file";  /* this function */
-  FILE *fp = 0;        /* file handle to write to */
+  Global *sptr;        // realloc intermediate
+  float delta;         // from Chan, et. al.
+  float sigma;         // st. dev.
+  unsigned int tsksum; // part of Chan, et. al. equation
+  static const int tag = 98789;                         // tag for MPI message
+  static const int nbytes = sizeof (Global);            // number of bytes to be sent/recvd
+  static const char *thisfunc = "GPTLpr_summary_file";  // this function
+  FILE *fp = 0;        // file handle to write to
 #ifdef HAVE_PAPI
-  int e;               /* event index */
+  int e;               // event index
 #endif
 
   if ( ! GPTLis_initialized ())
@@ -118,10 +112,8 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
   else
     global = (Global *) GPTLallocate (nregions * sizeof (Global), thisfunc);
 
-  /*
-  ** Gather per-thread stats based on thread 0 list.
-  ** Also discover length of longest region name for formatting
-  */
+  // Gather per-thread stats based on thread 0 list.
+  // Also discover length of longest region name for formatting
   n = 0;
   mnl = 0;
   nthreads = GPTLget_nthreads ();   /* get_threadstats() needs to know this value too */
@@ -132,7 +124,7 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
       get_threadstats (iam, ptr->name, timers, &global[n]);
       mnl = MAX (strlen (ptr->name), mnl);
 
-      /* Initialize for calculating mean, st. dev. */
+      // Initialize for calculating mean, st. dev.
       global[n].mean   = global[n].wallmax;
       global[n].m2     = 0.;
       global[n].tottsk = 1;
@@ -154,12 +146,10 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
   for (incr = 1; incr < nranks; incr = twoincr) {
     twoincr = 2*incr;
     sendto = iam - incr;
-    p = iam + incr;      /* could rename p as recvfm */
+    p = iam + incr;      // could rename p as recvfm
 
-    /* 
-    ** The && part of the next 2 stmts prevents sending to or receiving from
-    ** outside communicator bounds when nranks is not a power of 2
-    */
+    // The && part of the next 2 stmts prevents sending to or receiving from
+    // outside communicator bounds when nranks is not a power of 2
     dorecv = ((iam + twoincr) % twoincr == 0) && (p < nranks);
     dosend = ((iam + incr) % twoincr == 0) && (sendto > -1);
     if (dosend) {
@@ -214,15 +204,15 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
           if ( ! sptr)
             return GPTLerror ("%s: realloc error", thisfunc);
           global = sptr;
-          /* IMPORTANT: structure copy only works because it contains NO pointers (only arrays) */
+	  // IMPORTANT: structure copy only works because it contains NO pointers (only arrays)
           global[nn] = global_p[n];
           mnl = MAX (strlen (global[nn].name), mnl);
 
         } else {  // A matching name was just received: Adjust stats accordingly
 
-	  /* Won't print this entry if it was on for any rank or thread */
+	  // Won't print this entry if it was on for any rank or thread
 	  global[nn].notstopped += global_p[n].notstopped;
-          global[nn].totcalls   += global_p[n].totcalls; /* count is cumulative */
+	  global[nn].totcalls   += global_p[n].totcalls; // count is cumulative
           if (global_p[n].wallmax > global[nn].wallmax) {
             global[nn].wallmax   = global_p[n].wallmax;
             global[nn].wallmax_p = global_p[n].wallmax_p;
@@ -234,7 +224,7 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
             global[nn].wallmin_t = global_p[n].wallmin_t;
           }
 
-          /* Mean, variance calcs. Cast to float avoids possible integer overflow */
+          // Mean, variance calcs. Cast to float avoids possible integer overflow
           tsksum = global_p[n].tottsk + global[nn].tottsk;
           delta  = global_p[n].mean   - global[nn].mean;
           global[nn].mean += (delta * global_p[n].tottsk) / tsksum;
@@ -271,13 +261,13 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
 	      thisfunc, outfile);
     }
 
-    /* Print a warning if GPTLerror() was ever called */
+    // Print a warning if error() was ever called
     if (GPTLnum_errors () > 0) {
       fprintf (fp, "WARNING: GPTLerror was called at least once during the run.\n");
       fprintf (fp, "Please examine your output for error messages beginning with GPTL...\n");
     }
 
-    /* Print heading */
+    // Print heading
     fprintf (fp, "Total ranks in communicator=%d\n", nranks);
     fprintf (fp, "nthreads on rank 0=%d\n", nthreads);
     fprintf (fp, "'N' used for mean, std. dev. calcs.: 'ncalls'/'nthreads'\n");
@@ -313,7 +303,7 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
 #endif
     fprintf (fp, "\n");
 
-    /* Loop over regions and print summarized timing stats */
+    // Loop over regions and print summarized timing stats
     for (n = 0; n < nregions; ++n) {
       fprintf (fp, "%s", global[n].name);
       extraspace = mnl - strlen (global[n].name);
@@ -321,10 +311,8 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
       for (i = 0; i < extraspace; ++i)
         fprintf (fp, " ");
 
-      /* 
-      ** Don't print stats if the timer is currently on for any thread or task: too dangerous 
-      ** since the timer needs to be stopped to have currently accurate timings
-      */
+      // Don't print stats if the timer is currently on for any thread or task: too dangerous 
+      // since the timer needs to be stopped to have currently accurate timings
       if (global[n].notstopped > 0) {
 	fprintf (fp, " NOT PRINTED: timer is currently ON for %d threads\n", 
 		 global[n].notstopped);
@@ -336,7 +324,7 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
       else
         sigma = 0.;
 
-      if (multithread) {  /* Threads and tasks */
+      if (multithread) {  // Threads and tasks
         if (global[n].totcalls < PRTHRESH) {
           fprintf (fp, " %8lu %6u %9.3f %9.3f %9.3f (%6d %5d) %9.3f (%6d %5d)", 
                    global[n].totcalls, global[n].tottsk, global[n].mean, sigma, 
@@ -348,7 +336,7 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
                    global[n].wallmax, global[n].wallmax_p, global[n].wallmax_t, 
                    global[n].wallmin, global[n].wallmin_p, global[n].wallmin_t);
         }
-      } else {  /* No threads */
+      } else {  // No threads
         if (global[n].totcalls < PRTHRESH) {
           fprintf (fp, " %8lu %6u %9.3f %9.3f %9.3f (%6d) %9.3f (%6d)", 
                    global[n].totcalls, global[n].tottsk, global[n].mean, sigma, 
@@ -391,10 +379,10 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
   return 0;
 }
 
+// GPTLpr_summary: wrapper writes to "timing.summary"
 int GPTLpr_summary (MPI_Comm comm)       /* communicator */
 {
-  static const char *outfile = "timing.summary";   /* file to write to */
-
+  static const char *outfile = "timing.summary";   // file to write to
   return GPTLpr_summary_file (comm, outfile);
 }
 
@@ -409,22 +397,19 @@ int GPTLpr_summary (MPI_Comm comm)       /* communicator */
 ** Output arguments:
 **   global: max/min stats over all threads
 */
-static void get_threadstats (int iam,
-			     char *name,
-			     Timer **timers,
-			     Global *global)
+static void get_threadstats (int iam, char *name, Timer **timers, Global *global)
 {
-  int t;                /* thread index */
+  int t;
   Timer *ptr;
   static const char *thisfunc = "get_threadstats";
 
-  /* This memset fortuitiously initializes the process values to master (0) */
+  // This memset fortuitiously initializes the process values to master (0)
   memset (global, 0, sizeof (Global));
   strcpy (global->name, name);
 
   for (t = 0; t < nthreads; ++t) {
     if ((ptr = getentry_slowway (timers[t]->next, name))) {
-      /* Won't print this entry if it was on for any rank or thread */
+      // Won't print this entry if it was on for any rank or thread
       if (ptr->onflg)
 	++global->notstopped;
 
@@ -436,7 +421,7 @@ static void get_threadstats (int iam,
         global->wallmax_t = t;
       }
 
-      /* global->wallmin = 0 for first thread */
+      // global->wallmin = 0 for first thread
       if (ptr->wall.accum < global->wallmin || global->wallmin == 0.) {
         global->wallmin   = ptr->wall.accum;
         global->wallmin_p = iam;
@@ -456,7 +441,7 @@ static void get_threadstats (int iam,
           global->papimax_t[e] = t;
         }
         
-	/* First thread value in global is zero */
+	// First thread value in global is zero
         if (value < global->papimin[e] || global->papimin[e] == 0.) {
           global->papimin[e]   = value;
           global->papimin_p[e] = iam;
@@ -468,7 +453,9 @@ static void get_threadstats (int iam,
   }
 }
 
-Timer *getentry_slowway (Timer *timer, char *name)
+// getentry_slowway: Find entry name in the table via linear search.
+// Simpler this way since entries could be manual or auto-instrumented.
+static Timer *getentry_slowway (Timer *timer, char *name)
 {
   Timer *ptr = 0;
 

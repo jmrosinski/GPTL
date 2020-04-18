@@ -13,5 +13,3 @@ int main ()
 
   ret = GPTLpr (0);
 }
-
-  

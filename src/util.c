@@ -54,7 +54,7 @@ int GPTLerror (const char *fmt, ...)
     exit (-1);
   }
   ++num_errors;
-  return (-1);
+  return -1;
 }
 
 /*
@@ -127,43 +127,17 @@ static inline bool doprint()
 #endif
 }
 
-/*
-** GPTLset_abort_on_error: User-visible routine to set abort_on_error flag
-**
-** Input arguments:
-**   val: true (abort on error) or false (don't)
-*/
-void GPTLset_abort_on_error (bool val)
-{
-  abort_on_error = val;
-}
+// set_abort_on_error: Set abort_on_error flag
+void GPTLset_abort_on_error (bool val) {abort_on_error = val;}
 
-/*
-** GPTLreset_errors: reset error state to no errors
-**
-*/
-void GPTLreset_errors (void)
-{
-  num_errors = 0;
-}
+// GPTLreset_errors: reset error state to no errors
+void GPTLreset_errors (void) {num_errors = 0;}
 
-/*
-** GPTLnum_errors: User-visible routine returns number of times GPTLerror() called
-**
-*/
-int GPTLnum_errors (void)
-{
-  return num_errors;
-}
+// GPTLnum_errors: User-visible routine returns number of times GPTLerror() called
+int GPTLnum_errors (void) {return num_errors;}
 
-/*
-** GPTLnum_errors: User-visible routine returns number of times GPTLerror() called
-**
-*/
-int GPTLnum_warn (void)
-{
-  return num_warn;
-}
+// GPTLnum_errors: User-visible routine returns number of times GPTLerror() called
+int GPTLnum_warn (void) {return num_warn;}
 
 /*
 ** GPTLallocate: wrapper utility for malloc
@@ -195,9 +169,8 @@ void *GPTLallocate (const int nbytes, const char *caller)
 */
 int GPTLbarrier (MPI_Comm comm, const char *name)
 {
-  static const char *thisfunc = "GPTLbarrier";
-
   int ret;
+  static const char *thisfunc = "GPTLbarrier";
 
   ret = GPTLstart (name);
   if ((ret = MPI_Barrier (comm)) != MPI_SUCCESS)
@@ -205,7 +178,7 @@ int GPTLbarrier (MPI_Comm comm, const char *name)
   ret = GPTLstop (name);
   return ret;
 }
-#endif    /* HAVE_LIBMPI */
+#endif    // HAVE_LIBMPI
 
 #ifdef __cplusplus
 }

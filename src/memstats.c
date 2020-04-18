@@ -6,21 +6,21 @@
 extern "C" {
 #endif
 
-static void print_threadmapping (FILE *, int); /* print mapping of thread ids */
+static void print_threadmapping (FILE *, int); // print mapping of thread ids
 
 void GPTLprint_memstats (FILE *fp, Timer **timers, int nthreads, int tablesize, int maxthreads)
 {
-  Timer *ptr;               /* walk through linked list */
-  float pchmem = 0.;        /* parent/child array memory usage */
-  float regionmem = 0.;     /* timer memory usage */
-  float papimem = 0.;       /* PAPI stats memory usage */
-  float hashmem;            /* hash table memory usage */
-  float callstackmem;       /* callstack memory usage */
-  float totmem;             /* total GPTL memory usage */
-  int numtimers;            /* number of timers */
+  Timer *ptr;               // walk through linked list
+  float pchmem = 0.;        // parent/child array memory usage
+  float regionmem = 0.;     // timer memory usage
+  float papimem = 0.;       // PAPI stats memory usage
+  float hashmem;            // hash table memory usage
+  float callstackmem;       // callstack memory usage
+  float totmem;             // total GPTL memory usage
+  int numtimers;            // number of timers
   int t;
 
-  hashmem = (float) sizeof (Hashentry) * tablesize * maxthreads;  /* fixed size of table */
+  hashmem = (float) sizeof (Hashentry) * tablesize * maxthreads;  // fixed size of table
   callstackmem = (float) sizeof (Timer *) * MAX_STACK * maxthreads;
   for (t = 0; t < nthreads; t++) {
     numtimers = 0;

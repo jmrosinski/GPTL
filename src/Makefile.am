@@ -5,7 +5,7 @@ libgptl_la_CPPFLAGS = -I$(top_srcdir)/include
 
 # This is our output. The GPTL library.
 lib_LTLIBRARIES = libgptl.la
-libgptl_la_LDFLAGS = -version-info 1:0:0
+libgptl_la_LDFLAGS = -version-info 8:0:0
 
 # These are the source files.
 libgptl_la_SOURCES = gptl.c getoverhead.c hashstats.c memstats.c memusage.c util.c

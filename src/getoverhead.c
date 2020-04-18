@@ -77,19 +77,16 @@ int GPTLget_overhead (FILE *fp,
   Timer *entry;              /* placeholder for return from "getentry()" */
   static const char *thisfunc = "GPTLget_overhead";
 
-  /*
-  ** Gather timings by running kernels 1000 times each.
-  ** First: Fortran wrapper overhead
-  */
+  // Gather timings by running kernels 1000 times each. First: Fortran wrapper overhead
   t1 = (*ptr2wtimefunc)();
   for (i = 0; i < 1000; ++i) {
-    /* 9 is the number of characters in "timername" */
+    // 9 is the number of characters in "timername"
     ret = gptlstart_sim ("timername", 9);
   }
   t2 = (*ptr2wtimefunc)();
   ftn_ohd = 0.001 * (t2 - t1);
 
-  /* get_thread_num() overhead */
+  // get_thread_num() overhead
   t1 = (*ptr2wtimefunc)();
   for (i = 0; i < 1000; ++i) {
     mythread = get_thread_num ();
@@ -97,7 +94,7 @@ int GPTLget_overhead (FILE *fp,
   t2 = (*ptr2wtimefunc)();
   get_thread_num_ohd = 0.001 * (t2 - t1);
 
-  /* genhashidx overhead */
+  // genhashidx overhead
   t1 = (*ptr2wtimefunc)();
   for (i = 0; i < 1000; ++i) {
     hashidx = genhashidx ("timername");
@@ -105,10 +102,8 @@ int GPTLget_overhead (FILE *fp,
   t2 = (*ptr2wtimefunc)();
   genhashidx_ohd = 0.001 * (t2 - t1);
 
-  /* 
-  ** getentry overhead
-  ** Find the first hashtable entry with a valid name. Start at 1 because 0 is not a valid hash
-  */
+  // getentry overhead
+  // Find the first hashtable entry with a valid name. Start at 1 because 0 is not a valid hash
   for (n = 1; n < tablesize; ++n) {
     if (hashtable[n].nument > 0 && strlen (hashtable[n].entries[0]->name) > 0) {
       hashidx = genhashidx (hashtable[n].entries[0]->name);
@@ -130,14 +125,14 @@ int GPTLget_overhead (FILE *fp,
   }
   getentry_ohd = 0.001 * (t2 - t1);
 
-  /* utr overhead */
+  // utr overhead
   t1 = (*ptr2wtimefunc)();
   for (i = 0; i < 1000; ++i) {
     t2 = (*ptr2wtimefunc)();
   }
   utr_ohd = 0.001 * (t2 - t1);
 
-  /* PAPI overhead */
+  // PAPI overhead
 #ifdef HAVE_PAPI
   if (dousepapi) {
     t1 = (*ptr2wtimefunc)();
@@ -188,7 +183,7 @@ int GPTLget_overhead (FILE *fp,
   addr2name_ohd = 0.001 * (t2 - t1);
 #endif
 
-  /* getentry_instr overhead */
+  // getentry_instr overhead
   t1 = (*ptr2wtimefunc)();
   for (i = 0; i < 1000; ++i) {
     entry = getentry_instr_sim (hashtable, &randomvar, &hashidx, tablesize);
@@ -196,7 +191,7 @@ int GPTLget_overhead (FILE *fp,
   t2 = (*ptr2wtimefunc)();
   getentry_instr_ohd = 0.001 * (t2 - t1);
 
-  /* misc start/stop overhead */
+  // misc start/stop overhead
   if (imperfect_nest) {
     fprintf (fp, "Imperfect nesting detected: setting misc_ohd=0\n");
     misc_ohd = 0.;
@@ -233,9 +228,9 @@ int GPTLget_overhead (FILE *fp,
 #endif
   fprintf (fp, "\n");
 #ifdef HAVE_LIBUNWIND
-  fprintf (fp, "Overhead of libunwind (invoked just once per auto-instrumented start entry)=%g seconds\n", addr2name_ohd);
+  fprintf (fp, "Overhead of libunwind (invoked once per auto-instrumented start entry)=%g seconds\n", addr2name_ohd);
 #elif defined HAVE_BACKTRACE
-  fprintf (fp, "Overhead of backtrace (invoked just once per auto-instrumented start entry)=%g seconds\n", addr2name_ohd);
+  fprintf (fp, "Overhead of backtrace (invoked once per auto-instrumented start entry)=%g seconds\n", addr2name_ohd);
 #endif
   fprintf (fp, "NOTE: If GPTL is called from C not Fortran, the 'Fortran layer' overhead is zero\n");
   fprintf (fp, "NOTE: For calls to GPTLstart_handle()/GPTLstop_handle(), the 'Generate hash index' overhead is zero\n");

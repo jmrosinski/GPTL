@@ -90,10 +90,8 @@ int GPTLget_procsiz (float *procsiz_out, float *rss_out)
   if ((fd = fopen (file, "r")) < 0)
     return GPTLerror ("%s: bad attempt to open %s\n", thisfunc, file);
 
-  /*
-  ** Read the desired data from the /proc filesystem directly into the output
-  ** arguments, close the file and return.
-  */
+  // Read the desired data from the /proc filesystem directly into the output
+  // arguments, close the file and return.
   if ((ret = fscanf (fd, "%d %d %d %d %d %d %d",
 		     &procsiz, &rss, &dum[0], &dum[1], &dum[2], &dum[3], &dum[4])) < 1) {
     (void) fclose (fd);

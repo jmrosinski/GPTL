@@ -11,18 +11,16 @@ static float meanhashvalue (Hashentry *, int);
 
 void GPTLprint_hashstats (FILE *fp, int nthreads, Hashentry **hashtable, int tablesize)
 {
-  int t;                    /* thread index */
+  int t;
   int i, ii;
-  int totent;               /* per-thread collision count (diagnostic) */
-  int nument;               /* per-index collision count (diagnostic) */
-  /*
-  ** Diagnostics for collisions and GPTL memory usage
-  */
-  int num_zero;             /* number of buckets with 0 collisions */
-  int num_one;              /* number of buckets with 1 collision */
-  int num_two;              /* number of buckets with 2 collisions */
-  int num_more;             /* number of buckets with more than 2 collisions */
-  int most;                 /* biggest collision count */
+  int totent;               // per-thread collision count (diagnostic)
+  int nument;               // per-index collision count (diagnostic)
+  // Diagnostics for collisions and GPTL memory usage
+  int num_zero;             // number of buckets with 0 collisions
+  int num_one;              // number of buckets with 1 collision
+  int num_two;              // number of buckets with 2 collisions
+  int num_more;             // number of buckets with more than 2 collisions
+  int most;                 // biggest collision count
   bool first;
 
   for (t = 0; t < nthreads; t++) {
@@ -64,8 +62,8 @@ void GPTLprint_hashstats (FILE *fp, int nthreads, Hashentry **hashtable, int tab
       most = MAX (most, nument);
     }
     
+    fprintf (fp, "Total collisions thread %d = %d\n", t, totent);
     if (totent > 0) {
-      fprintf (fp, "Total collisions thread %d = %d\n", t, totent);
       fprintf (fp, "Entry information:\n");
       fprintf (fp, "num_zero = %d num_one = %d num_two = %d num_more = %d\n",
 	       num_zero, num_one, num_two, num_more);
@@ -78,9 +76,9 @@ void GPTLprint_hashstats (FILE *fp, int nthreads, Hashentry **hashtable, int tab
   
 static float meanhashvalue (Hashentry *hashtable, int tablesize)
 {
-  float sum = 0.;  /* used to calculate mean */
+  float sum = 0.;  // used to calculate mean
   int nument;
-  int totent = 0;  /* number of entries */
+  int totent = 0;  // number of entries
   int i;
   
   for (i = 1; i < tablesize; ++i) {

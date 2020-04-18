@@ -77,10 +77,8 @@ typedef struct {
   
 typedef struct {
   int counter;      /* PAPI or Derived counter */
-  char *namestr;    /* PAPI or Derived counter as string */
-  char *str8;       /* print string for output timers (8 chars) */
-  char *str16;      /* print string for output timers (16 chars) */
-  char *longstr;    /* long descriptive print string */
+  char namestr[13]; /* PAPI or Derived counter as string */
+  char str8[9];     /* print string for output timers (8 chars) */
 } Entry;
 
 typedef struct {

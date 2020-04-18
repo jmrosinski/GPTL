@@ -14,7 +14,6 @@
       integer GPTLoverhead
       integer GPTLdepthlimit
       integer GPTLverbose
-      integer GPTLnarrowprint
       integer GPTLpercent
       integer GPTLpersec
       integer GPTLmultiplex
@@ -55,7 +54,6 @@
       parameter (GPTLoverhead       = 4)
       parameter (GPTLdepthlimit     = 5)
       parameter (GPTLverbose        = 6)
-      parameter (GPTLnarrowprint    = 7)
       parameter (GPTLpercent        = 9)
       parameter (GPTLpersec         = 10)
       parameter (GPTLmultiplex      = 11)

@@ -7,7 +7,6 @@
  overhead        = .true.
  depthlimit      = 1
 ! verbose         = .true.
- narrowprint     = .false.
  percent         = .true.
 ! Comment out persec and multiplex so "nlreader" test won't fail even if 
 !   PAPI unavailable

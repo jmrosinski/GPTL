@@ -6,7 +6,7 @@
 AC_PREREQ([2.59])
 
 # Initialize autoconf.
-AC_INIT([GPTL], [7.0.0], [rosinski@ucar.edu])
+AC_INIT([GPTL], [8.0.0], [rosinski@ucar.edu])
 
 # Find out about the host we're building on.
 AC_CANONICAL_HOST
@@ -17,6 +17,12 @@ AC_CANONICAL_TARGET
 # Initialize automake.
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 
+# Set the language as C
+AC_LANG(C)
+
+# Find the C compiler.
+AC_PROG_CC()
+
 # Keep libtool macros in an m4 directory.
 AC_CONFIG_MACRO_DIR([m4])
 
@@ -26,9 +32,6 @@ LT_INIT()
 
 # The config.h file will be created when configure script is run.
 AC_CONFIG_HEADERS([config.h])
-
-# Find the C compiler.
-AC_PROG_CC()
 
 # These ensure proper handling of const and inline.
 AC_C_CONST
@@ -102,6 +105,7 @@ if test "x$enable_pthread" = xyes; then
      AC_DEFINE([THREADED_PTHREADS], [1], [pthreads library is present])
   fi
 fi
+AM_CONDITIONAL(HAVE_PTHREADS, [test "x$ac_cv_lib_pthread_pthread_mutex_init" = xyes])
 
 # GPTL only works with EITHER OpenMP OR pthread lib. Barf on attempts to enable both
 if test "x$enable_omp" = xyes; then
@@ -128,7 +132,8 @@ AC_ARG_ENABLE([debug], [AS_HELP_STRING([--enable-debug],
 test "x$enable_debug" = xyes || enable_debug=no
 if test $enable_debug = yes; then
    AC_DEFINE([DEBUG], [1], [set debug ifdef])
-   CFLAGS="$CFLAGS -O0"
+   CFLAGS="$CFLAGS -g -O0"
+   FCFLAGS="$FCFLAGS -g -O0"
 fi
 
 AC_MSG_CHECKING([whether PAPI is to be enabled])

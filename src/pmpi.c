@@ -3,7 +3,7 @@
 **
 ** Author: Jim Rosinski
 **
-** Wrappers to MPI routines
+** Intercept MPI routines utilizing the PMPI interface provided by the underlying MPI library
 */
  
 #include "config.h" /* Must be first include. */
@@ -17,8 +17,7 @@ static bool sync_mpi = false;
 extern "C" {
 #endif
 
-int GPTLpmpi_setoption (const int option,
-			const int val)
+int GPTLpmpi_setoption (const int option, const int val)
 {
   int retval;
 
@@ -33,8 +32,7 @@ int GPTLpmpi_setoption (const int option,
   return retval;
 }
 
-int MPI_Send (const void *buf, int count, MPI_Datatype datatype, int dest, int tag, 
-	      MPI_Comm comm)
+int MPI_Send (const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm)
 {
   int ret;
   int size;
@@ -61,7 +59,7 @@ int MPI_Recv (void *buf, int count, MPI_Datatype datatype, int source, int tag,
 
   if (sync_mpi) {
     ignoreret = GPTLstart ("sync_Recv");
-    /* Ignore status */
+    // Ignore status
     ignoreret = PMPI_Probe (source, tag, comm, status);
     ignoreret = GPTLstop ("sync_Recv");
   }
