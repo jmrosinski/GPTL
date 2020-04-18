@@ -34,8 +34,6 @@ program main
   call checkstat (ret, prognam//': Error from gptlsetoption(gptlabort_on_error,1)')
   ret = gptlsetoption (gptloverhead, 1)
   call checkstat (ret, prognam//': Error from gptlsetoption(gptloverhead,1)')
-  ret = gptlsetoption (gptlnarrowprint, 1)
-  call checkstat (ret, prognam//': Error from gptlsetoption(gptlnarrowprint,1)')
 
   call mpi_init (ierr)
   comm = MPI_COMM_WORLD
