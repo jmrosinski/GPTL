@@ -15,9 +15,7 @@
 #include <unistd.h>        /* gettimeofday, syscall */
 #include <stdio.h>
 #include <string.h>        /* memset, strcmp (via STRMATCH) */
-#include <strings.h>       // index
 #include <ctype.h>         /* isdigit */
-#include <sys/types.h>     /* u_int8_t, u_int16_t */
 
 #ifdef HAVE_LIBRT
 #include <time.h>
