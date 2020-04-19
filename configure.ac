@@ -54,6 +54,14 @@ if test "x$ac_cv_sizeof_void_p" = x8; then
    AC_DEFINE([BIT64], [1], [void pointer is 8 bytes])
 fi
 
+# Check for enabling gather/print stats on extra comparisons due to collisions
+AC_ARG_ENABLE([collide],
+  AS_HELP_STRING([--enable-collide], [Include  stats on extra comparisons due to collisions]))
+AS_IF([test "x$enable_collide" = "xyes"], [
+  AC_DEFINE([COLLIDE], [1], [Include stats on extra collision comparisons])
+])
+
+# Check for enabling OpenMP: default true
 AC_ARG_ENABLE([openmp], [AS_HELP_STRING([--disable-openmp],
               [Disable OpenMP support. May be necessary on e.g. MacOS using clang+gfortran])],,[enable_openmp=yes])
 

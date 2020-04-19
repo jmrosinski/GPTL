@@ -1491,6 +1491,10 @@ int GPTLpr_file (const char *outfile) /* output file to write */
     GPTL_PAPIprstr (fp);
 #endif
 
+#ifdef COLLIDE
+    fprintf (fp, "  Collide");
+#endif
+
     fprintf (fp, "\n");
     // Start at next to skip GPTL_ROOT
     for (ptr = timers[0]->next; ptr; ptr = ptr->next) {      
@@ -1733,6 +1737,10 @@ static void print_titles (int t, FILE *fp, Outputfmt *outputfmt)
 
 #ifdef HAVE_PAPI
   GPTL_PAPIprstr (fp);
+#endif
+
+#ifdef COLLIDE
+    fprintf (fp, "  Collide");
 #endif
 
   fprintf (fp, "\n");
@@ -2088,6 +2096,13 @@ static void printstats (const Timer *timer, FILE *fp, int t, int depth, bool doi
   GPTL_PAPIpr (fp, &timer->aux, t, timer->count, timer->wall.accum);
 #endif
 
+#ifdef COLLIDE
+  if (timer->collide > PRTHRESH)
+    fprintf (fp, " %8.1e", (float) timer->collide);
+  else if (timer->collide > 0)
+    fprintf (fp, " %8lu", timer->collide);
+#endif
+  
   fprintf (fp, "\n");
 }
 
@@ -2635,6 +2650,24 @@ static inline Timer *getentry_instr (const Hashentry *hashtable, void *self, uns
   for (i = 0; i < hashtable[*indx].nument; ++i) {
     if (hashtable[*indx].entries[i]->address == self) {
       ptr = hashtable[*indx].entries[i];
+#ifdef COLLIDE
+      if (i > 0)
+	hashtable[*indx].entries[i]->collide += i;
+#endif
+#define SWAP_ON_COUNT
+#ifdef SWAP_ON_COUNT
+      // Swap hashtable position with neighbor to the left (i.e. earlier position in the search
+      // array) if we've been called more frequently
+      // This should minimize the number of tests for "self" in the linear search.
+      if (i > 0) {
+	unsigned long neigh_count = hashtable[*indx].entries[i-1]->count;
+	if (hashtable[*indx].entries[i]->count > neigh_count) {
+	  Timer *tmp                    = hashtable[*indx].entries[i];
+	  hashtable[*indx].entries[i]   = hashtable[*indx].entries[i-1];
+	  hashtable[*indx].entries[i-1] = tmp;
+	}
+      }
+#endif
       break;
     }
   }
@@ -2700,6 +2733,24 @@ static inline Timer *getentry (const Hashentry *hashtable, const char *name, uns
   for (i = 0; i < hashtable[indx].nument; i++) {
     if (STRMATCH (name, hashtable[indx].entries[i]->name)) {
       ptr = hashtable[indx].entries[i];
+#ifdef COLLIDE
+      if (i > 0)
+	hashtable[indx].entries[i]->collide += i;
+#endif
+#define SWAP_ON_COUNT
+#ifdef SWAP_ON_COUNT
+      // Swap hashtable position with neighbor to the left (i.e. earlier position in the search
+      // array) if we've been called more frequently
+      // This should minimize the number of tests for "name" in the linear search.
+      if (i > 0) {
+	unsigned long neigh_count = hashtable[indx].entries[i-1]->count;
+	if (hashtable[indx].entries[i]->count > neigh_count) {
+	  Timer *tmp                   = hashtable[indx].entries[i];
+	  hashtable[indx].entries[i]   = hashtable[indx].entries[i-1];
+	  hashtable[indx].entries[i-1] = tmp;
+	}
+      }
+#endif
       break;
     }
   }

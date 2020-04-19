@@ -98,6 +98,9 @@ typedef struct TIMER {
   Wallstats wall;           /* wallclock stats */
   unsigned long count;      /* number of start/stop calls */
   unsigned long nrecurse;   /* number of recursive start/stop calls */
+#ifdef COLLIDE
+  unsigned long collide;    // number of extra comparisons due to collision
+#endif
   void *address;            /* address of timer: used only by _instr routines */
   struct TIMER *next;       /* next timer in linked list */
   struct TIMER **parent;    /* array of parents */

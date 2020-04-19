@@ -170,21 +170,21 @@ program utrtest
     ret = gptlstart ('total_handle_nullterm'//char(0))
     if (enable_expensive) then
       call sub_handle (1, 10000000, '1x1e7_handle0'//char(0), sum, handle1)    ! collides
-      call sub_handle (10, 1000000, '10x1e6_handle0'//char(0), sum, handle2)
+      call sub_handle (10, 1000000, '10x1e6_handle0'//char(0), sum, handle2)   ! collides
       call sub_handle (100, 100000, '100x1e5_handle0'//char(0), sum, handle3)  ! collides
       call sub_handle (1000, 10000, '1000x1e4_handle0'//char(0), sum, handle4)
       call sub_handle (10000, 1000, '1e4x1000_handle0'//char(0), sum, handle5)
       call sub_handle (100000, 100, '1e5x100_handle0'//char(0), sum, handle6)  ! collides
-      call sub_handle (1000000, 10, '1e6x10_handle0'//char(0), sum, handle7)
+      call sub_handle (1000000, 10, '1e6x10_handle0'//char(0), sum, handle7)   ! collides
       call sub_handle (10000000, 1, '1e7x1_handle0'//char(0), sum, handle8)    ! collides
     else
       call sub_handle (10000000, 1, '1e7x1_handle0'//char(0), sum, handle8)    ! collides
-      call sub_handle (1000000, 10, '1e6x10_handle0'//char(0), sum, handle7)
+      call sub_handle (1000000, 10, '1e6x10_handle0'//char(0), sum, handle7)   ! collides
       call sub_handle (100000, 100, '1e5x100_handle0'//char(0), sum, handle6)  ! collides
       call sub_handle (10000, 1000, '1e4x1000_handle0'//char(0), sum, handle5)
       call sub_handle (1000, 10000, '1000x1e4_handle0'//char(0), sum, handle4)
       call sub_handle (100, 100000, '100x1e5_handle0'//char(0), sum, handle3)  ! collides
-      call sub_handle (10, 1000000, '10x1e6_handle0'//char(0), sum, handle2)
+      call sub_handle (10, 1000000, '10x1e6_handle0'//char(0), sum, handle2)   ! collides
       call sub_handle (1, 10000000, '1x1e7_handle0'//char(0), sum, handle1)    ! collides
     end if
     ret = gptlstop ('total_handle_nullterm'//char(0))
