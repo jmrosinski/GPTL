@@ -15,64 +15,59 @@
 */
 
 typedef enum {
-  GPTLsync_mpi        = 0,  /* Synchronize before certain MPI calls (PMPI-mode only) */
-  GPTLwall            = 1,  /* Collect wallclock stats (true) */
-  GPTLcpu             = 2,  /* Collect CPU stats (false)*/
-  GPTLabort_on_error  = 3,  /* Abort on failure (false) */
-  GPTLoverhead        = 4,  /* Estimate overhead of underlying timing routine (true) */
-  GPTLdepthlimit      = 5,  /* Only print timers this depth or less in the tree (inf) */
-  GPTLverbose         = 6,  /* Verbose output (false) */
-  GPTLnarrowprint     = 7,  /* Print PAPI and derived stats in 8 columns not 16 (true) */
-  GPTLpercent         = 9,  /* Add a column for percent of first timer (false) */
-  GPTLpersec          = 10, /* Add a PAPI column that prints "per second" stats (true) */
-  GPTLmultiplex       = 11, /* Allow PAPI multiplexing (false) */
-  GPTLdopr_preamble   = 12, /* Print preamble info (true) */
-  GPTLdopr_threadsort = 13, /* Print sorted thread stats (true) */
-  GPTLdopr_multparent = 14, /* Print multiple parent info (true) */
-  GPTLdopr_collision  = 15, /* Print hastable collision info (true) */
-  GPTLdopr_memusage   = 27, /* Call GPTLprint_memusage when auto-instrumented */
-  GPTLprint_method    = 16, /* Tree print method: first parent, last parent
-			       most frequent, or full tree (most frequent) */
-  GPTLtablesize       = 50, /* per-thread size of hash table */
-  GPTLmaxthreads      = 51, /* maximum number of threads */
+  GPTLsync_mpi        = 0,  // Synchronize before certain MPI calls (PMPI-mode only)
+  GPTLwall            = 1,  // Collect wallclock stats (true)
+  GPTLcpu             = 2,  // Collect CPU stats (false)*/
+  GPTLabort_on_error  = 3,  // Abort on failure (false)
+  GPTLoverhead        = 4,  // Estimate overhead of underlying timing routine (true)
+  GPTLdepthlimit      = 5,  // Only print timers this depth or less in the tree (inf)
+  GPTLverbose         = 6,  // Verbose output (false)
+  GPTLnarrowprint     = 7,  // Print PAPI and derived stats in 8 columns not 16 (true)
+  GPTLpercent         = 9,  // Add a column for percent of first timer (false)
+  GPTLpersec          = 10, // Add a PAPI column that prints "per second" stats (true)
+  GPTLmultiplex       = 11, // Allow PAPI multiplexing (false)
+  GPTLdopr_preamble   = 12, // Print preamble info (true)
+  GPTLdopr_threadsort = 13, // Print sorted thread stats (true)
+  GPTLdopr_multparent = 14, // Print multiple parent info (true)
+  GPTLdopr_collision  = 15, // Print hastable collision info (true)
+  GPTLdopr_memusage   = 27, // Call GPTLprint_memusage when auto-instrumented
+  GPTLprint_method    = 16, // Tree print method: first parent, last parent
+			    //   most frequent, or full tree (most frequent)
+  GPTLtablesize       = 50, // per-thread size of hash table
+  GPTLmaxthreads      = 51, // maximum number of threads
   GPTLonlyprint_rank0 = 52, // Restrict printout to rank 0 when MPI enabled
-  /*
-  ** These are derived counters based on PAPI counters. All default to false
-  */
-  GPTL_IPC           = 17, /* Instructions per cycle */
-  GPTL_LSTPI         = 21, /* Load-store instruction fraction */
-  GPTL_DCMRT         = 22, /* L1 miss rate (fraction) */
-  GPTL_LSTPDCM       = 23, /* Load-stores per L1 miss */
-  GPTL_L2MRT         = 24, /* L2 miss rate (fraction) */
-  GPTL_LSTPL2M       = 25, /* Load-stores per L2 miss */
-  GPTL_L3MRT         = 26  /* L3 read miss rate (fraction) */
-} Option;
+
+  // These are derived counters based on PAPI counters. All default to false
+  GPTL_IPC           = 17, // Instructions per cycle
+  GPTL_LSTPI         = 21, // Load-store instruction fraction
+  GPTL_DCMRT         = 22, // L1 miss rate (fraction)
+  GPTL_LSTPDCM       = 23, // Load-stores per L1 miss
+  GPTL_L2MRT         = 24, // L2 miss rate (fraction)
+  GPTL_LSTPL2M       = 25, // Load-stores per L2 miss
+  GPTL_L3MRT         = 26  // L3 read miss rate (fraction)
+} GPTLoption;
 
 /*
 ** Underlying wallclock timer: optimize for best granularity with least overhead.
 ** These numbers need not be distinct from the above because these are passed
 ** to GPTLsetutr() and the above are passed to GPTLsetoption()
 */
-
 typedef enum {
-  GPTLgettimeofday   = 1, /* ubiquitous but slow */
-  GPTLnanotime       = 2, /* only available on x86 */
-  GPTLmpiwtime       = 4, /* MPI_Wtime */
-  GPTLclockgettime   = 5, /* clock_gettime */
-  GPTLplacebo        = 7, /* do-nothing */
-  GPTLread_real_time = 3  /* AIX only */
-} Funcoption;
+  GPTLgettimeofday   = 1, // ubiquitous but slow
+  GPTLnanotime       = 2, // only available on x86
+  GPTLmpiwtime       = 4, // MPI_Wtime
+  GPTLclockgettime   = 5, // clock_gettime
+  GPTLplacebo        = 7, // do-nothing
+  GPTLread_real_time = 3  // AIX only
+} GPTLFuncoption;
 
-/*
-** How to report parent/child relationships at print time (for children with multiple parents)
-*/
-
+// How to report parent/child relationships at print time (for children with multiple parents)
 typedef enum {
-  GPTLfirst_parent  = 1,  /* first parent found */
-  GPTLlast_parent   = 2,  /* last parent found */
-  GPTLmost_frequent = 3,  /* most frequent parent (default) */
-  GPTLfull_tree     = 4   /* complete call tree */
-} Method;
+  GPTLfirst_parent  = 1,  // first parent found
+  GPTLlast_parent   = 2,  // last parent found
+  GPTLmost_frequent = 3,  // most frequent parent (default)
+  GPTLfull_tree     = 4   // complete call tree
+} GPTLMethod;
 
 // User-callable function prototypes: all require C linkage
 #ifdef __cplusplus
