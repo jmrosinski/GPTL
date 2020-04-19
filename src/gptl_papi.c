@@ -15,9 +15,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#if ( defined THREADED_OMP )
+#if ( defined UNDERLYING_OMP )
 #include <omp.h>
-#elif ( defined THREADED_PTHREADS )
+#elif ( defined UNDERLYING_PTHREADS )
 #include <pthread.h>
 #endif
 
@@ -475,10 +475,10 @@ int GPTL_PAPIinitialize (const int maxthreads, const bool verbose_flag, int *nev
     return GPTLerror ("%s: GPTL_PAPIlibraryinit failure\n", thisfunc);
 
   // PAPI_thread_init needs to be called if threading enabled
-#if ( defined THREADED_OMP )
+#if ( defined UNDERLYING_OMP )
   if (PAPI_thread_init ((unsigned long (*)(void)) (omp_get_thread_num)) != PAPI_OK)
     return GPTLerror ("%s: PAPI_thread_init failure\n", thisfunc);
-#elif ( defined THREADED_PTHREADS )
+#elif ( defined UNDERLYING_PTHREADS )
   if (PAPI_thread_init ((unsigned long (*)(void)) (pthread_self)) != PAPI_OK)
     return GPTLerror ("%s: PAPI_thread_init failure\n", thisfunc);
 #endif

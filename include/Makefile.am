@@ -2,4 +2,4 @@ include_HEADERS = gptl.h
 if HAVE_LIBMPI
 include_HEADERS += gptlmpi.h
 endif
-noinst_HEADERS = private.h
+noinst_HEADERS = private.h thread.h

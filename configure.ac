@@ -103,24 +103,26 @@ AM_CONDITIONAL(ENABLE_NESTEDOMP, [test x$enable_nestedomp = xyes])
 
 # pthread library. default disabled
 AC_ARG_ENABLE([pthread],
-    AS_HELP_STRING([--enable-pthread], [Enable pthread capability instead of OpenMP]))
+    AS_HELP_STRING([--enable-pthread], [Enable underlying pthread capability instead of OpenMP]))
 
 if test "x$enable_pthread" = xyes; then
+  AC_MSG_WARN([ENABLING PTHREADS WITHIN GPTL IS EXPERIMENTAL: PREFER OPENMP!!!])
   dnl Do the stuff needed for enabling the feature
   AC_MSG_CHECKING([for pthread support])
   AC_CHECK_LIB([pthread], [pthread_mutex_init])
   if test "x$ac_cv_lib_pthread_pthread_mutex_init" = xyes; then
-     AC_DEFINE([THREADED_PTHREADS], [1], [pthreads library is present])
+     AC_DEFINE([UNDERLYING_PTHREADS], [1], [pthreads library is present])
   fi
 fi
-AM_CONDITIONAL(HAVE_PTHREADS, [test "x$ac_cv_lib_pthread_pthread_mutex_init" = xyes])
+AM_CONDITIONAL(UNDERLYING_PTHREADS, [test "x$ac_cv_lib_pthread_pthread_mutex_init" = xyes])
 
-# GPTL only works with EITHER OpenMP OR pthread lib. Barf on attempts to enable both
-if test "x$enable_omp" = xyes; then
-  if test "x$ac_cv_lib_pthread_pthread_mutex_init" = xyes; then
-    AC_MSG_ERROR([OpenMP and pthreads cannot both be enabled: For pthreads use --disable-openmp --enable-pthread])
+# Underlying threading must be via openmp (preferred), pthreads, or none at all
+if test "x$ac_cv_lib_pthread_pthread_mutex_init" != xyes; then
+  if test "x$useomp" = xyes; then
+    underlying_omp=yes;
   fi
 fi
+AM_CONDITIONAL(UNDERLYING_OPENMP, [test "x$underlying_omp" = xyes])
 
 # Does the user want to use double underscores for fortran wrappers?
 AC_MSG_CHECKING([whether double underscore for Fortran wrappers should be enabled])

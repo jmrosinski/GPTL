@@ -4,6 +4,7 @@
  */
 
 #include "config.h" /* Must be first include. */
+#include "thread.h"
 
 #ifdef HAVE_LIBMPI
 #include <mpi.h>
@@ -39,18 +40,7 @@
 
 static Timer **timers = 0;             /* linked list of timers */
 static Timer **last = 0;               /* last element in list */
-static volatile int nthreads = -1;     /* num threads. Init to bad value */
-/* 
-** For THREADED_PTHREADS case, default maxthreads to a big number.
-** For THREADED_OMP, the value will be set to $OMP_NUM_THREADS, OR:
-** For either case, the user can specify maxthreads with a GPTLsetoption call.
-*/
-#ifdef THREADED_PTHREADS
-#define MAX_THREADS 64
-static volatile int maxthreads = MAX_THREADS;
-#else
-static volatile int maxthreads = -1;   /* max threads */
-#endif
+
 static int depthlimit = 99999;         /* max depth for timers (99999 is effectively infinite) */
 static volatile bool disabled = false; /* Timers disabled? */
 static volatile bool initialized = false;        /* GPTLinitialize has been called */
@@ -71,32 +61,6 @@ static time_t ref_gettimeofday = -1;   /* ref start point for gettimeofday */
 static time_t ref_clock_gettime = -1;  /* ref start point for clock_gettime */
 #ifdef _AIX
 static time_t ref_read_real_time = -1; /* ref start point for read_real_time */
-#endif
-
-#if ( defined THREADED_OMP )
-
-#include <omp.h>
-volatile int *GPTLthreadid_omp = 0; /* array of thread ids */
-
-#elif ( defined THREADED_PTHREADS )
-
-#include <pthread.h>
-
-#define MUTEX_API
-#ifdef MUTEX_API
-static volatile pthread_mutex_t t_mutex;
-#else
-static volatile pthread_mutex_t t_mutex = PTHREAD_MUTEX_INITIALIZER;
-#endif
-volatile pthread_t *GPTLthreadid = 0;  /* array of thread ids */
-static int lock_mutex (void);          /* lock a mutex for entry into a critical region */
-static int unlock_mutex (void);        /* unlock a mutex for exit from a critical region */
-
-#else
-
-/* Unthreaded case */
-int GPTLthreadid = -1;
-
 #endif
 
 typedef struct {
@@ -148,12 +112,7 @@ static char *methodstr (Method);
 static void print_callstack (int, const char *);
 static int get_symnam (void *, char **);
 
-/* Prototypes from previously separate file threadutil.c */
-static int threadinit (void);                    /* initialize threading environment */
-static void threadfinalize (void);               /* finalize threading environment */
-static inline int get_thread_num (void);         /* get 0-based thread number */
-
-/* These are the (possibly) supported underlying wallclock timers */
+  // These are the (possibly) supported underlying wallclock timers
 #ifdef HAVE_NANOTIME
 static int init_nanotime (void);
 static inline double utr_nanotime (void);
@@ -357,9 +316,9 @@ int GPTLsetoption (const int option, const int val)
     return 0;
   case GPTLmaxthreads:
     if (val < 1)
-      return GPTLerror ("%s: maxthreads must be positive. %d is invalid\n", thisfunc, val);
+      return GPTLerror ("%s: GPTLmaxthreads must be positive. %d is invalid\n", thisfunc, val);
 
-    maxthreads = val;
+    GPTLmax_threads = val;
     return 0;
   case GPTLonlyprint_rank0:
     GPTLonlypr_rank0 = (bool) val; 
@@ -404,11 +363,8 @@ int GPTLsetutr (const int option)
         printf ("%s: underlying wallclock timer = %s\n", thisfunc, funclist[i].name);
       funcidx = i;
 
-      /*
-      ** Return an error condition if the function is not available.
-      ** OK for the user code to ignore: GPTLinitialize() will reset to gettimeofday
-      */
-
+      // Return an error condition if the function is not available.
+      // OK for the user code to ignore: GPTLinitialize() will reset to gettimeofday
       if ((*funclist[i].funcinit)() < 0)
         return GPTLerror ("%s: utr=%s not available or doesn't work\n", thisfunc, funclist[i].name);
       else
@@ -436,21 +392,21 @@ int GPTLinitialize (void)
   if (initialized)
     return GPTLerror ("%s: has already been called\n", thisfunc);
 
-  if (threadinit () < 0)
-    return GPTLerror ("%s: bad return from threadinit\n", thisfunc);
+  if (GPTLthreadinit () < 0)
+    return GPTLerror ("%s: bad return from GPTLthreadinit\n", thisfunc);
 
   if ((ticks_per_sec = sysconf (_SC_CLK_TCK)) == -1)
     return GPTLerror ("%s: failure from sysconf (_SC_CLK_TCK)\n", thisfunc);
 
   /* Allocate space for global arrays */
-  callstack       = (Timer ***)    GPTLallocate (maxthreads * sizeof (Timer **), thisfunc);
-  stackidx        = (Nofalse *)    GPTLallocate (maxthreads * sizeof (Nofalse), thisfunc);
-  timers          = (Timer **)     GPTLallocate (maxthreads * sizeof (Timer *), thisfunc);
-  last            = (Timer **)     GPTLallocate (maxthreads * sizeof (Timer *), thisfunc);
-  hashtable       = (Hashentry **) GPTLallocate (maxthreads * sizeof (Hashentry *), thisfunc);
+  callstack       = (Timer ***)    GPTLallocate (GPTLmax_threads * sizeof (Timer **), thisfunc);
+  stackidx        = (Nofalse *)    GPTLallocate (GPTLmax_threads * sizeof (Nofalse), thisfunc);
+  timers          = (Timer **)     GPTLallocate (GPTLmax_threads * sizeof (Timer *), thisfunc);
+  last            = (Timer **)     GPTLallocate (GPTLmax_threads * sizeof (Timer *), thisfunc);
+  hashtable       = (Hashentry **) GPTLallocate (GPTLmax_threads * sizeof (Hashentry *), thisfunc);
 
   /* Initialize array values */
-  for (t = 0; t < maxthreads; t++) {
+  for (t = 0; t < GPTLmax_threads; t++) {
     callstack[t] = (Timer **) GPTLallocate (MAX_STACK * sizeof (Timer *), thisfunc);
     hashtable[t] = (Hashentry *) GPTLallocate (tablesize * sizeof (Hashentry), thisfunc);
     for (i = 0; i < tablesize; i++) {
@@ -472,7 +428,7 @@ int GPTLinitialize (void)
   }
 
 #ifdef HAVE_PAPI
-  if (GPTL_PAPIinitialize (maxthreads, verbose, &GPTLnevents, GPTLeventlist) < 0)
+  if (GPTL_PAPIinitialize (GPTLmax_threads, verbose, &GPTLnevents, GPTLeventlist) < 0)
     return GPTLerror ("%s: Failure from GPTL_PAPIinitialize\n", thisfunc);
 #endif
 
@@ -515,7 +471,7 @@ int GPTLfinalize (void)
   if ( ! initialized)
     return GPTLerror ("%s: initialization was not completed\n", thisfunc);
 
-  for (t = 0; t < maxthreads; ++t) {
+  for (t = 0; t < GPTLmax_threads; ++t) {
     for (n = 0; n < tablesize; ++n) {
       if (hashtable[t][n].nument > 0)
         free (hashtable[t][n].entries);
@@ -541,21 +497,21 @@ int GPTLfinalize (void)
   free (last);
   free (hashtable);
 
-  threadfinalize ();
+  GPTLthreadfinalize ();
   GPTLreset_errors ();
 
 #ifdef HAVE_PAPI
-  GPTL_PAPIfinalize (maxthreads);
+  GPTL_PAPIfinalize (GPTLmax_threads);
 #endif
 
-  /* Reset initial values */
+  // Reset initial values
   timers = 0;
   last = 0;
-  nthreads = -1;
-#ifdef THREADED_PTHREADS
-  maxthreads = MAX_THREADS;
+  GPTLnthreads = -1;
+#ifdef UNDERLYING_PTHREADS
+  GPTLmax_threads = MAX_THREADS;
 #else
-  maxthreads = -1;
+  GPTLmax_threads = -1;
 #endif
   depthlimit = 99999;
   disabled = false;
@@ -663,8 +619,8 @@ static inline int preamble_start (int *t, const char *name)
   if ( ! initialized)
     return GPTLerror ("%s timername=%s: GPTLinitialize has not been called\n", thisfunc, name);
   
-  if ((*t = get_thread_num ()) < 0)
-    return GPTLerror ("%s: bad return from get_thread_num\n", thisfunc);
+  if ((*t = GPTLget_thread_num ()) < 0)
+    return GPTLerror ("%s: bad return from GPTLget_thread_num\n", thisfunc);
 
   // If current depth exceeds a user-specified limit for print, just
   // increment and tell caller to return immediately (DONTSTART)
@@ -975,8 +931,8 @@ static inline int preamble_stop (int *t, double *tp1, long *usr, long *sys, cons
   if (cpustats.enabled && get_cpustamp (usr, sys) < 0)
     return GPTLerror ("%s: get_cpustamp error", name);
 
-  if ((*t = get_thread_num ()) < 0)
-    return GPTLerror ("%s: bad return from get_thread_num\n", name);
+  if ((*t = GPTLget_thread_num ()) < 0)
+    return GPTLerror ("%s: bad return from GPTLget_thread_num\n", name);
 
   // If current depth exceeds a user-specified limit for print, just decrement and return
   if (stackidx[*t].val > depthlimit) {
@@ -1194,7 +1150,7 @@ int GPTLreset (void)
   if ( ! initialized)
     return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
 
-  for (t = 0; t < nthreads; t++) {
+  for (t = 0; t < GPTLnthreads; t++) {
     for (ptr = timers[t]; ptr; ptr = ptr->next) {
       ptr->onflg = false;
       ptr->count = 0;
@@ -1224,11 +1180,11 @@ int GPTLreset_timer (char *name)
   if ( ! initialized)
     return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
 
-  if (get_thread_num () != 0)
+  if (GPTLget_thread_num () != 0)
     return GPTLerror ("%s: Must be called by the master thread\n", thisfunc);
 
   indx = genhashidx (name);
-  for (t = 0; t < nthreads; ++t) {
+  for (t = 0; t < GPTLnthreads; ++t) {
     ptr = getentry (hashtable[t], name, indx);
     if (ptr) {
       ptr->onflg = false;
@@ -1346,10 +1302,10 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   }
 #endif
 
-#if ( defined THREADED_OMP )
-  fprintf (fp, "GPTL was built with THREADED_OMP\n");
-#elif ( defined THREADED_PTHREADS )
-  fprintf (fp, "GPTL was built with THREADED_PTHREADS\n");
+#if ( defined UNDERLYING_OMP )
+  fprintf (fp, "GPTL was built with UNDERLYING_OMP\n");
+#elif ( defined UNDERLYING_PTHREADS )
+  fprintf (fp, "GPTL was built with UNDERLYING_PTHREADS\n");
 #else
   fprintf (fp, "GPTL was built without threading\n");
 #endif
@@ -1395,7 +1351,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 #endif	   
 
   fprintf (fp, "Underlying timing routine was %s.\n", funclist[funcidx].name);
-  (void) GPTLget_overhead (fp, ptr2wtimefunc, getentry, genhashidx, get_thread_num, 
+  (void) GPTLget_overhead (fp, ptr2wtimefunc, getentry, genhashidx, GPTLget_thread_num, 
 			   stackidx, callstack, hashtable[0], tablesize, dousepapi, imperfect_nest, 
 			   &self_ohd, &parent_ohd);
   if (dopr_preamble) {
@@ -1425,9 +1381,9 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   (void) GPTLget_procsiz (&procsiz, &rss);
   fprintf (fp, "Process size=%f MB rss=%f MB\n\n", procsiz, rss);
 
-  sum = (float *) GPTLallocate (nthreads * sizeof (float), thisfunc);
+  sum = (float *) GPTLallocate (GPTLnthreads * sizeof (float), thisfunc);
   
-  for (t = 0; t < nthreads; ++t) {
+  for (t = 0; t < GPTLnthreads; ++t) {
     print_titles (t, fp, &outputfmt);
     /*
     ** Print timing stats. If imperfect nesting was detected, print stats by going through
@@ -1460,7 +1416,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   }
 
   // Print per-name stats for all threads
-  if (dopr_threadsort && nthreads > 1) {
+  if (dopr_threadsort && GPTLnthreads > 1) {
     int nblankchars;
     fprintf (fp, "\nSame stats sorted by timer for threaded regions:\n");
     fprintf (fp, "Thd ");
@@ -1501,7 +1457,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
       foundany = false;
       first = true;
       sumstats = *ptr;
-      for (t = 1; t < nthreads; ++t) {
+      for (t = 1; t < GPTLnthreads; ++t) {
         found = false;
         for (tptr = timers[t]->next; tptr && ! found; tptr = tptr->next) {
           if (STRMATCH (ptr->name, tptr->name)) {
@@ -1531,7 +1487,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
     // Repeat overhead print in loop over threads
     if (wallstats.enabled && overheadstats.enabled) {
       osum = 0.;
-      for (t = 0; t < nthreads; ++t) {
+      for (t = 0; t < GPTLnthreads; ++t) {
         fprintf (fp, "OVERHEAD.%3.3d (wallclock seconds) = %9.3g\n", t, sum[t]);
         osum += sum[t];
       }
@@ -1540,12 +1496,12 @@ int GPTLpr_file (const char *outfile) /* output file to write */
   }
 
   // For auto-instrumented apps, translate names which have been truncated for output formatting
-  for (t = 0; t < nthreads; ++t)
+  for (t = 0; t < GPTLnthreads; ++t)
     translate_truncated_names (t, fp);
   
   // Print info about timers with multiple parents ONLY if imperfect nesting was not discovered
   if (dopr_multparent && ! imperfect_nest) {
-    for (t = 0; t < nthreads; ++t) {
+    for (t = 0; t < GPTLnthreads; ++t) {
       bool some_multparents = false;   // thread has entries with multiple parents?
       for (ptr = timers[t]->next; ptr; ptr = ptr->next) {
         if (ptr->nparent > 1) {
@@ -1574,10 +1530,10 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   // Print hash table stats
   if (dopr_collision)
-    GPTLprint_hashstats (fp, nthreads, hashtable, tablesize);
+    GPTLprint_hashstats (fp, GPTLnthreads, hashtable, tablesize);
 
   // Print stats on GPTL memory usage
-  GPTLprint_memstats (fp, timers, nthreads, tablesize, maxthreads);
+  GPTLprint_memstats (fp, timers, tablesize);
 
   free (sum);
 
@@ -1601,7 +1557,7 @@ int GPTLrename_duplicate_addresses ()
   int t;            // thread index
   static const char *thisfunc = "GPTLrename_duplicate_addresses";
 
-  for (t = 0; t < nthreads; ++t) {
+  for (t = 0; t < GPTLnthreads; ++t) {
     for (ptr = timers[t]; ptr; ptr = ptr->next) {
       unsigned int idx = 0;
       // Check only entries with a longname and don't have '@' in their name
@@ -1650,7 +1606,7 @@ static int get_longest_omp_namelen (void)
   int longest = 0;
 
   for (ptr = timers[0]->next; ptr; ptr = ptr->next) {
-    for (t = 1; t < nthreads; ++t) {
+    for (t = 1; t < GPTLnthreads; ++t) {
       found = false;
       for (tptr = timers[t]->next; tptr && ! found; tptr = tptr->next) {
 	if (STRMATCH (tptr->name, ptr->name)) {
@@ -2221,10 +2177,10 @@ int GPTLquery (const char *name,
   
   // If t is < 0, assume the request is for the current thread
   if (t < 0) {
-    if ((t = get_thread_num ()) < 0)
-      return GPTLerror ("%s: get_thread_num failure\n", thisfunc);
+    if ((t = GPTLget_thread_num ()) < 0)
+      return GPTLerror ("%s: GPTLget_thread_num failure\n", thisfunc);
   } else {
-    if (t >= maxthreads)
+    if (t >= GPTLmax_threads)
       return GPTLerror ("%s: requested thread %d is too big\n", thisfunc, t);
   }
 
@@ -2268,10 +2224,10 @@ int GPTLget_wallclock (const char *timername, int t, double *value)
   
   // If t is < 0, assume the request is for the current thread
   if (t < 0) {
-    if ((t = get_thread_num ()) < 0)
-      return GPTLerror ("%s: bad return from get_thread_num\n", thisfunc);
+    if ((t = GPTLget_thread_num ()) < 0)
+      return GPTLerror ("%s: bad return from GPTLget_thread_num\n", thisfunc);
   } else {
-    if (t >= maxthreads)
+    if (t >= GPTLmax_threads)
       return GPTLerror ("%s: requested thread %d is too big\n", thisfunc, t);
   }
   
@@ -2310,10 +2266,10 @@ int GPTLget_wallclock_latest (const char *timername,
   
   // If t is < 0, assume the request is for the current thread
   if (t < 0) {
-    if ((t = get_thread_num ()) < 0)
-      return GPTLerror ("%s: bad return from get_thread_num\n", thisfunc);
+    if ((t = GPTLget_thread_num ()) < 0)
+      return GPTLerror ("%s: bad return from GPTLget_thread_num\n", thisfunc);
   } else {
-    if (t >= maxthreads)
+    if (t >= GPTLmax_threads)
       return GPTLerror ("%s: requested thread %d is too big\n", thisfunc, t);
   }
   
@@ -2359,11 +2315,11 @@ int GPTLget_threadwork (const char *name,
   if ( ! wallstats.enabled)
     return GPTLerror ("%s: wallstats must be enabled to call this function\n", thisfunc);
 
-  if (get_thread_num () != 0)
+  if (GPTLget_thread_num () != 0)
     return GPTLerror ("%s: Must be called by the master thread\n", thisfunc);
 
   indx = genhashidx (name);
-  for (t = 0; t < nthreads; ++t) {
+  for (t = 0; t < GPTLnthreads; ++t) {
     ptr = getentry (hashtable[t], name, indx);
     if (ptr) {
       ++nfound;
@@ -2376,9 +2332,9 @@ int GPTLget_threadwork (const char *name,
   if (nfound == 0)
     return GPTLerror ("%s: No entries exist for name=%s\n", thisfunc, name);
 
-  // A perfectly load-balanced calculation would take time=totalwork/nthreads
+  // A perfectly load-balanced calculation would take time=totalwork/GPTLnthreads
   // Therefore imbalance is slowest thread time minus this number
-  balancedwork = totalwork / nthreads;
+  balancedwork = totalwork / GPTLnthreads;
   *maxwork = innermax;
   *imbal = innermax - balancedwork;
 
@@ -2413,8 +2369,8 @@ int GPTLstartstop_val (const char *name, double value)
   if (value < 0.)
     return GPTLerror ("%s: Input value must not be negative\n", thisfunc);
 
-  if ((t = get_thread_num ()) < 0)
-    return GPTLerror ("%s: bad return from get_thread_num\n", thisfunc);
+  if ((t = GPTLget_thread_num ()) < 0)
+    return GPTLerror ("%s: bad return from GPTLget_thread_num\n", thisfunc);
 
   // Find out if the timer already exists
   indx = genhashidx (name);
@@ -2478,10 +2434,10 @@ int GPTLget_count (const char *timername, int t, int *count)
 
   // If t is < 0, assume the request is for the current thread
   if (t < 0) {
-    if ((t = get_thread_num ()) < 0)
-      return GPTLerror ("%s: bad return from get_thread_num\n", thisfunc);
+    if ((t = GPTLget_thread_num ()) < 0)
+      return GPTLerror ("%s: bad return from GPTLget_thread_num\n", thisfunc);
   } else {
-    if (t >= maxthreads)
+    if (t >= GPTLmax_threads)
       return GPTLerror ("%s: requested thread %d is too big\n", thisfunc, t);
   }
   
@@ -2517,10 +2473,10 @@ int GPTLget_eventvalue (const char *timername, const char *eventname, int t, dou
   
   // If t is < 0, assume the request is for the current thread
   if (t < 0) {
-    if ((t = get_thread_num ()) < 0)
-      return GPTLerror ("%s: get_thread_num failure\n", thisfunc);
+    if ((t = GPTLget_thread_num ()) < 0)
+      return GPTLerror ("%s: GPTLget_thread_num failure\n", thisfunc);
   } else {
-    if (t >= maxthreads)
+    if (t >= GPTLmax_threads)
       return GPTLerror ("%s: requested thread %d is too big\n", thisfunc, t);
   }
   
@@ -2556,10 +2512,10 @@ int GPTLget_nregions (int t, int *nregions)
   
   // If t is < 0, assume the request is for the current thread
   if (t < 0) {
-    if ((t = get_thread_num ()) < 0)
-      return GPTLerror ("%s: get_thread_num failure\n", thisfunc);
+    if ((t = GPTLget_thread_num ()) < 0)
+      return GPTLerror ("%s: GPTLget_thread_num failure\n", thisfunc);
   } else {
-    if (t >= maxthreads)
+    if (t >= GPTLmax_threads)
       return GPTLerror ("%s: requested thread %d is too big\n", thisfunc, t);
   }
   
@@ -2593,10 +2549,10 @@ int GPTLget_regionname (int t, int region, char *name, int nc)
   
   // If t is < 0, assume the request is for the current thread
   if (t < 0) {
-    if ((t = get_thread_num ()) < 0)
-      return GPTLerror ("%s: get_thread_num failure\n", thisfunc);
+    if ((t = GPTLget_thread_num ()) < 0)
+      return GPTLerror ("%s: GPTLget_thread_num failure\n", thisfunc);
   } else {
-    if (t >= maxthreads)
+    if (t >= GPTLmax_threads)
       return GPTLerror ("%s: requested thread %d is too big\n", thisfunc, t);
   }
   
@@ -2768,7 +2724,7 @@ static inline Timer *getentry (const Hashentry *hashtable, const char *name, uns
 void __func_trace_enter (const char *function_name, const char *file_name, int line_number,
                          void **const user_data)
 {
-  if (dopr_memusage && get_thread_num() == 0)
+  if (dopr_memusage && GPTLget_thread_num() == 0)
     check_memusage ("Begin", function_name);
   (void) GPTLstart (function_name);
 }
@@ -2777,7 +2733,7 @@ void __func_trace_exit (const char *function_name, const char *file_name, int li
                         void **const user_data)
 {
   (void) GPTLstop (function_name);
-  if (dopr_memusage && get_thread_num() == 0)
+  if (dopr_memusage && GPTLget_thread_num() == 0)
     check_memusage ("End", function_name);
 }
   
@@ -2799,7 +2755,7 @@ void __cyg_profile_func_enter (void *this_fn, void *call_site)
   // In debug mode, get symbol name up front to diagnose function name
   // Otherwise live with "unknown" because get_symnam is very expensive
 
-  // Call preamble_start rather than just get_thread_num because preamble_stop is needed for
+  // Call preamble_start rather than just GPTLget_thread_num because preamble_stop is needed for
   // other reasons in __cyg_profile_func_exit, and the preamble* functions need to mirror each
   // other.
   
@@ -3262,9 +3218,6 @@ static void print_callstack (int t, const char *caller)
   }
 }
 
-// GPTLget_nthreads: Return number of threads. NOT a public entry point
-int GPTLget_nthreads () {return nthreads;}
-
 // GPTLget_timersaddr: Return address of timers. NOT a public entry point
 Timer **GPTLget_timersaddr () {return timers;}
 
@@ -3286,8 +3239,8 @@ Timer *GPTLgetentry (const char *name)
     return 0;
   }
 
-  if ((t = get_thread_num ()) < 0) {
-    (void) GPTLerror ("%s: bad return from get_thread_num\n", thisfunc);
+  if ((t = GPTLget_thread_num ()) < 0) {
+    (void) GPTLerror ("%s: bad return from GPTLget_thread_num\n", thisfunc);
     return 0;
   }
 
@@ -3295,434 +3248,6 @@ Timer *GPTLgetentry (const char *name)
   return (getentry (hashtable[t], name, indx));
 }
 #endif
-
-/*************************************************************************************/
-
-/*
-** Contents of inserted threadutil.c starts here.
-** Moved to gptl.c to enable inlining
-*/
-
-/*
-**
-** Author: Jim Rosinski
-** 
-** Utility functions handle thread-based GPTL needs.
-*/
-
-/**********************************************************************************/
-/* 
-** 3 sets of routines: OMP threading, PTHREADS, unthreaded
-*/
-
-#if ( defined THREADED_OMP )
-
-/*
-** threadinit: Allocate and initialize GPTLthreadid_omp; set max number of threads
-**
-** Output results:
-**   maxthreads: max number of threads
-**
-**   GPTLthreadid_omp[] is allocated and initialized to -1
-**
-**
-** Return value: 0 (success) or GPTLerror (failure)
-*/
-static int threadinit (void)
-{
-  int t;  /* loop index */
-  static const char *thisfunc = "threadinit";
-
-  if (omp_get_thread_num () != 0)
-    return GPTLerror ("OMP %s: MUST only be called by the master thread\n", thisfunc);
-
-  /* 
-  ** Allocate the threadid array which maps physical thread IDs to logical IDs 
-  ** For OpenMP this will be just GPTLthreadid_omp[iam] = iam;
-  */
-  if (GPTLthreadid_omp) 
-    return GPTLerror ("OMP %s: has already been called.\nMaybe mistakenly called by multiple threads?", 
-                      thisfunc);
-
-  /*
-  ** maxthreads may have been set by the user, in which case use that. But if as 
-  ** yet uninitialized, set to the current value of OMP_NUM_THREADS. 
-  */
-  if (maxthreads == -1)
-    maxthreads = MAX ((1), (omp_get_max_threads ()));
-
-  if ( ! (GPTLthreadid_omp = (int *) GPTLallocate (maxthreads * sizeof (int), thisfunc)))
-    return GPTLerror ("OMP %s: malloc failure for %d elements of GPTLthreadid_omp\n",
-		      thisfunc, maxthreads);
-
-  /*
-  ** Initialize threadid array to flag values for use by get_thread_num().
-  ** get_thread_num() will fill in the values on first use.
-  */
-  for (t = 0; t < maxthreads; ++t)
-    GPTLthreadid_omp[t] = -1;
-
-#ifdef VERBOSE
-  printf ("GPTL: OMP %s: Set maxthreads=%d\n", thisfunc, maxthreads);
-#endif
-  
-  return 0;
-}
-
-/*
-** Threadfinalize: clean up
-**
-** Output results:
-**   GPTLthreadid_omp array is freed and array pointer nullified
-*/
-static void threadfinalize ()
-{
-  free ((void *) GPTLthreadid_omp);
-  GPTLthreadid_omp = 0;
-}
-
-/*
-** get_thread_num: Determine thread number of the calling thread
-**                 Start PAPI counters if enabled and first call for this thread.
-**
-** Output results:
-**   nthreads:     Number of threads
-**   GPTLthreadid_omp: Our thread id added to list on 1st call
-**
-** Return value: thread number (success) or GPTLerror (failure)
-**   5/8/16: Modified to enable 2-level OMP nesting: Fold combination of current and parent
-**   thread info into a single index
-*/
-static inline int get_thread_num (void)
-{
-  int t;        /* thread number */
-  static const char *thisfunc = "get_thread_num";
-
-#ifdef ENABLE_NESTEDOMP
-  int myid;            /* my thread id */
-  int lvl;             /* nest level: Currently only 2 nesting levels supported */
-  int parentid;        /* thread number of parent team */
-  int my_nthreads;     /* number of threads in the parent team */
-
-  myid = omp_get_thread_num ();
-  if (omp_get_nested ()) {         /* nesting is "enabled", though not necessarily active */
-    lvl = omp_get_active_level (); /* lvl=2 => inside 2 #pragma omp regions */
-    if (lvl < 2) {
-      /* 0 or 1-level deep: simply use thread id as index */
-      t = myid;
-    } else if (lvl == 2) {
-      /* Create a unique id "t" for indexing into singly-dimensioned thread array */
-      parentid    = omp_get_ancestor_thread_num (lvl-1);
-      my_nthreads = omp_get_team_size (lvl);
-      t           = parentid*my_nthreads + myid;
-    } else {
-      return GPTLerror ("OMP %s: GPTL supports only 2 nested OMP levels got %d\n", thisfunc, lvl);
-    }
-  } else {
-    /* un-nested case: thread id is index */
-    t = myid;
-  }
-#else
-  t = omp_get_thread_num ();
-#endif
-  if (t >= maxthreads)
-    return GPTLerror ("OMP %s: returned id=%d exceeds maxthreads=%d\n", thisfunc, t, maxthreads);
-
-  /* If our thread number has already been set in the list, we are done */
-  if (t == GPTLthreadid_omp[t])
-    return t;
-
-  /* 
-  ** Thread id not found. Modify GPTLthreadid_omp with our ID, then start PAPI events if required.
-  ** Due to the setting of GPTLthreadid_omp, everything below here will only execute once per thread.
-  */
-  GPTLthreadid_omp[t] = t;
-
-#ifdef VERBOSE
-  printf ("GPTL: OMP %s: 1st call t=%d\n", thisfunc, t);
-#endif
-
-#ifdef HAVE_PAPI
-
-  /*
-  ** When HAVE_PAPI is true, if 1 or more PAPI events are enabled,
-  ** create and start an event set for the new thread.
-  */
-  if (GPTLget_npapievents () > 0) {
-#ifdef VERBOSE
-    printf ("GPTL: OMP %s: Starting EventSet t=%d\n", thisfunc, t);
-#endif
-
-    if (GPTLcreate_and_start_events (t) < 0)
-      return GPTLerror ("GPTL: OMP %s: error from GPTLcreate_and_start_events for thread %d\n", 
-			thisfunc, t);
-  }
-#endif
-
-  /* nthreads = maxthreads based on setting in threadinit or user call to GPTLsetoption() */
-  nthreads = maxthreads;
-#ifdef VERBOSE
-  printf ("GPTL: OMP %s: nthreads=%d\n", thisfunc, nthreads);
-#endif
-
-  return t;
-}
-
-/**********************************************************************************/
-/* 
-** PTHREADS
-*/
-
-#elif ( defined THREADED_PTHREADS )
-
-/*
-** threadinit: Allocate GPTLthreadid and initialize to -1; set max number of threads;
-**             Initialize the mutex for later use; Initialize nthreads to 0
-**
-** Output results:
-**   nthreads:   number of threads (init to zero here, increment later in get_thread_num)
-**   maxthreads: max number of threads (MAX_THREADS)
-**
-**   GPTLthreadid[] is allocated and initialized to -1
-**   mutex is initialized for future use
-**
-** Return value: 0 (success) or GPTLerror (failure)
-*/
-static int threadinit (void)
-{
-  int t;        /* thread number */
-  int ret;      /* return code */
-  static const char *thisfunc = "threadinit";
-
-  /*
-  ** The following test is not rock-solid, but it's pretty close in terms of guaranteeing that 
-  ** threadinit gets called by only 1 thread. Problem is, mutex hasn't yet been initialized
-  ** so we can't use it.
-  */
-  if (nthreads == -1)
-    nthreads = 0;
-  else
-    return GPTLerror ("GPTL: PTHREADS %s: has already been called.\n"
-                      "Maybe mistakenly called by multiple threads?\n", thisfunc);
-
-  /*
-  ** Initialize the mutex required for critical regions.
-  ** Previously, t_mutex = PTHREAD_MUTEX_INITIALIZER on the static declaration line was
-  ** adequate to initialize the mutex. But this failed in programs that invoked
-  ** GPTLfinalize() followed by GPTLinitialize().
-  ** "man pthread_mutex_init" indicates that passing NULL as the second argument to 
-  ** pthread_mutex_init() should appropriately initialize the mutex, assuming it was
-  ** properly destroyed by a previous call to pthread_mutex_destroy();
-  */
-#ifdef MUTEX_API
-  if ((ret = pthread_mutex_init ((pthread_mutex_t *) &t_mutex, NULL)) != 0)
-    return GPTLerror ("GPTL: PTHREADS %s: mutex init failure: ret=%d\n", thisfunc, ret);
-#endif
-  
-  // maxthreads is either its default initialization value, or set by a user
-  // call to GPTLsetoption().
-  // Allocate the threadid array which maps physical thread IDs to logical IDs
-  if (GPTLthreadid) 
-    return GPTLerror ("GPTL: PTHREADS %s: GPTLthreadid not null\n", thisfunc);
-  else if ( ! (GPTLthreadid = (pthread_t *) GPTLallocate (maxthreads * sizeof (pthread_t), thisfunc)))
-    return GPTLerror ("GPTL: PTHREADS %s: malloc failure for %d elements of GPTLthreadid\n", 
-                      thisfunc, maxthreads);
-
-  /*
-  ** Initialize GPTLthreadid array to flag values for use by get_thread_num().
-  ** get_thread_num() will fill in the values on first use.
-  */
-  for (t = 0; t < maxthreads; ++t)
-    GPTLthreadid[t] = (pthread_t) -1;
-
-#ifdef VERBOSE
-  printf ("GPTL: PTHREADS %s: Set maxthreads=%d nthreads=%d\n", thisfunc, maxthreads, nthreads);
-#endif
-
-  return 0;
-}
-
-/*
-** threadfinalize: Clean up
-**
-** Output results:
-**   GPTLthreadid array is freed and array pointer nullified
-**   mutex is destroyed
-*/
-static void threadfinalize ()
-{
-  int ret;
-
-#ifdef MUTEX_API
-  if ((ret = pthread_mutex_destroy ((pthread_mutex_t *) &t_mutex)) != 0)
-    printf ("GPTL: threadfinalize: failed attempt to destroy t_mutex: ret=%d\n", ret);
-#endif
-  free ((void *) GPTLthreadid);
-  GPTLthreadid = 0;
-}
-
-/*
-** get_thread_num: Determine zero-based thread number of the calling thread.
-**                 Update nthreads and maxthreads if necessary.
-**                 Start PAPI counters if enabled and first call for this thread.
-**
-** Output results:
-**   nthreads: Updated number of threads
-**   GPTLthreadid: Our thread id added to list on 1st call 
-**
-** Return value: thread number (success) or GPTLerror (failure)
-*/
-static inline int get_thread_num (void)
-{
-  int t;                   /* logical thread number, defined by array index of found GPTLthreadid */
-  pthread_t mythreadid;    /* thread id from pthreads library */
-  int retval = -1;         /* value to return to caller: init to bad value to please compiler */
-  bool foundit = false;    /* thread id found in list */
-  static const char *thisfunc = "get_thread_num";
-
-  mythreadid = pthread_self ();
-
-  // If our thread number has already been set in the list, we are done
-  // VECTOR code should run a bit faster on vector machines.
-#define VECTOR
-#ifdef VECTOR
-  for (t = 0; t < nthreads; ++t)
-    if (pthread_equal (mythreadid, GPTLthreadid[t])) {
-      foundit = true;
-      retval = t;
-    }
-
-  if (foundit)
-    return retval;
-#else
-  for (t = 0; t < nthreads; ++t)
-    if (pthread_equal (mythreadid, GPTLthreadid[t]))
-      return t;
-#endif
-
-  // Thread id not found. Define a critical region, then start PAPI counters if
-  // necessary and modify GPTLthreadid[] with our id.
-  if (lock_mutex () < 0)
-    return GPTLerror ("GPTL: PTHREADS %s: mutex lock failure\n", thisfunc);
-
-  // If our thread id is not in the known list, add to it after checking that
-  // we do not have too many threads.
-  if (nthreads >= maxthreads) {
-    if (unlock_mutex () < 0)
-      fprintf (stderr, "GPTL: PTHREADS %s: mutex unlock failure\n", thisfunc);
-
-    return GPTLerror ("GPTL: THREADED_PTHREADS %s: thread index=%d is too big. Need to invoke \n"
-		      "GPTLsetoption(GPTLmaxthreads,value) or recompile GPTL with a\n"
-		      "larger value of MAX_THREADS\n", thisfunc, nthreads);
-  }
-
-  GPTLthreadid[nthreads] = mythreadid;
-
-#ifdef VERBOSE
-  printf ("GPTL: PTHREADS %s: 1st call GPTLthreadid=%lu maps to location %d\n", 
-          thisfunc, (unsigned long) mythreadid, nthreads);
-#endif
-
-#ifdef HAVE_PAPI
-
-  // When HAVE_PAPI is true, if 1 or more PAPI events are enabled,
-  // create and start an event set for the new thread.
-  if (GPTLget_npapievents () > 0) {
-#ifdef VERBOSE
-    printf ("GPTL: PTHREADS %s: Starting EventSet GPTLthreadid=%lu location=%d\n", 
-            thisfunc, (unsigned long) mythreadid, nthreads);
-#endif
-    if (GPTLcreate_and_start_events (nthreads) < 0) {
-      if (unlock_mutex () < 0)
-        fprintf (stderr, "GPTL: PTHREADS %s: mutex unlock failure\n", thisfunc);
-
-      return GPTLerror ("GPTL: PTHREADS %s: error from GPTLcreate_and_start_events for thread %d\n", 
-                        thisfunc, nthreads);
-    }
-  }
-#endif
-
-  /*
-  ** IMPORTANT to set return value before unlocking the mutex!!!!
-  ** "return nthreads-1" fails occasionally when another thread modifies
-  ** nthreads after it gets the mutex!
-  */
-  retval = nthreads++;
-
-#ifdef VERBOSE
-  printf ("GPTL: PTHREADS %s: nthreads bumped to %d\n", thisfunc, nthreads);
-#endif
-
-  if (unlock_mutex () < 0)
-    return GPTLerror ("GPTL: PTHREADS %s: mutex unlock failure\n", thisfunc);
-
-  return retval;
-}
-
-// lock_mutex: lock a mutex for private access
-static int lock_mutex ()
-{
-  static const char *thisfunc = "lock_mutex";
-
-  if (pthread_mutex_lock ((pthread_mutex_t *) &t_mutex) != 0)
-    return GPTLerror ("GPTL: %s: failure from pthread_lock_mutex\n", thisfunc);
-
-  return 0;
-}
-
-// unlock_mutex: unlock a mutex from private access
-static int unlock_mutex ()
-{
-  static const char *thisfunc = "unlock_mutex";
-
-  if (pthread_mutex_unlock ((pthread_mutex_t *) &t_mutex) != 0)
-    return GPTLerror ("GPTL: %s: failure from pthread_unlock_mutex\n", thisfunc);
-  return 0;
-}
-
-/**********************************************************************************/
-/*
-** Unthreaded case
-*/
-
-#else
-
-static int threadinit (void)
-{
-  static const char *thisfunc = "threadinit";
-
-  if (nthreads != -1)
-    return GPTLerror ("GPTL: Unthreaded %s: MUST only be called once", thisfunc);
-
-  nthreads = 0;
-  maxthreads = 1;
-  return 0;
-}
-
-void threadfinalize () {GPTLthreadid = -1;}
-
-static inline int get_thread_num ()
-{
-#ifdef HAVE_PAPI
-  static const char *thisfunc = "get_thread_num";
-  /*
-  ** When HAVE_PAPI is true, if 1 or more PAPI events are enabled,
-  ** create and start an event set for the new thread.
-  */
-  if (GPTLthreadid == -1 && GPTLget_npapievents () > 0) {
-    if (GPTLcreate_and_start_events (0) < 0)
-      return GPTLerror ("GPTL: Unthreaded %s: error from GPTLcreate_and_start_events for thread %0\n",
-                        thisfunc);
-
-    GPTLthreadid = 0;
-  }
-#endif
-
-  nthreads = 1;
-  return 0;
-}
-
-#endif  /* Unthreaded case */
 
 #ifdef __cplusplus
 }

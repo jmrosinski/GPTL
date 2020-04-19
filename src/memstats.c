@@ -1,14 +1,9 @@
 #include "config.h" /* Must be first include. */
 
 #include "private.h"
+#include "thread.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-static void print_threadmapping (FILE *, int); // print mapping of thread ids
-
-void GPTLprint_memstats (FILE *fp, Timer **timers, int nthreads, int tablesize, int maxthreads)
+void GPTLprint_memstats (FILE *fp, Timer **timers, int tablesize)
 {
   Timer *ptr;               // walk through linked list
   float pchmem = 0.;        // parent/child array memory usage
@@ -20,9 +15,9 @@ void GPTLprint_memstats (FILE *fp, Timer **timers, int nthreads, int tablesize, 
   int numtimers;            // number of timers
   int t;
 
-  hashmem = (float) sizeof (Hashentry) * tablesize * maxthreads;  // fixed size of table
-  callstackmem = (float) sizeof (Timer *) * MAX_STACK * maxthreads;
-  for (t = 0; t < nthreads; t++) {
+  hashmem = (float) sizeof (Hashentry) * tablesize * GPTLmax_threads;  // fixed size of table
+  callstackmem = (float) sizeof (Timer *) * MAX_STACK * GPTLmax_threads;
+  for (t = 0; t < GPTLnthreads; t++) {
     numtimers = 0;
     for (ptr = timers[t]->next; ptr; ptr = ptr->next) {
       ++numtimers;
@@ -45,43 +40,5 @@ void GPTLprint_memstats (FILE *fp, Timer **timers, int nthreads, int tablesize, 
                "Callstackmem            = %g KB\n",
            hashmem*.001, regionmem*.001, papimem*.001, pchmem*.001, callstackmem*.001);
 
-  print_threadmapping (fp, nthreads);
+  GPTLprint_threadmapping (fp);
 }
-
-#if ( defined THREADED_OMP )
-
-static void print_threadmapping (FILE *fp, int nthreads)
-{
-  int t;
-
-  fprintf (fp, "\n");
-  fprintf (fp, "Thread mapping:\n");
-  for (t = 0; t < nthreads; ++t)
-    fprintf (fp, "GPTLthreadid_omp[%d] = %d\n", t, GPTLthreadid_omp[t]);
-}
-
-#elif ( defined THREADED_PTHREADS )
-
-static void print_threadmapping (FILE *fp, int nthreads)
-{
-  int t;
-
-  fprintf (fp, "\n");
-  fprintf (fp, "Thread mapping:\n");
-  for (t = 0; t < nthreads; ++t)
-    fprintf (fp, "GPTLthreadid[%d] = %lu\n", t, (unsigned long) GPTLthreadid[t]);
-}
-
-#else
-
-static void print_threadmapping (FILE *fp, int nthreads)
-{
-  fprintf (fp, "\n");
-  fprintf (fp, "GPTLthreadid[0] = 0\n");
-}
-
-#endif
-
-#ifdef __cplusplus
-}
-#endif

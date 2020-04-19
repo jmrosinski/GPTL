@@ -27,3 +27,13 @@ libgptl_la_SOURCES += f_wrappers_pmpi.c
 endif
 endif
 endif
+
+if UNDERLYING_OPENMP
+libgptl_la_SOURCES += thread_omp.c
+else
+if UNDERLYING_PTHREADS
+libgptl_la_SOURCES += thread_pthreads.c
+else
+libgptl_la_SOURCES += thread_none.c
+endif
+endif

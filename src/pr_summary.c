@@ -7,6 +7,7 @@
 #include "private.h"
 #include "gptl.h"
 #include "gptlmpi.h"
+#include "thread.h"
 
 // MPI summary stats
 typedef struct {
@@ -31,8 +32,6 @@ typedef struct {
   int wallmin_t;           // thread producing wallmin
   char name[MAX_CHARS+1];  // timer name
 } Global;
-
-static int nthreads; // Used by both GPTLpr_summary() and get_threadstats()
 
 #ifdef __cplusplus
 extern "C" {
@@ -116,8 +115,7 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
   // Also discover length of longest region name for formatting
   n = 0;
   mnl = 0;
-  nthreads = GPTLget_nthreads ();   /* get_threadstats() needs to know this value too */
-  multithread = (nthreads > 1);
+  multithread = (GPTLnthreads > 1);
 
   for (ptr = timers[0]->next; ptr; ptr = ptr->next) {
     if ( ! ptr->longname) {
@@ -269,7 +267,7 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
 
     // Print heading
     fprintf (fp, "Total ranks in communicator=%d\n", nranks);
-    fprintf (fp, "nthreads on rank 0=%d\n", nthreads);
+    fprintf (fp, "nthreads on rank 0=%d\n", GPTLnthreads);
     fprintf (fp, "'N' used for mean, std. dev. calcs.: 'ncalls'/'nthreads'\n");
     fprintf (fp, "'ncalls': number of times the region was invoked across tasks and threads.\n");
     fprintf (fp, "'nranks': number of ranks which invoked the region.\n");
@@ -407,7 +405,7 @@ static void get_threadstats (int iam, char *name, Timer **timers, Global *global
   memset (global, 0, sizeof (Global));
   strcpy (global->name, name);
 
-  for (t = 0; t < nthreads; ++t) {
+  for (t = 0; t < GPTLnthreads; ++t) {
     if ((ptr = getentry_slowway (timers[t]->next, name))) {
       // Won't print this entry if it was on for any rank or thread
       if (ptr->onflg)

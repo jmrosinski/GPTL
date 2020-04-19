@@ -120,17 +120,6 @@ typedef struct {
   unsigned int nument;      /* number of entries hashed to the same value */
 } Hashentry;
 
-/* Require external data items */
-/* array of thread ids */
-#if ( defined THREADED_OMP )
-extern volatile int *GPTLthreadid_omp;
-#elif ( defined THREADED_PTHREADS )
-#include <pthread.h>
-extern volatile pthread_t *GPTLthreadid;
-#else
-extern int GPTLthreadid;
-#endif
-
 // Function prototypes
 extern int GPTLerror (const char *, ...);                  /* print error msg and return */
 extern void GPTLwarn (const char *, ...);                  /* print warning msg and return */
@@ -156,8 +145,7 @@ extern int GPTLget_overhead (FILE *,                       /* file descriptor */
 			     double *,                     /* self_ohd */
 			     double *);                    /* parent_ohd */
 extern void GPTLprint_hashstats (FILE *, int, Hashentry **, int);
-extern void GPTLprint_memstats (FILE *, Timer **, int, int, int);
-extern int GPTLget_nthreads (void);
+extern void GPTLprint_memstats (FILE *, Timer **, int);
 extern Timer **GPTLget_timersaddr (void);
 // For now this one is local to gptl.c but that may change if needs calling from pr_summary
 extern int GPTLrename_duplicate_addresses (void);
