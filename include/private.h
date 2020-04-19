@@ -37,11 +37,8 @@
 // A non-zero non-error flag for start/stop
 #define DONE 1
 
-/* 
-** max allowable number of PAPI counters, or derived events. For convenience,
-** set to max (# derived events, # papi counters required) so "avail" lists
-** all available options.
-*/
+// max allowable number of PAPI counters, or derived events. For convenience, set to max 
+// (# derived events, # papi counters required) so "avail" lists all available options.
 #define MAX_AUX 9
 
 typedef enum {false = 0, true = 1} bool;  // mimic C++
@@ -71,18 +68,6 @@ typedef struct {
   long long accum[MAX_AUX]; // accumulator for counters
 } Papistats;
   
-typedef struct {
-  int counter;      // PAPI or Derived counter
-  char namestr[13]; // PAPI or Derived counter as string
-  char str8[9];     // print string for output timers (8 chars)
-} Entry;
-
-typedef struct {
-  Entry event;
-  int numidx;       // derived event: PAPI counter array index for numerator
-  int denomidx;     // derived event: PAPI counter array index for denominator
-} Pr_event;
-
 typedef struct TIMER {
 #ifdef ENABLE_PMPI
   double nbytes;            // number of bytes for MPI call
@@ -149,27 +134,6 @@ extern void __cyg_profile_func_enter (void *, void *);
 extern void __cyg_profile_func_exit (void *, void *);
 
 extern bool GPTLonlypr_rank0;     // flag says ignore all stdout/stderr print from non-zero ranks
-
-#ifdef HAVE_PAPI
-extern Entry GPTLeventlist[];     // list of PAPI-based events to be counted
-extern int GPTLnevents;           // number of PAPI events (init to 0)
-
-extern int GPTL_PAPIsetoption (const int, const int);
-extern int GPTL_PAPIinitialize (const int, const bool, int *, Entry *);
-extern int GPTL_PAPIstart (const int, Papistats *);
-extern int GPTL_PAPIstop (const int, Papistats *);
-extern void GPTL_PAPIprstr (FILE *);
-extern void GPTL_PAPIpr (FILE *, const Papistats *, const int, const int, const double);
-extern void GPTL_PAPIadd (Papistats *, const Papistats *);
-extern void GPTL_PAPIfinalize (int);
-extern void GPTL_PAPIquery (const Papistats *, long long *, int);
-extern int GPTL_PAPIget_eventvalue (const char *, const Papistats *, double *);
-extern bool GPTL_PAPIis_multiplexed (void);
-extern void GPTL_PAPIprintenabled (FILE *);
-extern void read_counters1000 (void);
-extern int GPTLget_npapievents (void);
-extern int GPTLcreate_and_start_events (const int);
-#endif
 
 #ifdef ENABLE_PMPI
 extern Timer *GPTLgetentry (const char *);

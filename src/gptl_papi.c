@@ -7,8 +7,10 @@
 */
 #include "config.h" /* Must be first include. */
  
-#include "private.h"
-#include "gptl.h"
+#include "private.h"    // MAX_AUX maybe  more
+#include "thread.h"     // underlying threading routine
+#include "gptl_papi.h"
+#include "gptl.h"       // public entries
 
 #include <papi.h>
 #include <stdlib.h>
@@ -21,11 +23,15 @@
 #include <pthread.h>
 #endif
 
-static int papieventlist[MAX_AUX];        /* list of PAPI events to be counted */
-static Pr_event pr_event[MAX_AUX];        /* list of events (PAPI or derived) */
+// These 2 are needed in pr_summary.c
+GPTLEntry GPTLeventlist[MAX_AUX];         // list of PAPI-based events to be counted
+int GPTLnevents = 0;                      // number of PAPI-based events (init to 0)
 
-/* Derived events */
-static const Entry derivedtable [] = {
+static int papieventlist[MAX_AUX];        // list of PAPI events to be counted
+static GPTLPr_event pr_event[MAX_AUX];    // list of events (PAPI or derived)
+
+// Derived events
+static const GPTLEntry derivedtable [] = {
   {GPTL_IPC,    "GPTL_IPC",     "IPC     "},
   {GPTL_LSTPI,  "GPTL_LSTPI",   "LST_frac"},
   {GPTL_DCMRT,  "GPTL_DCMRT",   "DCMISRAT"},
@@ -34,10 +40,9 @@ static const Entry derivedtable [] = {
   {GPTL_LSTPL2M,"GPTL_LSTPL2M", "LSTPL2M "},
   {GPTL_L3MRT,  "GPTL_L3MRT",   "L3MISRAT"}
 };
-static const int nderivedentries = sizeof (derivedtable) / sizeof (Entry);
+static const int nderivedentries = sizeof (derivedtable) / sizeof (GPTLEntry);
 
 static int npapievents = 0;              /* number of PAPI events: initialize to 0 */ 
-static int nevents = 0;                  /* number of events: initialize to 0 */ 
 static int *EventSet;                    /* list of events to be counted by PAPI */
 static long_long **papicounters;         /* counters returned from PAPI */
 
@@ -47,11 +52,6 @@ static bool persec = true;               /* print PAPI stats per second */
 static bool enable_multiplexing = false; /* whether to try multiplexing */
 static bool verbose = false;             /* output verbosity */
 
-// Function prototypes: Give C linkage to all
-#ifdef __cplusplus
-extern "C" {
-#endif
-  
 static int canenable (int);
 static int canenable2 (int, int);
 static int papievent_is_enabled (int);
@@ -123,10 +123,9 @@ int GPTL_PAPIsetoption (const int counter, const int val)
   if (GPTL_PAPIlibraryinit () < 0)
     return GPTLerror ("%s: PAPI library init error\n", thisfunc);
 
-  // Ensure max nevents won't be exceeded
-  if (nevents+1 > MAX_AUX)
-    return GPTLerror ("%s: %d is too many events. Value defined in private.h\n",
-		      thisfunc, nevents+1);
+  // Ensure max GPTLnevents won't be exceeded
+  if (GPTLnevents+1 > MAX_AUX)
+    return GPTLerror ("%s: %d is too many events.\n", thisfunc, GPTLnevents+1);
 
   // Check derived events
   switch (counter) {
@@ -135,68 +134,68 @@ int GPTL_PAPIsetoption (const int counter, const int val)
       return GPTLerror ("%s: GPTL_IPC unavailable\n", thisfunc);
 
     idx = getderivedidx (GPTL_IPC);
-    pr_event[nevents].event    = derivedtable[idx];
-    pr_event[nevents].numidx   = enable (PAPI_TOT_INS);
-    pr_event[nevents].denomidx = enable (PAPI_TOT_CYC);
+    pr_event[GPTLnevents].event    = derivedtable[idx];
+    pr_event[GPTLnevents].numidx   = enable (PAPI_TOT_INS);
+    pr_event[GPTLnevents].denomidx = enable (PAPI_TOT_CYC);
     if (verbose)
       printf ("%s: enabling derived event %s = PAPI_TOT_INS / PAPI_TOT_CYC\n", 
-	      thisfunc, pr_event[nevents].event.namestr);
-    ++nevents;
+	      thisfunc, pr_event[GPTLnevents].event.namestr);
+    ++GPTLnevents;
     return 0;
   case GPTL_LSTPI:
     idx = getderivedidx (GPTL_LSTPI);
     if (canenable2 (PAPI_LST_INS, PAPI_TOT_INS)) {
-      pr_event[nevents].event    = derivedtable[idx];
-      pr_event[nevents].numidx   = enable (PAPI_LST_INS);
-      pr_event[nevents].denomidx = enable (PAPI_TOT_INS);
+      pr_event[GPTLnevents].event    = derivedtable[idx];
+      pr_event[GPTLnevents].numidx   = enable (PAPI_LST_INS);
+      pr_event[GPTLnevents].denomidx = enable (PAPI_TOT_INS);
       if (verbose)
 	printf ("%s: enabling derived event %s = PAPI_LST_INS / PAPI_TOT_INS\n", 
-		thisfunc, pr_event[nevents].event.namestr);
+		thisfunc, pr_event[GPTLnevents].event.namestr);
     } else if (canenable2 (PAPI_L1_DCA, PAPI_TOT_INS)) {
-      pr_event[nevents].event    = derivedtable[idx];
-      pr_event[nevents].numidx   = enable (PAPI_L1_DCA);
-      pr_event[nevents].denomidx = enable (PAPI_TOT_INS);
+      pr_event[GPTLnevents].event    = derivedtable[idx];
+      pr_event[GPTLnevents].numidx   = enable (PAPI_L1_DCA);
+      pr_event[GPTLnevents].denomidx = enable (PAPI_TOT_INS);
       if (verbose)
 	printf ("%s: enabling derived event %s = PAPI_L1_DCA / PAPI_TOT_INS\n", 
-		thisfunc, pr_event[nevents].event.namestr);
+		thisfunc, pr_event[GPTLnevents].event.namestr);
     } else {
       return GPTLerror ("%s: GPTL_LSTPI unavailable\n", thisfunc);
     }
-    ++nevents;
+    ++GPTLnevents;
     return 0;
   case GPTL_DCMRT:
     if ( ! canenable2 (PAPI_L1_DCM, PAPI_L1_DCA))
       return GPTLerror ("%s: GPTL_DCMRT unavailable\n", thisfunc);
 
     idx = getderivedidx (GPTL_DCMRT);
-    pr_event[nevents].event    = derivedtable[idx];
-    pr_event[nevents].numidx   = enable (PAPI_L1_DCM);
-    pr_event[nevents].denomidx = enable (PAPI_L1_DCA);
+    pr_event[GPTLnevents].event    = derivedtable[idx];
+    pr_event[GPTLnevents].numidx   = enable (PAPI_L1_DCM);
+    pr_event[GPTLnevents].denomidx = enable (PAPI_L1_DCA);
     if (verbose)
       printf ("%s: enabling derived event %s = PAPI_L1_DCM / PAPI_L1_DCA\n", 
-	      thisfunc, pr_event[nevents].event.namestr);
-    ++nevents;
+	      thisfunc, pr_event[GPTLnevents].event.namestr);
+    ++GPTLnevents;
     return 0;
   case GPTL_LSTPDCM:
     idx = getderivedidx (GPTL_LSTPDCM);
     if (canenable2 (PAPI_LST_INS, PAPI_L1_DCM)) {
-      pr_event[nevents].event    = derivedtable[idx];
-      pr_event[nevents].numidx   = enable (PAPI_LST_INS);
-      pr_event[nevents].denomidx = enable (PAPI_L1_DCM);
+      pr_event[GPTLnevents].event    = derivedtable[idx];
+      pr_event[GPTLnevents].numidx   = enable (PAPI_LST_INS);
+      pr_event[GPTLnevents].denomidx = enable (PAPI_L1_DCM);
       if (verbose)
 	printf ("%s: enabling derived event %s = PAPI_LST_INS / PAPI_L1_DCM\n", 
-		thisfunc, pr_event[nevents].event.namestr);
+		thisfunc, pr_event[GPTLnevents].event.namestr);
     } else if (canenable2 (PAPI_L1_DCA, PAPI_L1_DCM)) {
-      pr_event[nevents].event    = derivedtable[idx];
-      pr_event[nevents].numidx   = enable (PAPI_L1_DCA);
-      pr_event[nevents].denomidx = enable (PAPI_L1_DCM);
+      pr_event[GPTLnevents].event    = derivedtable[idx];
+      pr_event[GPTLnevents].numidx   = enable (PAPI_L1_DCA);
+      pr_event[GPTLnevents].denomidx = enable (PAPI_L1_DCM);
       if (verbose)
 	printf ("%s: enabling derived event %s = PAPI_L1_DCA / PAPI_L1_DCM\n", 
-		thisfunc, pr_event[nevents].event.namestr);
+		thisfunc, pr_event[GPTLnevents].event.namestr);
     } else {
       return GPTLerror ("%s: GPTL_LSTPDCM unavailable\n", thisfunc);
     }
-    ++nevents;
+    ++GPTLnevents;
     return 0;
     // For L2 counts, use TC* instead of DC* to avoid PAPI derived events
   case GPTL_L2MRT:
@@ -204,47 +203,47 @@ int GPTL_PAPIsetoption (const int counter, const int val)
       return GPTLerror ("%s: GPTL_L2MRT unavailable\n", thisfunc);
 
     idx = getderivedidx (GPTL_L2MRT);
-    pr_event[nevents].event    = derivedtable[idx];
-    pr_event[nevents].numidx   = enable (PAPI_L2_TCM);
-    pr_event[nevents].denomidx = enable (PAPI_L2_TCA);
+    pr_event[GPTLnevents].event    = derivedtable[idx];
+    pr_event[GPTLnevents].numidx   = enable (PAPI_L2_TCM);
+    pr_event[GPTLnevents].denomidx = enable (PAPI_L2_TCA);
     if (verbose)
       printf ("%s: enabling derived event %s = PAPI_L2_TCM / PAPI_L2_TCA\n", 
-	      thisfunc, pr_event[nevents].event.namestr);
-    ++nevents;
+	      thisfunc, pr_event[GPTLnevents].event.namestr);
+    ++GPTLnevents;
     return 0;
   case GPTL_LSTPL2M:
     idx = getderivedidx (GPTL_LSTPL2M);
     if (canenable2 (PAPI_LST_INS, PAPI_L2_TCM)) {
-      pr_event[nevents].event    = derivedtable[idx];
-      pr_event[nevents].numidx   = enable (PAPI_LST_INS);
-      pr_event[nevents].denomidx = enable (PAPI_L2_TCM);
+      pr_event[GPTLnevents].event    = derivedtable[idx];
+      pr_event[GPTLnevents].numidx   = enable (PAPI_LST_INS);
+      pr_event[GPTLnevents].denomidx = enable (PAPI_L2_TCM);
       if (verbose)
 	printf ("%s: enabling derived event %s = PAPI_LST_INS / PAPI_L2_TCM\n", 
-		thisfunc, pr_event[nevents].event.namestr);
+		thisfunc, pr_event[GPTLnevents].event.namestr);
     } else if (canenable2 (PAPI_L1_DCA, PAPI_L2_TCM)) {
-      pr_event[nevents].event    = derivedtable[idx];
-      pr_event[nevents].numidx   = enable (PAPI_L1_DCA);
-      pr_event[nevents].denomidx = enable (PAPI_L2_TCM);
+      pr_event[GPTLnevents].event    = derivedtable[idx];
+      pr_event[GPTLnevents].numidx   = enable (PAPI_L1_DCA);
+      pr_event[GPTLnevents].denomidx = enable (PAPI_L2_TCM);
       if (verbose)
 	printf ("%s: enabling derived event %s = PAPI_L1_DCA / PAPI_L2_TCM\n", 
-		thisfunc, pr_event[nevents].event.namestr);
+		thisfunc, pr_event[GPTLnevents].event.namestr);
     } else {
       return GPTLerror ("%s: GPTL_LSTPL2M unavailable\n", thisfunc);
     }
-    ++nevents;
+    ++GPTLnevents;
     return 0;
   case GPTL_L3MRT:
     if ( ! canenable2 (PAPI_L3_TCM, PAPI_L3_TCR))
       return GPTLerror ("%s: GPTL_L3MRT unavailable\n", thisfunc);
 
     idx = getderivedidx (GPTL_L3MRT);
-    pr_event[nevents].event    = derivedtable[idx];
-    pr_event[nevents].numidx   = enable (PAPI_L3_TCM);
-    pr_event[nevents].denomidx = enable (PAPI_L3_TCR);
+    pr_event[GPTLnevents].event    = derivedtable[idx];
+    pr_event[GPTLnevents].numidx   = enable (PAPI_L3_TCM);
+    pr_event[GPTLnevents].denomidx = enable (PAPI_L3_TCR);
     if (verbose)
       printf ("%s: enabling derived event %s = PAPI_L3_TCM / PAPI_L3_TCR\n", 
-	      thisfunc, pr_event[nevents].event.namestr);
-    ++nevents;
+	      thisfunc, pr_event[GPTLnevents].event.namestr);
+    ++GPTLnevents;
     return 0;
   default:
     break;
@@ -259,30 +258,30 @@ int GPTL_PAPIsetoption (const int counter, const int val)
   numidx = papievent_is_enabled (counter);
   if (numidx >= 0 || canenable (counter)) {
     int nchars;
-    pr_event[nevents].event.counter = counter;
+    pr_event[GPTLnevents].event.counter = counter;
 
-    strncpy (pr_event[nevents].event.namestr, eventname, 12);
-    pr_event[nevents].event.namestr[12] = '\0';
+    strncpy (pr_event[GPTLnevents].event.namestr, eventname, 12);
+    pr_event[GPTLnevents].event.namestr[12] = '\0';
 
     nchars = MIN (strlen (&eventname[5]), 8);
-    strncpy (pr_event[nevents].event.str8, &eventname[5], nchars);
-    pr_event[nevents].event.str8[nchars] = '\0';
+    strncpy (pr_event[GPTLnevents].event.str8, &eventname[5], nchars);
+    pr_event[GPTLnevents].event.str8[nchars] = '\0';
 
     if (numidx >= 0) {
-      pr_event[nevents].numidx = numidx;
-      pr_event[nevents].denomidx = -1;     // flag says not derived (no denominator)
+      pr_event[GPTLnevents].numidx = numidx;
+      pr_event[GPTLnevents].denomidx = -1;     // flag says not derived (no denominator)
     } else {   // canenable (counter) is true
-      pr_event[nevents].numidx = enable (counter);
-      pr_event[nevents].denomidx = -1;     // flag says not derived (no denominator)
+      pr_event[GPTLnevents].numidx = enable (counter);
+      pr_event[GPTLnevents].denomidx = -1;     // flag says not derived (no denominator)
     }
   } else {
     return GPTLerror ("%s: Can't enable event %s\n", thisfunc, eventname);
   }
 
   if (verbose)
-    printf ("%s: enabling native event %s\n", thisfunc, pr_event[nevents].event.namestr);
+    printf ("%s: enabling native event %s\n", thisfunc, pr_event[GPTLnevents].event.namestr);
 
-  ++nevents;
+  ++GPTLnevents;
   return 0;
 }
 
@@ -374,7 +373,7 @@ int already_enabled (int counter)
 {
   int n;
 
-  for (n = 0; n < nevents; ++n)
+  for (n = 0; n < GPTLnevents; ++n)
     if (pr_event[n].event.counter == counter)
       return 1;
   return 0;
@@ -403,7 +402,7 @@ int enable (int counter)
     }
   }
 
-  /* New event */
+  // New event
   papieventlist[npapievents++] = counter;
   return npapievents-1;
 }
@@ -457,8 +456,7 @@ int GPTL_PAPIlibraryinit ()
 **
 ** Return value: 0 (success) or GPTLerror or -1 (failure)
 */
-int GPTL_PAPIinitialize (const int maxthreads, const bool verbose_flag, int *nevents_out,
-			 Entry *pr_event_out)
+int GPTL_PAPIinitialize (const bool verbose_flag)
 {
   int ret;
   int n;
@@ -467,8 +465,8 @@ int GPTL_PAPIinitialize (const int maxthreads, const bool verbose_flag, int *nev
 
   verbose = verbose_flag;
 
-  if (maxthreads < 1)
-    return GPTLerror ("%s: maxthreads = %d\n", thisfunc, maxthreads);
+  if (GPTLmax_threads < 1)
+    return GPTLerror ("%s: GPTLmax_threads = %d\n", thisfunc, GPTLmax_threads);
 
   // Ensure that PAPI_library_init has already been called
   if ((ret = GPTL_PAPIlibraryinit ()) < 0)
@@ -484,19 +482,18 @@ int GPTL_PAPIinitialize (const int maxthreads, const bool verbose_flag, int *nev
 #endif
 
   // allocate and initialize static local space
-  EventSet     = (int *)        GPTLallocate (maxthreads * sizeof (int), thisfunc);
-  papicounters = (long_long **) GPTLallocate (maxthreads * sizeof (long_long *), thisfunc);
+  EventSet     = (int *)        GPTLallocate (GPTLmax_threads * sizeof (int), thisfunc);
+  papicounters = (long_long **) GPTLallocate (GPTLmax_threads * sizeof (long_long *), thisfunc);
 
-  for (t = 0; t < maxthreads; t++) {
+  for (t = 0; t < GPTLmax_threads; t++) {
     EventSet[t] = PAPI_NULL;
     papicounters[t] = (long_long *) GPTLallocate (MAX_AUX * sizeof (long_long), thisfunc);
   }
 
-  *nevents_out = nevents;
-  for (n = 0; n < nevents; ++n) {
-    pr_event_out[n].counter = pr_event[n].event.counter;
-    strcpy (pr_event_out[n].namestr, pr_event[n].event.namestr);
-    strcpy (pr_event_out[n].str8   , pr_event[n].event.str8);
+  for (n = 0; n < GPTLnevents; ++n) {
+    GPTLeventlist[n].counter = pr_event[n].event.counter;
+    strcpy (GPTLeventlist[n].namestr, pr_event[n].event.namestr);
+    strcpy (GPTLeventlist[n].str8   , pr_event[n].event.str8);
   }
   return 0;
 }
@@ -681,7 +678,7 @@ void GPTL_PAPIprstr (FILE *fp)
 {
   int n;
   
-  for (n = 0; n < nevents; n++) {
+  for (n = 0; n < GPTLnevents; n++) {
     fprintf (fp, " %16.16s", pr_event[n].event.str8);
 
     // Test on < 0 says it's a PAPI preset
@@ -709,7 +706,7 @@ void GPTL_PAPIpr (FILE *fp, const Papistats *aux, const int t, const int count, 
   double val;         // value to be printed
   static const char *thisfunc = "GPTL_PAPIpr";
 
-  for (n = 0; n < nevents; n++) {
+  for (n = 0; n < GPTLnevents; n++) {
     numidx = pr_event[n].numidx;
     if (pr_event[n].denomidx > -1) {      // derived event
       denomidx = pr_event[n].denomidx;
@@ -753,9 +750,9 @@ void GPTL_PAPIprintenabled (FILE *fp)
   PAPI_event_info_t info;           // returned from PAPI_get_event_info
   char eventname[PAPI_MAX_STR_LEN]; // returned from PAPI_event_code_to_name
 
-  if (nevents > 0) {
+  if (GPTLnevents > 0) {
     fprintf (fp, "Description of printed events (PAPI and derived):\n");
-    for (n = 0; n < nevents; n++) {
+    for (n = 0; n < GPTLnevents; n++) {
       if (strncmp (pr_event[n].event.namestr, "GPTL", 4) == 0) {
 	fprintf (fp, "  %s\n", pr_event[n].event.namestr);
       } else {
@@ -798,12 +795,12 @@ void GPTL_PAPIadd (Papistats *auxout, const Papistats *auxin)
 
 // PAPIfinalize: finalization routine must be called from single-threaded
 //   region. Free all malloc'd space
-void GPTL_PAPIfinalize (int maxthreads)
+void GPTL_PAPIfinalize ()
 {
-  int t;   /* thread index */
-  int ret; /* return code */
+  int t;
+  int ret;
 
-  for (t = 0; t < maxthreads; t++) {
+  for (t = 0; t < GPTLmax_threads; t++) {
     ret = PAPI_stop (EventSet[t], papicounters[t]);
     free (papicounters[t]);
     ret = PAPI_cleanup_eventset (EventSet[t]);
@@ -815,7 +812,7 @@ void GPTL_PAPIfinalize (int maxthreads)
 
   // Reset initial values
   npapievents = 0;
-  nevents = 0;
+  GPTLnevents = 0;
   is_multiplexed = false;
   persec = true;
   enable_multiplexing = false;
@@ -863,7 +860,7 @@ int GPTL_PAPIget_eventvalue (const char *eventname, const Papistats *aux, double
   int denomidx; // denominator index into papicounters
   static const char *thisfunc = "GPTL_PAPIget_eventvalue";
 
-  for (n = 0; n < nevents; ++n) {
+  for (n = 0; n < GPTLnevents; ++n) {
     if (STRMATCH (eventname, pr_event[n].event.namestr)) {
       numidx = pr_event[n].numidx;
       if (pr_event[n].denomidx > -1) {  // derived event
@@ -878,18 +875,19 @@ int GPTL_PAPIget_eventvalue (const char *eventname, const Papistats *aux, double
       break;
     }
   }
-  if (n == nevents)
+  if (n == GPTLnevents)
     return GPTLerror ("%s: event %s not enabled\n", thisfunc, eventname);
   return 0;
 }
 
+/*
+** The following functions are used elsewhere in GPTL
+*/
+
 // GPTL_PAPIis_multiplexed: return status of whether events are being multiplexed
 bool GPTL_PAPIis_multiplexed () {return is_multiplexed;}
 
-/*
-** The following functions are publicly available
-*/
-void read_counters1000 ()
+void GPTLread_counters1000 ()
 {
   int i;
   int ret;
@@ -983,7 +981,3 @@ int GPTLevent_code_to_name (const int code, char *name)
 }
 
 int GPTLget_npapievents (void) {return npapievents;}
-
-#ifdef __cplusplus
-}
-#endif

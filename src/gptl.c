@@ -37,6 +37,7 @@
 
 #include "private.h"
 #include "gptl.h"
+#include "gptl_papi.h"
 
 static Timer **timers = 0;             // linked list of timers
 static Timer **last = 0;               // last element in list
@@ -44,10 +45,6 @@ static Timer **last = 0;               // last element in list
 static int depthlimit = 99999;         // max depth for timers (99999 is effectively infinite)
 static volatile bool disabled = false; // Timers disabled?
 static volatile bool initialized = false;        // GPTLinitialize has been called
-#ifdef HAVE_PAPI
-Entry GPTLeventlist[MAX_AUX];          // list of PAPI-based events to be counted
-int GPTLnevents = 0;                   // number of PAPI events (init to 0)
-#endif
 static bool dousepapi = false;         // saves a function call if stays false
 static bool verbose = false;           // output verbosity
 static bool percent = false;           // print wallclock also as percent of 1st timers[0]
@@ -422,7 +419,7 @@ int GPTLinitialize (void)
   }
 
 #ifdef HAVE_PAPI
-  if (GPTL_PAPIinitialize (GPTLmax_threads, verbose, &GPTLnevents, GPTLeventlist) < 0)
+  if (GPTL_PAPIinitialize (verbose) < 0)
     return GPTLerror ("%s: Failure from GPTL_PAPIinitialize\n", thisfunc);
 #endif
 
@@ -495,7 +492,7 @@ int GPTLfinalize (void)
   GPTLreset_errors ();
 
 #ifdef HAVE_PAPI
-  GPTL_PAPIfinalize (GPTLmax_threads);
+  GPTL_PAPIfinalize ();
 #endif
 
   // Reset initial values

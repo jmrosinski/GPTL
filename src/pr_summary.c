@@ -8,6 +8,9 @@
 #include "gptl.h"
 #include "gptlmpi.h"
 #include "thread.h"
+#ifdef HAVE_PAPI
+#include "gptl_papi.h"     // GPTLnevents, GPTLeventlist
+#endif
 
 // MPI summary stats
 typedef struct {
@@ -32,10 +35,6 @@ typedef struct {
   int wallmin_t;           // thread producing wallmin
   char name[MAX_CHARS+1];  // timer name
 } Global;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 // Local prototypes
 static void get_threadstats (int, char *, Timer **, Global *);
@@ -465,7 +464,3 @@ static Timer *getentry_slowway (Timer *timer, char *name)
   }
   return ptr;
 }
-
-#ifdef __cplusplus
-}
-#endif

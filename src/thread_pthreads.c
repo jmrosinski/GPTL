@@ -7,6 +7,7 @@
 #include "config.h"   // Must be first include
 #include "thread.h"
 #include "private.h"
+#include "gptl_papi.h"
 #include <stdio.h>
 #include <stdlib.h>   // free
 

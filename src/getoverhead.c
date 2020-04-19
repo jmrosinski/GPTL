@@ -14,6 +14,7 @@
 #include <stdlib.h>  // for free()
 #include "private.h"
 #include "thread.h"
+#include "gptl_papi.h"
 
 static bool initialized = true;
 static bool disabled = false;
@@ -133,7 +134,7 @@ int GPTLget_overhead (FILE *fp,
 #ifdef HAVE_PAPI
   if (dousepapi) {
     t1 = (*ptr2wtimefunc)();
-    read_counters1000 ();
+    GPTLread_counters1000 ();
     t2 = (*ptr2wtimefunc)();
   } else {
     t1 = 0.;

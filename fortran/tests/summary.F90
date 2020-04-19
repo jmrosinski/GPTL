@@ -21,13 +21,13 @@ program main
   integer ret
   character(len=8), parameter :: prognam = 'summary'
 
+  ret = gptlsetoption (gptlverbose, 1)
 #ifdef HAVE_PAPI
 ! Turn abort_on_error off just long enough to check PAPI-based options
   ret = gptlsetoption (gptlabort_on_error, 0)
   if (gptlevent_name_to_code ('PAPI_TOT_CYC', code) == 0) then
     ret = gptlsetoption (code, 1)
   end if
-  ret = gptlsetoption (gptlabort_on_error, 1)
 #endif
 
   ret = gptlsetoption (gptlabort_on_error, 1)
