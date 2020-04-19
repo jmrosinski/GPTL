@@ -1341,7 +1341,7 @@ int GPTLpr_file (const char *outfile)
 #endif	   
 
   fprintf (fp, "Underlying timing routine was %s.\n", funclist[funcidx].name);
-  (void) GPTLget_overhead (fp, ptr2wtimefunc, getentry, genhashidx, GPTLget_thread_num, 
+  (void) GPTLget_overhead (fp, ptr2wtimefunc, getentry, genhashidx, 
 			   stackidx, callstack, hashtable[0], tablesize, dousepapi, imperfect_nest, 
 			   &self_ohd, &parent_ohd);
   if (dopr_preamble) {

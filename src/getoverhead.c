@@ -13,6 +13,7 @@
 #include <string.h>
 #include <stdlib.h>  // for free()
 #include "private.h"
+#include "thread.h"
 
 static bool initialized = true;
 static bool disabled = false;
@@ -22,9 +23,7 @@ static int gptlstart_sim (char *, int);
 static Timer *getentry_instr_sim (const Hashentry *,void *, unsigned int *, const int);
 static void misc_sim (Nofalse *, Timer ***, int);
 
-/*
-** All routines in this file are non-public
-*/
+// All routines in this file are non-public
 
 /*
 ** GPTLget_overhead: return current status info about a timer. If certain stats are not enabled, 
@@ -35,7 +34,6 @@ static void misc_sim (Nofalse *, Timer ***, int);
 **   ptr2wtimefunc: Underlying timing routine
 **   getentry:      From gptl.c, finds the entry in the hash table
 **   genhashidx:    From gptl.c, generates the hash index
-**   get_thread_num:From gptl.c, gets the thread number
 **   hashtable:     hashtable for thread 0
 **   tablesize:     size of hashtable
 **   dousepapi:     whether or not PAPI is enabled
@@ -48,7 +46,6 @@ int GPTLget_overhead (FILE *fp,
 		      double (*ptr2wtimefunc)(void), 
 		      Timer *getentry (const Hashentry *, const char *, unsigned int),
 		      unsigned int genhashidx (const char *),
-		      int get_thread_num (void),
 		      Nofalse *stackidx,
 		      Timer ***callstack,
 		      const Hashentry *hashtable, 
@@ -58,23 +55,23 @@ int GPTLget_overhead (FILE *fp,
 		      double *self_ohd,
 		      double *parent_ohd)
 {
-  double t1, t2;             /* Initial, final timer values */
-  double ftn_ohd;            /* Fortran-callable layer */
-  double get_thread_num_ohd; /* Getting my thread index */
-  double genhashidx_ohd;     /* Generating hash index */
-  double getentry_ohd;       /* Finding entry in hash table */
-  double utr_ohd;            /* Underlying timing routine */
-  double papi_ohd;           /* Reading PAPI counters */
-  double total_ohd;          /* Sum of overheads */
-  double getentry_instr_ohd; /* Finding entry in hash table for auto-instrumented calls */
-  double addr2name_ohd;      // Invoking libunwind or backtrace routines from __cyg_profile_func_enter
-  double misc_ohd;           /* misc. calcs within start/stop */
+  double t1, t2;             // Initial, final timer values
+  double ftn_ohd;            // Fortran-callable layer
+  double get_thread_num_ohd; // Getting my thread index
+  double genhashidx_ohd;     // Generating hash index
+  double getentry_ohd;       // Finding entry in hash table
+  double utr_ohd;            // Underlying timing routine
+  double papi_ohd;           // Reading PAPI counters
+  double total_ohd;          // Sum of overheads
+  double getentry_instr_ohd; // Finding entry in hash table for auto-instrumented calls
+  double addr2name_ohd;      // Invoking libunwind or backtrace routines from __cyg*enter
+  double misc_ohd;           // misc. calcs within start/stop
   int i, n;
   int ret;
-  int mythread;              /* which thread are we */
-  unsigned int hashidx;      /* Hash index */
-  int randomvar;             /* placeholder for taking the address of a variable */
-  Timer *entry;              /* placeholder for return from "getentry()" */
+  int mythread;              // which thread are we
+  unsigned int hashidx;      // Hash index
+  int randomvar;             // placeholder for taking the address of a variable
+  Timer *entry;              // placeholder for return from "getentry()"
   static const char *thisfunc = "GPTLget_overhead";
 
   // Gather timings by running kernels 1000 times each. First: Fortran wrapper overhead
@@ -86,10 +83,10 @@ int GPTLget_overhead (FILE *fp,
   t2 = (*ptr2wtimefunc)();
   ftn_ohd = 0.001 * (t2 - t1);
 
-  // get_thread_num() overhead
+  // GPTLget_thread_num() overhead
   t1 = (*ptr2wtimefunc)();
   for (i = 0; i < 1000; ++i) {
-    mythread = get_thread_num ();
+    mythread = GPTLget_thread_num ();
   }
   t2 = (*ptr2wtimefunc)();
   get_thread_num_ohd = 0.001 * (t2 - t1);
@@ -238,7 +235,7 @@ int GPTLget_overhead (FILE *fp,
 	  "      the hashtable entry is %7.1e not the %7.1e portion taken by GPTLstart\n", 
 	  getentry_instr_ohd, genhashidx_ohd + getentry_ohd);
   fprintf (fp, "NOTE: Each hash collision roughly doubles the 'Find hashtable entry' cost of that timer\n");
-  *self_ohd   = ftn_ohd + utr_ohd; /* In GPTLstop() ftn wrapper is called before utr */
+  *self_ohd   = ftn_ohd + utr_ohd; // In GPTLstop() fortran wrapper is called before utr
   *parent_ohd = ftn_ohd + utr_ohd + misc_ohd +
                 2.*(get_thread_num_ohd + genhashidx_ohd + getentry_ohd + papi_ohd);
   return 0;
@@ -249,7 +246,7 @@ int GPTLget_overhead (FILE *fp,
 ** 
 ** Input args:
 **   name: timer name
-**   nc1:  number of characters in "name"
+**   nc:  number of characters in "name"
 */
 static int gptlstart_sim (char *name, int nc)
 {
@@ -270,13 +267,10 @@ static int gptlstart_sim (char *name, int nc)
 **   indx:      hashtable index
 **   tablesize: size of hashtable
 */
-static Timer *getentry_instr_sim (const Hashentry *hashtable,
-				  void *self, 
-				  unsigned int *indx,
+static Timer *getentry_instr_sim (const Hashentry *hashtable, void *self, unsigned int *indx,
 				  const int tablesize)
 {
   Timer *ptr = 0;
-
   *indx = (((unsigned long) self) >> 4) % tablesize;
   if (hashtable[*indx].nument > 0 && hashtable[*indx].entries[0]->address == self) {
     ptr = hashtable[*indx].entries[0];
