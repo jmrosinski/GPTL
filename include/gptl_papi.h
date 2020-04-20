@@ -5,19 +5,19 @@
 #include <stdio.h>
 
 typedef struct {
-  int counter;      // PAPI or Derived counter
-  char namestr[13]; // PAPI or Derived counter as string
-  char str8[9];     // print string for output timers (8 chars)
-} GPTLEntry;
+    int counter;      // PAPI or Derived counter
+    char namestr[13]; // PAPI or Derived counter as string
+    char str8[9];     // print string for output timers (8 chars)
+  } GPTLEntry;
 
 typedef struct {
   GPTLEntry event;
-  int numidx;       // derived event: PAPI counter array index for numerator
-  int denomidx;     // derived event: PAPI counter array index for denominator
+  int numidx;         // derived event: PAPI counter array index for numerator
+  int denomidx;       // derived event: PAPI counter array index for denominator
 } GPTLPr_event;
 
-extern GPTLEntry GPTLeventlist[]; // list of PAPI-based events to be counted
-extern int GPTLnevents;           // number of PAPI events (init to 0)
+extern GPTLPr_event GPTLeventlist[]; // list of PAPI-based events to be counted
+extern int GPTLnevents;              // number of PAPI events (init to 0)
 
 // These are all the GPTL-private PAPI functions
 extern int GPTL_PAPIsetoption (const int, const int);

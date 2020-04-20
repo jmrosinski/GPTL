@@ -37,9 +37,8 @@
 // A non-zero non-error flag for start/stop
 #define DONE 1
 
-// max allowable number of PAPI counters, or derived events. For convenience, set to max 
-// (# derived events, # papi counters required) so "avail" lists all available options.
-#define MAX_AUX 9
+// max allowable number of PAPI counters, or derived events.
+#define MAX_AUX 3
 
 typedef enum {false = 0, true = 1} bool;  // mimic C++
 

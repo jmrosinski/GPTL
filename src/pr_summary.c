@@ -287,12 +287,12 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
 
 #ifdef HAVE_PAPI
     for (e = 0; e < GPTLnevents; ++e) {
-      fprintf (fp, " %8.8smax (rank  ", GPTLeventlist[e].str8);
+      fprintf (fp, " %8.8smax (rank  ", GPTLeventlist[e].event.str8);
       if (multithread)
         fprintf (fp, "thread");
       fprintf (fp, ")");
 
-      fprintf (fp, " %8.8smin (rank  ", GPTLeventlist[e].str8);
+      fprintf (fp, " %8.8smin (rank  ", GPTLeventlist[e].event.str8);
       if (multithread)
         fprintf (fp, "thread");
       fprintf (fp, ")");
@@ -428,7 +428,7 @@ static void get_threadstats (int iam, char *name, Timer **timers, Global *global
       int e;
       for (e = 0; e < GPTLnevents; ++e) {
         double value;
-        if (GPTL_PAPIget_eventvalue (GPTLeventlist[e].namestr, &ptr->aux, &value) != 0) {
+        if (GPTL_PAPIget_eventvalue (GPTLeventlist[e].event.namestr, &ptr->aux, &value) != 0) {
           fprintf (stderr, "GPTL: %s: Bad return from GPTL_PAPIget_eventvalue\n", thisfunc);
           return;
         }
