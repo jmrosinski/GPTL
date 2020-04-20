@@ -6,7 +6,7 @@
 ** Intercept MPI routines utilizing the PMPI interface provided by the underlying MPI library
 */
  
-#include "config.h" /* Must be first include. */
+#include "config.h"  // Must be first include
 #include "private.h"
 #include "gptl.h"
 #include <mpi.h>
@@ -228,7 +228,7 @@ int MPI_Allreduce (const void *sendbuf, void *recvbuf, int count, MPI_Datatype d
   ignoreret = GPTLstop ("MPI_Allreduce");
   if ((timer = GPTLgetentry ("MPI_Allreduce"))) {
     ignoreret = PMPI_Type_size (datatype, &size);
-    /* Estimate size as 1 send plus 1 recv */
+    // Estimate size as 1 send plus 1 recv
     timer->nbytes += 2.*((double) count) * size;
   }
   return ret;
@@ -391,7 +391,7 @@ int MPI_Reduce (const void *sendbuf, void *recvbuf, int count, MPI_Datatype data
   ignoreret = GPTLstop ("MPI_Reduce");
   if ((timer = GPTLgetentry ("MPI_Reduce"))) {
     ignoreret = PMPI_Type_size (datatype, &size);
-    /* Estimate byte count as 1 send */
+    // Estimate byte count as 1 send
     timer->nbytes += ((double) count) * size;
   }
   return ret;

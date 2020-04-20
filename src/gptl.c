@@ -1541,7 +1541,6 @@ int GPTLrename_duplicate_addresses ()
   Timer *testptr;   // start at ptr, iterate through remaining timers
   int nfound = 0;   // number of duplicates found
   int t;            // thread index
-  static const char *thisfunc = "GPTLrename_duplicate_addresses";
 
   for (t = 0; t < GPTLnthreads; ++t) {
     for (ptr = timers[t]; ptr; ptr = ptr->next) {
@@ -2724,7 +2723,6 @@ void __cyg_profile_func_enter (void *this_fn, void *call_site)
   int numchars;      // number of characters in function name
   unsigned int indx; // hash table index
   Timer *ptr;        // pointer to entry if it already exists
-  int ret;
   static const char *thisfunc = "__cyg_profile_func_enter";
 
   // In debug mode, get symbol name up front to diagnose function name
@@ -2871,7 +2869,6 @@ static int get_symnam (void *this_fn, char **symnam)
   unw_context_t context;
   unw_word_t offset, pc;
   int n;
-  int nchars;
   static const char *thisfunc = "get_symnam(unwind)";
 
   // Initialize cursor to current frame for local unwinding.
@@ -2888,9 +2885,9 @@ static int get_symnam (void *this_fn, char **symnam)
 
   unw_get_reg (&cursor, UNW_REG_IP, &pc);
   if (unw_get_proc_name (&cursor, symbol, sizeof(symbol), &offset) == 0) {
-    char addrname[16+2];
-    nchars = strlen (symbol);
+    int nchars = strlen (symbol);;
 #ifdef APPEND_ADDRESS
+    char addrname[16+2];
     *symnam = (char *) malloc (nchars+16+2);  // 16 is nchars, +2 is for '#' and '\0'
     strncpy (*symnam, symbol, nchars+1);
     snprintf (addrname, 16+2, "#%-16p", this_fn);
@@ -2910,7 +2907,6 @@ static int get_symnam (void *this_fn, char **symnam)
 
 void __cyg_profile_func_exit (void *this_fn, void *call_site)
 {
-  float rss;
   int t;                     // thread index
   unsigned int indx;         // hash table index
   Timer *ptr;                // pointer to entry if it already exists

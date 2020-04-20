@@ -72,8 +72,7 @@ static int getderivedidx (int);
 
 int GPTL_PAPIsetoption (const int counter, const int val)
 {
-  int n;       // loop index
-  int ret;     // return code
+  int ret;
   int numidx;  // numerator index
   int idx;     // derived counter index
   char eventname[PAPI_MAX_STR_LEN]; // returned from PAPI_event_code_to_name
@@ -453,7 +452,6 @@ int GPTL_PAPIlibraryinit ()
 int GPTL_PAPIinitialize (const bool verbose_flag)
 {
   int ret;
-  int n;
   int t;
   static const char *thisfunc = "GPTL_PAPIinitialize";
 
@@ -692,7 +690,9 @@ void GPTL_PAPIpr (FILE *fp, const Papistats *aux, const int t, const int count, 
   int numidx;         // index pointer to appropriated (derived) numerator
   int denomidx;       // index pointer to appropriated (derived) denominator
   double val;         // value to be printed
+#ifdef DEBUG
   static const char *thisfunc = "GPTL_PAPIpr";
+#endif
 
   for (n = 0; n < GPTLnevents; n++) {
     numidx = GPTLeventlist[n].numidx;

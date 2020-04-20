@@ -3,11 +3,10 @@ program overhead
 
   implicit none
 
-  integer :: ret, iter, i
+  integer :: ret, i
   real*8 :: wall1, usr1, sys1
   real*8 :: wall2, usr2, sys2
   integer :: cycles1, cycles2, cps
-  character(len=16) :: msg
   integer :: handle
 #ifdef THREADED_OMP
   integer, parameter :: maxthreads = 32

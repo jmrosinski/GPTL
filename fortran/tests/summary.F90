@@ -15,7 +15,6 @@ program main
   integer :: nproc = 1
   integer iter
   integer code
-  integer c
   integer :: comm = 0
   integer ierr
   integer ret

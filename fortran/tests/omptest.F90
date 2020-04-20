@@ -38,6 +38,8 @@ program omptest
 end program omptest
 
 subroutine sub (iter)
+  use omp_lib
+  use gptl
   integer, intent(in) :: iter
   integer ret;
   integer mythread
