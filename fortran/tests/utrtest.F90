@@ -37,6 +37,7 @@ program utrtest
 
   ret = gptlsetutr (gptlnanotime)  ! set the default underlying timing routine
   ret = gptlsetoption (gptldopr_collision, 1)
+  ret = gptlsetoption (gptlverbose, 1)
 
   narg = command_argument_count ()
   n = 1

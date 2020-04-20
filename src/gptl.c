@@ -770,7 +770,6 @@ static inline int update_ptr (Timer *ptr, const int t)
   
   if (wallstats.enabled) {
     double tp2 = (*ptr2wtimefunc) ();
-    tp2 = (*ptr2wtimefunc) ();
     ptr->wall.last = tp2;
   }
 
@@ -3090,8 +3089,7 @@ static int init_nanotime ()
 
 static inline double utr_nanotime ()
 {
-  double timestamp = nanotime () * cyc2sec;
-  return timestamp;
+  return nanotime () * cyc2sec;
 }
 #endif
 
