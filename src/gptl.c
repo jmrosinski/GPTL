@@ -288,8 +288,8 @@ int GPTLsetoption (const int option, const int val)
       printf ("%s: print_method = %s\n", thisfunc, methodstr (method));
     return 0;
   case GPTLtablesize:
-    if (val < 1)
-      return GPTLerror ("%s: tablesize must be positive. %d is invalid\n", thisfunc, val);
+    if (val < 2)
+      return GPTLerror ("%s: tablesize must be > 1. %d is invalid\n", thisfunc, val);
     tablesize = val;
     tablesizem1 = val - 1;
     if (verbose)

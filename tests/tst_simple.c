@@ -35,7 +35,7 @@ main(int argc, char **argv)
       if (GPTLsetoption(GPTLdopr_collision, 1)) ERR;
       if (GPTLsetoption(GPTLdopr_memusage, 1)) ERR;
       if (GPTLsetoption(GPTLprint_method, 1)) ERR;
-      if (GPTLsetoption(GPTLtablesize, 1)) ERR;
+      if (GPTLsetoption(GPTLtablesize, 2)) ERR;
       if (GPTLsetoption(GPTLsync_mpi, 1)) ERR;
       if (GPTLsetoption(GPTLmaxthreads, 1)) ERR;
 #ifdef HAVE_PAPI

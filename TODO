@@ -17,4 +17,8 @@ x Get rid of warnings from "autoreconf -i" about serial number
 + Requires vs Requires.private
 + Does -fopenmp belong instead in Cflags and Fflags?
 + Have "make clean" always get rid of all generated files
-+ Does gptl.pc need "-finstrument-functions"? I've added it for now
++ Does gptl.pc need "-finstrument-functions"? It's OFF for now
++ Check PAPI with built-in tests
+o Test with big UFO app
+o Travis passing
+o Test with GSI on hera
