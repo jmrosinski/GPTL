@@ -102,9 +102,8 @@ static int is_descendant (const Timer *, const Timer *);
 static int is_onlist (const Timer *, const Timer *);
 static char *methodstr (GPTLMethod);
 static void print_callstack (int, const char *);
-static int get_symnam (void *, char **);
 
-  // These are the (possibly) supported underlying wallclock timers
+// These are the (possibly) supported underlying wallclock timers
 #ifdef HAVE_NANOTIME
 static int init_nanotime (void);
 static inline double utr_nanotime (void);
@@ -2722,16 +2721,16 @@ void __func_trace_exit (const char *function_name, const char *file_name, int li
 #if ( defined HAVE_LIBUNWIND || defined HAVE_BACKTRACE )
 void __cyg_profile_func_enter (void *this_fn, void *call_site)
 {
-  int t;             // thread index
-  int symsize;       // number of characters in symbol
-  char *symnam = 0;  // symbol name whether using unwind or backtrace
-  int numchars;      // number of characters in function name
-  unsigned int indx; // hash table index
-  Timer *ptr;        // pointer to entry if it already exists
+  int t;                // thread index
+  int symsize;          // number of characters in symbol
+  char *symnam = NULL;  // symbol name whether using unwind or backtrace
+  int numchars;         // number of characters in function name
+  unsigned int indx;    // hash table index
+  Timer *ptr;           // pointer to entry if it already exists
   static const char *thisfunc = "__cyg_profile_func_enter";
 
   // In debug mode, get symbol name up front to diagnose function name
-  // Otherwise live with "unknown" because get_symnam is very expensive
+  // Otherwise live with "unknown" because getting the symbol name is very expensive
 
   // Call preamble_start rather than just GPTLget_thread_num because preamble_stop is needed for
   // other reasons in __cyg_profile_func_exit, and the preamble* functions need to mirror each
@@ -2759,14 +2758,68 @@ void __cyg_profile_func_enter (void *this_fn, void *call_site)
     return;
   }
 
+  // Nasty bit of code needs to be this way because separating into functions can cause
+  // compilers to inline and screw things up
   if ( ! ptr) {     // Add a new entry and initialize
-    ptr = (Timer *) GPTLallocate (sizeof (Timer), thisfunc);
-    memset (ptr, 0, sizeof (Timer));
-    if (get_symnam (this_fn, &symnam) != 0) {
-      printf ("%s: failed to find symbol for address %p\n", thisfunc, this_fn);
+#if ( defined HAVE_BACKTRACE )
+    char **strings = 0;
+    void *buffer[2];
+    int nptrs;
+    
+    nptrs = backtrace (buffer, 2);
+    if (nptrs != 2) {
+      GPTLwarn ("%s backtrace failed nptrs should be 2 but is %d\n", thisfunc, nptrs);
       return;
     }
+
+    if ( ! (strings = backtrace_symbols (buffer, nptrs))) {
+      GPTLwarn ("%s backtrace_symbols failed strings is null\n", thisfunc);
+      return;
+    }
+    // extract_name will malloc space for symnam, and it will be freed below
+    extract_name (strings[1], &symnam, this_fn);
+    free (strings);  // backtrace() allocated strings
+
+#elif ( defined HAVE_LIBUNWIND )
+
+    char symbol[MAX_SYMBOL_NAME+1];
+    unw_cursor_t cursor;
+    unw_context_t context;
+    unw_word_t offset, pc;
+    int n;
+    // Initialize cursor to current frame for local unwinding.
+    unw_getcontext (&context);
+    unw_init_local (&cursor, &context);
+
+    if (unw_step (&cursor) <= 0) { // unw_step failed: give up
+      GPTLwarn ("%s: unw_step failed\n", thisfunc);
+      return;
+    }
+
+    unw_get_reg (&cursor, UNW_REG_IP, &pc);
+    if (unw_get_proc_name (&cursor, symbol, sizeof(symbol), &offset) == 0) {
+      int nchars = strlen (symbol);;
+#ifdef APPEND_ADDRESS
+      char addrname[16+2];
+      *symnam = (char *) malloc (nchars+16+2);  // 16 is nchars, +2 is for '#' and '\0'
+      strncpy (*symnam, symbol, nchars+1);
+      snprintf (addrname, 16+2, "#%-16p", this_fn);
+      strcat (*symnam, addrname);
+#else
+      symnam = (char *) malloc (nchars + 1);
+      strncpy (symnam, symbol, nchars+1);
+#endif
+    } else {
+      // Name not found: write function address into symnam. Allow 16 characters to hold address
+      symnam = (char *) malloc (16+1);
+      snprintf (symnam, 16+1, "%-16p", this_fn);
+    }
+#endif
+
+    // Whether backtrace or libunwind, symnam has now been defined
     symsize = strlen (symnam);
+    ptr = (Timer *) GPTLallocate (sizeof (Timer), thisfunc);
+    memset (ptr, 0, sizeof (Timer));
 
     // For names longer than MAX_CHARS, need the full name to avoid misrepresenting
     // names with stripped off characters as duplicates
@@ -2801,34 +2854,10 @@ void __cyg_profile_func_enter (void *this_fn, void *call_site)
 }
 
 #ifdef HAVE_BACKTRACE
-static int get_symnam (void *this_fn, char **symnam)
-{
-  char **strings = 0;
-  void *buffer[3];
-  int nptrs;
-  char addrstr[MAX_CHARS+1];          // function address as a string
-  static const char *thisfunc = "get_symnam(backtrace)";
-
-  nptrs = backtrace (buffer, 3);
-  if (nptrs != 3) {
-    GPTLwarn ("%s backtrace failed nptrs should be 2 but is %d\n", thisfunc, nptrs);
-    return -1;
-  }
-
-  if ( ! (strings = backtrace_symbols (buffer, nptrs))) {
-    GPTLwarn ("%s backtrace_symbols failed strings is null\n", thisfunc);
-    return -1;
-  }
-
-  extract_name (strings[2], symnam, this_fn);
-  free (strings);
-  return 0;
-}
-
 // Backtrace strings have a bunch of extra stuff in them.
-// Find the start and end of the function name and return a pointer to the function name
-// Note a null terminator is added to str after the name, but we don't care
-void extract_name (char *str, char **symnam, void *this_fn)
+// Find the start and end of the function name, and return it in *symnam
+// Note str gets modified by writing \0 after the end of the function name
+static void extract_name (char *str, char **symnam, void *this_fn)
 {
   char *cstart;
   char *cend;
@@ -2838,12 +2867,10 @@ void extract_name (char *str, char **symnam, void *this_fn)
   if (*cstart == '\0') {
     cend = cstart;
   } else {
-    ++cstart;
-    for (cend = cstart; *cend != '+' && *cend != '\0'; ++cend);
-    if (cend == cstart) {
-    }
+    for (cend = ++cstart; *cend != '+' && *cend != '\0'; ++cend);
     *cend = '\0';
   }
+
   if (cend == cstart) {
     // Name not found: write function address into symnam. Allow 16 characters to hold address
     *symnam = (char *) malloc (16+1);
@@ -2863,50 +2890,6 @@ void extract_name (char *str, char **symnam, void *this_fn)
   }
 }
 #endif   // HAVE_BACKTRACE
-
-#ifdef HAVE_LIBUNWIND
-static int get_symnam (void *this_fn, char **symnam)
-{
-  char symbol[MAX_SYMBOL_NAME+1];
-  unw_cursor_t cursor;
-  unw_context_t context;
-  unw_word_t offset, pc;
-  int n;
-  static const char *thisfunc = "get_symnam(unwind)";
-
-  // Initialize cursor to current frame for local unwinding.
-  unw_getcontext (&context);
-  unw_init_local (&cursor, &context);
-
-  // Need to unwind 2 levels to get to function of interest
-  for (n = 0; n < 2; ++n) {
-    if (unw_step (&cursor) <= 0) { // unw_step failed: give up
-      GPTLwarn ("%s: unw_step failed\n", thisfunc);
-      return -1;
-    }
-  }
-
-  unw_get_reg (&cursor, UNW_REG_IP, &pc);
-  if (unw_get_proc_name (&cursor, symbol, sizeof(symbol), &offset) == 0) {
-    int nchars = strlen (symbol);;
-#ifdef APPEND_ADDRESS
-    char addrname[16+2];
-    *symnam = (char *) malloc (nchars+16+2);  // 16 is nchars, +2 is for '#' and '\0'
-    strncpy (*symnam, symbol, nchars+1);
-    snprintf (addrname, 16+2, "#%-16p", this_fn);
-    strcat (*symnam, addrname);
-#else
-    *symnam = (char *) malloc (nchars + 1);
-    strncpy (*symnam, symbol, nchars+1);
-#endif
-  } else {
-    // Name not found: write function address into symnam. Allow 16 characters to hold address
-    *symnam = (char *) malloc (16+1);
-    snprintf (*symnam, 16+1, "%-16p", this_fn);
-  }
-  return 0;
-}
-#endif   // HAVE_LIBUNWIND
 
 void __cyg_profile_func_exit (void *this_fn, void *call_site)
 {
