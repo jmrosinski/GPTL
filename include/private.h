@@ -115,6 +115,7 @@ extern int GPTLget_overhead (FILE *,                       // file descriptor
 			     double (*)(),                 // UTR()
 			     Timer *(const Hashentry *, const char *, unsigned int), // getentry()
 			     unsigned int (const char *),  // genhashidx()
+			     int (void),                   // GPTLget_thread_num()
 			     Nofalse *,                    // stackidx
 			     Timer ***,                    // callstack
 			     const Hashentry *,            // hashtable

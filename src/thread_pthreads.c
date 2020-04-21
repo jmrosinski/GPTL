@@ -12,7 +12,7 @@
 #include <stdlib.h>   // free
 
 volatile int GPTLnthreads = -1;        // num threads: init to bad value
-volatile pthread_t *threadid = NULL;   // array of thread ids
+volatile pthread_t *GPTLthreadid = NULL;   // array of thread ids
 // Set default GPTLmax_threads to a big number.
 // But the user can specify GPTLmax_threads with a GPTLsetoption call.
 volatile int GPTLmax_threads = 64;
@@ -27,14 +27,14 @@ static int lock_mutex (void);          // lock a mutex for entry into a critical
 static int unlock_mutex (void);        // unlock a mutex for exit from a critical region
 
 /*
-** GPTLthreadinit: Allocate threadid and initialize to -1; set max number of threads;
+** GPTLthreadinit: Allocate GPTLthreadid and initialize to -1; set max number of threads;
 **             Initialize the mutex for later use; Initialize GPTLnthreads to 0
 **
 ** Output results:
 **   GPTLnthreads:   number of threads (init to zero here, increment later in GPTLget_thread_num)
 **   GPTLmaxthreads: max number of threads (MAX_THREADS)
 **
-**   threadid[] is allocated and initialized to -1
+**   GPTLthreadid[] is allocated and initialized to -1
 **   mutex is initialized for future use
 **
 ** Return value: 0 (success) or GPTLerror (failure)
@@ -70,17 +70,17 @@ int GPTLthreadinit (void)
   
   // GPTLmax_threads is either its default initialization value, or set by a user
   // call to GPTLsetoption().
-  // Allocate the threadid array which maps physical thread IDs to logical IDs
-  if (threadid) 
-    return GPTLerror ("GPTL: PTHREADS %s: threadid not null\n", thisfunc);
-  else if ( ! (threadid = (pthread_t *) GPTLallocate (GPTLmax_threads * sizeof (pthread_t), thisfunc)))
-    return GPTLerror ("GPTL: PTHREADS %s: malloc failure for %d elements of threadid\n", 
+  // Allocate the GPTLthreadid array which maps physical thread IDs to logical IDs
+  if (GPTLthreadid) 
+    return GPTLerror ("GPTL: PTHREADS %s: GPTLthreadid not null\n", thisfunc);
+  else if ( ! (GPTLthreadid = (pthread_t *) GPTLallocate (GPTLmax_threads * sizeof (pthread_t), thisfunc)))
+    return GPTLerror ("GPTL: PTHREADS %s: malloc failure for %d elements of GPTLthreadid\n", 
                       thisfunc, GPTLmax_threads);
 
-  // Initialize threadid array to flag values for use by GPTLget_thread_num().
+  // Initialize GPTLthreadid array to flag values for use by GPTLget_thread_num().
   // GPTLget_thread_num() will fill in the values on first use.
   for (t = 0; t < GPTLmax_threads; ++t)
-    threadid[t] = (pthread_t) -1;
+    GPTLthreadid[t] = (pthread_t) -1;
 #ifdef VERBOSE
   printf ("GPTL: PTHREADS %s: Set GPTLmax_threads=%d GPTLnthreads=%d\n",
 	  thisfunc, GPTLmax_threads, GPTLnthreads);
@@ -92,7 +92,7 @@ int GPTLthreadinit (void)
 ** threadfinalize: Clean up
 **
 ** Output results:
-**   threadid array is freed and array pointer nullified
+**   GPTLthreadid array is freed and array pointer nullified
 **   mutex is destroyed
 */
 void GPTLthreadfinalize ()
@@ -103,8 +103,8 @@ void GPTLthreadfinalize ()
   if ((ret = pthread_mutex_destroy ((pthread_mutex_t *) &t_mutex)) != 0)
     printf ("GPTL: threadfinalize: failed attempt to destroy t_mutex: ret=%d\n", ret);
 #endif
-  free ((void *) threadid);
-  threadid = 0;
+  free ((void *) GPTLthreadid);
+  GPTLthreadid = 0;
 }
 
 /*
@@ -114,7 +114,7 @@ void GPTLthreadfinalize ()
 **
 ** Output results:
 **   GPTLnthreads: Updated number of threads
-**   threadid: Our thread id added to list on 1st call 
+**   GPTLthreadid: Our thread id added to list on 1st call 
 **
 ** Return value: thread number (success) or GPTLerror (failure)
 */
@@ -123,7 +123,7 @@ inline
 #endif
 int GPTLget_thread_num (void)
 {
-  int t;                   // logical thread number, defined by array index of found threadid
+  int t;                   // logical thread number, defined by array index of found GPTLthreadid
   pthread_t mythreadid;    // thread id from pthreads library
   int retval = -1;         // value to return to caller: init to bad value to please compiler
   bool foundit = false;    // thread id found in list
@@ -136,7 +136,7 @@ int GPTLget_thread_num (void)
 #define VECTOR
 #ifdef VECTOR
   for (t = 0; t < GPTLnthreads; ++t)
-    if (pthread_equal (mythreadid, threadid[t])) {
+    if (pthread_equal (mythreadid, GPTLthreadid[t])) {
       foundit = true;
       retval = t;
     }
@@ -145,12 +145,12 @@ int GPTLget_thread_num (void)
     return retval;
 #else
   for (t = 0; t < GPTLnthreads; ++t)
-    if (pthread_equal (mythreadid, threadid[t]))
+    if (pthread_equal (mythreadid, GPTLthreadid[t]))
       return t;
 #endif
 
   // Thread id not found. Define a critical region, then start PAPI counters if
-  // necessary and modify threadid[] with our id.
+  // necessary and modify GPTLthreadid[] with our id.
   if (lock_mutex () < 0)
     return GPTLerror ("GPTL: PTHREADS %s: mutex lock failure\n", thisfunc);
 
@@ -165,10 +165,10 @@ int GPTLget_thread_num (void)
 		      "larger value of MAX_THREADS\n", thisfunc, GPTLnthreads);
   }
 
-  threadid[GPTLnthreads] = mythreadid;
+  GPTLthreadid[GPTLnthreads] = mythreadid;
 
 #ifdef VERBOSE
-  printf ("GPTL: PTHREADS %s: 1st call threadid=%lu maps to location %d\n", 
+  printf ("GPTL: PTHREADS %s: 1st call GPTLthreadid=%lu maps to location %d\n", 
           thisfunc, (unsigned long) mythreadid, GPTLnthreads);
 #endif
 
@@ -178,7 +178,7 @@ int GPTLget_thread_num (void)
   // create and start an event set for the new thread.
   if (GPTLget_npapievents () > 0) {
 #ifdef VERBOSE
-    printf ("GPTL: PTHREADS %s: Starting EventSet threadid=%lu location=%d\n", 
+    printf ("GPTL: PTHREADS %s: Starting EventSet GPTLthreadid=%lu location=%d\n", 
             thisfunc, (unsigned long) mythreadid, GPTLnthreads);
 #endif
     if (GPTLcreate_and_start_events (GPTLnthreads) < 0) {
@@ -235,5 +235,5 @@ void GPTLprint_threadmapping (FILE *fp)
   fprintf (fp, "\n");
   fprintf (fp, "Thread mapping:\n");
   for (t = 0; t < GPTLnthreads; ++t)
-    fprintf (fp, "threadid[%d] = %d\n", t, threadid[t]);
+    fprintf (fp, "GPTLthreadid[%d] = %d\n", t, GPTLthreadid[t]);
 }

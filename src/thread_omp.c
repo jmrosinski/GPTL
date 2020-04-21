@@ -15,15 +15,16 @@
 
 volatile int GPTLnthreads = -1;        // num threads: init to bad value
 volatile int GPTLmax_threads = -1;     // max num threads
-static volatile int *threadid = NULL;  // array of thread ids
+// make threadid non-static due to this file possibly being inlined
+volatile int *GPTLthreadid = NULL;  // array of thread ids
 
 /*
-** GPTLthreadinit: Allocate and initialize threadid; set max number of threads
+** GPTLthreadinit: Allocate and initialize GPTLthreadid; set max number of threads
 **
 ** Output results:
 **   GPTLmax_threads: max number of threads
 **
-**   threadid[] is allocated and initialized to -1
+**   GPTLthreadid[] is allocated and initialized to -1
 **
 **
 ** Return value: 0 (success) or GPTLerror (failure)
@@ -36,9 +37,9 @@ int GPTLthreadinit (void)
   if (omp_get_thread_num () != 0)
     return GPTLerror ("OMP %s: MUST only be called by the master thread\n", thisfunc);
 
-  // Allocate the threadid array which maps physical thread IDs to logical IDs 
-  // For OpenMP this will be just threadid[iam] = iam;
-  if (threadid) 
+  // Allocate the GPTLthreadid array which maps physical thread IDs to logical IDs 
+  // For OpenMP this will be just GPTLthreadid[iam] = iam;
+  if (GPTLthreadid) 
     return GPTLerror ("OMP %s: has already been called.\n"
 		      "Maybe mistakenly called by multiple threads?\n", thisfunc);
 
@@ -47,14 +48,14 @@ int GPTLthreadinit (void)
   if (GPTLmax_threads == -1)
     GPTLmax_threads = MAX ((1), (omp_get_max_threads ()));
 
-  if ( ! (threadid = (int *) GPTLallocate (GPTLmax_threads * sizeof (int), thisfunc)))
-    return GPTLerror ("OMP %s: malloc failure for %d elements of threadid\n",
+  if ( ! (GPTLthreadid = (int *) GPTLallocate (GPTLmax_threads * sizeof (int), thisfunc)))
+    return GPTLerror ("OMP %s: malloc failure for %d elements of GPTLthreadid\n",
 		      thisfunc, GPTLmax_threads);
 
-  // Initialize threadid array to flag values for use by GPTLget_thread_num().
+  // Initialize GPTLthreadid array to flag values for use by GPTLget_thread_num().
   // get_thread_num() will fill in the values on first use.
   for (t = 0; t < GPTLmax_threads; ++t)
-    threadid[t] = -1;
+    GPTLthreadid[t] = -1;
 #ifdef VERBOSE
   printf ("GPTL: OMP %s: Set GPTLmax_threads=%d\n", thisfunc, GPTLmax_threads);
 #endif
@@ -65,12 +66,12 @@ int GPTLthreadinit (void)
 ** GPTLthreadfinalize: clean up
 **
 ** Output results:
-**   threadid array is freed and array pointer nullified
+**   GPTLthreadid array is freed and array pointer nullified
 */
 void GPTLthreadfinalize ()
 {
-  free ((void *) threadid);
-  threadid = NULL;
+  free ((void *) GPTLthreadid);
+  GPTLthreadid = NULL;
 }
 
 /*
@@ -79,7 +80,7 @@ void GPTLthreadfinalize ()
 **
 ** Output results:
 **   GPTLnthreads:     Number of threads
-**   threadid: Our thread id added to list on 1st call
+**   GPTLthreadid: Our thread id added to list on 1st call
 **
 ** Return value: thread number (success) or GPTLerror (failure)
 **   5/8/16: Modified to enable 2-level OMP nesting: Fold combination of current and parent
@@ -125,12 +126,12 @@ int GPTLget_thread_num (void)
 		      thisfunc, t, GPTLmax_threads);
 
   // If our thread number has already been set in the list, we are done
-  if (t == threadid[t])
+  if (t == GPTLthreadid[t])
     return t;
 
-  // Thread id not found. Modify threadid with our ID, then start PAPI events if required.
-  // Due to the setting of threadid, everything below here will only execute once per thread.
-  threadid[t] = t;
+  // Thread id not found. Modify GPTLthreadid with our ID, then start PAPI events if required.
+  // Due to the setting of GPTLthreadid, everything below here will only execute once per thread.
+  GPTLthreadid[t] = t;
 
 #ifdef VERBOSE
   printf ("GPTL: OMP %s: 1st call t=%d\n", thisfunc, t);
@@ -166,5 +167,5 @@ void GPTLprint_threadmapping (FILE *fp)
   fprintf (fp, "\n");
   fprintf (fp, "Thread mapping:\n");
   for (t = 0; t < GPTLnthreads; ++t)
-    fprintf (fp, "threadid[%d] = %d\n", t, threadid[t]);
+    fprintf (fp, "GPTLthreadid[%d] = %d\n", t, GPTLthreadid[t]);
 }

@@ -13,7 +13,6 @@
 #include <string.h>
 #include <stdlib.h>  // for free()
 #include "private.h"
-#include "thread.h"
 #include "gptl_papi.h"
 
 static bool initialized = true;
@@ -35,6 +34,7 @@ static void misc_sim (Nofalse *, Timer ***, int);
 **   ptr2wtimefunc: Underlying timing routine
 **   getentry:      From gptl.c, finds the entry in the hash table
 **   genhashidx:    From gptl.c, generates the hash index
+**   GPTLget_thread_num:    From thread*.c, gets the thread number
 **   hashtable:     hashtable for thread 0
 **   tablesize:     size of hashtable
 **   dousepapi:     whether or not PAPI is enabled
@@ -47,6 +47,7 @@ int GPTLget_overhead (FILE *fp,
 		      double (*ptr2wtimefunc)(void), 
 		      Timer *getentry (const Hashentry *, const char *, unsigned int),
 		      unsigned int genhashidx (const char *),
+		      int GPTLget_thread_num(void),
 		      Nofalse *stackidx,
 		      Timer ***callstack,
 		      const Hashentry *hashtable, 
