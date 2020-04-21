@@ -33,6 +33,7 @@
 
 #ifdef HAVE_BACKTRACE
 #include <execinfo.h>
+static void extract_name (char *, char **, void *);
 #endif
 
 #include "private.h"
@@ -2807,8 +2808,6 @@ static int get_symnam (void *this_fn, char **symnam)
   int nptrs;
   char addrstr[MAX_CHARS+1];          // function address as a string
   static const char *thisfunc = "get_symnam(backtrace)";
-
-  static void extract_name (char *, char **, void *);
 
   nptrs = backtrace (buffer, 3);
   if (nptrs != 3) {
