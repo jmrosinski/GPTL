@@ -1239,6 +1239,7 @@ int GPTLpr_file (const char *outfile)
   double parent_ohd;        // estimated library overhead due to self in parent timer
   float procsiz, rss;       // returned from GPTLget_procsiz
 
+  static const char *gptlversion = GPTL_VERSIONINFO;
   static const char *thisfunc = "GPTLpr_file";
 
   if ( ! initialized)
@@ -1248,6 +1249,9 @@ int GPTLpr_file (const char *outfile)
   if (STRMATCH (outfile, "stderr") || ! (fp = fopen (outfile, "w")))
     fp = stderr;
 
+  // Print version info from configure to output file
+  fprintf (fp, "GPTL version info: %s\n", gptlversion);
+  
   // Rename auto-instrumented entries with same name but different address due to lopping
   if ((ndup = GPTLrename_duplicate_addresses ()) > 0) {
     fprintf (fp, "%d duplicate auto-instrumented addresses were found and @<num> added to name",
@@ -3217,4 +3221,17 @@ Timer *GPTLgetentry (const char *name)
   indx = genhashidx (name);
   return (getentry (hashtable[t], name, indx));
 }
+#endif
+
+// If specified at configure time, insert appropriate threading file instead of compiling
+// separately so that GPTLget_thread_num may be inlined.
+
+#ifdef INLINE_THREADING
+#if ( defined THREADED_OMP )
+#include "./thread_omp.c"
+#elif ( defined THREADED_PTHREADS )
+#include "./thread_pthreads.c"
+#else
+#include "./thread_none.c"
+#endif
 #endif

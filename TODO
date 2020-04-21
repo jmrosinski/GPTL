@@ -1,7 +1,7 @@
 o Get Intel to use -qopenmp. For now -fopenmp works but for how long?
 o Test with PGI
 + Test with clang/gfortran
-  - Gave up on enabling OMP
+  + Gave up on enabling OMP
 + Change default to unwind
   + Check for libunwind rather than header file
 o Get versioning right for: Currently follows same rules as netcdf
@@ -22,3 +22,6 @@ x Get rid of warnings from "autoreconf -i" about serial number
 o Test with big UFO app
 o Travis passing
 o Test with GSI on hera
+o Test with pthreads
+o Make pthreads more efficient (ordered list of pthread_ids)
++ Add ability to inline thread*.c

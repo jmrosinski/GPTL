@@ -38,6 +38,9 @@ void GPTLthreadfinalize () {threadid = -1;}
 **   GPTLnthreads:     Number of threads (always 1)
 **   threadid:         Our thread id (always 0)
 */
+#ifdef INLINE_THREADING
+inline
+#endif
 int GPTLget_thread_num ()
 {
 #ifdef HAVE_PAPI

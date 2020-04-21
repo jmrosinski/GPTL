@@ -81,11 +81,13 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
   unsigned int tsksum; // part of Chan, et. al. equation
   static const int tag = 98789;                         // tag for MPI message
   static const int nbytes = sizeof (Global);            // number of bytes to be sent/recvd
-  static const char *thisfunc = "GPTLpr_summary_file";  // this function
   FILE *fp = 0;        // file handle to write to
 #ifdef HAVE_PAPI
   int e;               // event index
 #endif
+
+  static const char *gptlversion = GPTL_VERSIONINFO;
+  static const char *thisfunc = "GPTLpr_summary_file";  // this function
 
   if ( ! GPTLis_initialized ())
     return GPTLerror ("%s: GPTLinitialize() has not been called\n", thisfunc);
@@ -257,6 +259,9 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
       printf ("%s: WARNING: file=%s cannot be opened for writing. Using stderr instead\n",
 	      thisfunc, outfile);
     }
+
+    // Print version info from configure to output file
+    fprintf (fp, "GPTL version info: %s\n", gptlversion);
 
     // Print a warning if error() was ever called
     if (GPTLnum_errors () > 0) {

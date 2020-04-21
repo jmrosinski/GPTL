@@ -37,6 +37,24 @@ AC_CONFIG_HEADERS([config.h])
 AC_C_CONST
 AC_C_INLINE
 
+# Embed git version info, or release tag if not cloned
+if test -d .git; then
+  AC_CHECK_PROG(havegit, git, yes, no)
+  if test "x$havegit" = xyes; then
+    AC_MSG_CHECKING([for GPTL version info encoded into git])
+    git_versioninfo=$(git describe --abbrev=4 --dirty --always --tags)
+    AC_MSG_RESULT([$git_versioninfo])
+  else
+    git_versioninfo=NO_GIT
+  fi
+  AC_CHECK_PROG(git_versioninfo, git, $(git describe --abbrev=4 --dirty --always --tags), NO_GIT)
+  AC_DEFINE_UNQUOTED([GPTL_VERSIONINFO], ["$git_versioninfo"], [use git describe for version info])
+else
+  AC_MSG_CHECKING([for package info for package version info since this is not a git repo])
+  AC_DEFINE([GPTL_VERSIONINFO], ["AC_PACKAGE_VERSION"], [use configure for version info])
+  AC_MSG_RESULT(AC_PACKAGE_VERSION)
+fi
+
 # Only define HAVE_NANOTIME if this is a x86. It provides by far the finest grained,
 # lowest overhead wallclock timer on that architecture.
 # Set HAVE_NANOTIME on x86 systems only.
@@ -56,10 +74,31 @@ fi
 
 # Check for enabling gather/print stats on extra comparisons due to collisions
 AC_ARG_ENABLE([collide],
-  AS_HELP_STRING([--enable-collide], [Include  stats on extra comparisons due to collisions]))
-AS_IF([test "x$enable_collide" = "xyes"], [
-  AC_DEFINE([COLLIDE], [1], [Include stats on extra collision comparisons])
+  AS_HELP_STRING([--enable-collide], [Enable collide]))
+AS_IF([test "x$enable_collide" = xyes], [
+  AC_DEFINE([COLLIDE], [1], [Include stats on extra comparisons due to collisions])
 ])
+
+# Check whether to inline threading routines rather than compile separately
+# Default enabled version
+AC_ARG_ENABLE([inline-threading],
+  AS_HELP_STRING([--disable-inline-threading], [Disable inline threading]))
+AS_IF([test "x$enable_inline_threading" != xno], [
+  enable_inline_threading=yes
+  AC_DEFINE([INLINE_THREADING], [1], [Use \#include to inline threading routines into gptl.c])
+  AC_MSG_NOTICE([Enabling inline threading for efficiency. Use --disable-inline-threading if \"make\" fails])
+  AC_MSG_NOTICE([Compiler msgs re: inline function GPTLget_threadnum declared but never defined may occur--ignore if only warnings])
+])
+
+# Default disabled version
+#AC_ARG_ENABLE([inline-threading],
+#  AS_HELP_STRING([--enable-inline-threading], [Enable inline threading]))
+#AS_IF([test "x$enable_inline_threading" = xyes], [
+#  AC_DEFINE([INLINE_THREADING], [1], [Use \#include to inline threading routines into gptl.c])
+#  AC_MSG_NOTICE([Enabling inline threading for efficiency. Remove --enable-inline-threading if \"make\" fails])
+#  AC_MSG_NOTICE([Compiler msgs re: inline function GPTLget_threadnum declared but never defined may occur--ignore if only warnings])
+#])
+AM_CONDITIONAL([INLINE_THREADING], [test "x$enable_inline_threading" = xyes])
 
 # Check for enabling OpenMP: default true
 AC_ARG_ENABLE([openmp], [AS_HELP_STRING([--disable-openmp],

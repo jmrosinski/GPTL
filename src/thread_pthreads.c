@@ -39,7 +39,7 @@ static int unlock_mutex (void);        // unlock a mutex for exit from a critica
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-static int GPTLthreadinit (void)
+int GPTLthreadinit (void)
 {
   int t;
   int ret;
@@ -95,7 +95,7 @@ static int GPTLthreadinit (void)
 **   threadid array is freed and array pointer nullified
 **   mutex is destroyed
 */
-static void threadfinalize ()
+void GPTLthreadfinalize ()
 {
   int ret;
 
@@ -118,7 +118,10 @@ static void threadfinalize ()
 **
 ** Return value: thread number (success) or GPTLerror (failure)
 */
-static inline int GPTLget_thread_num (void)
+#ifdef INLINE_THREADING
+inline
+#endif
+int GPTLget_thread_num (void)
 {
   int t;                   // logical thread number, defined by array index of found threadid
   pthread_t mythreadid;    // thread id from pthreads library
@@ -211,7 +214,7 @@ static int lock_mutex ()
   static const char *thisfunc = "lock_mutex";
 
   if (pthread_mutex_lock ((pthread_mutex_t *) &t_mutex) != 0)
-    return GPTLerror ("GPTL: %s: failure from pthread_lock_mutex\n", thisfunc);
+    return GPTLerror ("GPTL: %s: failure from pthread_mutex_lock\n", thisfunc);
 
   return 0;
 }
@@ -222,7 +225,7 @@ static int unlock_mutex ()
   static const char *thisfunc = "unlock_mutex";
 
   if (pthread_mutex_unlock ((pthread_mutex_t *) &t_mutex) != 0)
-    return GPTLerror ("GPTL: %s: failure from pthread_unlock_mutex\n", thisfunc);
+    return GPTLerror ("GPTL: %s: failure from pthread_mutex_unlock\n", thisfunc);
   return 0;
 }
 

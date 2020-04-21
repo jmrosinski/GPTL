@@ -28,6 +28,9 @@ endif
 endif
 endif
 
+# If inline threading is enabled, the appropriate file will have been #included in gptl.c
+if INLINE_THREADING
+else
 if UNDERLYING_OPENMP
 libgptl_la_SOURCES += thread_omp.c
 else
@@ -35,5 +38,6 @@ if UNDERLYING_PTHREADS
 libgptl_la_SOURCES += thread_pthreads.c
 else
 libgptl_la_SOURCES += thread_none.c
+endif
 endif
 endif
