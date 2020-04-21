@@ -33,7 +33,7 @@
 
 #ifdef HAVE_BACKTRACE
 #include <execinfo.h>
-static void extract_name (char *, char **, void *);
+static void extract_name (char *, char **, void *, const int);
 #endif
 
 #include "private.h"
@@ -2777,7 +2777,7 @@ void __cyg_profile_func_enter (void *this_fn, void *call_site)
       return;
     }
     // extract_name will malloc space for symnam, and it will be freed below
-    extract_name (strings[1], &symnam, this_fn);
+    extract_name (strings[1], &symnam, this_fn, t);
     free (strings);  // backtrace() allocated strings
 
 #elif ( defined HAVE_LIBUNWIND )
@@ -2857,35 +2857,39 @@ void __cyg_profile_func_enter (void *this_fn, void *call_site)
 // Backtrace strings have a bunch of extra stuff in them.
 // Find the start and end of the function name, and return it in *symnam
 // Note str gets modified by writing \0 after the end of the function name
-static void extract_name (char *str, char **symnam, void *this_fn)
+static void extract_name (char *str, char **symnam, void *this_fn, const int t)
 {
-  char *cstart;
-  char *cend;
   int nchars;
-  
-  for (cstart = str; *cstart != '(' && *cstart != '\0'; ++cstart);
-  if (*cstart == '\0') {
-    cend = cstart;
-  } else {
-    for (cend = ++cstart; *cend != '+' && *cend != '\0'; ++cend);
-    *cend = '\0';
-  }
+  char *savetoken;
+  char *saveptr[GPTLnthreads];
+  char *token;
 
-  if (cend == cstart) {
+#ifdef __APPLE__
+  token = strtok_r (str, " ", &saveptr[t]);
+  for (int n = 0; n < 3; ++n)
+    token = strtok_r (NULL, " ", &saveptr[t]);
+#else
+  token = strtok_r (str, "(", &saveptr[t]);
+  savetoken = token;
+  if ( ! (token = strtok_r (NULL, "+", &saveptr[t])))
+    token = savetoken;
+#endif
+
+  if ( ! token) {
     // Name not found: write function address into symnam. Allow 16 characters to hold address
     *symnam = (char *) malloc (16+1);
     snprintf (*symnam, 16+1,"%-16p", this_fn);
   } else {
-    nchars = (int) (cend - cstart);
+    nchars = strlen (token);
 #ifdef APPEND_ADDRESS
     char addrname[16+2];
     *symnam = (char *) malloc (nchars+16+2);  // 16 is nchars, +2 is for '#' and '\0'
-    strncpy (*symnam, cstart, nchars+1);
+    strncpy (*symnam, token, nchars+1);
     snprintf (addrname, 16+2, "#%-16p", this_fn);
     strcat (*symnam, addrname);
 #else
     *symnam = (char *) malloc (nchars + 1);
-    strncpy (*symnam, cstart, nchars+1);
+    strncpy (*symnam, token, nchars+1);
 #endif
   }
 }
