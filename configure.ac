@@ -82,7 +82,7 @@ AS_IF([test "x$enable_collide" = xyes], [
 # Check whether to inline threading routines rather than compile separately
 # Default enabled version
 AC_ARG_ENABLE([inline-threading],
-  AS_HELP_STRING([--disable-inline-threading], [Disable inline threading]))
+  AS_HELP_STRING([--disable-inline-threading], [Do not inline threading routines]))
 AS_IF([test "x$enable_inline_threading" != xno], [
   enable_inline_threading=yes
   AC_DEFINE([INLINE_THREADING], [1], [Use \#include to inline threading routines into gptl.c])
@@ -127,7 +127,7 @@ AM_CONDITIONAL([HAVE_OPENMP], [test "x$useomp" = xyes])
 # number by about 50% even in regions which are not doubly-nested.
 AC_MSG_CHECKING([whether nested OMP is to be enabled])
 AC_ARG_ENABLE([nestedomp], [AS_HELP_STRING([--enable-nestedomp],
-              [build with nested OMP capability])])
+              [Build with nested OMP capability])])
 
 test "x$enable_nestedomp" = xyes || enable_nestedomp=no
 # If nestedomp requested, verify basic OpenMP capability was there
@@ -142,7 +142,8 @@ AM_CONDITIONAL(ENABLE_NESTEDOMP, [test x$enable_nestedomp = xyes])
 
 # pthread library. default disabled
 AC_ARG_ENABLE([pthread],
-    AS_HELP_STRING([--enable-pthread], [Enable underlying pthread capability instead of OpenMP]))
+    AS_HELP_STRING([--enable-pthread],
+      [EXPERIMENTAL: Enable underlying pthread capability instead of OpenMP]))
 
 if test "x$enable_pthread" = xyes; then
   AC_MSG_WARN([ENABLING PTHREADS WITHIN GPTL IS EXPERIMENTAL: PREFER OPENMP!!!])
@@ -170,14 +171,14 @@ AC_ARG_ENABLE([double-underscore], [AS_HELP_STRING([--enable-double-underscore],
 test "x$enable_double_underscore" = xyes || enable_double_underscore=no
 AC_MSG_RESULT($enable_double_underscore)
 if test $enable_double_underscore = yes; then
-   AC_DEFINE([FORTRANDOUBLEUNDERSCORE], [1], [use double underscore for Fortran wrappers])
+   AC_DEFINE([FORTRANDOUBLEUNDERSCORE], [1],
+   [Needed only for a few Fortran compilers such as g95: Use double underscore for Fortran wrappers])
 else
-   AC_DEFINE([FORTRANUNDERSCORE], [1], [use single underscore for Fortran wrappers])
+   AC_DEFINE([FORTRANUNDERSCORE], [1], [Use single underscore for Fortran wrappers: The usual case])
 fi
 
 # --enable-debug means build with low optimization and add some code inside some #ifdef DEBUG
-AC_ARG_ENABLE([debug], [AS_HELP_STRING([--enable-debug],
-              [enable DEBUG ifdef])])
+AC_ARG_ENABLE([debug], [AS_HELP_STRING([--enable-debug], [Enable DEBUG ifdef and -g -O0])])
 test "x$enable_debug" = xyes || enable_debug=no
 if test $enable_debug = yes; then
    AC_DEFINE([DEBUG], [1], [set debug ifdef])
@@ -186,7 +187,8 @@ if test $enable_debug = yes; then
 fi
 
 AC_MSG_CHECKING([whether PAPI is to be enabled])
-AC_ARG_ENABLE([papi], [AS_HELP_STRING([--enable-papi], [enable built-in support for papi library. Requires that PAPI is already installed])])
+AC_ARG_ENABLE([papi], [AS_HELP_STRING([--enable-papi],
+  [Enable built-in support for papi library. Requires that PAPI is already installed])])
 test "x$enable_papi" = xyes || enable_papi=no
 AC_MSG_RESULT($enable_papi)
 
@@ -233,7 +235,7 @@ AC_CHECK_FUNCS(getrusage)
 # Check for existence of /proc, used for obtaining process size
 # Must be disabled when cross-compiling
 AC_ARG_ENABLE([slashproc], [AS_HELP_STRING([--disable-slashproc],
-    	      [check for existence of /proc file system: must be disabled when cross-compiling])])
+    	      [Check for existence of /proc file system: must be disabled when cross-compiling])])
 
 test "x$enable_slashproc" != xno && enable_slashproc=yes
 if test "$enable_slashproc" = yes; then
@@ -242,7 +244,7 @@ if test "$enable_slashproc" = yes; then
 fi
 
 # We need the math library for some tests.
-AC_CHECK_LIB([m], [floor], [], [AC_MSG_ERROR([Can't find or link to the math library.])])
+AC_CHECK_LIB([m], [floor], [], [AC_MSG_ERROR([Can't find or link to the math library])])
 
 # For auto-profiling, libunwind is the default method to recover current function name.
 # If disabled or not available, try backtrace. If neither are available, auto-profiling will 
@@ -318,19 +320,17 @@ elif test "x$minstrf" = xyes; then
 fi
 
 # Check for times.
-AC_CHECK_FUNC([times],
-        [AC_DEFINE([HAVE_TIMES], [1], [times function is available])])
+AC_CHECK_FUNC([times], [AC_DEFINE([HAVE_TIMES], [1], [times() is available])])
 
 # Check for gettimeofday.
-AC_CHECK_FUNC([gettimeofday],
-        [AC_DEFINE([HAVE_GETTIMEOFDAY], [1], [gettimeofday function is available])])
+AC_CHECK_FUNC([gettimeofday], [AC_DEFINE([HAVE_GETTIMEOFDAY], [1], [gettimeofday() is available])])
 
 # Do we have MPI?
 AC_CHECK_FUNC([MPI_Init], [have_libmpi=yes], [have_libmpi=no])
 if test "x$have_libmpi" = xyes; then
 # Modify FCFLAGS in case Fortran support is enabled
   FCFLAGS="-DHAVE_LIBMPI $FCFLAGS"
-  AC_DEFINE([HAVE_LIBMPI], [1], [found MPI library])
+  AC_DEFINE([HAVE_LIBMPI], [1], [Found MPI library])
 # Need MPI_STATUS_SIZE for Fortran wrappers
   AC_CHECK_SIZEOF([int])
 # Double brackets are important
@@ -353,7 +353,7 @@ AM_CONDITIONAL([HAVE_LIBMPI], [test "x$have_libmpi" = xyes])
 AC_MSG_CHECKING([whether a user specified program to run mpi programs])
 AC_ARG_WITH([mpiexec],
               [AS_HELP_STRING([--with-mpiexec=<command>],
-                              [Specify command to launch MPI parallel tests.])],
+               [Replace mpiexec for launching MPI parallel tests e.g. mpirun, srun])],
             [MPIEXEC=$with_mpiexec], [MPIEXEC=mpiexec])
 AC_MSG_RESULT([$MPIEXEC])
 if test "x$have_libmpi" = xyes; then
@@ -371,7 +371,7 @@ AC_DEFINE([HAVE_COMM_F2C], [1], [Hopefully MPI_Comm_f2c is present])
 
 # Does the user want to turn on PMPI?
 AC_MSG_CHECKING([whether PMPI is to be enabled])
-AC_ARG_ENABLE([pmpi], [AS_HELP_STRING([--enable-pmpi], [build with PMPI support to auto-profile MPI calls])])
+AC_ARG_ENABLE([pmpi], [AS_HELP_STRING([--enable-pmpi], [Build with PMPI support to auto-profile MPI calls])])
 test "x$enable_pmpi" = xyes || enable_pmpi=no
 AM_CONDITIONAL([ENABLE_PMPI], [test x$enable_pmpi = xyes])
 if test "$enable_pmpi" = yes; then
@@ -390,12 +390,15 @@ GPTL_LIBS="-lgptl"
 if test "x$enable_fortran" != "xno"; then
   AC_LANG_PUSH(Fortran)
   AC_PROG_FC()
+
 # For gptl.pc
   GPTL_LIBS="-lgptlf $GPTL_LIBS"
+
 # Make sure this file is copied to build directories for tests to work.
   AC_CONFIG_LINKS([fortran/tests/gptlnl:fortran/tests/gptlnl])
+
 # Test OMP for Fortran and set flags accordingly, only if OMP support was enabled above for C
-# AC_OPENMP sets OPENMP_FCFLAGS not OPENMP_FFLAGS
+# AC_OPENMP sets OPENMP_FCFLAGS
   have_fort_omp=no
   if test "x$useomp" = "xyes"; then
     AC_OPENMP()
@@ -414,6 +417,7 @@ if test "x$enable_fortran" != "xno"; then
   if test "x$have_libmpi" = xyes; then
     FCFLAGS="-DHAVE_LIBMPI $FCFLAGS"
   fi
+
 # Modify FCFLAGS for PAPI
   if test "x$have_papi" = xyes; then
     FCFLAGS="-DHAVE_PAPI $FCFLAGS"
@@ -435,6 +439,7 @@ AM_CONDITIONAL([HAVE_FORTRAN], [test x$enable_fortran = "xyes"])
 if test "x$found_libunwind" = xyes; then
   GPTL_LIBS="$GPTL_LIBS -lunwind"
 fi
+
 LDFLAGS=$PAPI_LINK
 LDFLAGS_PC="$GPTL_LIBS $PAPI_LINK $LDFLAGS $INSTR_LINK"
 AC_SUBST([LDFLAGS], [$LDFLAGS])
