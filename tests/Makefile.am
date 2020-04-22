@@ -72,8 +72,6 @@ check_PROGRAMS += pmpi
 noinst_PROGRAMS += pmpi
 TESTS += run_par_pmpi_test.sh
 endif
-else
-TESTS += global
 endif
 
 # Build these if the user selected --enable-nestedomp during configure.
@@ -84,5 +82,5 @@ endif
 
 # Test output to be deleted: include ALL possible executables
 ALLEXES = printwhileon imperfect_nest gran_overhead tst_simple global cygprofile omptest \
-          testpapi gptl_avail knownflopcount papiomptest global summary pmpi nestedomp
+          testpapi gptl_avail knownflopcount papiomptest summary pmpi nestedomp
 CLEANFILES = timing.?????? *.trs *.log *.o $(ALLEXES)

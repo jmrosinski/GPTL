@@ -3,12 +3,15 @@
 # This is the automake file for GPTL Fortran tests.
 # Ed Hartnett, 5/21/18
 
-# Find include directory and src directory (for .mod file).
+# Build legacy test with FC
 F77=$(FC)
+
+# Find include directory and src directory (for .mod file).
 AM_CPPFLAGS = -I../include -I../src
 
-# Link to GPTL fortran library.
-AM_LDFLAGS = ${top_builddir}/fortran/src/libgptlf.la ${top_builddir}/src/libgptl.la @INSTR_LINK@
+# Link to GPTL fortran and C libraries.
+MYLIBS = ${top_builddir}/fortran/src/libgptlf.la ${top_builddir}/src/libgptl.la
+AM_LDFLAGS = ${MYLIBS} @INSTR_LINK@
 
 # Need unwind library if configure was set up that way
 if HAVE_LIBUNWIND

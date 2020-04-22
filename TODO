@@ -25,5 +25,7 @@ o Test with GSI on hera
 o Test with pthreads
 o Make pthreads more efficient (ordered list of pthread_ids)
 + Add ability to inline thread*.c
-o Test with Intel
++ Test with Intel
 o Fix clang warnings
+o Ensure "make check" does the right thing when lib has been rebuilt
+o Is there a working "make uninstall" in GPTL?
