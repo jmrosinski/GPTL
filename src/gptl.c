@@ -17,6 +17,11 @@
 #include <stdio.h>
 #include <string.h>        // memset, strcmp (via STRMATCH)
 #include <ctype.h>         // isdigit
+#ifdef __APPLE__
+#include <stdint.h>
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#endif
 
 #ifdef HAVE_LIBRT
 #include <time.h>
@@ -3008,11 +3013,25 @@ static inline long long nanotime (void)
 
 static float get_clockfreq ()
 {
+  float freq = -1.; // clock frequency (MHz). Init to bad value
+  static const char *thisfunc = "get_clockfreq";
+
+#ifdef __APPLE__
+  uint64_t lfreq = 0;
+  size_t size;
+  
+  sysctlbyname ("hw.cpufrequency_max", NULL, &size, NULL, 0);
+  if (sysctlbyname ("hw.cpufrequency_max", &lfreq, &size, NULL, 0) < 0)
+    printf ("GPTL: %s: Bad return from sysctlbyname\n", thisfunc);
+  if (lfreq > 0)
+    freq = (float) (lfreq * 1.e-6);
+  return freq;
+
+#else
+
   FILE *fd = 0;
   char buf[LEN];
   int is;
-  float freq = -1.;             // clock frequency (MHz)
-  static const char *thisfunc = "get_clockfreq";
   static const char *max_freq_fn = "/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq";
   static const char *cpuinfo_fn = "/proc/cpuinfo";
 
@@ -3051,6 +3070,7 @@ static float get_clockfreq ()
     }
     (void) fclose (fd);
   }
+#endif
 #endif
   return freq;
 }
