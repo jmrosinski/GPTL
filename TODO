@@ -1,5 +1,6 @@
-o Get Intel to use -qopenmp. For now -fopenmp works but for how long?
+x Get Intel to use -qopenmp. For now -fopenmp works but for how long?
 o Test with PGI
+  - Requires CPP="pgcc -E" or fails CPP check
 + Test with clang/gfortran
   + Gave up on enabling OMP
 + Change default to unwind

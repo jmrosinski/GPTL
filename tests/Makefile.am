@@ -17,8 +17,8 @@ noinst_PROGRAMS = printwhileon imperfect_nest
 bin_PROGRAMS = gran_overhead
 
 # Test programs that will be built for all configurations.
-check_PROGRAMS = tst_simple global
-TESTS = tst_simple
+check_PROGRAMS = tst_simple global badhandle
+TESTS = tst_simple badhandle
 
 if HAVE_INSTRFLAG
 if HAVE_LIBUNWIND

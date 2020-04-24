@@ -12,14 +12,16 @@ program utrtest
   logical :: enable_expensive = .false. ! true means order auto-prof calls with collisions badly
   double precision :: sum = 0.
   integer :: ret
-  integer :: handle1 = 0
-  integer :: handle2 = 0
-  integer :: handle3 = 0
-  integer :: handle4 = 0
-  integer :: handle5 = 0
-  integer :: handle6 = 0
-  integer :: handle7 = 0
-  integer :: handle8 = 0
+  integer :: handle1 = 0, handle01 = 0
+  integer :: handle2 = 0, handle02 = 0
+  integer :: handle3 = 0, handle03 = 0
+  integer :: handle4 = 0, handle04 = 0
+  integer :: handle5 = 0, handle05 = 0
+  integer :: handle6 = 0, handle06 = 0
+  integer :: handle7 = 0, handle07 = 0
+  integer :: handle8 = 0, handle08 = 0
+  integer :: nthreads = 1      ! default: no threading case
+  integer :: iter
 
   integer :: n                 ! iterator through argument list
   integer :: narg              ! number of cmd-line args
@@ -32,7 +34,7 @@ program utrtest
   integer, parameter :: n_av_timers = size(av_timers)
   
 #ifdef THREADED_OMP
-  call omp_set_num_threads (1)
+  nthreads = omp_get_max_threads ()
 #endif
 
   ret = gptlsetutr (gptlnanotime)  ! set the default underlying timing routine
@@ -101,30 +103,7 @@ program utrtest
   
   ret = gptlinitialize ()
 
-  if (enable_name) then
-    ret = gptlstart ('total_startstop')
-    if (enable_expensive) then
-      call sub (1, 10000000, '1x1e7', sum)
-      call sub (10, 1000000, '10x1e6', sum)
-      call sub (100, 100000, '100x1e5', sum)
-      call sub (1000, 10000, '1000x1e4', sum)
-      call sub (10000, 1000, '1e4x1000', sum)
-      call sub (100000, 100, '1e5x100', sum)
-      call sub (1000000, 10, '1e6x10', sum)
-      call sub (10000000, 1, '1e7x1', sum)
-    else
-      call sub (10000000, 1, '1e7x1', sum)
-      call sub (1000000, 10, '1e6x10', sum)
-      call sub (100000, 100, '1e5x100', sum)
-      call sub (10000, 1000, '1e4x1000', sum)
-      call sub (1000, 10000, '1000x1e4', sum)
-      call sub (100, 100000, '100x1e5', sum)
-      call sub (10, 1000000, '10x1e6', sum)
-      call sub (1, 10000000, '1x1e7', sum)
-    end if
-    ret = gptlstop ('total_startstop')
-  end if
-
+  ! Set handles outside of threaded loop
   if (enable_handle) then
     ret = gptlinit_handle ('1e7x1_handle', handle8)
     ret = gptlinit_handle ('1e6x10_handle', handle7)
@@ -134,76 +113,107 @@ program utrtest
     ret = gptlinit_handle ('100x1e5_handle', handle3)
     ret = gptlinit_handle ('10x1e6_handle', handle2)
     ret = gptlinit_handle ('1x1e7_handle', handle1)
-    
-    ret = gptlstart ('total_handle')
-    if (enable_expensive) then
-      call sub_handle (1, 10000000, '1x1e7_handle', sum, handle1)
-      call sub_handle (10, 1000000, '10x1e6_handle', sum, handle2)   ! collides
-      call sub_handle (100, 100000, '100x1e5_handle', sum, handle3)
-      call sub_handle (1000, 10000, '1000x1e4_handle', sum, handle4)
-      call sub_handle (10000, 1000, '1e4x1000_handle', sum, handle5)
-      call sub_handle (100000, 100, '1e5x100_handle', sum, handle6)
-      call sub_handle (1000000, 10, '1e6x10_handle', sum, handle7)   ! collides
-      call sub_handle (10000000, 1, '1e7x1_handle', sum, handle8)
-    else
-      call sub_handle (10000000, 1, '1e7x1_handle', sum, handle8)
-      call sub_handle (1000000, 10, '1e6x10_handle', sum, handle7)
-      call sub_handle (100000, 100, '1e5x100_handle', sum, handle6)
-      call sub_handle (10000, 1000, '1e4x1000_handle', sum, handle5)
-      call sub_handle (1000, 10000, '1000x1e4_handle', sum, handle4)
-      call sub_handle (100, 100000, '100x1e5_handle', sum, handle3)
-      call sub_handle (10, 1000000, '10x1e6_handle', sum, handle2)
-      call sub_handle (1, 10000000, '1x1e7_handle', sum, handle1)
-    end if
-    ret = gptlstop ('total_handle')
   end if
-
+    
   if (enable_nullterm) then
-    ret = gptlinit_handle ('1e7x1_handle0'//char(0), handle8)
-    ret = gptlinit_handle ('1e6x10_handle0'//char(0), handle7)
-    ret = gptlinit_handle ('1e5x100_handle0'//char(0), handle6)
-    ret = gptlinit_handle ('1e4x1000_handle0'//char(0), handle5)
-    ret = gptlinit_handle ('1000x1e4_handle0'//char(0), handle4)
-    ret = gptlinit_handle ('100x1e5_handle0'//char(0), handle3)
-    ret = gptlinit_handle ('10x1e6_handle0'//char(0), handle2)
-    ret = gptlinit_handle ('1x1e7_handle0'//char(0), handle1)
-    
-    ret = gptlstart ('total_handle_nullterm'//char(0))
-    if (enable_expensive) then
-      call sub_handle (1, 10000000, '1x1e7_handle0'//char(0), sum, handle1)    ! collides
-      call sub_handle (10, 1000000, '10x1e6_handle0'//char(0), sum, handle2)   ! collides
-      call sub_handle (100, 100000, '100x1e5_handle0'//char(0), sum, handle3)  ! collides
-      call sub_handle (1000, 10000, '1000x1e4_handle0'//char(0), sum, handle4)
-      call sub_handle (10000, 1000, '1e4x1000_handle0'//char(0), sum, handle5)
-      call sub_handle (100000, 100, '1e5x100_handle0'//char(0), sum, handle6)  ! collides
-      call sub_handle (1000000, 10, '1e6x10_handle0'//char(0), sum, handle7)   ! collides
-      call sub_handle (10000000, 1, '1e7x1_handle0'//char(0), sum, handle8)    ! collides
-    else
-      call sub_handle (10000000, 1, '1e7x1_handle0'//char(0), sum, handle8)    ! collides
-      call sub_handle (1000000, 10, '1e6x10_handle0'//char(0), sum, handle7)   ! collides
-      call sub_handle (100000, 100, '1e5x100_handle0'//char(0), sum, handle6)  ! collides
-      call sub_handle (10000, 1000, '1e4x1000_handle0'//char(0), sum, handle5)
-      call sub_handle (1000, 10000, '1000x1e4_handle0'//char(0), sum, handle4)
-      call sub_handle (100, 100000, '100x1e5_handle0'//char(0), sum, handle3)  ! collides
-      call sub_handle (10, 1000000, '10x1e6_handle0'//char(0), sum, handle2)   ! collides
-      call sub_handle (1, 10000000, '1x1e7_handle0'//char(0), sum, handle1)    ! collides
+    ret = gptlinit_handle ('1e7x1_handle0'//char(0), handle08)
+    ret = gptlinit_handle ('1e6x10_handle0'//char(0), handle07)
+    ret = gptlinit_handle ('1e5x100_handle0'//char(0), handle06)
+    ret = gptlinit_handle ('1e4x1000_handle0'//char(0), handle05)
+    ret = gptlinit_handle ('1000x1e4_handle0'//char(0), handle04)
+    ret = gptlinit_handle ('100x1e5_handle0'//char(0), handle03)
+    ret = gptlinit_handle ('10x1e6_handle0'//char(0), handle02)
+    ret = gptlinit_handle ('1x1e7_handle0'//char(0), handle01)
+  end if
+
+  ! Do the same calculation over as many threads as requested
+!$OMP PARALLEL DO FIRSTPRIVATE (SUM)
+  do iter=1,nthreads
+    if (enable_name) then
+      ret = gptlstart ('total_startstop')
+      if (enable_expensive) then
+        call sub (1, 10000000, '1x1e7', sum)
+        call sub (10, 1000000, '10x1e6', sum)
+        call sub (100, 100000, '100x1e5', sum)
+        call sub (1000, 10000, '1000x1e4', sum)
+        call sub (10000, 1000, '1e4x1000', sum)
+        call sub (100000, 100, '1e5x100', sum)
+        call sub (1000000, 10, '1e6x10', sum)
+        call sub (10000000, 1, '1e7x1', sum)
+      else
+        call sub (10000000, 1, '1e7x1', sum)
+        call sub (1000000, 10, '1e6x10', sum)
+        call sub (100000, 100, '1e5x100', sum)
+        call sub (10000, 1000, '1e4x1000', sum)
+        call sub (1000, 10000, '1000x1e4', sum)
+        call sub (100, 100000, '100x1e5', sum)
+        call sub (10, 1000000, '10x1e6', sum)
+        call sub (1, 10000000, '1x1e7', sum)
+      end if
+      ret = gptlstop ('total_startstop')
     end if
-    ret = gptlstop ('total_handle_nullterm'//char(0))
-  end if
-
-  if (enable_autoprof) then
-    ret = gptlstart ('total_autoprof'//char(0))
-    call sub_autoprof (10000000, 1, sum)
-    call sub_autoprof (1000000, 10, sum)
-    call sub_autoprof (100000, 100, sum)
-    call sub_autoprof (10000, 1000, sum)
-    call sub_autoprof (1000, 10000, sum)
-    call sub_autoprof (100, 100000, sum)
-    call sub_autoprof (10, 1000000, sum)
-    call sub_autoprof (1, 10000000, sum)
-    ret = gptlstop ('total_autoprof'//char(0))
-  end if
-
+    
+    if (enable_handle) then
+      ret = gptlstart ('total_handle')
+      if (enable_expensive) then
+        call sub_handle (1, 10000000, '1x1e7_handle', sum, handle1)
+        call sub_handle (10, 1000000, '10x1e6_handle', sum, handle2)   ! collides
+        call sub_handle (100, 100000, '100x1e5_handle', sum, handle3)
+        call sub_handle (1000, 10000, '1000x1e4_handle', sum, handle4)
+        call sub_handle (10000, 1000, '1e4x1000_handle', sum, handle5)
+        call sub_handle (100000, 100, '1e5x100_handle', sum, handle6)
+        call sub_handle (1000000, 10, '1e6x10_handle', sum, handle7)   ! collides
+        call sub_handle (10000000, 1, '1e7x1_handle', sum, handle8)
+      else
+        call sub_handle (10000000, 1, '1e7x1_handle', sum, handle8)
+        call sub_handle (1000000, 10, '1e6x10_handle', sum, handle7)
+        call sub_handle (100000, 100, '1e5x100_handle', sum, handle6)
+        call sub_handle (10000, 1000, '1e4x1000_handle', sum, handle5)
+        call sub_handle (1000, 10000, '1000x1e4_handle', sum, handle4)
+        call sub_handle (100, 100000, '100x1e5_handle', sum, handle3)
+        call sub_handle (10, 1000000, '10x1e6_handle', sum, handle2)
+        call sub_handle (1, 10000000, '1x1e7_handle', sum, handle1)
+      end if
+      ret = gptlstop ('total_handle')
+    end if
+    
+    if (enable_nullterm) then    
+      ret = gptlstart ('total_handle_nullterm'//char(0))
+      if (enable_expensive) then
+        call sub_handle (1, 10000000, '1x1e7_handle0'//char(0), sum, handle01)    ! collides
+        call sub_handle (10, 1000000, '10x1e6_handle0'//char(0), sum, handle02)   ! collides
+        call sub_handle (100, 100000, '100x1e5_handle0'//char(0), sum, handle03)  ! collides
+        call sub_handle (1000, 10000, '1000x1e4_handle0'//char(0), sum, handle04)
+        call sub_handle (10000, 1000, '1e4x1000_handle0'//char(0), sum, handle05)
+        call sub_handle (100000, 100, '1e5x100_handle0'//char(0), sum, handle06)  ! collides
+        call sub_handle (1000000, 10, '1e6x10_handle0'//char(0), sum, handle07)   ! collides
+        call sub_handle (10000000, 1, '1e7x1_handle0'//char(0), sum, handle08)    ! collides
+      else
+        call sub_handle (10000000, 1, '1e7x1_handle0'//char(0), sum, handle08)    ! collides
+        call sub_handle (1000000, 10, '1e6x10_handle0'//char(0), sum, handle07)   ! collides
+        call sub_handle (100000, 100, '1e5x100_handle0'//char(0), sum, handle06)  ! collides
+        call sub_handle (10000, 1000, '1e4x1000_handle0'//char(0), sum, handle05)
+        call sub_handle (1000, 10000, '1000x1e4_handle0'//char(0), sum, handle04)
+        call sub_handle (100, 100000, '100x1e5_handle0'//char(0), sum, handle03)  ! collides
+        call sub_handle (10, 1000000, '10x1e6_handle0'//char(0), sum, handle02)   ! collides
+        call sub_handle (1, 10000000, '1x1e7_handle0'//char(0), sum, handle01)    ! collides
+      end if
+      ret = gptlstop ('total_handle_nullterm'//char(0))
+    end if
+    
+    if (enable_autoprof) then
+      ret = gptlstart ('total_autoprof'//char(0))
+      call sub_autoprof (10000000, 1, sum)
+      call sub_autoprof (1000000, 10, sum)
+      call sub_autoprof (100000, 100, sum)
+      call sub_autoprof (10000, 1000, sum)
+      call sub_autoprof (1000, 10000, sum)
+      call sub_autoprof (100, 100000, sum)
+      call sub_autoprof (10, 1000000, sum)
+      call sub_autoprof (1, 10000000, sum)
+      ret = gptlstop ('total_autoprof'//char(0))
+    end if
+  end do
   ret = gptlpr (-1)  ! negative number means write to stderr
   stop 0
 

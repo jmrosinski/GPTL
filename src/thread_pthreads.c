@@ -10,6 +10,7 @@
 #include "gptl_papi.h"
 #include <stdio.h>
 #include <stdlib.h>   // free
+#include <pthread.h>
 
 volatile int GPTLnthreads = -1;        // num threads: init to bad value
 volatile pthread_t *GPTLthreadid = NULL;   // array of thread ids
@@ -235,5 +236,5 @@ void GPTLprint_threadmapping (FILE *fp)
   fprintf (fp, "\n");
   fprintf (fp, "Thread mapping:\n");
   for (t = 0; t < GPTLnthreads; ++t)
-    fprintf (fp, "GPTLthreadid[%d] = %d\n", t, GPTLthreadid[t]);
+    fprintf (fp, "GPTLthreadid[%d] = %ld\n", t, GPTLthreadid[t]);
 }

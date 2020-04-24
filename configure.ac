@@ -146,12 +146,12 @@ AC_ARG_ENABLE([pthread],
       [EXPERIMENTAL: Enable underlying pthread capability instead of OpenMP]))
 
 if test "x$enable_pthread" = xyes; then
-  AC_MSG_WARN([ENABLING PTHREADS WITHIN GPTL IS EXPERIMENTAL: PREFER OPENMP!!!])
+  AC_MSG_WARN([--enable-pthread WITHIN GPTL IS EXPERIMENTAL: PREFER OPENMP!!!])
   dnl Do the stuff needed for enabling the feature
   AC_MSG_CHECKING([for pthread support])
   AC_CHECK_LIB([pthread], [pthread_mutex_init])
   if test "x$ac_cv_lib_pthread_pthread_mutex_init" = xyes; then
-     AC_DEFINE([UNDERLYING_PTHREADS], [1], [pthreads library is present])
+     AC_DEFINE([UNDERLYING_PTHREADS], [1], [use pthreads library for underlying threading])
   fi
 fi
 AM_CONDITIONAL(UNDERLYING_PTHREADS, [test "x$ac_cv_lib_pthread_pthread_mutex_init" = xyes])
@@ -160,6 +160,7 @@ AM_CONDITIONAL(UNDERLYING_PTHREADS, [test "x$ac_cv_lib_pthread_pthread_mutex_ini
 if test "x$ac_cv_lib_pthread_pthread_mutex_init" != xyes; then
   if test "x$useomp" = xyes; then
     underlying_omp=yes;
+    AC_DEFINE([UNDERLYING_OPENMP], [1], [use openmp for underlying threading])
   fi
 fi
 AM_CONDITIONAL(UNDERLYING_OPENMP, [test "x$underlying_omp" = xyes])

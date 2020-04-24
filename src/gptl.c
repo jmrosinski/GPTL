@@ -649,8 +649,10 @@ int GPTLinit_handle (const char *name, int *handle)
 ** GPTLstart_handle: start a timer based on a handle
 **
 ** Input arguments:
-**   name: timer name (required when on input, handle=0)
-**   handle: pointer to timer matching "name"
+**   name:   timer name (handle=0 on input means generate handle from name)
+**
+** Input/output arguments:
+**   handle: zero means generate from name. Non-zero means value was pre-generated
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
@@ -702,6 +704,13 @@ int GPTLstart_handle (const char *name, int *handle)
     return GPTLerror ("%s: stack too big: NOT starting timer for %s\n", thisfunc, name);
 
   if ( ! ptr) { // Add a new entry and initialize
+    // Verify *handle matches what genhashidx says (only useful when GPTLinit_handle called)
+    int testidx = (int) genhashidx (name);
+    if (testidx != *handle)
+      return GPTLerror ("%s: expected vs. input handles for name=%s don't match.",
+			" Possible user error passing wrong handle for name\n",
+			thisfunc, name);
+	
     ptr = (Timer *) GPTLallocate (sizeof (Timer), thisfunc);
     memset (ptr, 0, sizeof (Timer));
 
@@ -937,8 +946,8 @@ static inline int preamble_stop (int *t, double *tp1, long *usr, long *sys, cons
 ** GPTLstop_handle: stop a timer based on a handle
 **
 ** Input arguments:
-**   name: timer name (used only for diagnostics)
-**   handle: pointer to timer
+**   name:   timer name
+**   handle: previously generated handle (= ehash index). Pointer not int for consistency w/start
 **
 ** Return value: 0 (success) or -1 (failure)
 */
@@ -972,6 +981,15 @@ int GPTLstop_handle (const char *name, int *handle)
 
   ++ptr->count;
 
+  // On first call, verify *handle matches what genhashidx says
+  if (ptr->count == 1) {
+    int testidx = (int) genhashidx (name);
+    if (testidx != *handle)
+      return GPTLerror ("%s: expected vs. input handles for name=%s don't match.",
+			" Possible user error passing wrong handle for name\n",
+			thisfunc, name);
+  }
+	
   /* 
   ** Recursion => decrement depth in recursion and return.  We need to return
   ** because we don't want to stop the timer.  We want the reported time for
@@ -3233,9 +3251,9 @@ Timer *GPTLgetentry (const char *name)
 // separately so that GPTLget_thread_num may be inlined.
 
 #ifdef INLINE_THREADING
-#if ( defined THREADED_OMP )
+#if ( defined UNDERLYING_OPENMP )
 #include "./thread_omp.c"
-#elif ( defined THREADED_PTHREADS )
+#elif ( defined UNDERLYING_PTHREADS )
 #include "./thread_pthreads.c"
 #else
 #include "./thread_none.c"
