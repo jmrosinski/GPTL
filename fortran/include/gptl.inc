@@ -26,6 +26,7 @@
       integer GPTLtablesize
       integer GPTLmaxthreads
       integer GPTLonlyprint_rank0
+      integer GPTLmem_growth
 
       integer GPTL_IPC
       integer GPTL_LSTPI
@@ -66,6 +67,7 @@
       parameter (GPTLtablesize      = 50)
       parameter (GPTLmaxthreads     = 51)
       parameter (GPTLonlyprint_rank0= 52)
+      parameter (GPTLmem_growth     = 53)
 
       parameter (GPTL_IPC           = 17)
       parameter (GPTL_LSTPI         = 21)

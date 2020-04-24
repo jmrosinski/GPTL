@@ -1,5 +1,5 @@
 x Get Intel to use -qopenmp. For now -fopenmp works but for how long?
-o Test with PGI
++ Test with PGI
   - Requires CPP="pgcc -E" or fails CPP check
 + Test with clang/gfortran
   + Gave up on enabling OMP
@@ -23,10 +23,11 @@ x Get rid of warnings from "autoreconf -i" about serial number
 o Test with big UFO app
 o Travis passing
 o Test with GSI on hera
-o Test with pthreads
++ Test with pthreads
 o Make pthreads more efficient (ordered list of pthread_ids)
 + Add ability to inline thread*.c
 + Test with Intel
 o Fix clang warnings
 o Ensure "make check" does the right thing when lib has been rebuilt
 o Is there a working "make uninstall" in GPTL?
+o Correct printout from building

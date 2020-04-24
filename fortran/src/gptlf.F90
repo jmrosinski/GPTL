@@ -27,6 +27,7 @@ module gptl
   integer, parameter :: GPTLtablesize      = 50
   integer, parameter :: GPTLmaxthreads     = 51
   integer, parameter :: GPTLonlyprint_rank0= 52
+  integer, parameter :: GPTLmem_growth     = 53
 
   integer, parameter :: GPTL_IPC           = 17
   integer, parameter :: GPTL_LSTPI         = 21

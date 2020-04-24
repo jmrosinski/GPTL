@@ -58,7 +58,8 @@ static bool dopr_preamble = true;      // whether to print preamble info
 static bool dopr_threadsort = true;    // whether to print sorted thread stats
 static bool dopr_multparent = true;    // whether to print multiple parent info
 static bool dopr_collision = false;    // whether to print hash collision info
-static bool dopr_memusage = false;     // whether to include memusage print when auto-profiling
+static bool dopr_memusage = false;     // whether to include memusage print on growth
+static float growth_pct = 0.;          // threshhold % for memory growth print
 
 static time_t ref_gettimeofday = -1;   // ref start point for gettimeofday
 static time_t ref_clock_gettime = -1;  // ref start point for clock_gettime
@@ -286,6 +287,15 @@ int GPTLsetoption (const int option, const int val)
     dopr_memusage = (bool) val; 
     if (verbose)
       printf ("%s: boolean dopr_memusage = %d\n", thisfunc, val);
+    return 0;
+  case GPTLmem_growth: 
+    if (val < 0 || val > 100)
+      return GPTLerror ("%s: mem_growth percentage must be between 0 and 100. %d is invalid\n",
+			thisfunc, val);
+    growth_pct = (float) val; 
+    if (verbose)
+      printf ("%s: if enabled, memory growth will be printed on increase of %d percent\n",
+	      thisfunc, val);
     return 0;
   case GPTLprint_method:
     method = (GPTLMethod) val; 
@@ -2972,16 +2982,16 @@ static void check_memusage (const char *str, const char *funcnam)
   float rss;
 
   (void) GPTLget_memusage (&rss);
-  // Notify user when rss has grown by more than 1%
-  if (rss > rssmax*1.01) {
+  // Notify user when rss has grown by more than some percentage (default 0%)
+  if (rss > rssmax*(1.0 + 0.01*growth_pct)) {
     rssmax = rss;
     // Once MPI is initialized, change file pointer for process size to rank-specific file      
     set_fp_procsiz ();
     if (fp_procsiz) {
-      fprintf (fp_procsiz, "%s %s rss grew to %8.2f MB\n", str, funcnam, rss);
+      fprintf (fp_procsiz, "%s %s RSS grew to %8.2f MB\n", str, funcnam, rss);
       fflush (fp_procsiz);  // Not clear when this file needs to be closed, so flush
     } else {
-      fprintf (stderr, "%s %s rss grew to %8.2f MB\n", str, funcnam, rss);
+      fprintf (stderr, "%s %s RSS grew to %8.2f MB\n", str, funcnam, rss);
     }
   }
 }
