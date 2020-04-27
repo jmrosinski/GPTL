@@ -1,22 +1,31 @@
 /*
-** $Id: util.c,v 1.13 2010-01-01 01:34:07 rosinski Exp $
+** util.c
+**
+** Author: Jim Rosinski
+**
+** Utility functions, mostly for printing error and warning messages
 */
 
-#include "config.h" /* Must be first include. */
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#ifdef HAVE_LIBMPI
-#include <mpi.h>
-#endif
+#include "config.h"   // Must be first include
 #include "private.h"
 #include "gptl.h"
 
-static bool abort_on_error = false;  /* flag says to abort on any error */
-static int max_errors = 10;          /* max number of error print msgs */
-static int num_errors = 0;           /* number of times GPTLerror was called */
-static int max_warn = 10;            /* max number of warning messages */
-static int num_warn = 0;             /* number of times GPTLwarn was called */
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <limits.h>
+#ifdef UNDERLYING_OPENMP
+#include <omp.h>
+#endif
+#ifdef HAVE_LIBMPI
+#include <mpi.h>
+#endif
+
+static bool abort_on_error = false;            // flag says to abort on any error
+static unsigned long max_errors = 10;          // max number of error print msgs
+static volatile unsigned long num_errors = 0;  // number of times GPTLerror was called
+static unsigned long max_warn = 10;            // max number of warning messages
+static volatile unsigned long num_warn = 0;    // number of times GPTLwarn was called
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,9 +51,8 @@ int GPTLerror (const char *fmt, ...)
     if (fmt != NULL && num_errors < max_errors) {
       (void) fprintf (stderr, "GPTL error:");
       (void) vfprintf (stderr, fmt, args);
-      if (num_errors == max_errors)
-	(void) fprintf (stderr, "Truncating further error print now after %d msgs",
-			num_errors);
+      if (num_errors >= max_errors)
+	(void) fprintf (stderr, "Truncating further error print now after %lu msgs", num_errors);
     }
     va_end (args);
   }
@@ -53,7 +61,11 @@ int GPTLerror (const char *fmt, ...)
     (void) fprintf (stderr, "GPTL error:");
     exit (-1);
   }
-  ++num_errors;
+#pragma omp critical
+  {
+    if (num_errors < ULONG_MAX)
+      ++num_errors;
+  }
   return -1;
 }
 
@@ -73,14 +85,16 @@ void GPTLwarn (const char *fmt, ...)
     if (fmt != NULL && num_warn < max_warn) {
       (void) fprintf (stderr, "GPTL warning:");
       (void) vfprintf (stderr, fmt, args);
-      if (num_warn == max_warn)
-	(void) fprintf (stderr, "Truncating further warning print now after %d msgs",
-			num_warn);
+      if (num_warn >= max_warn)
+	(void) fprintf (stderr, "Truncating further warning print now after %lu msgs", num_warn);
     }
     va_end (args);
   }
-  
-  ++num_warn;
+#pragma omp critical
+  {
+    if (num_warn < ULONG_MAX)
+      ++num_warn;
+  }
 }
 
 /*
@@ -149,7 +163,7 @@ int GPTLnum_warn (void) {return num_warn;}
 */
 void *GPTLallocate (const int nbytes, const char *caller)
 {
-  void *ptr;
+  void *ptr = NULL;
 
   if ( nbytes <= 0 || ! (ptr = malloc (nbytes)))
     (void) GPTLerror ("GPTLallocate from %s: malloc failed for %d bytes\n", nbytes, caller);

@@ -4,6 +4,9 @@
  */
 
 #include "config.h" // Must be first include.
+#include "private.h"
+#include "gptl.h"
+#include "gptl_papi.h"
 #include "thread.h"
 
 #ifdef HAVE_LIBMPI
@@ -17,6 +20,7 @@
 #include <stdio.h>
 #include <string.h>        // memset, strcmp (via STRMATCH)
 #include <ctype.h>         // isdigit
+
 #ifdef __APPLE__
 #include <stdint.h>
 #include <sys/types.h>
@@ -40,10 +44,6 @@
 #include <execinfo.h>
 static void extract_name (char *, char **, void *, const int);
 #endif
-
-#include "private.h"
-#include "gptl.h"
-#include "gptl_papi.h"
 
 static Timer **timers = 0;             // linked list of timers
 static Timer **last = 0;               // last element in list
@@ -2938,7 +2938,7 @@ void __cyg_profile_func_exit (void *this_fn, void *call_site)
   long sys = 0;              // system time (returned from get_cpustamp)
   static const char *thisfunc = "__cyg_profile_func_exit";
 
-  if (preamble_stop (&t, &tp1, &usr, &sys, thisfunc) != 0)
+  if (preamble_stop (&t, &tp1, &usr, &sys, unknown) != 0)
     return;
        
   ptr = getentry_instr (hashtable[t], this_fn, &indx);
@@ -3050,7 +3050,7 @@ static float get_clockfreq ()
   
   sysctlbyname ("hw.cpufrequency_max", NULL, &size, NULL, 0);
   if (sysctlbyname ("hw.cpufrequency_max", &lfreq, &size, NULL, 0) < 0)
-    printf ("GPTL: %s: Bad return from sysctlbyname\n", thisfunc);
+    GPTLwarn ("GPTL: %s: Bad return from sysctlbyname\n", thisfunc);
   if (lfreq > 0)
     freq = (float) (lfreq * 1.e-6);
   return freq;
