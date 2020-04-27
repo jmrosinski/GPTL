@@ -1,16 +1,25 @@
-#include "config.h" // Must be first include.
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>          // sqrt
-
+/*
+** pmpi.c
+**
+** Author: Jim Rosinski
+**
+** Gather and print statistics gathered by GPTL across MPI tasks.
+** Only valid for MPI codes. For serial runs use GPTLpr() or GPTLpr_file()
+*/
+ 
+#include "config.h"      // Must be first include.
 #include "private.h"
 #include "gptl.h"
 #include "gptlmpi.h"
 #include "thread.h"
 #ifdef HAVE_PAPI
-#include "gptl_papi.h"     // GPTLnevents, GPTLeventlist
+#include "gptl_papi.h"   // GPTLnevents, GPTLeventlist
 #endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>        // sqrt
 
 // MPI summary stats
 typedef struct {
@@ -50,7 +59,6 @@ static Timer *getentry_slowway (Timer *, char *);
 **   comm:    communicator (e.g. MPI_COMM_WORLD)
 **   outfile: name of file to be written
 */
-
 int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
 {
   int ret;             // return code

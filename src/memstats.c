@@ -1,5 +1,12 @@
-#include "config.h" /* Must be first include. */
-
+/*
+** memstats.c
+**
+** Author: Jim Rosinski
+**
+** Print stats about GPTL memory usage
+*/
+ 
+#include "config.h"  // Must be first include
 #include "private.h"
 #include "thread.h"
 

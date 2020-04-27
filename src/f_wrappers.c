@@ -7,17 +7,16 @@
 */
 
 #include "config.h" // Must be first include
+#include "private.h" // MAX_CHARS, bool
+#include "gptl.h"
 
 #ifdef HAVE_LIBMPI
-#include <mpi.h>
 #include "gptlmpi.h"
+#include <mpi.h>
 #endif
-
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "private.h" // MAX_CHARS, bool
-#include "gptl.h"
 
 #if ( defined FORTRANUNDERSCORE )
 

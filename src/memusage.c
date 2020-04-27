@@ -4,6 +4,21 @@
 ** Author: Jim Rosinski
 **   Credit to Chuck Bardeen for MACOS section (__APPLE__ ifdef)
 **
+** Routines to gather and print stats about current memory usage
+*/
+
+#include "config.h"       // Must be first include
+#include "gptl.h"         // function prototypes
+#include "private.h"
+#include <sys/time.h>     // getrusage
+#include <sys/resource.h> // getrusage
+#include <unistd.h>       // sysconf
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/*
 ** get_memusage: 
 **
 **   Returns current resident set size in MB
@@ -11,19 +26,6 @@
 **   Return value: 0  = success
 **                 -1 = failure
 */
-
-#include "config.h" /* Must be first include. */
-#include <sys/time.h>     // getrusage
-#include <sys/resource.h> // getrusage
-#include <unistd.h>       // sysconf
-
-#include "gptl.h"       /* function prototypes */
-#include "private.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 int GPTLget_memusage (float *rss_out)       // resident set size in MB
 {
   static const float convert2mb = 1./1024.; // getrusage returns results in KB

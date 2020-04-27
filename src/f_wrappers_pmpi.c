@@ -1,4 +1,12 @@
-#include "config.h" /* Must be first include. */
+/*
+** f_wrappers_pmpi.c
+**
+** Author: Jim Rosinski
+** 
+** Fortran wrappers for when MPI profiling via GPTL is enabled
+*/
+
+#include "config.h" // Must be first include
 #include <stdio.h>
 #include <stdlib.h>
 

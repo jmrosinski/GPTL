@@ -1,17 +1,16 @@
 /*
-** $Id: gptl_papi.c,v 1.79 2011-03-28 20:55:19 rosinski Exp $
+** gptl_papi.c
 **
 ** Author: Jim Rosinski
 **
-** Contains routines which interface to PAPI library
+** Routines which interface to PAPI library
 */
-#include "config.h" /* Must be first include. */
- 
+
+#include "config.h"     // Must be first include
 #include "private.h"    // MAX_AUX maybe  more
 #include "thread.h"     // underlying threading routine
 #include "gptl_papi.h"
 #include "gptl.h"       // public entries
-
 #include <papi.h>
 #include <stdlib.h>
 #include <stdio.h>

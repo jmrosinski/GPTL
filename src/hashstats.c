@@ -1,3 +1,11 @@
+/*
+** hashstats.c
+**
+** Author: Jim Rosinski
+**
+** Print statistics regarding hashtable use
+*/
+ 
 #include "config.h" /* Must be first include. */
 
 #include "private.h"

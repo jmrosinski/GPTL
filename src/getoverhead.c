@@ -1,4 +1,14 @@
-#include "config.h" /* Must be first include. */
+/*
+** getoverhead.c
+**
+** Author: Jim Rosinski
+** 
+** Estimate overhead of various GPTL routines
+*/
+
+#include "config.h"    // Must be first include
+#include "private.h"
+#include "gptl_papi.h"
 
 #ifdef HAVE_LIBUNWIND
 #define UNW_LOCAL_ONLY
@@ -12,8 +22,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>  // for free()
-#include "private.h"
-#include "gptl_papi.h"
 
 static bool initialized = true;
 static bool disabled = false;
