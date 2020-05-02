@@ -1,0 +1,28 @@
+.TH GPTLnum_warn 3 "January, 2020" "GPTL"
+
+.SH NAME
+GPTLnum_warn \- Return the number of times GPTLwarn() was called by the GPTL library
+
+.SH SYNOPSIS
+.B C Interface:
+.nf
+int GPTLnum_warn (void);
+.fi
+
+.B Fortran Interface:
+.nf
+integer gptlnum_warn ()
+.fi
+
+.SH DESCRIPTION
+.B GPTLnum_warn ():
+Returns number of times 
+.B GPTLerror() 
+has been called.
+
+.SH RESTRICTIONS
+None.
+
+.SH RETURN VALUE
+Current value of number of times GPTLwarn() was called
+

@@ -455,6 +455,7 @@ AC_CONFIG_FILES([Makefile
                  tests/Makefile
                  src/Makefile
                  bin/Makefile
+		 man/Makefile
 	       ])
 AC_CONFIG_FILES([tests/run_par_summary_test.sh], [chmod ugo+x tests/run_par_summary_test.sh])
 AC_CONFIG_FILES([tests/run_par_pmpi_test.sh], [chmod ugo+x tests/run_par_pmpi_test.sh])

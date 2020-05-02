@@ -1,0 +1,38 @@
+.TH GPTLstartstop_val 3 "May, 2020" "GPTL"
+
+.SH NAME
+GPTLstartstop_val \- Take user input to treat as the result of calling start/stop
+
+.SH SYNOPSIS
+.B C Interface:
+.nf
+int GPTLstartstop_val (const char *name, double val);
+.fi
+
+.B Fortran Interface:
+.nf
+integer gptlstartstop_val (character(len=*) name, real*8 val)
+.fi
+
+.SH DESCRIPTION
+.B GPTLstartstop_val()
+Creates or adds to region
+.IR name
+as though start and stop have been called with value
+.IR val
+
+.SH ARGUMENTS
+.TP
+.I name
+-- existing region name
+.TP
+.I *val
+-- Wallclock time for a single start/stop pair
+
+.SH RESTRICTIONS
+.B GPTLinitialize()
+must have been called
+
+.SH RETURN VALUE
+On success, 0 is returned.
+On error, a negative error code is returned and a descriptive message printed. 

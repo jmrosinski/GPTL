@@ -5,12 +5,12 @@ x Get Intel to use -qopenmp. For now -fopenmp works but for how long?
   + Gave up on enabling OMP
 + Change default to unwind
   + Check for libunwind rather than header file
-o Get versioning right for: Currently follows same rules as netcdf
-  o Version in gptl.pc
++ Get versioning right for: Currently follows same rules as netcdf
+  + Version in gptl.pc
   + Naming of .so files (docs say start with 0.0.0)
-o How to handle CMake
-  - Mark O. help given output from gptl.pc
-  - Or, create CMake info from configure
++ How to handle CMake
+  + Mark O. help given output from gptl.pc
+  x Or, create CMake info from configure
 + Test with memusage stats
 x Get rid of warnings from "autoreconf -i" about serial number
 + Parallel make work OK?
@@ -24,10 +24,16 @@ x Get rid of warnings from "autoreconf -i" about serial number
 o Travis passing
 o Test with GSI on hera
 + Test with pthreads
-o Make pthreads more efficient (ordered list of pthread_ids)
+x Make pthreads more efficient (ordered list of pthread_ids)
+  - Handle routines don't work when pthreads get shifted--on hold for now
 + Add ability to inline thread*.c
 + Test with Intel
 + Fix clang warnings
 + Ensure "make check" does the right thing when lib has been rebuilt
 + Is there a working "make uninstall" in GPTL?
-o Correct printout from building
+o Tweak options available in JEDI?
+  - Everything we need currently there?
+  - MPI testing
+o Documentation, mainly for JEDI
+o How to make a release?
+o Install man pages

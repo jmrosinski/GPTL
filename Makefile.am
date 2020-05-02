@@ -10,8 +10,8 @@ ACLOCAL_AMFLAGS = -I m4
 # These files get added to the distribution.
 EXTRA_DIST = COPYING README
 
-# This is the list of subdirs for which Makefiles will be constructed and run
-SUBDIRS = include src tests bin
+# This is the list of subdirs for which Makefiles will be constructed
+SUBDIRS = include src tests bin man
 if HAVE_FORTRAN
 SUBDIRS += fortran
 endif

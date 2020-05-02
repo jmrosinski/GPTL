@@ -1,24 +1,37 @@
 This file describes how to build and install GPTL. For information on using
-the library, see the web pages in the doc/ directory, and the file README in
-the main directory.
+the library, see the web pages in the doc/ directory, the file README in the
+main directory, and the provided man pages.
 
-After untarring the distribution, construct a macros.make file by editing one
-of the templates that is close to the machine you're building the library on
-(e.g. macros.make.linux). Step-by-step instructions for setting each
-configuration option are embedded in that file. If unsure of some settings,
-you can run "./suggestions". This is an autoconf "configure" script which has
-been modified to just print suggestions, rather than creating any output
-files.
+The build procedure is basic autoconf:
 
-It is a good idea to build with FORTRAN=yes even if you're not going to use
-the Fortran wrappers. Doing this means "make test" will do more thorough
-testing of the library via the Fortran tests.
+% ./configure; make; make check; make install.
 
-After creating macros.make:
+Generally you'll want to specify C and Fortran compilers with
+environment variables. To enable MPI support, use the wrappers, e.g.
 
-% make
-% make test
-% make install
+% env CC=mpicc FC=mpif90 ./configure --prefix=</some/installation/directory>
 
-The "make test" step runs some of the example codes in ctests/ and ftests/
-and checks the results.
+The "configure" script automatically tests for MPI functionality and includes
+it if it proves functional. "configure" also automatically tests for OpenMP
+functionality (unless --disable-openmp is specified), and includes support if
+OpenMP tests succeed.
+
+Other switches to "configure" you may want to consider enabling include:
+
+--enable-pmpi: Enables MPI auto-profiling with the PMPI layer provided by most
+MPi distros
+
+--enable-papi: Enables PAPI (Performance API) support for hardware performance
+counters (https://icl.utk.edu/papi/). The PAPI lib must be installed in a
+standard location in order for this option to work.
+
+--enable-nestedomp: Enables support for OpenMP apps utilizing nested OMP
+constructs. Use this only if you really need it. It adds significant overhead.
+
+There are other options (see ./configure --help), but these are the main ones
+folks generally use.
+
+The "make install" step installs the built library, documentation including
+man pages, and also gptl.pc for optional use by applications which can make
+use of pkg-config.
+

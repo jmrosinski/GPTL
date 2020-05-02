@@ -1189,7 +1189,7 @@ int GPTLreset (void)
 
 // GPTLreset_timer: reset a timer to 0
 // Return value: 0 (success) or GPTLerror (failure)
-int GPTLreset_timer (char *name)
+int GPTLreset_timer (const char *name)
 {
   int t;
   Timer *ptr;

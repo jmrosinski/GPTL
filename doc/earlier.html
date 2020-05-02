@@ -206,8 +206,9 @@ can also be very useful because it shows all parent-child relationships.
   </li><li> Load-stores per L2 miss (GPTL_LSTPL2M)
   </li><li> L3 miss rate (GPTL_L3MRT)
   </li></ul>
-</li><li> Function <b>GPTLpr_summary()</b> now takes an MPI communicator as its
-argument. Passing an "int" doesn't work with some MPI implementations (e.g. OpenMPI).
+</li><li> MPI-specific functions <b>GPTLpr_summary()</b> and <b>GPTLpr_summary_file()</b> provide
+    a summary of timings integrated across MPI tasks. Each function requires an MPI communicator as
+    an argument.
 </li><li> New subroutine <b>gptlprocess_namelist()</b> enables Fortran codes to
 use a namelist to set <b>GPTL</b> options. This allows changing settings
 without having to recompile or relink application

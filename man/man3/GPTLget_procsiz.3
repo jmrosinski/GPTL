@@ -1,0 +1,36 @@
+.TH GPTLget_procsiz 3 "May, 2020" "GPTL"
+
+.SH NAME
+GPTLget_procsiz \- Return current process size (MB) and resident set size (RSS in MB)
+
+.SH SYNOPSIS
+.B C Interface:
+.nf
+int GPTLget_procsiz (float *procsiz, float rss);
+.fi
+
+.B Fortran Interface:
+.nf
+integer gptlget_procsiz (real procsiz, real rss)
+.fi
+
+.SH DESCRIPTION
+.B GPTLget_procsiz()
+Returns current procsiz time for the region
+.IR name.
+
+.SH ARGUMENTS
+.TP
+.I *procsiz
+-- output process size in MB returned to user
+.TP
+.I *value
+-- output resident set size (RSS) in MB returned to user
+
+.SH RESTRICTIONS
+None.
+
+.SH RETURN VALUE
+On success, 0 is returned.
+On error, a negative error code is returned and a descriptive message
+printed. 

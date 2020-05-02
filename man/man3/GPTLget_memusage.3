@@ -1,41 +1,25 @@
-.\" $Id$
-.TH GPTLget_memusage 3 "February, 2007" "GPTL"
+.TH GPTLget_memusage 3 "May, 2020" "GPTL"
 
 .SH NAME
-GPTLget_memusage \- Return current memory usage info
+GPTLget_memusage \- Get current memory usage info (RSS)
 
 .SH SYNOPSIS
 .B C Interface:
 .nf
-int GPTLget_memusage (int *size, int *rss, int *share, 
-                      int *text, int *datastack);
+int GPTLget_memusage (float *rss);
 .fi
 
 .B Fortran Interface:
 .nf
-integer gptlget_memusage (integer size, integer rss, integer share, 
-                          integer text, integer datastack)
+integer gptlget_memusage (real rss)
 .fi
 
 .SH DESCRIPTION
-returns information about current memory usage of the process.
+returns current resident set size (RSS) of the process
 
 .SH ARGUMENTS
-.TP
-.I *size
--- Total process size (KB)
-.TP
 .I *rss
--- Resident set size (KB)
-.TP
-.I *share
--- Number of pages that are shared
-.TP
-.I *text
--- Number of pages that are code
-.TP
-.I *datastack
--- Number of pages that are data/stack
+-- Resident set size (MB)
 
 .SH RESTRICTIONS
 None

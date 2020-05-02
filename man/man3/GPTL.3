@@ -1,5 +1,4 @@
-.\" $Id$
-.TH GPTL 3 "October, 2013" "GPTL"
+.TH GPTL 3 "May, 2020" "GPTL"
 
 .SH NAME
 GPTL \- General Purpose Timing Library
@@ -11,33 +10,38 @@ except that Fortran is case-insensitive. Code instrumentation with GPTL can
 be manual, automatic, or a mix of the two.
 
 Manual instrumentation is done by inserting calls to GPTLstart("region_name")
-and GPTLstop("region_name") wherever the user wishes. "region_name" is an
+and GPTLstop("region_name") wherever the user wishes.  "region_name" is an
 arbitrary character string which will be reported in the output file when one
 of the GPTL print routines GPTLpr() or GPTLpr_file() is called. There is no
-limit to the number of start/stop pairs that can be defined. The pairs can
-be nested to an arbitrary depth. GPTL retains knowledge of these parent-child
+limit to the number of start/stop pairs that can be defined. The pairs can be
+nested to an arbitrary depth. GPTL retains knowledge of these parent-child
 relationships, and reports them by indenting the output appropriately.
 
-Automatic instrumentation can be done at function entry and exit points when
-the compiler supports an auto-instrumentation feature. For example,
--finstrument-functions under gcc, or -Minstrument:functions with the PGI
+Also available are the more-efficient GPTLstart_handle("region_name", handle)
+and GPTLstop_handle("region_name", handle). These require the user to
+keep track of the handle variable(s).
+
+Automatic instrumentation can be done at function entry and exit points if
+the compiler supports an auto-instrumentation flag. For example,
+-finstrument-functions under gcc or Intel, or -Minstrument:functions with the PGI
 compilers. Since GPTL understands parent-child relationships of profiled
 regions, this provides an easy mechanism to generate a dynamic call tree.
 
-The second method to auto-instrument application codes is by using profiling
-hooks provided by most MPI distributions. This option is enabled in GPTL by
-setting ENABLE_PMPI=yes in macros.make prior to building the GPTL
-library. Time taken in the MPI routines, and bytes transferred per task, are
-reported. Also, if runtime option sync_mpi is enabled, GPTL will call 
-MPI_Barrier prior to relevant MPI calls and report both the synchronization
-time and the actual MPI transfer time. 
+The capability to auto-instrument MPI calls from application codes can be
+enabled with "configure" option --enable-pmpi. This latches on to profiling
+hooks (PMPI layer) provided by most MPI distributions. Time taken in the MPI
+routines, and bytes transferred per task, are reported when print routine
+"GPTLpr_summary()" is called. Also, if runtime option sync_mpi is enabled,
+GPTL will call MPI_Barrier prior to relevant MPI calls and report both the
+synchronization time and the actual MPI transfer time.
 
-Currently, only a subset of the most commonly used MPI routines has
-been implemented with this automatic instrumentation feature. But adding more
-is a straightforward task. Using this auto-profiling method alone, or in
-conjunction with compiler-generated auto-instrumention described, application
+Most commonly used MPI routines have been implemented with the automatic
+instrumentation feature just described. But adding more is a straightforward
+task (see src/pmpi.c). Using this auto-profiling method alone, or in
+conjunction with compiler-generated auto-instrumention described, 
 performance profiles can be generated without any user modifications to the
-application source.
+application source. The GPTL author is happy to accept modifications which add new
+MPI routines to auto-profile (jmrosinski@gmail.com).
 
 GPTL is thread-safe. Per-thread timig information is maintined within the
 library, and reported in the output file. Normally there is one output file
@@ -47,10 +51,10 @@ There is an optional namelist parsing routine for Fortran codes,
 gptlprocess_namelist(), that can optionally be used to set GPTL options from
 Fortran via a namelist.
 
-If the PAPI library is installed, GPTL provides an easy to use
-interface to most of the functionality provided by that library. GPTL also
-defines a set of derived events based on PAPI, such as computational
-intensity and L1 miss rate.
+If the PAPI library is installed, GPTL provides an easy interface to
+most of the functionality provided by that library (./configure
+--enable-papi). GPTL also defines a set of derived events based on PAPI, such
+as computational intensity, L1 miss rate, and so forth.
 
 See http://jmrosinski.github.com/GPTL/ for a set of usage
 examples and further details on using the library. The file README which
@@ -61,7 +65,7 @@ own man page with usage details. The order of the functions listed here
 matches the sequence one would normally use to invoke GPTL functions in an
 application.
 
-.SH Primary GPTL functions
+.SH User accessible GPTL functions
 .LP
 .nf
 .BR GPTLevent_name_to_code(3) " convert a GPTL (or PAPI) event name to its
@@ -72,35 +76,38 @@ to its name"
 .BR GPTLsetutr(3) " - set the default underlying timing routine"
 .BR gptlprocess_namelist(3) " - (Fortran only) set GPTL options by reading a Fortran namelist"
 .BR GPTLinitialize(3) " - initialize the GPTL library. Must be called after all calls to GPTLsetoption/GPTLsetutr/gptlprocess_namelist, and before all calls to GPTLstart, GPTLstop, and GPTLpr"
+.BR GPTL_PAPIlibraryinit(3) " - Initialize the PAPI library. Rarely used because GPTL can call it automatically"
+.BR GPTLinit_handle(3) " - Decrease overhead by generating a handle for subsequent use by GPTLstart_handle() and GPTLstop_handle()" 
 .BR GPTLstart(3) " - start a region timer"
 .BR GPTLstart_handle(3) " - start a region timer with a handle (more efficient than GPTLstart)"
 .BR GPTLstop(3) " - stop a region timer"
 .BR GPTLstop_handle(3) " - stop a region timer with a handle (more efficient than GPTLstop)"
 .BR GPTLbarrier(3) " - if MPI is enabled, set and time an MPI_Barrier"
 .BR GPTLreset(3) " - reset all existing GPTL regions to zero"
+.BR GPTLreset_timer(3) " - reset a specific GPTL region to zero"
 .BR GPTLdisable(3) " - disable subsequent calls to GPTLstart/GPTLstop"
 .BR GPTLenable(3) " - enable subsequent calls to GPTLstart/GPTLstop"
-.BR GPTLget_wallclock(3) " - get the current wallclock time accumulation for
-a region"
-.BR GPTLget_eventvalue(3) " - get the current value of an event (e.g. PAPI
-counter value) for a region"
+.BR GPTLget_wallclock(3) " - get the current wallclock time accumulation for a region"
+.BR GPTLget_wallclock_latest(3) " - get the most recent wallclock time (start/stop) for a region"
+.BR GPTLget_eventvalue(3) " - get the current value of an event (e.g. PAPI counter value) for a region"
+.BR GPTLget_procsiz(3) " - get the current process size"
 .BR GPTLget_nregions(3) " - get the current number of regions being timed"
 .BR GPTLget_regionname(3) " - get the name of a region"
+.BR GPTLget_threadwork(3) " - for a region, compute max work and imbalance across threads"
+.BR GPTLnum_errors(3) " - get the number of times GPTLerror has been called"
+.BR GPTLnum_warn(3) " - get the number of times GPTLwarn has been called"
+.BR GPTLstartstop_val(3) " - fake a start/stop pair (rarely used)"
 .BR GPTLquery(3) " - get current values for a region being timed"
-.BR GPTLquerycounters(3) " - get current PAPI values for a region being
-timed"
 .BR GPTLpr(3) " - print info for all regions"
 .BR GPTLpr_file(3) " - print info for all regions to a user-specified file"
-.BR GPTLpr_summary(3) " - for an MPI code, print a summary for all regions
-across all ranks"
+.BR GPTLpr_summary(3) " - for an MPI code, print a summary for all regions across all ranks"
 .BR GPTLfinalize(3) " - finalize the GPTL library"
 .fi
 
 .SH Utility GPTL functions. These can be called independently of any other GPTL function.
 .LP
 .nf
-.BR GPTLstamp(3) " - get a timestamp for wallclock, user time, and system
-time"
+.BR GPTLstamp(3) " - get a timestamp for wallclock, user time, and system time"
 .BR GPTLget_memusage(3) " - get stats on current memory usage"
 .BR GPTLprint_memusage(3) " - print stats on current memory usage"
 .fi
@@ -109,17 +116,7 @@ time"
 .LP
 .nf
 .BR gptl_avail " - print a list of available PAPI-based derived events"
-.BR gptl_knownflopcount " tests PAPI directly (not wrapped by GPTL) for a
-known flop count"
-
-.SH Post-processing GPTL scripts
-.LP
-.nf
-.BR parsegptlout.pl(3) " - for multiprocessed-codes, print summary of an
-event stats across all threads and tasks"
-.BR hex2name.pl(3) " - for auto-instrumented codes, convert region addresses
-to human-readable names"
-.fi
+.BR gptl_knownflopcount " tests PAPI directly (not wrapped by GPTL) for a known flop count"
 
 .SH SEE ALSO
-README, INSTALL, and the GPTL Web site: http://www.burningserver.net/rosinski/gptl
+README, INSTALL, and the GPTL Web site: https://jmrosinski.github.io/GPTL

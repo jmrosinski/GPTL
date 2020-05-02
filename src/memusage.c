@@ -67,7 +67,7 @@ int GPTLprint_memusage (const char *str)
 /*
 ** get_procsiz
 **
-**   Read from /proc to obtain process size and RSS for calling process
+**   Obtain process size and RSS for calling process
 **
 **   Return value: 0  = success
 **                 -1 = failure

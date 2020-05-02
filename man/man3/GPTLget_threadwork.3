@@ -1,0 +1,44 @@
+.TH GPTLget_threadwork 3 "May, 2020" "GPTL"
+
+.SH NAME
+GPTLget_threadwork \- For a threaded region, compute most work done by any thread, and imbalance
+across threads.
+
+.SH SYNOPSIS
+.B C Interface:
+.nf
+int GPTLget_threadwork (const char *name, double *maxwork, double *imbal);
+.fi
+
+.B Fortran Interface:
+.nf
+integer gptlget_threadwork (character(len=*) name, real*8 maxwork, real*8 imbal)
+.fi
+
+.SH DESCRIPTION
+.B GPTLget_threadwork()
+For a region, computes and returns most work done by any thread, and imbalance in workload
+.IR name.
+
+.SH ARGUMENTS
+.TP
+.I name
+-- existing region name
+.TP
+.I *maxwork
+-- Output maximum work done by any thread
+.TP
+.I *value
+-- Output 64-bit current imbalance in workload across threads
+
+.SH RESTRICTIONS
+.B GPTLinitialize()
+must have been called, and at least one pair of calls to
+.B GPTLstart()
+and 
+.B GPTLstop()
+for the desired region.
+
+.SH RETURN VALUE
+On success, 0 is returned.
+On error, a negative error code is returned and a descriptive message printed. 

@@ -86,7 +86,7 @@ extern int GPTLstamp (double *, double *, double *);
 extern int GPTLpr (const int);
 extern int GPTLpr_file (const char *);
 extern int GPTLreset (void);
-extern int GPTLreset_timer (char *);
+extern int GPTLreset_timer (const char *);
 extern int GPTLfinalize (void);
 extern int GPTLget_memusage (float *);
 extern int GPTLprint_memusage (const char *);
