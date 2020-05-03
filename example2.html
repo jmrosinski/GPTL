@@ -14,14 +14,15 @@
 <a href="example3.html"><img border="0" src="btn_next.gif"
 			     width="100" height="20" alt="Example 3" /></a>
 
+<a href="gptl_homepage.html">Back to GPTL home page</a>
+
 <br />
 
 <h2>Example 2: Auto-instrumentation</h2>
 This example is a C code compiled with auto-instrumentation enabled. It
 uses <b>PAPI</b> to count total instructions, and instructions per cycle. Note
 that function <em>B</em> has multiple parents, and <b>GPTL</b> reports the
-	multiple parent information in the output produced by the call
-	to <b>GPTLpr_file()</b>. 
+multiple parent information in the output produced by the call to <b>GPTLpr_file()</b>. 
 <p>
 <b><em>main.c:</em></b>
 <pre>
@@ -76,22 +77,18 @@ void B ()
 }
 </div>
 </pre>
-Compile all but <em>main.c</em> with auto-instrumentation, then link and
-run. Useful auto-instrumentation of the main program is not possible,
-because the call to <b>GPTLinitialize()</b> must be done manually and
-needs to preceed all calls to <b>GPTLstart</b> and <b>GPTLstop</b>. 
+Compile all but <em>main.c</em> with auto-instrumentation, then link and run. Useful
+auto-instrumentation of the main program is not possible, because the call
+to <b>GPTLinitialize()</b> must be done manually and needs to preceed all calls to <b>GPTLstart</b>
+and <b>GPTLstop</b>. Note that we need to link to the PAPI library due to use of the PAPI interface.
+The flag <b>-rdynamic</b> is added to link flags to assist in resolving auto-profiled names.
 <pre>
-% gcc -c main.c
-% gcc -finstrument-functions subs.c main.o -lgptl -lpapi
+% gcc -c -g main.c -I${GPTL}/include
+% gcc -g -finstrument-functions subs.c main.o -I${GPTL}/include -L${GPTL}/lib -lgptl -lpapi -rdynamic
 % ./a.out
 </pre>
 
-Now convert the auto-instrumented output to human-readable form:
-<pre>
-% hex2name.pl a.out outfile > outfile.converted
-</pre>
-
-Output file <em> outfile.converted</em> looks like this:
+Important parts of the output file <em> outfile</em> look like this:
 <pre>
 <div style="background-color:white;">
 PAPI event multiplexing was OFF
@@ -138,23 +135,18 @@ Count next to child is total number of times it was called by the listed parents
 </div>
 </pre>
 <h3>Explanation of the above output</h3>
-<b>PAPI</b> event "Total instructions executed"
-(PAPI_TOT_INS) and derived event "Instructions per
-cycle" (GPTL_IPC) were enabled. To compute instructions per
-cycle, <b>GPTL</b> made the 
-<b>PAPI</b> library call to count total cycles (PAPI_TOT_CYC) in addition to
-the already-enabled event PAPI_TOT_INS. When
-<b>GPTLpr_file()</b> was called, it computed:
+<b>PAPI</b> event "Total instructions executed" (PAPI_TOT_INS) and derived event "Instructions per
+cycle" (GPTL_IPC) were enabled. To compute instructions per cycle, <b>GPTL</b> made the 
+<b>PAPI</b> library call to count total cycles (PAPI_TOT_CYC) in addition to the already-enabled event
+PAPI_TOT_INS. When <b>GPTLpr_file()</b> was called, it computed:
 <pre>
       GPTL_IPC = PAPI_TOT_INS / PAPI_TOT_CYC;
 </pre>
 <p>
-Note the asterisk in front of region "B". This
-indicates that region "B" had multiple parents. It is presented as a child of
-region "A" because that is the first region that invoked it. Information
-about other parents is presented after the main call tree. It shows that
-region "B" had two parents, "A", and "do_work". Each parent invoked "B" once,
-for a total of 2 calls.
+Note the asterisk in front of region "B". This indicates that region "B" had multiple parents. It
+is presented as a child of region "A" because that is the first region that invoked it. Information
+about other parents is presented after the main call tree. It shows that region "B" had two
+parents, "A", and "do_work". Each parent invoked "B" once, for a total of 2 calls.
 
 <hr />
 <a href="example1.html"><img border="0" src="btn_previous.gif"
@@ -162,6 +154,8 @@ for a total of 2 calls.
 				  /></a> 
 <a href="example3.html"><img border="0" src="btn_next.gif"
 			     width="100" height="20" alt="Example 3" /></a>
+
+<a href="gptl_homepage.html">Back to GPTL home page</a>
 
 <br />
 

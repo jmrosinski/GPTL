@@ -2,7 +2,7 @@
 <head>
 <title>GPTL usage example 6: Automatic generation of MPI statistics</title>
 <meta name="example" content="MPI profile">
-<meta name="Keywords" content="pmpi","mpi","gptl","papi","call tree","profile","timing","performance analysis">
+<meta name="Keywords" content="memory usage","pmpi","mpi","gptl","papi","call tree","profile","timing","performance analysis">
 <meta name="Author" content="Jim Rosinski">
 </head>
 <body bgcolor="peachpuff">
@@ -14,34 +14,23 @@
 <a href="example7.html"><img border="0" src="btn_next.gif"
 			     width="100" height="20" alt="Example 7" /></a>
 
+<a href="gptl_homepage.html">Back to GPTL home page</a>
+
 <br />
 
 <h2>Example 6: Automatic generation of MPI statistics</h2>
-This is a Fortran code which uses option
-<b>ENABLE_PMPI</b> (in macros.make) to automatically profile various MPI routines in
-the call tree along with number of invocations and average number of bytes
-transferred per call. The set of MPI routines which can be automatically
-profiled in this way is currently limited to a subset of commonly called
-routines (MPI_Send, MPI_Recv, MPI_Isend, MPI_Irecv, etc.). An easy
-way to see the list of supported routines is to run ftests/pmpi and examine
-output file timing.0 which it creates.
+This is a Fortran code which requires GPTL to have been built with MPI support
+(often env CC=mpicc FC=mpif90 ./configure), and additional PMPI support (./configure --enable-pmpi)
+to automatically profile various MPI routines in the call tree along with number of invocations
+and average number of bytes transferred per call.
 <p>
-If you would like to add some routines, see files pmpi.c and
-f_wrappers_pmpi.c. I'd be glad to add any of interest to the library if you can
+The set of MPI routines which can be automatically profiled in this way is fairly complete,
+but some may be missing. If you would like to add some routines, see files src/pmpi.c and
+src/f_wrappers_pmpi.c. I'd be glad to add any of interest to the library if you can
 provide them. It's just a methodical and repetitive process of typing in the 
-appropriate wrapping code.
-<p>
-In this example HAVE_IARGCGETARG=yes in macros.make. This declares
-that libraries provided by the Fortran compiler or runtime contains entries
-for functions <b>iargc()</b> and <b>getarg()</b>. If these functions are
-available, <b>MPI_Init()</b> and <b>MPI_Finalize()</b> are automatically
-instrumented with calls to <b>GPTLinitialize()</b>, and a wrapping timer for
-the entire program. Likewise, <b>MPI_Finalize()</b> is automatically
-instrumented to print timers when it is called. <b>GPTL</b> can therefore be
-used to gather and print timing statistics with zero modifications to user
-code. Potentially used in conjunction with the auto-instrumentation feature
-of many compilers (e.g. -finstrument-functions in gcc), a large amount of
-hopefully useful data can be gathered.
+appropriate wrapping code. Submit a PR or email me directly (jmrosinski AT gmail.com) and
+I'd be glad to add them to the repo.
+
 <p>
 <b><em>pmpi.F90:</em></b>
 <pre>
@@ -53,13 +42,14 @@ end module myvars
 
 program pmpi
   use myvars
+  use gptl
+
   implicit none
 
 #include &#60mpif.h&gt
-#include "../gptl.inc"
 
   integer, parameter :: tag = 98
-  integer, parameter :: count = 1024
+  integer, parameter :: count = 100000
 
   integer :: i, j, ret
   integer :: val
@@ -74,6 +64,10 @@ program pmpi
   integer :: rdispls(0:count-1)
   integer :: sdispls(0:count-1)
 
+  integer :: kount, of           ! for gptlquery
+  real(8) :: wc, usr, sys ! for gptlquery
+  integer(8) :: pc               ! for gptlquery
+
   integer, allocatable :: atoabufsend(:)
   integer, allocatable :: atoabufrecv(:)
   integer, allocatable :: gsbufsend(:,:)      ! gather/scatter buffer send
@@ -84,16 +78,15 @@ program pmpi
   integer, allocatable :: atoadispls(:)
 
   logical :: flag
+  integer :: debugflag = 1
 
   ret = gptlsetoption (gptloverhead, 0)
   ret = gptlsetoption (gptlpercent, 0)
   ret = gptlsetoption (gptlabort_on_error, 1)
   ret = gptlsetoption (gptlsync_mpi, 1)
 
-#if ( ! defined HAVE_IARGCGETARG )
   ret = gptlinitialize ()
   ret = gptlstart ("total")
-#endif
 
   call mpi_init (ret)
 
@@ -169,11 +162,12 @@ program pmpi
   call chkbuf ('mpi_sendrecv', recvbuf(:), count, source)
   if (iam == 0) then
     write(6,*)'Success'
-    write(6,*)'Testing irecv, isend, iprobe, itest, wait, waitall...'
+    write(6,*)'Testing irecv, isend, issend, iprobe, itest, wait, waitall...'
   end if
 !
 ! mpi_irecv
 ! mpi_isend
+! mpi_issend
 ! mpi_iprobe
 ! mpi_test
 ! mpi_wait
@@ -186,6 +180,17 @@ program pmpi
   call mpi_test (recvreq, flag, status, ret)
   call mpi_isend (sendbuf, count, MPI_INTEGER, dest, tag, &
                   comm, sendreq, ret)
+  call mpi_wait (recvreq, status, ret)
+  call mpi_wait (sendreq, status, ret)
+  call chkbuf ("mpi_wait", recvbuf(:), count, source)
+
+  recvbuf(:) = -1
+  call mpi_irecv (recvbuf, count, MPI_INTEGER, source, tag, &
+                  comm, recvreq, ret)
+  call mpi_iprobe (source, tag, comm, flag, status, ret)
+  call mpi_test (recvreq, flag, status, ret)
+  call mpi_issend (sendbuf, count, MPI_INTEGER, dest, tag, &
+                   comm, sendreq, ret)
   call mpi_wait (recvreq, status, ret)
   call mpi_wait (sendreq, status, ret)
   call chkbuf ("mpi_wait", recvbuf(:), count, source)
@@ -397,10 +402,8 @@ program pmpi
 !
   call mpi_finalize (ret)
 
-#if ( ! defined HAVE_IARGCGETARG )
   ret = gptlstop ("total")
   ret = gptlpr (iam)
-#endif
 
   stop 0
 end program pmpi
@@ -426,80 +429,78 @@ subroutine chkbuf (msg, recvbuf, count, val)
     end if
   end do
 end subroutine chkbuf
-
 </div>
+
 </pre>
 Now compile and run:
 <pre>
 <div>
-% mpif90 -fopenmp -o pmpi pmpi.F90 -L.. -lgptl
+% mpif90 -o pmpi pmpi.F90 -I${GPTL}/include -L${GPTL}/lib -lgptlf -lgptl
 % mpiexec -n 2 ./pmpi
 </div>
 </pre>
 
-Here's the output contained in file timing.1:
+Here's the output contained in file timing.000000 (i.e. the first rank):
 <pre>
 <div style="background-color:white;">
 Stats for thread 0:
-                            Called  Recurse Wallclock max       min       AVG_MPI_BYTES 
-  MPI_Init_thru_Finalize           1    -       0.001     0.001     0.001       -       
-    MPI_Probe                      1    -       0.000     0.000     0.000       -       
-    sync_Recv                      2    -       0.000     0.000     0.000       -       
-    MPI_Recv                       2    -       0.000     0.000     0.000     4.096e+03 
-    MPI_Send                       1    -       0.000     0.000     0.000     4.096e+03 
-    MPI_Ssend                      1    -       0.000     0.000     0.000     4.096e+03 
-    MPI_Sendrecv                   1    -       0.000     0.000     0.000     8.192e+03 
-    MPI_Irecv                      2    -       0.000     0.000     0.000     4.096e+03 
-    MPI_Iprobe                     1    -       0.000     0.000     0.000       -       
-    MPI_Test                       1    -       0.000     0.000     0.000       -       
-    MPI_Isend                      2    -       0.000     0.000     0.000     4.096e+03 
-    MPI_Wait                       2    -       0.000     0.000     0.000       -       
-    MPI_Waitall                    2    -       0.000     0.000     0.000       -       
-    MPI_Barrier                    1    -       0.000     0.000     0.000       -       
-    sync_Bcast                     1    -       0.000     0.000     0.000       -       
-    MPI_Bcast                      1    -       0.000     0.000     0.000     4.096e+03 
-    sync_Allreduce                 1    -       0.000     0.000     0.000       -       
-    MPI_Allreduce                  1    -       0.000     0.000     0.000     8.192e+03 
-    sync_Gather                    1    -       0.000     0.000     0.000       -       
-    MPI_Gather                     1    -       0.000     0.000     0.000     4.096e+03 
-    sync_Gatherv                   1    -       0.000     0.000     0.000       -       
-    MPI_Gatherv                    1    -       0.000     0.000     0.000     4.096e+03 
-    sync_Scatter                   1    -       0.000     0.000     0.000       -       
-    MPI_Scatter                    1    -       0.000     0.000     0.000     4.096e+03 
-    sync_Scatterv                  1    -       0.000     0.000     0.000       -       
-    MPI_Scatterv                   1    -       0.000     0.000     0.000     8.192e+03 
-    sync_Alltoall                  1    -       0.000     0.000     0.000       -       
-    MPI_Alltoall                   1    -       0.000     0.000     0.000     8.000e+00 
-    sync_Alltoallv                 1    -       0.000     0.000     0.000       -       
-    MPI_Alltoallv                  1    -       0.000     0.000     0.000     8.000e+00 
-    sync_Reduce                    1    -       0.000     0.000     0.000       -       
-    MPI_Reduce                     1    -       0.000     0.000     0.000     4.096e+03 
-    sync_Allgather                 1    -       0.000     0.000     0.000       -       
-    MPI_Allgather                  1    -       0.000     0.000     0.000     8.192e+03 
-    sync_Allgatherv                1    -       0.000     0.000     0.000       -       
-    MPI_Allgatherv                 1    -       0.000     0.000     0.000     8.192e+03 
-Total calls           = 42
-Total recursive calls = 0
+                      Called  Recurse     Wall      max      min AVG_MPI_BYTES
+  total                    1     -       0.175    0.175    0.175       -      
+    MPI_Sendrecv           1     -    8.80e-05 8.80e-05 8.80e-05    8.000e+05 
+    MPI_Irecv              3     -    3.00e-06 2.00e-06 0.00e+00    4.000e+05 
+    MPI_Iprobe             2     -    2.40e-05 2.20e-05 2.00e-06       -      
+    MPI_Test               2     -    6.00e-06 5.00e-06 1.00e-06       -      
+    MPI_Isend              2     -    7.60e-05 6.20e-05 1.40e-05    4.000e+05 
+    MPI_Wait               4     -    4.00e-06 4.00e-06 0.00e+00       -      
+    MPI_Issend             1     -    1.40e-05 1.40e-05 1.40e-05    4.000e+05 
+    MPI_Waitall            2     -    0.00e+00 0.00e+00 0.00e+00       -      
+    MPI_Barrier            1     -    0.00e+00 0.00e+00 0.00e+00       -      
+    sync_Bcast             1     -    1.00e-06 1.00e-06 1.00e-06       -      
+    MPI_Bcast              1     -    0.00e+00 0.00e+00 0.00e+00    4.000e+05 
+    sync_Allreduce         1     -    0.00e+00 0.00e+00 0.00e+00       -      
+    MPI_Allreduce          1     -    1.50e-05 1.50e-05 1.50e-05    8.000e+05 
+    sync_Gather            1     -    0.00e+00 0.00e+00 0.00e+00       -      
+    MPI_Gather             1     -    1.40e-05 1.40e-05 1.40e-05    4.000e+05 
+    sync_Gatherv           1     -    0.00e+00 0.00e+00 0.00e+00       -      
+    MPI_Gatherv            1     -    2.70e-05 2.70e-05 2.70e-05       -      
+    sync_Scatter           1     -    0.00e+00 0.00e+00 0.00e+00       -      
+    MPI_Scatter            1     -    1.70e-05 1.70e-05 1.70e-05    8.000e+05 
+    sync_Scatterv          1     -    0.00e+00 0.00e+00 0.00e+00       -      
+    MPI_Scatterv           1     -    1.70e-05 1.70e-05 1.70e-05    4.000e+05 
+    sync_Alltoall          1     -    0.00e+00 0.00e+00 0.00e+00       -      
+    MPI_Alltoall           1     -    0.00e+00 0.00e+00 0.00e+00       -      
+    sync_Alltoallv         1     -    0.00e+00 0.00e+00 0.00e+00       -      
+    MPI_Alltoallv          1     -    0.00e+00 0.00e+00 0.00e+00       -      
+    sync_Reduce            1     -    0.00e+00 0.00e+00 0.00e+00       -      
+    MPI_Reduce             1     -    1.60e-05 1.60e-05 1.60e-05    4.000e+05 
+    sync_Allgather         1     -    0.00e+00 0.00e+00 0.00e+00       -      
+    MPI_Allgather          1     -    1.70e-05 1.70e-05 1.70e-05       -      
+    sync_Allgatherv        1     -    0.00e+00 0.00e+00 0.00e+00       -      
+    MPI_Allgatherv         1     -    1.80e-05 1.80e-05 1.80e-05       -      
+Overhead sum =  6.31e-06 wallclock seconds
+Total calls  = 41
 </div>
 </pre>
 <h3>Explanation of the above output</h3>
-All of this output was generated automatically. Other than some optional
-calls to <b>gptlsetoption()</b>, no GPTL-specific modifications to the
-application code were made.
-Timings for various MPI calls were automatically generated because <b>GPTL</b> was
-built with <b>ENABLE_PMPI</b> (see macros.make.linux). A wrapping region
-named MPI_Init_thru_Finalize was automatically generated for the region
-between <b>MPI_Init()</b> and <b>MPI_Finalize()</b>. Average number of bytes
-transferred was also reported automatically (see AVG_MPI_BYTES in the above
-output). Also, since <b>gptlsync_mpi</b> was set (see code above), synchronization
-routine <b>MPI_Barrier()</b> was called prior to certain collectives, and
-synchronization time reported.
+The MPI calls were intercepted by GPTL using the PMPI (profiling) interface provided by the MPI library
+(in this case OpenMPI). Part of the interception involved wrapping <b>GPTLstart()</b> and <b>GPTLstop()</b>
+calls around the actual MPI library call. In addition, since the main program called
+gptlsetoption(gptlsync_mpi, 1), the interception also wrapped and timed an MPI barrier before the actual
+MPI call. Doing this allows separation of true MPI time from time spent waiting for data to arrive. This
+setting is critical for appilcation codes with a large load imbalance across MPI tasks. Without it, huge
+amounts of MPI time may be inappropriately clocked when actually the process is just waiting for data
+inside a <b>MPI_Recv()</b> for example.
+<p>
+Number of bytes transferred was also reported automatically (see AVG_MPI_BYTES in the above
+output). For collective calls this is only an estimate, but generally fairly accurate.
 <hr />
 <a href="example5.html"><img border="0" src="btn_previous.gif"
 				  width="100" height="20" alt="Example 5"
 				  /></a> 
 <a href="example7.html"><img border="0" src="btn_next.gif"
 			     width="100" height="20" alt="Example 7" /></a>
+
+<a href="gptl_homepage.html">Back to GPTL home page</a>
 
 <br />
 

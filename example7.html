@@ -2,7 +2,7 @@
 <head>
 <title>GPTL usage example 7: Using GPTLstart_handle() and GPTLstop_handle()</title>
 <meta name="example" content="MPI profile">
-<meta name="Keywords" content="pmpi","mpi","gptl","papi","call tree","profile","timing","performance analysis">
+<meta name="Keywords" content="memory usage","pmpi","mpi","gptl","papi","call tree","profile","timing","performance analysis">
 <meta name="Author" content="Jim Rosinski">
 </head>
 <body bgcolor="peachpuff">
@@ -11,8 +11,10 @@
 <a href="example6.html"><img border="0" src="btn_previous.gif"
 				  width="100" height="20" alt="Example 6"
 				  /></a> 
-<a href="index.html"><img border="0" src="btn_next.gif"
-			  width="100" height="20" alt="GPTL home page" /></a>
+<a href="example8.html"><img border="0" src="btn_next.gif"
+			     width="100" height="20" alt="Example 8" /></a>
+
+<a href="gptl_homepage.html">Back to GPTL home page</a>
 
 <br />
 
@@ -29,6 +31,11 @@ The hash value for any given GPTL region is invariant across threads. So
 per-thread copies of the handle are not needed. Also, these
 functions can be freely mixed with their <b>GPTLstart()</b>
 and <b>GPTLstop()</b> counterparts, as shown in the example below.
+<p>
+Though not done in the example below, <b>GPTLinit_handle()</b> can be
+called prior to <b>GPTLstart_handle()</b> and <b>GPTLstop_handle()</b> to obtain the handle
+prior to invoking start/stop functions. This approach has the advantage that the overhead of
+generating the handle is removed even on the first call to <b>GPTLstart_handle</b>.
 
 <p>
 <b><em>handle.F90:</em></b>
@@ -71,7 +78,7 @@ end program handle
 Now compile and run:
 <pre>
 <div>
-% mpif90 -fopenmp -o handle handle.F90 -L.. -lgptl
+% gfortran -fopenmp -o handle handle.F90 -I${GPTL}/include -I${GPTL}/lib -lgptlf -lgptl
 % ./handle
 </div>
 </pre>
@@ -128,8 +135,10 @@ being done between GPTL "start" and "stop" calls.
 <a href="example6.html"><img border="0" src="btn_previous.gif"
 				  width="100" height="20" alt="Example 6"
 				  /></a> 
-<a href="index.html"><img border="0" src="btn_next.gif"
-			  width="100" height="20" alt="GPTL home page" /></a>
+<a href="example8.html"><img border="0" src="btn_next.gif"
+			     width="100" height="20" alt="Example 8" /></a>
+
+<a href="gptl_homepage.html">Back to GPTL home page</a>
 
 <br />
 

@@ -14,16 +14,22 @@
 <a href="example4.html"><img border="0" src="btn_next.gif"
 			     width="100" height="20" alt="Example 4" /></a>
 
+<a href="gptl_homepage.html">Back to GPTL home page</a>
+
 <br />
 
 <h2>Example 3: GPTLsummary</h2>
 This hybrid OpenMP/MPI code demonstrates the use of summary routine <b>GPTLpr_summary()</b>.
-It simulates variable work load by sleeping some number of seconds depending on rank 
-and thread number. Here we show only the output--the code is available in <b>ctests/global.c</b>.
+It simulates variable work load by sleeping some amount of time depending on rank 
+and thread number. Here we show only the output--the code is available in <b>tests/global.c</b>.
+Since only 2 threads were involved, the code was modified from the committed version to sleep
+some number seconds rather than milliseconds.
 <p>
-Compile and link (this example used the Intel compiler), then run with 2 threads and 8 MPI tasks:
+Compile and link, then run with 2 threads and 8 MPI tasks. In this example we modified the
+sleep time to be seconds rather than milliseconds to make the output more easily understood:
 <pre>
-% mpif90 -o global -openmp global.c -L.. -lgptl
+% cd tests
+% make global  
 % env OMP_NUM_THREADS=2 mpiexec -n 8 ./global
 </pre>
 
@@ -45,7 +51,6 @@ name                  ncalls nranks mean_time   std_dev   wallmax (rank  thread)
 total                      8      8     7.376     3.021     9.001 (     1     0)     2.001 (     7     0)
 nranks-iam+mythread       16      8     5.500     2.449     9.000 (     0     1)     1.000 (     7     0)
 1-5_iam                    5      5     3.000     1.581     5.000 (     5     0)     1.000 (     1     0)
-
 </div>
 </pre>
 In this example <em>iam</em> is the MPI rank and <em>mythread</em> is the thread number. 
@@ -61,6 +66,8 @@ on the lowest rank participating (1 second on rank 1).
 				  /></a> 
 <a href="example4.html"><img border="0" src="btn_next.gif"
 			     width="100" height="20" alt="Example 4" /></a>
+
+<a href="gptl_homepage.html">Back to GPTL home page</a>
 
 <br />
 
