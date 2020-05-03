@@ -2538,7 +2538,7 @@ int GPTLget_nregions (int t, int *nregions)
 }
 
 /*
-** GPTLget_regionname: return region name for this thread
+** GPTLget_regionname: return region name based on region number
 ** 
 ** Input args:
 **   t:      thread number (if < 0, the request is for the current thread)

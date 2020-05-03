@@ -16,10 +16,12 @@ int main ()
   int n;
   unsigned char *arr;
 
-  // Print when process size has grown by at least 10%
+  // Print when process size has grown.
   if ((ret = GPTLsetoption (GPTLdopr_memusage, 1)) != 0)
     return -1;
   
+  // Only print when the process has grown by 50% or more since the last print
+  // (or since the process started)
   if ((ret = GPTLsetoption (GPTLmem_growth, 50)) != 0)
     return -1;
   

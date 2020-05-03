@@ -1,0 +1,14 @@
+.TH gptl_avail 1 "May, 2020" "GPTL"
+
+.SH NAME
+gptl_avail \- List which PAPI-based GPTL events are available
+
+.SH SYNOPSIS
+gptl_avail
+
+.SH DESCRIPTION
+gptl_avail tests and reports availability of the various pre-defined PAPI-based derived events.
+For example, GPTL_IPC is instructions per cycle, defined as PAPI_TOT_INS / PAPI_TOT_CYC
+
+.SH RESTRICTIONS
+GPTL library must have been built successfully with ./configure --enable-papi

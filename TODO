@@ -35,5 +35,17 @@ o Tweak options available in JEDI?
   - Everything we need currently there?
   - MPI testing
 o Documentation, mainly for JEDI
+  - Remove doxygen?
+  - Really necessary to have README, INSTALL, man pages, and html?
 o How to make a release?
 o Install man pages
+o Verify Fortran real matches C float
+o Verify Fortran real*8 matches C double
+o man 1 for gptl cmds installed
+o Remove utrtest from installed executables
+o Add gptl_avail to installed executables
+o Add example web page for memory usage
+o Description of PAPI events and GPTL derived events SOMEWHERE in docs
+o Add header requirements to man pages
+o Add verification of sizes of int vs. integer, double vs. real*8, and float vs. real
+o Add a "return to gptl home page link" on each example

@@ -57,14 +57,14 @@ int main ()
     ret = GPTLfinalize ();
   }
 
-  if (GPTLsetoption (GPTL_L3MRT, 1) == 0) {
-    printf("%-20s %-10d %s\n", "GPTL_L3MRT", GPTL_L3MRT, "L3 Miss rate (fraction)");
+  if (GPTLsetoption (GPTL_LSTPL2M, 1) == 0) {
+    printf("%-20s %-10d %s\n", "GPTL_LSTPL2M", GPTL_LSTPL2M, "Load-store instructions per L2 miss");
     ret = GPTLinitialize ();
     ret = GPTLfinalize ();
   }
 
-  if (GPTLsetoption (GPTL_LSTPL2M, 1) == 0) {
-    printf("%-20s %-10d %s\n", "GPTL_LSTPL2M", GPTL_LSTPL2M, "Load-store instructions per L2 miss");
+  if (GPTLsetoption (GPTL_L3MRT, 1) == 0) {
+    printf("%-20s %-10d %s\n", "GPTL_L3MRT", GPTL_L3MRT, "L3 Miss rate (fraction)");
     ret = GPTLinitialize ();
     ret = GPTLfinalize ();
   }

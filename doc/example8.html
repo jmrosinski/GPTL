@@ -1,0 +1,111 @@
+<html>
+<head>
+<title>GPTL usage example 8: Printing max memory usage (RSS) during an application</title>
+<meta name="example" content="MPI profile">
+<meta name="Keywords" content="memory usage","pmpi","mpi","gptl","papi","call tree","profile","timing","performance analysis">
+<meta name="Author" content="Jim Rosinski">
+</head>
+<body bgcolor="peachpuff">
+
+<hr />
+<a href="example7.html"><img border="0" src="btn_previous.gif"
+				  width="100" height="20" alt="Example 7"
+				  /></a> 
+<a href="gptl_homepage.html"><img border="0" src="btn_next.gif"
+			     width="100" height="20" alt="GPTL home page" /></a>
+
+<a href="gptl_homepage.html">Back to GPTL home page</a>
+
+<br />
+
+<h2>Example 8: Printing max memory usage (RSS) during an application</h2>
+Here is shown the output from running a simple test code (GPTL/tests/memusage.c), where
+the appropriate GPTL calls have been made to print when the memory resident set size (RSS) of
+the process has grown whenever calling <b>GPTLstart()</b> or <b>GPTLstop()</b>. In this simple
+example the size of the process is made to grow by calling <b>realloc</b> a number of times
+for some number of MB. Note that RSS would not necessarily grow, were it not for touching the 
+reallocated memory by calling <b>memset</b>.
+
+<p>
+<b><em>memusage.c:</em></b>
+<pre>
+<div style="background-color:white;">
+#include &#60gptl.h&gt
+#include &#60stdio.h&gt
+#include &#60string.h&gt
+
+const int onemb = 1024 * 1024;
+void sub (unsigned char *, int);
+
+int main ()
+{
+  int ret;
+  int n;
+  unsigned char *arr;
+
+  // Print when process size has grown.
+  if ((ret = GPTLsetoption (GPTLdopr_memusage, 1)) != 0)
+    return -1;
+  
+  // Only print when the process has grown by 50% or more since the last print
+  // (or since the process started)
+  if ((ret = GPTLsetoption (GPTLmem_growth, 50)) != 0)
+    return -1;
+  
+  ret = GPTLinitialize ();
+  for (n = 1; n < 10; ++n)
+    sub (arr, n);
+  return 0;
+}
+
+void sub (unsigned char *arr, int n)
+{
+  unsigned char *space;
+  int ret;
+
+  ret = GPTLstart ("sub");
+  space = (unsigned char *) realloc (arr, n*onemb*(sizeof (unsigned char)));
+  arr = space;
+  memset (arr, 0, n*onemb*(sizeof (unsigned char)));
+  ret = GPTLstop ("sub");
+}
+   
+</div>
+</pre>
+Now compile and run:
+<pre>
+<div>
+% cc -o memusage memusage.c -I/path/to/gptl/include -L/path/to/gptl/lib -lgptl
+% ./memusage
+</div>
+</pre>
+
+Here's the important output:
+<pre>
+<div style="background-color:white;">
+Begin sub RSS grew to     3.35 MB
+End sub RSS grew to     5.14 MB
+End sub RSS grew to     8.23 MB
+End sub RSS grew to    17.26 MB
+End sub RSS grew to    30.15 MB
+End sub RSS grew to    47.16 MB
+</div>
+</pre>
+<h3>Explanation of the above output</h3>
+Even though "sub" was called 10 times, only 6 prints of RSS growth occurred. This is because
+the second call to <b>GPTLsetoption()</b> said to only report when growth from the previous
+print was by at least 50%. This approach can limit sometimes annoying large volumes of printout
+when only a tiny increase in RSS occurs.
+
+<hr />
+<a href="example7.html"><img border="0" src="btn_previous.gif"
+				  width="100" height="20" alt="Example 7"
+				  /></a> 
+<a href="gptl_homepage.html"><img border="0" src="btn_next.gif"
+			     width="100" height="20" alt="GPTL home page" /></a>
+
+<a href="gptl_homepage.html">Back to GPTL home page</a>
+
+<br />
+
+</html>

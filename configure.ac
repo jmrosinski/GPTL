@@ -461,11 +461,12 @@ AC_CONFIG_FILES([tests/run_par_summary_test.sh], [chmod ugo+x tests/run_par_summ
 AC_CONFIG_FILES([tests/run_par_pmpi_test.sh], [chmod ugo+x tests/run_par_pmpi_test.sh])
 AC_CONFIG_FILES([tests/run_par_global_test.sh], [chmod ugo+x tests/run_par_global_test.sh])
 
+# No doxygen--doc is man pages, README, and web pages
 # Is doxygen installed?
-AC_CHECK_PROGS([DOXYGEN], [doxygen])
-if test -z "$DOXYGEN"; then
-   AC_MSG_WARN([Doxygen not found - documentation will not be built])
-fi
+#AC_CHECK_PROGS([DOXYGEN], [doxygen])
+#if test -z "$DOXYGEN"; then
+#   AC_MSG_WARN([Doxygen not found - documentation will not be built])
+#fi
 
 # Build the files listed above.
 AC_OUTPUT()

@@ -1,12 +1,11 @@
-.\" $Id: GPTLpr.3,v 1.6 2009-01-04 21:14:41 rosinski Exp $
-.TH GPTLpr 3 "January, 2009" "GPTL"
+.TH GPTLpr 3 "May, 2020" "GPTL"
 
 .SH NAME
-GPTLpr \- Print the values associated with all timers
-GPTLpr_file \- Print the values associated with all timers
+GPTLpr \- Print the values associated with all regions to output file "timing.<tag>"
+GPTLpr_file \- Print the values associated with all regions to output file <filename>
 
 .SH SYNOPSIS
-.B C Interface:
+.B C/C++ Interface:
 .nf
 int GPTLpr (const int tag);
 int GPTLpr_file (const char *filename);
@@ -24,7 +23,7 @@ opens a file named timing.<tag> and writes the values for all timers to it.
 The value of the tag can be anything the user wishes. Typically for MPI runs,
 the rank of the process is used in order to obtain unique file names for all tasks. 
 .B GPTLpr_file()
-opens a file named <filename> for writing. Otherwise functions the same as 
+opens a file named <filename> for writing. Otherwise behaves the same as 
 .B GPTLpr()
 See
 .B EXAMPLE OUTPUT
@@ -45,8 +44,7 @@ calls need to have been exercised.
 
 .SH RETURN VALUES
 On success, these functions return 0.
-On error, a negative error code is returned and a descriptive message
-printed. 
+On error, a negative error code is returned and a descriptive message printed. 
 
 .SH EXAMPLE OUTPUT
 Here is sample output produced by a call to
@@ -141,3 +139,6 @@ OVERHEAD.SUM (wallclock seconds) =  0.000551
 .if t .ft P
 .fi
 
+.SH SEE ALSO
+.BR GPTLpr_summary "(3)" 
+.BR GPTLpr_summary_file "(3)" 

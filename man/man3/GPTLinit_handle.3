@@ -1,11 +1,10 @@
-.\" $Id$
-.TH GPTLinit_handle 3 "October, 2013" "GPTL"
+.TH GPTLinit_handle 3 "May, 2020" "GPTL"
 
 .SH NAME
 GPTLinit_handle \- Initializer for GPTLstart_handle and GPTLstop_handle
 
 .SH SYNOPSIS
-.B C Interface:
+.B C/C++ Interface:
 .nf
 int GPTLinit_handle (const char *name, int *handle);
 .fi
@@ -39,29 +38,14 @@ initializing the handle variable.
 
 .SH ARGUMENTS
 .I name
--- name of timer for which to initialize its handle variable. Only the first 63 characters are
+-- name of region for which to initialize its handle variable. Only the first 63 characters are
 significant. This limit can be modified in the GPTL library code by changing
 the value of MAX_CHARS in private.h.
 
 .I handle
--- output value to be used later by the GPTL library. It is the hash value of
-the 
+-- output value to be used later by the GPTL library. It is the hash value of variable
 .B
 name
-variable.
-
-.SH RESTRICTIONS
-For 
-.B GPTLstop() 
-or
-.B GPTLstop_handle()
-, a previous call to
-.B GPTLstart()
-or
-.B GPTLstart_handle()
-with the same
-.I name
-and handle must have been made.
 
 .SH RETURN VALUE
 On success, these functions return 0.
@@ -94,4 +78,4 @@ for (i=0; i<1000; ++i) {
 .fi
 
 .SH SEE ALSO
-.BR GPTLstart "(3)" 
+.BR GPTLstart_handle "(3)"  GPTLstop_handle "(3)" 

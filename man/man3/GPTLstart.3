@@ -1,5 +1,4 @@
-.\" $Id$
-.TH GPTLstart 3 "October, 2013" "GPTL"
+.TH GPTLstart 3 "May, 2020" "GPTL"
 
 .SH NAME
 GPTLstart \- Start a timer
@@ -11,7 +10,7 @@ GPTLstart_handle \- Start a timer with a given handle
 GPTLstop_handle \- Stop a timer with a given handle
 
 .SH SYNOPSIS
-.B C Interface:
+.B C/C++ Interface:
 .nf
 int GPTLstart (const char *name);
 int GPTLstop (const char *name);
@@ -79,7 +78,7 @@ must have been called. For
 .B GPTLstart()
 with the same
 .I name
-must have been made. Likewise for the
+must have been made (and for the current thread for threaded codes). Likewise for the
 .B _handle
 versions of these routines.
 
@@ -118,3 +117,5 @@ ret = GPTLpr (mympitaskid);                /* print results to timing.<mympitask
 .SH SEE ALSO
 .BR GPTLpr "(3)" 
 .BR GPTLpr_file "(3)" 
+.BR GPTLpr_summary "(3)" 
+.BR GPTLpr_summary_file "(3)" 

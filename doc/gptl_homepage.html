@@ -124,33 +124,46 @@ Stats for thread 0:
 <h2>Examples</h2>
   These pages contain simple codes which illustrate the use of some features of
   <b>GPTL</b>. All examples were run on a Linux x86 using GNU compilers. 
+
   <p>
   <a href="example1.html">Example 1</a> is a manually-instrumented
   Fortran code which uses <b>PAPI</b> to count floating point
   operations. 
+
   </p><p>
   <a href="example2.html">Example 2</a> is a C code compiled
   with gcc's auto-instrumentation hooks to print a dynamic call tree.
+
   </p><p>
   <a href="example3.html">Example 3</a> demonstrates the use of
   <b>GPTLpr_summary()</b> to obtain a statistical summary of timing statistics across OpenMP 
   threads and MPI tasks.
+
   </p><p>
   <a href="example4.html">Example 4</a> is an auto-instrumented C++ code.
   Issues related to in-line constructors are illustrated.
+
   </p><p>
   <a href="example5.html">Example 5</a> is a Fortran code which uses
   <b>gptlprocess_namelist()</b> and an associated namelist file to
   set <b>GPTL</b> options.
+
   </p><p>
   <a href="example6.html">Example 6</a> is a Fortran code which utilizes the
   <b>ENABLE_PMPI</b> option to automatically time various MPI calls and print the
   average number of bytes transferred.
+
   </p><p>
   <a href="example7.html">Example 7</a> is a Fortran code which utilizes the
   functions <b>GPTLstart_handle()</b> and <b>GPTLstop_handle()</b>, which
   avoid much of the table lookup overhead of their siblings
   <b>GPTLstart()</b> and <b>GPTLstop()</b>.
+
+  </p><p>
+  <a href="example8.html">Example 8</a> is a C code which employs GPTL's capability to
+  report memory usage during a code being profiled. Memory usage is checked on calls to
+  both manually and auto-instrumented calls to start and stop routines, so the name of the
+  routine responsible for memory growth is included in the printout.
 
 </p><hr noshade="noshade" size="2" width="100%" align="LEFT">
 
@@ -172,7 +185,7 @@ Please email me bug reports and/or feature requests (jmrosinski AT gmail DOT com
 <b>GPTL</b> was written
 by Jim Rosinski, very soon to be retired but still supporting <b>GPTL</b>. Previous work done
 on the library at <a href="http://www.ucar.edu/">UCAR</a>, <a href="http://www.esrl.noaa.gov/">NOAA/ESRL</a>, <a href="http://www.ornl.gov/">ORNL</a>, and <a href="http://www.sicortex.com/">SiCortex</a> (now defunct).
-and . 
+
 <h2>Copyright</h2>
 This software is <b>Open Source</b>. My only requests are proper attribution when you use 
 the software, and that you don't embed <b>GPTL</b> library source in software that you 

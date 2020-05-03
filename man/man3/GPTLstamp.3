@@ -1,11 +1,10 @@
-.\" $Id$
-.TH GPTLstamp 3 "February, 2007" "GPTL"
+.TH GPTLstamp 3 "May, 2020" "GPTL"
 
 .SH NAME
 GPTLstamp \- Return wallclock, user time, and system time stamps to the caller.
 
 .SH SYNOPSIS
-.B C Interface:
+.B C/C++ Interface:
 .nf
 int GPTLstamp (double *wall, double *usr, double *sys);
 .fi
@@ -16,16 +15,15 @@ integer gptlstamp (real*8 wall, real*8 usr, real*8 sys)
 .fi
 
 .SH DESCRIPTION
-Return current timestamps for wallclock time, user CPU time, and system CPU
-time.
+Return current timestamps for wallclock time, user CPU time, and system CPU time.
 
 .SH ARGUMENTS
 .I wall
--- wallclock time (seconds)
+-- output wallclock time (seconds). Requires wallclock gathering be enabled (default)
 .I usr
--- user CPU time (seconds)
+-- output user CPU time (seconds). Requires cpu gathering be enabled (GPTLsetoption(GPTLcpu,1))
 .I sys
--- system CPU time (seconds)
+-- output system CPU time (seconds). Requires cpu gathering be enabled (GPTLsetoption(GPTLcpu,1))
 
 .SH RESTRICTIONS
 .B GPTLinitialize()

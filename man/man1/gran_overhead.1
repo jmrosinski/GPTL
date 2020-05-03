@@ -1,0 +1,14 @@
+.TH gran_overhead 1 "May, 2020" "GPTL"
+
+.SH NAME
+gran_overhead \- Assess granularity and overhead of available underlying timing routines.
+
+.SH SYNOPSIS
+gran_overhead
+
+.SH DESCRIPTION
+gran_overhead runs some internal tests with available underlying timing routines, and reports
+estimated granularity and overhead of each. Generally nanotime provides the lowest
+overhead and finest granularity. But it is only available on x86 architectures. Also, nanotime
+counts cycles rather than wallclock time, so is susceptible to error if the machine varies
+the clock cycle time during the run being profiled.

@@ -21,8 +21,7 @@ endif
 MODFILE = ${top_builddir}/fortran/src/gptl.mod
 
 # These programs will be built but not installed.
-noinst_PROGRAMS = overhead handle
-bin_PROGRAMS = utrtest
+noinst_PROGRAMS = overhead handle utrtest
 
 # Test programs that will be built for all configurations.
 check_PROGRAMS = testbasics errtest nlreader outoforder legacy
@@ -74,7 +73,8 @@ endif
 # MPI program tests
 if HAVE_LIBMPI
 check_PROGRAMS += summary
-bin_PROGRAMS += print_mpistatus_size
+# bin_PROGRAMS will be installed in bin directory
+bin_PROGRAMS = print_mpistatus_size
 print_mpistatus_size_SOURCES = print_mpistatus_size.F90 
 TESTS += run_par_summary_test.sh
 # Test the PMPI interface (if installed)

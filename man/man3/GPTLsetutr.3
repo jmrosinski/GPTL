@@ -1,11 +1,10 @@
-.\" $Id$
-.TH GPTLsetutr 3 "December, 2012" "GPTL"
+.TH GPTLsetutr 3 "May, 2020" "GPTL"
 
 .SH NAME
-GPTLsetutr \- Choose a different underlying timing routine than the default.
+GPTLsetutr \- Choose a different underlying wallclock timing routine than the default (gettimeofday)
 
 .SH SYNOPSIS
-.B C Interface:
+.B C/C++ Interface:
 .nf
 #include <gptl.h>
 int GPTLsetutr (const int routine);
@@ -18,8 +17,7 @@ integer gptlsetutr (integer routine)
 .fi
 
 .SH DESCRIPTION
-Sets the underlying timing routine to one of the supported
-values.
+Sets the underlying timing routine to one of the supported values.
 .B gettimeofday() 
 is the default. See
 .B gptl.h
@@ -46,7 +44,7 @@ printed.
 .nf         
 .if t .ft CW
 
-if (GPTLsetutr (GPTLmpiwtime) != 0)
+if (GPTLsetutr (GPTLmpiwtime) != 0)  /* Use MPI_Wtime() to gather wallclock stats */
   handle_error (1);
 
 .if t .ft P

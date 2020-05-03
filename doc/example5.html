@@ -14,6 +14,8 @@
 <a href="example6.html"><img border="0" src="btn_next.gif"
 			     width="100" height="20" alt="Example 6" /></a>
 
+<a href="gptl_homepage.html">Back to GPTL home page</a>
+
 <br />
 
 <h2>Example 5: Fortran use of gptlprocess_namelist() to set GPTL options</h2>
@@ -23,28 +25,33 @@ calls to <b>gptlsetoption()</b> into the application code. The main advantage
 to this approach is that it avoids having to recompile and relink the
 application code when changing GPTL options.
 <p>
-<b><em>nlreader.F:</em></b>
+<b><em>nlreader.F90:</em></b>
 <pre>
 <div style="background-color:white;">
-      program nlreader
-      implicit none
+program nlreader
+  use gptl
 
-      include 'gptl.inc'
+  implicit none
 
-      integer :: ret
+  integer :: ret
 
-! Process GPTL namelist. Args are namelist file name, unit number, and
-! output return code
-
-      call gptlprocess_namelist ('gptlnl', 1, ret)
-      if (ret /= 0) then
-        write(6,*)'GPTL namelist read failure'
-        call exit (1)
-      end if
+  ret = gptlsetoption (gptlverbose, 1)
+  write(6,*)'nlreader: Testing gptlprocess_namelist...'
+  call gptlprocess_namelist ('gptlnl', 1, ret)
+  if (ret /= 0) then
+    write(6,*)'Failure'
+    call exit (1)
+  end if
       
-      ret = gptlsetoption (gptlverbose, 0)
-      ret = gptlinitialize ()
-      end program nlreader
+  ! Now turn off verbosity
+
+  ret = gptlsetoption (gptlverbose, 0)
+  ret = gptlinitialize ()
+  ret = gptlstart ('main')
+  ret = gptlstop ('main')
+  ret = gptlpr (0)
+  write(6,*)'Success'
+end program nlreader
 </div>
 </pre>
 Next are the contents of the namelist file. Note that <em>verbose = 1</em>,
@@ -63,7 +70,6 @@ commented next to each namelist setting.
  overhead        = .true.    ! gptlsetoption (gptloverhead,1)
  depthlimit      = 5         ! gptlsetoption (gptldepthlimit,5)
  verbose         = .true.    ! gptlsetoption (gptlverbose,1)
- narrowprint     = .false.   ! gptlsetoption (gptlnarrowprint,0)
  percent         = .true.    ! gptlsetoption (gptlpercent,1)
 ! Comment out persec and multiplex so "nlreader" test won't fail even if 
 !   PAPI unavailable
@@ -93,7 +99,7 @@ commented next to each namelist setting.
 Now compile and run:
 <pre>
 <div>
-% mpif90 -fopenmp -o nlreader nlreader.F -lgptl
+% gfortran nlreader.F90 -o nlreader -I/path/to/gptl/include -I/path/to/gptl/lib -lgptlf -lgptl
 % ./nlreader
 </div>
 </pre>
@@ -126,6 +132,8 @@ because <em>verbose</em> was set to true.
 				  /></a> 
 <a href="example6.html"><img border="0" src="btn_next.gif"
 			     width="100" height="20" alt="Example 6" /></a>
+
+<a href="gptl_homepage.html">Back to GPTL home page</a>
 
 <br />
 

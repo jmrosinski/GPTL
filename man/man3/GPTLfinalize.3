@@ -4,7 +4,7 @@
 GPTLfinalize \- Finalize the GPTL environment (free memory, etc).
 
 .SH SYNOPSIS
-.B C Interface:
+.B C/C++ Interface:
 .nf
 int GPTLfinalize (void);
 .fi
@@ -18,8 +18,7 @@ integer gptfinalize ()
 Finalizes the GPTL environment.  All internally allocated space is freed.
 
 .SH RESTRICTIONS
-This routine must be called only by the master thread. Further use of the
-library after
+This routine must be called only by the master thread. Further use of the library after
 .B GPTLfinalize()
 requires another invocation of
 .B GPTLinitialize()

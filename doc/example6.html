@@ -2,7 +2,7 @@
 <head>
 <title>GPTL usage example 6: Automatic generation of MPI statistics</title>
 <meta name="example" content="MPI profile">
-<meta name="Keywords" content="pmpi","mpi","gptl","papi","call tree","profile","timing","performance analysis">
+<meta name="Keywords" content="memory usage","pmpi","mpi","gptl","papi","call tree","profile","timing","performance analysis">
 <meta name="Author" content="Jim Rosinski">
 </head>
 <body bgcolor="peachpuff">
@@ -13,6 +13,8 @@
 				  /></a> 
 <a href="example7.html"><img border="0" src="btn_next.gif"
 			     width="100" height="20" alt="Example 7" /></a>
+
+<a href="gptl_homepage.html">Back to GPTL home page</a>
 
 <br />
 
@@ -30,18 +32,7 @@ If you would like to add some routines, see files pmpi.c and
 f_wrappers_pmpi.c. I'd be glad to add any of interest to the library if you can
 provide them. It's just a methodical and repetitive process of typing in the 
 appropriate wrapping code.
-<p>
-In this example HAVE_IARGCGETARG=yes in macros.make. This declares
-that libraries provided by the Fortran compiler or runtime contains entries
-for functions <b>iargc()</b> and <b>getarg()</b>. If these functions are
-available, <b>MPI_Init()</b> and <b>MPI_Finalize()</b> are automatically
-instrumented with calls to <b>GPTLinitialize()</b>, and a wrapping timer for
-the entire program. Likewise, <b>MPI_Finalize()</b> is automatically
-instrumented to print timers when it is called. <b>GPTL</b> can therefore be
-used to gather and print timing statistics with zero modifications to user
-code. Potentially used in conjunction with the auto-instrumentation feature
-of many compilers (e.g. -finstrument-functions in gcc), a large amount of
-hopefully useful data can be gathered.
+
 <p>
 <b><em>pmpi.F90:</em></b>
 <pre>
@@ -53,13 +44,14 @@ end module myvars
 
 program pmpi
   use myvars
+  use gptl
+
   implicit none
 
 #include &#60mpif.h&gt
-#include "../gptl.inc"
 
   integer, parameter :: tag = 98
-  integer, parameter :: count = 1024
+  integer, parameter :: count = 100000
 
   integer :: i, j, ret
   integer :: val
@@ -74,6 +66,10 @@ program pmpi
   integer :: rdispls(0:count-1)
   integer :: sdispls(0:count-1)
 
+  integer :: kount, of           ! for gptlquery
+  real(8) :: wc, usr, sys ! for gptlquery
+  integer(8) :: pc               ! for gptlquery
+
   integer, allocatable :: atoabufsend(:)
   integer, allocatable :: atoabufrecv(:)
   integer, allocatable :: gsbufsend(:,:)      ! gather/scatter buffer send
@@ -84,16 +80,15 @@ program pmpi
   integer, allocatable :: atoadispls(:)
 
   logical :: flag
+  integer :: debugflag = 1
 
   ret = gptlsetoption (gptloverhead, 0)
   ret = gptlsetoption (gptlpercent, 0)
   ret = gptlsetoption (gptlabort_on_error, 1)
   ret = gptlsetoption (gptlsync_mpi, 1)
 
-#if ( ! defined HAVE_IARGCGETARG )
   ret = gptlinitialize ()
   ret = gptlstart ("total")
-#endif
 
   call mpi_init (ret)
 
@@ -169,11 +164,12 @@ program pmpi
   call chkbuf ('mpi_sendrecv', recvbuf(:), count, source)
   if (iam == 0) then
     write(6,*)'Success'
-    write(6,*)'Testing irecv, isend, iprobe, itest, wait, waitall...'
+    write(6,*)'Testing irecv, isend, issend, iprobe, itest, wait, waitall...'
   end if
 !
 ! mpi_irecv
 ! mpi_isend
+! mpi_issend
 ! mpi_iprobe
 ! mpi_test
 ! mpi_wait
@@ -186,6 +182,17 @@ program pmpi
   call mpi_test (recvreq, flag, status, ret)
   call mpi_isend (sendbuf, count, MPI_INTEGER, dest, tag, &
                   comm, sendreq, ret)
+  call mpi_wait (recvreq, status, ret)
+  call mpi_wait (sendreq, status, ret)
+  call chkbuf ("mpi_wait", recvbuf(:), count, source)
+
+  recvbuf(:) = -1
+  call mpi_irecv (recvbuf, count, MPI_INTEGER, source, tag, &
+                  comm, recvreq, ret)
+  call mpi_iprobe (source, tag, comm, flag, status, ret)
+  call mpi_test (recvreq, flag, status, ret)
+  call mpi_issend (sendbuf, count, MPI_INTEGER, dest, tag, &
+                   comm, sendreq, ret)
   call mpi_wait (recvreq, status, ret)
   call mpi_wait (sendreq, status, ret)
   call chkbuf ("mpi_wait", recvbuf(:), count, source)
@@ -397,10 +404,8 @@ program pmpi
 !
   call mpi_finalize (ret)
 
-#if ( ! defined HAVE_IARGCGETARG )
   ret = gptlstop ("total")
   ret = gptlpr (iam)
-#endif
 
   stop 0
 end program pmpi
@@ -409,7 +414,7 @@ subroutine chkbuf (msg, recvbuf, count, val)
   use myvars
   implicit none
 
-#include &#60mpif.h&gt
+#include <mpif.h>
 
   character(len=*), intent(in) :: msg
 
@@ -432,7 +437,7 @@ end subroutine chkbuf
 Now compile and run:
 <pre>
 <div>
-% mpif90 -fopenmp -o pmpi pmpi.F90 -L.. -lgptl
+% mpif90 -o pmpi pmpi.F90 -I/path/to/gptl/include -L/path/to/gptl/lib -lgptlf -lgptl
 % mpiexec -n 2 ./pmpi
 </div>
 </pre>
@@ -500,6 +505,8 @@ synchronization time reported.
 				  /></a> 
 <a href="example7.html"><img border="0" src="btn_next.gif"
 			     width="100" height="20" alt="Example 7" /></a>
+
+<a href="gptl_homepage.html">Back to GPTL home page</a>
 
 <br />
 

@@ -1,5 +1,4 @@
-.\" $Id$
-.TH gptlprocess_namelist 3 "December, 2012" "GPTL"
+.TH gptlprocess_namelist 3 "May, 2020" "GPTL"
 
 .SH NAME
 gptlprocess_namelist \- Parse an input Fortran namelist and call
@@ -78,7 +77,7 @@ thing is accomplished with the GPTL API by invoking
 .nf         
 
 &gptlnl
-! These settings are all the opposite of the default--for testing
+! These settings are all the opposite of the default
  sync_mpi        = .true.
  wall            = .false.
  cpu             = .true.
@@ -86,7 +85,6 @@ thing is accomplished with the GPTL API by invoking
  overhead        = .true.
  depthlimit      = 1
  verbose         = .true.
- narrowprint     = .false.
  percent         = .true.
  persec          = .false.
  multiplex       = .true.
@@ -95,7 +93,7 @@ thing is accomplished with the GPTL API by invoking
  dopr_multparent = .false.
  dopr_collision  = .false.
 
-! The next 3 use character variables instead of integer to avoid 
+! These use character variables instead of integer to avoid 
 ! "magic number" settings in the namelist
 
  utr             = 'nanotime'

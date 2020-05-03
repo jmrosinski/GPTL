@@ -13,7 +13,7 @@ AM_LDFLAGS = ${top_builddir}/src/libgptl.la @INSTR_LINK@
 # These programs will be built but not installed.
 noinst_PROGRAMS = printwhileon imperfect_nest
 
-# Begin list of programs to be installed
+# bin_PROGRAMS will be installed in bin directory on "make install"
 bin_PROGRAMS = gran_overhead
 
 # Test programs that will be built for all configurations.

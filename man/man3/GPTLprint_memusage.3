@@ -1,11 +1,10 @@
-.\" $Id$
-.TH GPTLprint_memusage 3 "December, 2012" "GPTL"
+.TH GPTLprint_memusage 3 "May, 2020" "GPTL"
 
 .SH NAME
-GPTLprint_memusage \- Print current memory usage info
+GPTLprint_memusage \- Print current memory usage info (MB)
 
 .SH SYNOPSIS
-.B C Interface:
+.B C/C++ Interface:
 .nf
 int GPTLprint_memusage (const char *str);
 .fi
@@ -17,7 +16,7 @@ integer gptlprint_memusage (character(len=*) str)
 
 .SH DESCRIPTION
 .B GPTLprint_memusage
-prints information about current memory usage of the process.
+prints information about current memory usage of the process in units of MB.
 
 .SH ARGUMENTS
 .I str

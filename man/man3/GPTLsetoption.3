@@ -1,11 +1,10 @@
-.\" $Id$
-.TH GPTLsetoption 3 "January, 2009" "GPTL"
+.TH GPTLsetoption 3 "May, 2020" "GPTL"
 
 .SH NAME
 GPTLsetoption \- Enable or disable a GPTL, PAPI, or derived event.
 
 .SH SYNOPSIS
-.B C Interface:
+.B C/C++ Interface:
 .nf
 #include <gptl.h>
 int GPTLsetoption (const int option, const int val);
@@ -55,7 +54,6 @@ GPTLabort_on_error  // Abort on failure (false)
 GPTLoverhead        // Estimate overhead of underlying timing routine (true)
 GPTLdepthlimit      // Only print timers this depth or less in the tree (inf)
 GPTLverbose         // Verbose output (false)
-GPTLnarrowprint     // Print PAPI and derived stats in 8 columns not 16 (true)
 GPTLpercent         // Add a column for percent of first timer (false)
 GPTLpersec          // Add a PAPI column that prints "per second" stats (true)
 GPTLmultiplex       // Allow PAPI multiplexing (true)
@@ -71,9 +69,6 @@ GPTLprint_method    // Tree print method: first parent, last parent
 // found by using GPTLevent_name_to_code().
 
 GPTL_IPC            // Instructions per cycle
-GPTL_CI             // Computational intensity
-GPTL_FPC            // FP ops per cycle
-GPTL_FPI            // FP ops per instruction
 GPTL_LSTPI          // Load-store instruction fraction
 GPTL_DCMRT          // L1 miss rate (fraction)
 GPTL_LSTPDCM        // Load-stores per L1 miss
