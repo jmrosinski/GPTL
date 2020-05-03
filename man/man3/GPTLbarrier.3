@@ -6,11 +6,15 @@ GPTLbarrier \- Set an MPI barrier and time it
 .SH SYNOPSIS
 .B C/C++ Interface:
 .nf
+#include <gptl.h>
+#include <gptlmpi.h>
 int GPTLbarrier (MPI_Comm comm, const char *name);
 .fi
 
 .B Fortran Interface:
 .nf
+use gptl
+use mpi
 integer gptlbarrier (integer comm, character(len=*) name)
 .fi
 

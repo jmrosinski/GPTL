@@ -7,11 +7,13 @@ across threads.
 .SH SYNOPSIS
 .B C/C++ Interface:
 .nf
+#include <gptl.h>
 int GPTLget_threadwork (const char *name, double *maxwork, double *imbal);
 .fi
 
 .B Fortran Interface:
 .nf
+use gptl
 integer gptlget_threadwork (character(len=*) name, real*8 maxwork, real*8 imbal)
 .fi
 

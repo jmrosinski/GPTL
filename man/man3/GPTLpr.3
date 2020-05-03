@@ -7,12 +7,14 @@ GPTLpr_file \- Print the values associated with all regions to output file <file
 .SH SYNOPSIS
 .B C/C++ Interface:
 .nf
+#include <gptl.h>
 int GPTLpr (const int tag);
 int GPTLpr_file (const char *filename);
 .fi
 
 .B Fortran Interface:
 .nf
+use gptl
 integer gptlpr (integer tag)
 integer gptlpr_file (character(len=*) filename)
 .fi

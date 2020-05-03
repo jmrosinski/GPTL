@@ -1,0 +1,47 @@
+This file describes how to build and install GPTL. For information on using
+the library, see the web pages in the doc/ directory or at the GPTL home page
+at github (https://jmrosinski.github.io/GPTL/), and also the man pages which
+are provided with the distribution.
+
+The build procedure is basic autoconf:
+
+% ./configure; make; make check; make install.
+
+Generally you'll want to specify C and Fortran compilers with
+environment variables. To enable MPI support, use the wrappers, e.g.
+
+% env CC=mpicc FC=mpif90 ./configure --prefix=</installation/directory>
+
+The "configure" script automatically tests for MPI functionality and includes
+it if it proves functional. "configure" also automatically tests for OpenMP
+functionality (unless --disable-openmp is specified), and includes support if
+OpenMP tests succeed.
+
+Other switches to "configure" you may want to consider setting include:
+
+--enable-pmpi: Enables MPI auto-profiling with the PMPI layer provided by most
+MPI distros. Requires MPI-capable C compiler or wrapper, such as mpicc.
+
+--enable-papi: Enables PAPI (Performance API) support for hardware performance
+counters (https://icl.utk.edu/papi/). The PAPI lib must be installed in a
+standard location in order for this option to work.
+
+--enable-nestedomp: Enables support for OpenMP apps utilizing nested OMP
+constructs. Use this only if you really need it. It adds significant overhead.
+
+--disable-libunwind: Disables use of libunwind for discovering the name of
+auto-profiled user functions. Otherwise the "configure" script will check for
+availability and usability of the backtrace() function which does not require
+linking with any additional libraries. Libunwind is preferred though, as it
+is more modern, and from empirical observation seems to do a more accurate job
+unwinding the call stack. Note that in each case (libunwind and backtrace),
+adding "-rdynamic" to link flags is often very helpful to being able to
+determine function address. Applications using auto-profiling also should be
+linked with "-g" to ensure their symbol names are included.
+
+There are other options (see ./configure --help), but these are the main ones
+folks generally use.
+
+The "make install" step installs the built library, man page documentation,
+and also gptl.pc for optional use by applications which can make use of
+pkg-config.

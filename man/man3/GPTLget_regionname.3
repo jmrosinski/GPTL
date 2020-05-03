@@ -6,11 +6,13 @@ GPTLget_regionname \- return region name based on region number
 .SH SYNOPSIS
 .B C/C++ Interface:
 .nf
+#include <gptl.h>
 int GPTLget_regionname (int t, int region, char *name, int nc);
 .fi
 
 .B Fortran Interface:
 .nf
+use gptl
 integer gptlget_regionname (integer t, integer region, character(len=*) name)
 .fi
 

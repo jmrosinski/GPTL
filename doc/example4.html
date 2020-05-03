@@ -9,7 +9,7 @@
 
 <hr />
 <a href="example3.html"><img border="0" src="btn_previous.gif"
-				  width="100" height="20" alt="Example 3"
+                             width="100" height="20" alt="Example 3"
 				  /></a> 
 <a href="example5.html"><img border="0" src="btn_next.gif"
 			     width="100" height="20" alt="Example 5" /></a>
@@ -21,16 +21,13 @@
 <h2>Example 4: Auto-instrumentation of a C++ code</h2>
 This example is a C++ code compiled with auto-instrumentation enabled. Note
 that the constructor and destructor for X are inside the class definition,
-and outside the class definition for Y. After running the code,
-function addresses in the timing output file are translated to human-readable
-form with perl script <b><em>hex2name.pl</em></b>.
+and outside the class definition for Y. 
 <p>
-<b><em>profcxx.C:</em></b>
+<b><em>prof.cc:</em></b>
 <pre>
 <div style="background-color:white;">
 #include &#60gptl.h&gt
 #include &#60myclasses.h&gt
-
 int main ()
 {
   X *x;
@@ -53,7 +50,6 @@ int main ()
   ret = GPTLstop ("total");
   ret = GPTLpr (0);
 }
-
 </div>
 </pre>
 
@@ -118,66 +114,65 @@ void Y::func (double x)
 }
 </div>
 </pre>
-Compile <em>profcxx.C</em> with auto-instrumentation, then link and
-run. In this case, The <em>-fopenmp</em> argument is needed because GPTL was built
-with threading support.
+Compile <em>prof.cc</em> with auto-instrumentation, then link and run. We need to link with -lunwind
+because GPTL was built to use libunwind to automatically unwind the call stack.  Configuring with
+--disable-libunwind can also work and requires no extra "-l" arguments.  GPTL will then use the
+system function <b>backtrace()</b> to unwind the call stack. But libunwind is more modern and tends
+to produce a more accurate backtrace. Adding the link flag <b>-rdynamic</b> in either case helps
+produce a more accurate backtrace.
 <pre>
-% g++ -finstrument-functions profcxx.C -o profcxx -lgptl
-% ./profcxx
+% g++ -finstrument-functions prof.cc -o prof -I${GPTL}/include -L${GPTL}/lib -lgptl -lunwind -rdynamic
+% ./prof
 </pre>
 
-Now convert the auto-instrumented output to human-readable form:
-<pre>
-% hex2name.pl -demangle profcxx timing.0 > timing.0.converted
-</pre>
-
-Output file <em>timing.0.converted</em> looks like this:
+Output file <em>timing.0</em> looks like this:
 <pre>
 <div style="background-color:white;">
 Stats for thread 0:
-                      Called  Recurse Wallclock max       min       UTR_Overhead  
-  total                     1     -       0.000     0.000     0.000         0.000 
-    ???                     1     -       0.000     0.000     0.000         0.000 
-*     Base::Base()          2     -       0.000     0.000     0.000         0.000 
-    ???                     1     -       0.000     0.000     0.000         0.000 
-    ???                     1     -       0.000     0.000     0.000         0.000 
-    ???                     1     -       0.000     0.000     0.000         0.000 
-*     Base::~Base()         2     -       0.000     0.000     0.000         0.000 
-    Y::Y()                  1     -       0.000     0.000     0.000         0.000 
-    Y::func(double)         1     -       0.000     0.000     0.000         0.000 
-    Y::func(int)            1     -       0.000     0.000     0.000         0.000 
-    Y::~Y()                 1     -       0.000     0.000     0.000         0.000 
-Overhead sum          =  8.32e-06 wallclock seconds
-Total calls           = 13
-Total recursive calls = 0
+                     Called  Recurse     Wall      max      min   selfOH parentOH
+  total                   1     -    3.46e-04 3.46e-04 3.46e-04    0.000    0.000
+    _ZN1XC1Ev             1     -    3.00e-05 3.00e-05 3.00e-05    0.000    0.000
+*     _ZN4BaseC1Ev        2     -    0.00e+00 0.00e+00 0.00e+00    0.000    0.000
+    _ZN1X4funcEd          1     -    0.00e+00 0.00e+00 0.00e+00    0.000    0.000
+    _ZN1X4funcEi          1     -    0.00e+00 0.00e+00 0.00e+00    0.000    0.000
+    _ZN1XD1Ev             1     -    2.50e-05 2.50e-05 2.50e-05    0.000    0.000
+*     _ZN4BaseD1Ev        2     -    0.00e+00 0.00e+00 0.00e+00    0.000    0.000
+    _ZN1YC1Ev             1     -    1.00e-06 1.00e-06 1.00e-06    0.000    0.000
+    _ZN1Y4funcEd          1     -    0.00e+00 0.00e+00 0.00e+00    0.000    0.000
+    _ZN1Y4funcEi          1     -    0.00e+00 0.00e+00 0.00e+00    0.000    0.000
+    _ZN1YD1Ev             1     -    0.00e+00 0.00e+00 0.00e+00    0.000    0.000
 
-Multiple parent info (if any) for thread 0:
+Overhead sum =  9.75e-07 wallclock seconds
+Total calls  = 13
+thread 0 long name translations (empty when no auto-instrumentation):
+
+Multiple parent info for thread 0:
 Columns are count and name for the listed child
-Rows are each parent, with their common child being the last entry, which is indented
-Count next to each parent is the number of times it called the child
-Count next to child is total number of times it was called by the listed parents
+Rows are each parent, with their common child being the last entry, which is indented.
+Count next to each parent is the number of times it called the child.
+Count next to child is total number of times it was called by the listed parents.
 
-       1 ???                         
-       1 Y::Y()                         
-       2   Base::Base()                         
+       1 _ZN1XC1Ev
+       1 _ZN1YC1Ev
+       2   _ZN4BaseC1Ev
 
-       1 ???                         
-       1 Y::~Y()                         
-       2   Base::~Base()                         
+       1 _ZN1XD1Ev
+       1 _ZN1YD1Ev
+       2   _ZN4BaseD1Ev
+  
 </div>
 </pre>
 <h3>Explanation of the above output</h3>
-Most of the output should be self-explanatory. But what are the "???"
-strings? Those represent function invocations for which <em>nm</em> (invoked
-by <em>hex2name.pl</em>) was unable to translate an address to a function
-name. Note that constructor and destructor definitions for "X"
-(<em>myclasses.h</em> above) are in-line. They're automatically inlined,
-so there is no name to associate with their address and <em>hex2name.pl</em>
-punts by printing three "?" characters.
+Note that the entries are presented in name-mangled form. It is possible to use an API to demangle
+the names, but it was decided to leave the entries in their mangled form because often the
+demangled names can be extremely long. Printing the fully demangled form can therefore make
+reading the output difficult due to wrapped lines. We recommend that instead users employ the
+ubiquitous tool <b>c++filt</b> to demangle the names.
 <p>
-Constructor and destructor definitions for "Y" however, are outside the class
-definition. Therefore they are compiled as separate functions,
-and <em>hex2name.pl</em> is able to associate a name with their address.
+Otherwise the output is similar to other examples presented here. Parent/child
+relationships are preserved via indentation. A "*" in column 1 means means that the region (routine
+in this case) has multiple parents. The multiple parent information is presented below the main
+output.
 <hr />
 <a href="example3.html"><img border="0" src="btn_previous.gif"
 				  width="100" height="20" alt="Example 3"

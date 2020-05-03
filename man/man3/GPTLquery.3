@@ -6,6 +6,7 @@ GPTLquery \- Request current values of all data for an existing timer
 .SH SYNOPSIS
 .B C/C++ Interface:
 .nf
+#include <gptl.h>
 int GPTLquery (const char *name, int t, int *count, 
                int *onflg, double *wallclock, double *usr, double *sys,
                long long *counters, const int maxcounters);
@@ -13,6 +14,7 @@ int GPTLquery (const char *name, int t, int *count,
 
 .B Fortran Interface:
 .nf
+use gptl
 integer gptlquery (character(len=*) name, integer t, integer count, 
                    integer onflg, real*8 wallclock, real*8 usr, real*8 sys, 
                    integer*8 counters, integer maxcounters)

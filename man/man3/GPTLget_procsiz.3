@@ -6,11 +6,13 @@ GPTLget_procsiz \- Return current process size (MB) and resident set size (RSS i
 .SH SYNOPSIS
 .B C/C++ Interface:
 .nf
+#include <gptl.h>
 int GPTLget_procsiz (float *procsiz, float rss);
 .fi
 
 .B Fortran Interface:
 .nf
+use gptl
 integer gptlget_procsiz (real procsiz, real rss)
 .fi
 

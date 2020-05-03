@@ -6,11 +6,13 @@ GPTLget_wallclock_latest \- Return most recent wallclock start/stop time for a r
 .SH SYNOPSIS
 .B C/C++ Interface:
 .nf
+#include <gptl.h>
 int GPTLget_wallclock_latest (const char *name, int t, double *value);
 .fi
 
 .B Fortran Interface:
 .nf
+use gptl
 integer gptlget_wallclock_latest (character(len=*) name, integer t, real*8 value)
 .fi
 

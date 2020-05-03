@@ -6,11 +6,13 @@ GPTLinit_handle \- Initializer for GPTLstart_handle and GPTLstop_handle
 .SH SYNOPSIS
 .B C/C++ Interface:
 .nf
+#include <gptl.h>
 int GPTLinit_handle (const char *name, int *handle);
 .fi
 
 .B Fortran Interface:
 .nf
+use gptl
 integer gptlinit_handle (character(len=*) name, integer handle)
 .fi
 

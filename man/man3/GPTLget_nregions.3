@@ -7,11 +7,13 @@ GPTLget_nregions \- Return the number of regions (timers) for a thread
 .SH SYNOPSIS
 .B C/C++ Interface:
 .nf
+#include <gptl.h>
 int GPTLget_nregions (int t, int *nregions);
 .fi
 
 .B Fortran Interface:
 .nf
+use gptl
 integer gptlget_nregions (integer t, integer nregions)
 .fi
 

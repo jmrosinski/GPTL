@@ -6,11 +6,13 @@ GPTLstartstop_val \- Take user input to treat as the result of calling start/sto
 .SH SYNOPSIS
 .B C/C++ Interface:
 .nf
+#include <gptl.h>
 int GPTLstartstop_val (const char *name, double val);
 .fi
 
 .B Fortran Interface:
 .nf
+use gptl
 integer gptlstartstop_val (character(len=*) name, real*8 val)
 .fi
 

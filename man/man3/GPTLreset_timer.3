@@ -6,11 +6,13 @@ GPTLreset_timer \- Reset all timer contents to zero.
 .SH SYNOPSIS
 .B C/C++ Interface:
 .nf
+#include <gptl.h>
 int GPTLreset_timer (const char *name);
 .fi
 
 .B Fortran Interface:
 .nf
+use gptl
 integer gptlreset_timer (character(len=*) name)
 .fi
 

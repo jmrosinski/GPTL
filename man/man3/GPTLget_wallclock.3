@@ -7,11 +7,13 @@ GPTLget_wallclock \- Request current wallclock accumulation for a timer
 .SH SYNOPSIS
 .B C/C++ Interface:
 .nf
+#include <gptl.h>
 int GPTLget_wallclock (const char *name, int t, double *value);
 .fi
 
 .B Fortran Interface:
 .nf
+use gptl
 integer gptlget_wallclock (character(len=*) name, integer t, real*8 value)
 .fi
 

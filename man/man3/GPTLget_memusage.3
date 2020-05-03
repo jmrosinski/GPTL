@@ -6,11 +6,13 @@ GPTLget_memusage \- Get current memory usage info (RSS)
 .SH SYNOPSIS
 .B C/C++ Interface:
 .nf
+#include <gptl.h>
 int GPTLget_memusage (float *rss);
 .fi
 
 .B Fortran Interface:
 .nf
+use gptl
 integer gptlget_memusage (real rss)
 .fi
 

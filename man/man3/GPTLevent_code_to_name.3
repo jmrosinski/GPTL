@@ -8,12 +8,14 @@ GPTLevent_name_to_code \- Convert a string to a PAPI event id or derived event i
 .SH SYNOPSIS
 .B C/C++ Interface:
 .nf
+#include <gptl.h>
 int GPTLevent_code_to_name (const int code, char *name);
 int GPTLevent_name_to_code (const char *name, int *code);
 .fi
 
 .B Fortran Interface:
 .nf
+use gptl
 integer gptlevent_code_to_name (integer code, character(len=*) name)
 integer gptlevent_name_to_code (character(len=*) name, integer code)
 .fi

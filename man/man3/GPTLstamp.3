@@ -6,11 +6,13 @@ GPTLstamp \- Return wallclock, user time, and system time stamps to the caller.
 .SH SYNOPSIS
 .B C/C++ Interface:
 .nf
+#include <gptl.h>
 int GPTLstamp (double *wall, double *usr, double *sys);
 .fi
 
 .B Fortran Interface:
 .nf
+use gptl
 integer gptlstamp (real*8 wall, real*8 usr, real*8 sys)
 .fi
 

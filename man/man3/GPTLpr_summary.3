@@ -6,12 +6,15 @@ GPTLpr_summary \- Print a statistical summary of region stats across all threads
 .SH SYNOPSIS
 .B C/C++ Interface:
 .nf
+#include <gptl.h>
+#include <gptlmpi.h>
 int GPTLpr_summary (MPI_Comm comm);
 int GPTLpr_summary_file (MPI_Comm comm, char *outfile);
 .fi
 
 .B Fortran Interface:
 .nf
+use gptl
 integer gptlpr_summary (integer comm)
 integer gptlpr_summary_file (integer comm, character(len=*) outfile)
 .fi

@@ -12,6 +12,7 @@ GPTLstop_handle \- Stop a timer with a given handle
 .SH SYNOPSIS
 .B C/C++ Interface:
 .nf
+#include <gptl.h>
 int GPTLstart (const char *name);
 int GPTLstop (const char *name);
 .P
@@ -21,6 +22,7 @@ int GPTLstop_handle (const char *name, int *handle);
 
 .B Fortran Interface:
 .nf
+use gptl
 integer gptlstart (character(len=*) name)
 integer gptlstop (character(len=*) name)
 .P

@@ -87,10 +87,10 @@ Stats for thread 0:
     If the <a href="http://icl.cs.utk.edu/papi">PAPI</a> library is
     installed on the target platform, <b>GPTL</b> can be used to
     access all available <b>PAPI</b> events.
-    To count floating point operations for example, one need only add
+    To count single-precision floating point operations for example, one need only add
     a call that looks like: 
 
-    </p><pre>    ret = GPTLsetoption (PAPI_FP_OPS, 1);
+    </p><pre>    ret = GPTLsetoption (PAPI_SP_OPS, 1);
     </pre>
 
     The second argument "1" in the above call means "enable". Any non-zero
@@ -123,12 +123,17 @@ Stats for thread 0:
 <a name="EXAMPLES"></a>
 <h2>Examples</h2>
   These pages contain simple codes which illustrate the use of some features of
-  <b>GPTL</b>. All examples were run on a Linux x86 using GNU compilers. 
+  <b>GPTL</b>. Most examples were run on a Linux x86 using GNU compilers. The examples also assume
+  that environment variable <b>$GPTL</b> contains the path to where the GPTL library was
+  installed. Depending on how the libary was configured and built, the compilation and linking
+  commands in the examples may require modification. Examples include needing to link
+  with <b>-lunwind</b> for auto-profiled codes if GPTL was built without --disable-libunwind;
+  Needing to compile with MPI wrappers and/or link with -lmpi if GPTL was built with --disable-shared.
+  In most cases the causes of compilation problems or unsatisfied externals in building the tests
+  should be obvious. 
 
   <p>
-  <a href="example1.html">Example 1</a> is a manually-instrumented
-  Fortran code which uses <b>PAPI</b> to count floating point
-  operations. 
+  <a href="example1.html">Example 1</a> is a manually-instrumented threaded Fortran code.
 
   </p><p>
   <a href="example2.html">Example 2</a> is a C code compiled
@@ -172,8 +177,10 @@ Stats for thread 0:
 <li> PMPI interface doesn't work on AIX. The problem has to do with the MPI definition
   of MPI_STATUS_SIZE.
 </li><li> PAPI developers have warned about using <b>omp_get_thread_num()</b> as the
-  underlying routine to get the thread number. Therefore for threaded codes you may want
-  to try building with with --enable-pthread.
+  underlying routine to get the thread number. But that approach should not be a problem
+  as long as the value of $OMP_NUM_THREADS does not change during the run.
+</li><li> The pthreads interface is not well-tested. Also it can be slow for large number of threads,
+  due to a linear lookup table mapping pthread id to logical thread number.
 </li></ul>
 
 <hr noshade="noshade" size="2" width="100%" align="LEFT">
@@ -183,8 +190,10 @@ Please email me bug reports and/or feature requests (jmrosinski AT gmail DOT com
 
 <h2>Author</h2>
 <b>GPTL</b> was written
-by Jim Rosinski, very soon to be retired but still supporting <b>GPTL</b>. Previous work done
-on the library at <a href="http://www.ucar.edu/">UCAR</a>, <a href="http://www.esrl.noaa.gov/">NOAA/ESRL</a>, <a href="http://www.ornl.gov/">ORNL</a>, and <a href="http://www.sicortex.com/">SiCortex</a> (now defunct).
+by Jim Rosinski, very soon to be retired but will be supporting <b>GPTL</b> for the indefinite
+future. Previous work done on the library at <a href="http://www.ucar.edu/">UCAR</a>,
+<a href="http://www.esrl.noaa.gov/">NOAA/ESRL</a>, <a href="http://www.ornl.gov/">ORNL</a>,
+and <a href="http://www.sicortex.com/">SiCortex</a> (now defunct).
 
 <h2>Copyright</h2>
 This software is <b>Open Source</b>. My only requests are proper attribution when you use 

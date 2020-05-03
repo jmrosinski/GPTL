@@ -6,11 +6,13 @@ GPTLprint_memusage \- Print current memory usage info (MB)
 .SH SYNOPSIS
 .B C/C++ Interface:
 .nf
+#include <gptl.h>
 int GPTLprint_memusage (const char *str);
 .fi
 
 .B Fortran Interface:
 .nf
+use gptl
 integer gptlprint_memusage (character(len=*) str)
 .fi
 

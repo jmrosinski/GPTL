@@ -6,12 +6,14 @@ GPTLget_eventvalue \- Request current value of PAPI or derived counter
 .SH SYNOPSIS
 .B C/C++ Interface:
 .nf
+#include <gptl.h>
 int GPTLget_eventvalue (const char *name, const char *eventname, int t, 
                         double *value);
 .fi
 
 .B Fortran Interface:
 .nf
+use gptl
 integer gptlget_eventvalue (character(len=*) name, character(len=*) eventname, integer t,
                             real*8 value)
 .fi
