@@ -5,17 +5,16 @@
 
 #include "config.h"
 #include "gptl.h"
-
 #include <stdio.h>
 #include <stdlib.h>
-#include <papi.h>
 
 int main ()
 {
   int ret;
 
-  if ((ret = PAPI_library_init (PAPI_VER_CURRENT)) != PAPI_VER_CURRENT) {
-    printf ("%s\n", PAPI_strerror (ret));
+  if ((ret = GPTL_PAPIlibraryinit ()) != 0) {
+    printf ("Failure from GPTL_PAPIlibraryinit():\n"
+	    "Perhaps linking to wrong PAPI version?\n");
     return -1;
   }
 
@@ -62,7 +61,6 @@ int main ()
     ret = GPTLinitialize ();
     ret = GPTLfinalize ();
   }
-
   if (GPTLsetoption (GPTL_L3MRT, 1) == 0) {
     printf("%-20s %-10d %s\n", "GPTL_L3MRT", GPTL_L3MRT, "L3 Miss rate (fraction)");
     ret = GPTLinitialize ();

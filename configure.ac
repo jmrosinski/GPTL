@@ -187,16 +187,24 @@ if test $enable_debug = yes; then
    FCFLAGS="$FCFLAGS -g -O0"
 fi
 
-AC_MSG_CHECKING([whether PAPI is to be enabled])
-AC_ARG_ENABLE([papi], [AS_HELP_STRING([--enable-papi],
-  [Enable built-in support for papi library. Requires that PAPI is already installed])])
-test "x$enable_papi" = xyes || enable_papi=no
-AC_MSG_RESULT($enable_papi)
+# Cecking for PAPI requires a user-supplied input path because HPC systems
+# normally install it outside of normal system locations.
+# Default is do not include PAPI support.
+papi_path=no
+AC_ARG_WITH([papi],
+              [AS_HELP_STRING([--with-papi=<path_to_papi_installation>],
+                              [Enable PAPI and specify where it was installed])],
+            [papi_path=$with_papi], [papi_path=no])
 
-if test x$enable_papi = xyes; then
+if test "x$papi_path" != xno; then
 # Check for papi library.
+  SAVE_CFLAGS="$CFLAGS"
+  SAVE_LDFLAGS="$LDFLAGS"
+  CFLAGS="$CFLAGS -I${with_papi}/include"
+  PAPI_LINK="-L${with_papi}/lib -lpapi"
+  LDFLAGS="$LDFLAGS $PAPI_LINK"
+  AC_MSG_CHECKING([papi usability from installation location ${with_papi}])
   AC_CHECK_LIB([papi], [PAPI_library_init])
-  AC_MSG_CHECKING([whether system can support PAPI])
   if test "x$ac_cv_lib_papi_PAPI_library_init" = xyes; then
     have_papi=yes
     # If we have PAPI library, check /proc/sys/kernel/perf_event_paranoid
@@ -208,15 +216,23 @@ if test x$enable_papi = xyes; then
       fi
     fi
     AC_DEFINE([HAVE_PAPI], [1], [PAPI library is present and usable])
-    PAPI="papi"
-    PAPI_LINK="-l${PAPI}"
+# PAPI_PC is only for gptl.pc
+    PAPI_PC="papi"
+    PAPI_INCLUDE="-I${with_papi}/include"
   else
+# PAPI test failed.
     have_papi=no
-    PAPI=""
+# PAPI_PC is only for gptl.pc
+    PAPI_PC=""
+    PAPI_INCLUDE=""
     PAPI_LINK=""
+# Revert CFLAGS and LDFLAGS
+    CFLAGS="$SAVE_CFLAGS"
+    LDFLAGS="$SAVE_LDFLAGS"
   fi
   AC_MSG_RESULT($have_papi)
-  AC_SUBST([PAPI], [$PAPI])
+  AC_SUBST([PAPI_PC], [$PAPI_PC])
+  AC_SUBST([PAPI_INCLUDE], [$PAPI_INCLUDE])
 fi
 AM_CONDITIONAL([HAVE_PAPI], [test "x$have_papi" = xyes])
 
@@ -236,7 +252,7 @@ AC_CHECK_FUNCS(getrusage)
 # Check for existence of /proc, used for obtaining process size
 # Must be disabled when cross-compiling
 AC_ARG_ENABLE([slashproc], [AS_HELP_STRING([--disable-slashproc],
-    	      [Check for existence of /proc file system: must be disabled when cross-compiling])])
+    	      [Check for existence of /proc file system: Must be disabled when cross-compiling])])
 
 test "x$enable_slashproc" != xno && enable_slashproc=yes
 if test "$enable_slashproc" = yes; then
@@ -441,8 +457,7 @@ if test "x$found_libunwind" = xyes; then
   GPTL_LIBS="$GPTL_LIBS -lunwind"
 fi
 
-LDFLAGS=$PAPI_LINK
-LDFLAGS_PC="$GPTL_LIBS $PAPI_LINK $LDFLAGS $INSTR_LINK"
+LDFLAGS_PC="$GPTL_LIBS $LDFLAGS $INSTR_LINK"
 AC_SUBST([LDFLAGS], [$LDFLAGS])
 AC_SUBST([LDFLAGS_PC], [$LDFLAGS_PC])
 AC_SUBST([OPENMP_CFLAGS], [$OPENMP_CFLAGS])

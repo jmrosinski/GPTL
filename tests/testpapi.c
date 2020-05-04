@@ -1,6 +1,5 @@
 #include "config.h"
 #include "gptl.h"
-#include <papi.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -12,11 +11,10 @@ int main (int argc, char **argv)
   int code;                  // papi event code
   int nevents = 0;           // number of papi events
   int c;                     // for parsing arg list
-  int EventSet = PAPI_NULL;  // Event set needed by PAPI lib
   double pc[1];              // papi counters
   double sum;
-  char eventname[PAPI_MAX_STR_LEN] = "PAPI_TOT_CYC"; // Default papi counter
-  char eventsave[PAPI_MAX_STR_LEN];                  // Saved papi counter
+  char eventname[128] = "PAPI_TOT_CYC"; // Default papi counter
+  char eventsave[128];                  // Saved papi counter
   char *thisfunc = argv[0];
 
   printf ("testpapi: Testing PAPI interface...\n");
@@ -36,9 +34,8 @@ int main (int argc, char **argv)
 
   // Verify code_to_name and inverse are working properly
   strcpy (eventsave, eventname);
-  if ((ret = GPTLevent_name_to_code (eventname, &code)) != PAPI_OK) {
+  if ((ret = GPTLevent_name_to_code (eventname, &code)) != 0) {
     printf ("No code found for event %s\n", optarg);
-    printf ("PAPI_strerror says: %s\n", PAPI_strerror (ret));
     return -1;
   }
   

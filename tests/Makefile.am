@@ -55,7 +55,7 @@ endif
 if HAVE_PAPI
 check_PROGRAMS += testpapi
 TESTS += testpapi
-bin_PROGRAMS += gptl_avail knownflopcount
+bin_PROGRAMS += gptl_avail
 if HAVE_OPENMP
 noinst_PROGRAMS += papiomptest
 endif

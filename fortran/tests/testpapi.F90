@@ -3,14 +3,13 @@ program testpapi
 
   implicit none
 
-#include <f90papi.h>
   integer :: narg        ! number of cmd line args
   integer :: ret         ! return code
   integer :: i
   integer :: code        ! PAPI counter code
   real(8) :: sum, val
-  character(len=PAPI_MAX_STR_LEN) :: eventname = "PAPI_TOT_CYC"
-  character(len=PAPI_MAX_STR_LEN) :: eventsave
+  character(len=128) :: eventname = "PAPI_TOT_CYC"
+  character(len=128) :: eventsave
   character(len=2) :: tooshort
   
   write(6,*)'testpapi: Testing PAPI interface...'

@@ -14,7 +14,7 @@ int main ()
 {
   int ret;
   int n;
-  unsigned char *arr;
+  unsigned char *arr = NULL;
 
   // Print when process size has grown.
   if ((ret = GPTLsetoption (GPTLdopr_memusage, 1)) != 0)

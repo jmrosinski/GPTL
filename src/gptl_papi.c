@@ -921,9 +921,11 @@ int GPTLevent_name_to_code (const char *name, int *code)
       return GPTLerror ("%s: GPTL_PAPIlibraryinit failure\n", thisfunc);
   }
 
-  if ((PAPI_event_name_to_code ((char *) name, code)) != PAPI_OK)
+  if ((ret = PAPI_event_name_to_code ((char *) name, code)) != PAPI_OK) {
+    printf ("%s: PAPI_event_name_to_code failure for name=%s\n", thisfunc, name);
+    printf ("PAPI_strerror says: %s\n", PAPI_strerror (ret));
     return GPTLerror ("%s: PAPI_event_name_to_code failure\n", thisfunc);
-
+  }
   return 0;
 }
 
@@ -961,9 +963,11 @@ int GPTLevent_code_to_name (const int code, char *name)
       return GPTLerror ("%s: GPTL_PAPIlibraryinit failure\n", thisfunc);
   }
 
-  if (PAPI_event_code_to_name (code, name) != PAPI_OK)
+  if ((ret = PAPI_event_code_to_name (code, name)) != PAPI_OK) {
+    printf ("%s: PAPI_event_code_to_name failure for code=%d\n", thisfunc, code);
+    printf ("PAPI_strerror says: %s\n", PAPI_strerror (ret));
     return GPTLerror ("%s: PAPI_event_code_to_name failure\n", thisfunc);
-
+  }
   return 0;
 }
 
