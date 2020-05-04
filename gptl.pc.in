@@ -12,5 +12,5 @@ Version: @PACKAGE_VERSION@
 Requires.private: @PAPI_PC@
 Libs: -L${libdir} @LDFLAGS_PC@
 Libs.private: @OPENMP_CFLAGS@
-Cflags: -I${includedir} @PAPI_INCLUDE@
+Cflags: -I${includedir}
 Fflags: -I${includedir}

@@ -187,26 +187,17 @@ if test $enable_debug = yes; then
    FCFLAGS="$FCFLAGS -g -O0"
 fi
 
-# Cecking for PAPI requires a user-supplied input path because HPC systems
-# normally install it outside of normal system locations.
-# Default is do not include PAPI support.
-papi_path=no
-AC_ARG_WITH([papi],
-              [AS_HELP_STRING([--with-papi=<path_to_papi_installation>],
-                              [Enable PAPI and specify where it was installed])],
-            [papi_path=$with_papi], [papi_path=no])
+AC_ARG_ENABLE([papi], [AS_HELP_STRING([--enable-papi],
+  [Enable built-in support for papi library. Requires that PAPI is already installed])])
+test "x$enable_papi" = xyes || enable_papi=no
 
-if test "x$papi_path" != xno; then
+if test x$enable_papi = xyes; then
 # Check for papi library.
-  SAVE_CFLAGS="$CFLAGS"
-  SAVE_LDFLAGS="$LDFLAGS"
-  CFLAGS="$CFLAGS -I${with_papi}/include"
-  PAPI_LINK="-L${with_papi}/lib -lpapi"
-  LDFLAGS="$LDFLAGS $PAPI_LINK"
-  AC_MSG_CHECKING([papi usability from installation location ${with_papi}])
   AC_CHECK_LIB([papi], [PAPI_library_init])
+  have_papi=no
+  PAPI_PC=""
   if test "x$ac_cv_lib_papi_PAPI_library_init" = xyes; then
-    have_papi=yes
+    AC_MSG_CHECKING([file system support for PAPI])
     # If we have PAPI library, check /proc/sys/kernel/perf_event_paranoid
     # to see if we have permissions.
     if test -f /proc/sys/kernel/perf_event_paranoid; then
@@ -216,23 +207,11 @@ if test "x$papi_path" != xno; then
       fi
     fi
     AC_DEFINE([HAVE_PAPI], [1], [PAPI library is present and usable])
-# PAPI_PC is only for gptl.pc
+    have_papi=yes
     PAPI_PC="papi"
-    PAPI_INCLUDE="-I${with_papi}/include"
-  else
-# PAPI test failed.
-    have_papi=no
-# PAPI_PC is only for gptl.pc
-    PAPI_PC=""
-    PAPI_INCLUDE=""
-    PAPI_LINK=""
-# Revert CFLAGS and LDFLAGS
-    CFLAGS="$SAVE_CFLAGS"
-    LDFLAGS="$SAVE_LDFLAGS"
+    AC_MSG_RESULT($have_papi)
   fi
-  AC_MSG_RESULT($have_papi)
   AC_SUBST([PAPI_PC], [$PAPI_PC])
-  AC_SUBST([PAPI_INCLUDE], [$PAPI_INCLUDE])
 fi
 AM_CONDITIONAL([HAVE_PAPI], [test "x$have_papi" = xyes])
 
