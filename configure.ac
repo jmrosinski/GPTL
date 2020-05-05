@@ -57,7 +57,6 @@ fi
 
 # Only define HAVE_NANOTIME if this is a x86. It provides by far the finest grained,
 # lowest overhead wallclock timer on that architecture.
-# Set HAVE_NANOTIME on x86 systems only.
 AC_MSG_CHECKING([whether x86 nanotime is available])
 AS_CASE([$host], [*86*], [have_nanotime=yes], [have_nanotime=no])
 if test "x$have_nanotime" = xyes; then
@@ -73,6 +72,7 @@ if test "x$ac_cv_sizeof_void_p" = x8; then
 fi
 
 # Check for enabling gather/print stats on extra comparisons due to collisions
+# Default disabled due to extra runtime cost
 AC_ARG_ENABLE([collide],
   AS_HELP_STRING([--enable-collide], [Enable collide]))
 AS_IF([test "x$enable_collide" = xyes], [
@@ -80,32 +80,23 @@ AS_IF([test "x$enable_collide" = xyes], [
 ])
 
 # Check whether to inline threading routines rather than compile separately
-# Default enabled version
+# Default enabled
 AC_ARG_ENABLE([inline-threading],
   AS_HELP_STRING([--disable-inline-threading], [Do not inline threading routines]))
 AS_IF([test "x$enable_inline_threading" != xno], [
   enable_inline_threading=yes
   AC_DEFINE([INLINE_THREADING], [1], [Use \#include to inline threading routines into gptl.c])
   AC_MSG_NOTICE([Enabling inline threading for efficiency. Use --disable-inline-threading if \"make\" fails])
-  AC_MSG_NOTICE([Compiler msgs re: inline function GPTLget_threadnum declared but never defined may occur--ignore if only warnings])
+  AC_MSG_NOTICE([Compiler warnings re: inline function GPTLget_threadnum declared but never defined may occur. They can be safely ignored])
 ])
-
-# Default disabled version
-#AC_ARG_ENABLE([inline-threading],
-#  AS_HELP_STRING([--enable-inline-threading], [Enable inline threading]))
-#AS_IF([test "x$enable_inline_threading" = xyes], [
-#  AC_DEFINE([INLINE_THREADING], [1], [Use \#include to inline threading routines into gptl.c])
-#  AC_MSG_NOTICE([Enabling inline threading for efficiency. Remove --enable-inline-threading if \"make\" fails])
-#  AC_MSG_NOTICE([Compiler msgs re: inline function GPTLget_threadnum declared but never defined may occur--ignore if only warnings])
-#])
 AM_CONDITIONAL([INLINE_THREADING], [test "x$enable_inline_threading" = xyes])
 
-# Check for enabling OpenMP: default true
+# Check for enabling OpenMP support
+# Default enabled
 AC_ARG_ENABLE([openmp], [AS_HELP_STRING([--disable-openmp],
-              [Disable OpenMP support. May be necessary on e.g. MacOS using clang+gfortran])],,[enable_openmp=yes])
-
+              [Disable OpenMP support. May be necessary on e.g. MacOS using clang+gfortran])])
 useomp=no;
-if test "x$enable_openmp" != xno; then
+AS_IF([test "x$enable_openmp" != xno], [
 # Enable OpenMP support if not told to skip, and compiler supports it
   AC_OPENMP()
   if test "x$ac_cv_prog_c_openmp" = xunsupported; then
@@ -115,45 +106,47 @@ if test "x$enable_openmp" != xno; then
     AC_DEFINE([THREADED_OMP], [1], [openmp support is present])
     CFLAGS="$CFLAGS $OPENMP_CFLAGS"
   fi
-fi
+])
 AM_CONDITIONAL([HAVE_OPENMP], [test "x$useomp" = xyes])
 
-# for C++ only:
-# CFLAGS="$CFLAGS -fpermissive"
-
-# Does the user want to turn on nested OMP? Enable only if you will be
-# profiling code regions inside of doubly-nested OpenMP regions. Using
-# --enable-nestedomp can increase the cost of getting the thread
-# number by about 50% even in regions which are not doubly-nested.
+# Whether to enable GPTL to check for nested OMP constructs and do the right thing.
+# --enable-nestedomp can increase the cost of getting the thread number substantially,
+# even in regions which are not nested. Currently with --enable-nestedomp, GPTL allows
+# at most doubly-nested OpenMP regions.
+# Default disabled
+supportnesting=no
 AC_MSG_CHECKING([whether nested OMP is to be enabled])
 AC_ARG_ENABLE([nestedomp], [AS_HELP_STRING([--enable-nestedomp],
               [Build with nested OMP capability])])
+AS_IF([test "x$enable_nestedomp" = "xyes"], [
+  AC_DEFINE([ENABLE_NESTEDOMP], [1], [nested omp capability enabled])
+  supportnesting=yes
+])
 
-test "x$enable_nestedomp" = xyes || enable_nestedomp=no
 # If nestedomp requested, verify basic OpenMP capability was there
-if test "x$enable_nestedomp" = xyes; then
-  if test "x$enable_openmp" != xyes; then
+if test "x$supportnesting" = xyes; then
+  if test "x$useomp" != xyes; then
     AC_MSG_ERROR([Nested OMP capability requested but OpenMP disabled or not available])
   fi
   AC_DEFINE([ENABLE_NESTEDOMP], [1], [nested omp capability enabled])
 fi
-AC_MSG_RESULT($enable_nestedomp)
-AM_CONDITIONAL(ENABLE_NESTEDOMP, [test x$enable_nestedomp = xyes])
+AC_MSG_RESULT([$supportnesting])
+AM_CONDITIONAL(ENABLE_NESTEDOMP, [test "x$supportnesting" = xyes])
 
-# pthread library. default disabled
-AC_ARG_ENABLE([pthread],
-    AS_HELP_STRING([--enable-pthread],
+# Whether to use pthread library instead of OMP as underlying thread utility.
+# Default disabled due to experimental nature.
+AC_ARG_ENABLE([pthread], AS_HELP_STRING([--enable-pthread],
       [EXPERIMENTAL: Enable underlying pthread capability instead of OpenMP]))
-
-if test "x$enable_pthread" = xyes; then
+AS_IF([test "x$enable_pthread" = xyes], [
   AC_MSG_WARN([--enable-pthread WITHIN GPTL IS EXPERIMENTAL: PREFER OPENMP!!!])
   dnl Do the stuff needed for enabling the feature
   AC_MSG_CHECKING([for pthread support])
   AC_CHECK_LIB([pthread], [pthread_mutex_init])
   if test "x$ac_cv_lib_pthread_pthread_mutex_init" = xyes; then
      AC_DEFINE([UNDERLYING_PTHREADS], [1], [use pthreads library for underlying threading])
+     AC_MSG_NOTICE([Underlying threading support will be pthread library])
   fi
-fi
+])
 AM_CONDITIONAL(UNDERLYING_PTHREADS, [test "x$ac_cv_lib_pthread_pthread_mutex_init" = xyes])
 
 # Underlying threading must be via openmp (preferred), pthreads, or none at all
@@ -161,37 +154,42 @@ if test "x$ac_cv_lib_pthread_pthread_mutex_init" != xyes; then
   if test "x$useomp" = xyes; then
     underlying_omp=yes;
     AC_DEFINE([UNDERLYING_OPENMP], [1], [use openmp for underlying threading])
+    AC_MSG_NOTICE([Underlying threading support will be OpenMP library])
+  else
+    AC_MSG_NOTICE([Underlying threading support is DISABLED: Do not invoke GPTL from threaded regions!])
   fi
 fi
 AM_CONDITIONAL(UNDERLYING_OPENMP, [test "x$underlying_omp" = xyes])
 
-# Does the user want to use double underscores for fortran wrappers?
-AC_MSG_CHECKING([whether double underscore for Fortran wrappers should be enabled])
+# Does the Fortran compiler employ double underscores in its name mangling?
+# Very few Fortran compilers still do this (e.g. g95 if that's still around)
+# Default disabled.
 AC_ARG_ENABLE([double-underscore], [AS_HELP_STRING([--enable-double-underscore],
               [use double underscore for Fortran wrappers])])
-test "x$enable_double_underscore" = xyes || enable_double_underscore=no
-AC_MSG_RESULT($enable_double_underscore)
-if test $enable_double_underscore = yes; then
+AS_IF([test "x$enable_double_underscore" = xyes], [
    AC_DEFINE([FORTRANDOUBLEUNDERSCORE], [1],
-   [Needed only for a few Fortran compilers such as g95: Use double underscore for Fortran wrappers])
-else
+   [Fortran name mangling uses double underscores e.g. g95])
+   AC_MSG_NOTICE([Wrappers for Fortran API will assume double underscoring])
+   ],[
    AC_DEFINE([FORTRANUNDERSCORE], [1], [Use single underscore for Fortran wrappers: The usual case])
-fi
+   AC_MSG_NOTICE([Wrappers for Fortran API will assume single underscoring])
+])
 
 # --enable-debug means build with low optimization and add some code inside some #ifdef DEBUG
+# Default disabled
 AC_ARG_ENABLE([debug], [AS_HELP_STRING([--enable-debug], [Enable DEBUG ifdef and -g -O0])])
-test "x$enable_debug" = xyes || enable_debug=no
-if test $enable_debug = yes; then
-   AC_DEFINE([DEBUG], [1], [set debug ifdef])
-   CFLAGS="$CFLAGS -g -O0"
-   FCFLAGS="$FCFLAGS -g -O0"
-fi
+AS_IF([test "x$enable_debug" = xyes], [
+ AC_DEFINE([DEBUG], [1], [set debug ifdef])
+ CFLAGS="$CFLAGS -g -O0"
+ FCFLAGS="$FCFLAGS -g -O0"
+])
 
+# Whether to enable GPTL hooks into the PAPI performance counter library. PAPI must already
+# be installed.
+# Default disabled.
 AC_ARG_ENABLE([papi], [AS_HELP_STRING([--enable-papi],
   [Enable built-in support for papi library. Requires that PAPI is already installed])])
-test "x$enable_papi" = xyes || enable_papi=no
-
-if test x$enable_papi = xyes; then
+AS_IF([test x$enable_papi = xyes], [
 # Check for papi library.
   AC_CHECK_LIB([papi], [PAPI_library_init])
   have_papi=no
@@ -211,8 +209,9 @@ if test x$enable_papi = xyes; then
     PAPI_PC="papi"
     AC_MSG_RESULT($have_papi)
   fi
+  # For gptl.pc
   AC_SUBST([PAPI_PC], [$PAPI_PC])
-fi
+])
 AM_CONDITIONAL([HAVE_PAPI], [test "x$have_papi" = xyes])
 
 # Check for rt library. clock_gettime() in librt.a is an option for
@@ -228,16 +227,15 @@ fi
 # If getrusage is found then HAVE_GETRUSAGE will automatically be defined for obtaining RSS
 AC_CHECK_FUNCS(getrusage)
 
-# Check for existence of /proc, used for obtaining process size
-# Must be disabled when cross-compiling
+# Check for existence of /proc, used for obtaining process size.
+# Must be disabled when cross-compiling.
+# Default enabled.
 AC_ARG_ENABLE([slashproc], [AS_HELP_STRING([--disable-slashproc],
     	      [Check for existence of /proc file system: Must be disabled when cross-compiling])])
-
-test "x$enable_slashproc" != xno && enable_slashproc=yes
-if test "$enable_slashproc" = yes; then
+AS_IF([test "x$enable_slashproc" != xno], [
   AC_CHECK_FILE([/proc],
         [AC_DEFINE([HAVE_SLASHPROC], [1], [/proc exists. Memory checking via /proc enabled])])
-fi
+])
 
 # We need the math library for some tests.
 AC_CHECK_LIB([m], [floor], [], [AC_MSG_ERROR([Can't find or link to the math library])])
@@ -247,14 +245,11 @@ AC_CHECK_LIB([m], [floor], [], [AC_MSG_ERROR([Can't find or link to the math lib
 # not be possible. To use auto auto-profiling with GNU or Intel compilers:
 # Compile application code with -g and appropriate auto-instrumentation flag
 # Probably the appropriate dynamic linking flag (maybe -rdynamic or -Bdynamic) also is needed
-#
+# Default enabled
 AC_ARG_ENABLE([libunwind],
     AS_HELP_STRING([--disable-libunwind], [Skip check for libunwind--check for backtrace instead],))
-
-# Default is to enable auto-profiling capability via libunwind.
-# Cannot have both unwind and backtrace methods enabled at once
 found_libunwind=no
-if test "x$enable_libunwind" != xno; then
+AS_IF([test "x$enable_libunwind" != xno], [
   AC_MSG_CHECKING([for libunwind])
   AC_CHECK_LIB(unwind, [unw_backtrace], [found_libunwind=yes], [found_libunwind=no])
   AC_MSG_RESULT([$ac_cv_lib_unwind])
@@ -262,8 +257,9 @@ if test "x$enable_libunwind" != xno; then
     AC_DEFINE([HAVE_LIBUNWIND], [1], [libunwind will be used])
     AC_MSG_NOTICE([libunwind enabled for auto-profiling: -lunwind and dynamic linking flag (see below) possibly also needed])
   fi
-fi
+])
 
+# Cannot have both unwind and backtrace methods enabled at once
 found_backtrace=no
 if test "x$found_libunwind" != xyes; then
   AC_MSG_NOTICE([libunwind disabled or not found])
@@ -342,7 +338,6 @@ if test "x$have_libmpi" = xyes; then
     AC_MSG_WARN([Could not determine MPI_STATUS_SIZE_IN_INTS -- GUESSING 5])
   fi
 fi
-
 AM_CONDITIONAL([HAVE_LIBMPI], [test "x$have_libmpi" = xyes])
 
 # Did the user specify an MPI launcher other than mpiexec?
@@ -365,30 +360,30 @@ AC_SUBST([MPIEXEC], [$MPIEXEC])
 AC_DEFINE([HAVE_COMM_F2C], [1], [Hopefully MPI_Comm_f2c is present])
 #fi
 
-# Does the user want to turn on PMPI?
+# Whether to enable auto-profiling with the PMPI profiling layer provided by most MPI distributions
+# Default disabled
+usepmpi=no
 AC_MSG_CHECKING([whether PMPI is to be enabled])
 AC_ARG_ENABLE([pmpi], [AS_HELP_STRING([--enable-pmpi], [Build with PMPI support to auto-profile MPI calls])])
-test "x$enable_pmpi" = xyes || enable_pmpi=no
-AM_CONDITIONAL([ENABLE_PMPI], [test x$enable_pmpi = xyes])
-if test "$enable_pmpi" = yes; then
-   AC_DEFINE([ENABLE_PMPI], [1], [enable pmpi])
-fi
-AC_MSG_RESULT($enable_pmpi)
+AS_IF([test "x$enable_pmpi" = xyes], [
+ AC_DEFINE([ENABLE_PMPI], [1], [enable MPI auto-profiling])
+ usepmpi=yes
+])
+AC_MSG_RESULT([$usepmpi])
+AM_CONDITIONAL([ENABLE_PMPI], [test x$usepmpi = xyes])
 
-# See if Fortran support is requested (default yes). If so check for working compiler and add
-# Fortran directories
+# Whether Fortran suppport is to be enabled. If so check for working compiler
+# Default enabled
+fortran_support=no
 AC_ARG_ENABLE([fortran], [AS_HELP_STRING([--disable-fortran],
-              [Disable fortran support. Only do this if enabling it causes problems])],,[enable_fortran=yes])
-
-# For gptl.pc
-GPTL_LIBS="-lgptl"
-
-if test "x$enable_fortran" != "xno"; then
+              [Disable fortran support. Only do this if enabling it causes problems])])
+AS_IF([test "x$enable_fortran" != "xno"], [
+  fortran_support=yes
+])
+# For some reason AS_IF wrapping the whole thing complains loudly
+if test "x$fortran_support" = xyes; then
   AC_LANG_PUSH(Fortran)
   AC_PROG_FC()
-
-# For gptl.pc
-  GPTL_LIBS="-lgptlf $GPTL_LIBS"
 
 # Make sure this file is copied to build directories for tests to work.
   AC_CONFIG_LINKS([fortran/tests/gptlnl:fortran/tests/gptlnl])
@@ -429,14 +424,20 @@ if test "x$enable_fortran" != "xno"; then
   AC_CONFIG_FILES([fortran/tests/run_par_summary_test.sh], [chmod ugo+x fortran/tests/run_par_summary_test.sh])
   AC_LANG_POP()
 fi
-AM_CONDITIONAL([HAVE_FORTRAN], [test x$enable_fortran = "xyes"])
+AM_CONDITIONAL([HAVE_FORTRAN], [test x$fortran_support = "xyes"])
 
 # For gptl.pc
+if test "x$fortran_support" = xyes; then
+  GPTL_LIBS="-lgptlf -lgptl"
+else
+  GPTL_LIBS="-lgptl"
+fi
 if test "x$found_libunwind" = xyes; then
   GPTL_LIBS="$GPTL_LIBS -lunwind"
 fi
-
 LDFLAGS_PC="$GPTL_LIBS $LDFLAGS $INSTR_LINK"
+# End for gptl.pc
+
 AC_SUBST([LDFLAGS], [$LDFLAGS])
 AC_SUBST([LDFLAGS_PC], [$LDFLAGS_PC])
 AC_SUBST([OPENMP_CFLAGS], [$OPENMP_CFLAGS])
@@ -454,6 +455,7 @@ AC_CONFIG_FILES([Makefile
 AC_CONFIG_FILES([tests/run_par_summary_test.sh], [chmod ugo+x tests/run_par_summary_test.sh])
 AC_CONFIG_FILES([tests/run_par_pmpi_test.sh], [chmod ugo+x tests/run_par_pmpi_test.sh])
 AC_CONFIG_FILES([tests/run_par_global_test.sh], [chmod ugo+x tests/run_par_global_test.sh])
+AC_CONFIG_FILES([tests/run_memusage.sh], [chmod ugo+x tests/run_memusage.sh])
 
 # No doxygen--doc is man pages, README, and web pages
 # Is doxygen installed?

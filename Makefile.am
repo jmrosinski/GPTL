@@ -8,7 +8,7 @@
 ACLOCAL_AMFLAGS = -I m4
 
 # These files get added to the distribution.
-EXTRA_DIST = COPYING README
+EXTRA_DIST = COPYING README INSTALL
 
 # This is the list of subdirs for which Makefiles will be constructed
 SUBDIRS = include src tests bin man

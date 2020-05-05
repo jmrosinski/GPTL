@@ -1,7 +1,0 @@
-o ufo-bundle
-o Mac (clang+gfortran)
-o MPI
-o Enable memory RSS printing
-o Basic hera testing
-o Install on hera
-o GSI+GPTL on hera

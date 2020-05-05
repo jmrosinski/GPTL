@@ -7,7 +7,7 @@ The build procedure is basic autoconf:
 
 % ./configure; make; make check; make install.
 
-Generally you'll want to specify C and Fortran compilers with
+Usually you'll want to specify C and Fortran compilers with
 environment variables. To enable MPI support, use the wrappers, e.g.
 
 % env CC=mpicc FC=mpif90 ./configure --prefix=</installation/directory>
@@ -24,10 +24,14 @@ MPI distros. Requires MPI-capable C compiler or wrapper, such as mpicc.
 
 --enable-papi: Enables PAPI (Performance API) support for hardware performance
 counters (https://icl.utk.edu/papi/). The PAPI lib must be installed in a
-standard location in order for this option to work.
+in order for this option to work. Use environment variables $CPPFLAGS and
+$LDFLAGS to point to the installation if it is not in a standard place.
 
 --enable-nestedomp: Enables support for OpenMP apps utilizing nested OMP
 constructs. Use this only if you really need it. It adds significant overhead.
+
+--disable-shared: Build only a static library. Standard autoconf behavior for
+libraries is to build shared libraries (.so files).
 
 --disable-libunwind: Disables use of libunwind for discovering the name of
 auto-profiled user functions. Otherwise the "configure" script will check for

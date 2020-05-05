@@ -6,8 +6,13 @@
 # Build legacy test with FC
 F77=$(FC)
 
-# Find include directory and src directory (for .mod file).
+# Find include directory for .inc and src directory for .mod
 AM_CPPFLAGS = -I../include -I../src
+
+# For some reason "make distcheck" doesn't populate its Fortran include dir. So we have to
+# provide a full path.
+#AM_FFLAGS = -I../include
+AM_FFLAGS = -I${top_srcdir}/fortran/include
 
 # Link to GPTL fortran and C libraries.
 MYLIBS = ${top_builddir}/fortran/src/libgptlf.la ${top_builddir}/src/libgptl.la
