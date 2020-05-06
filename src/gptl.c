@@ -317,7 +317,7 @@ int GPTLsetoption (const int option, const int val)
     if (verbose)
       printf ("%s: boolean sync_mpi = %d\n", thisfunc, val);
 #else
-    fprintf (stderr, "%s: option GPTLsync_mpi requires MPI\n", thisfunc);
+    fprintf (stderr, "%s: option GPTLsync_mpi requires configure --enable-pmpi\n", thisfunc);
 #endif
     return 0;
   case GPTLmaxthreads:

@@ -23,9 +23,9 @@ Other switches to "configure" you may want to consider setting include:
 MPI distros. Requires MPI-capable C compiler or wrapper, such as mpicc.
 
 --enable-papi: Enables PAPI (Performance API) support for hardware performance
-counters (https://icl.utk.edu/papi/). The PAPI lib must be installed in a
-in order for this option to work. Use environment variables $CPPFLAGS and
-$LDFLAGS to point to the installation if it is not in a standard place.
+counters (https://icl.utk.edu/papi/). The PAPI lib must be installed in order
+for this option to work. Use environment variables $CPPFLAGS and $LDFLAGS to
+point to the installation if it is not in a standard place.
 
 --enable-nestedomp: Enables support for OpenMP apps utilizing nested OMP
 constructs. Use this only if you really need it. It adds significant overhead.
@@ -40,7 +40,7 @@ linking with any additional libraries. Libunwind is preferred though, as it
 is more modern, and from empirical observation seems to do a more accurate job
 unwinding the call stack. Note that in each case (libunwind and backtrace),
 adding "-rdynamic" to link flags is often very helpful to being able to
-determine function address. Applications using auto-profiling also should be
+determine function name. Applications using auto-profiling also should be
 linked with "-g" to ensure their symbol names are included.
 
 There are other options (see ./configure --help), but these are the main ones

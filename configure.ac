@@ -74,9 +74,9 @@ fi
 # Check for enabling gather/print stats on extra comparisons due to collisions
 # Default disabled due to extra runtime cost
 AC_ARG_ENABLE([collide],
-  AS_HELP_STRING([--enable-collide], [Enable collide]))
+  AS_HELP_STRING([--enable-collide], [Include stats on extra comparisons due to hash collisions]))
 AS_IF([test "x$enable_collide" = xyes], [
-  AC_DEFINE([COLLIDE], [1], [Include stats on extra comparisons due to collisions])
+  AC_DEFINE([COLLIDE], [1], [Include stats on extra comparisons due to hash collisions])
 ])
 
 # Check whether to inline threading routines rather than compile separately

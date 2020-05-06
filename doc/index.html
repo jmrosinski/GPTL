@@ -16,13 +16,16 @@ dynamic call tree">
 performance analysis and profiling. The instrumentation can be inserted
 manually by the user wherever they wish, and/or it can be done automatically by
 the compiler at function entry and exit points if the application being
-profiled is built with GNU, Clang, Intel, PGI (8.0.2 or later), or AIX
+profiled is built with GNU, Clang, Intel, PGI, or AIX
 compilers (Note: AIX has not been tested in quite some time). To auto-instrument an application,
 add 
 <b><em>-finstrument-functions</em></b> (GNU, Intel, Clang) or
 <b><em>-Minstrument:functions</em></b> (PGI) or
 <b><em>-qdebug=function_trace</em></b> (AIX) 
-to the compile and link flags of the source files to be profiled.
+to the compile and link flags of the source files to be profiled. In order to get correct behavior
+from the auto-profiling feature, often it is necessary to add the <b>-rdynamic</b> link flag to
+their application being profiled. Otherwise profiled function names may be reported only as
+addresses, which is not very useful.
 <p>
 Automatic instrumentation of a number of MPI routines is also possible, utilizing the PMPI
 profiling layer provided by most MPI distributions. In this

@@ -28,7 +28,7 @@ before_script:
 #  - tar zxf gptl-5.6.0.tar.gz
 #  - pushd gptl-5.6.0
   - autoreconf -i
-  - ./configure --prefix=/usr
+  - ./configure --prefix=/usr --enable-pmpi
   - sudo make -j install
 #  - popd
 
