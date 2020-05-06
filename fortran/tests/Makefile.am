@@ -93,7 +93,7 @@ endif
 # Test output to be deleted: include ALL possible executables
 ALLEXES = overhead handle utrtest testbasics errtest nlreader outoforder legacy omptest \
           threadohd testbacktrace testinit testpapi summary print_mpistatus_size pmpi
-CLEANFILES = timing.?????? *_ohd *.mod *.trs *.log *.o $(ALLEXES)
+CLEANFILES = timing.?????? timing.summary* *_ohd *.mod *.trs *.log *.o $(ALLEXES)
 
 # This file is required for the nlreader test.
 EXTRA_DIST = gptlnl
