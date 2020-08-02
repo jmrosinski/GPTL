@@ -1,3 +1,4 @@
+
 /*
 ** gptl_papi.c
 **
@@ -292,7 +293,7 @@ int GPTL_PAPIsetoption (const int counter, const int val)
 */
 int canenable (int counter)
 {
-  char eventname[PAPI_MAX_STR_LEN]; /* returned from PAPI_event_code_to_name */
+  char eventname[PAPI_MAX_STR_LEN]; // returned from PAPI_event_code_to_name
 
   if (npapievents+1 > MAX_AUX)
     return false;
@@ -317,7 +318,7 @@ int canenable (int counter)
 */
 int canenable2 (int counter1, int counter2)
 {
-  char eventname[PAPI_MAX_STR_LEN]; /* returned from PAPI_event_code_to_name */
+  char eventname[PAPI_MAX_STR_LEN]; // returned from PAPI_event_code_to_name
 
   if (npapievents+2 > MAX_AUX)
     return false;

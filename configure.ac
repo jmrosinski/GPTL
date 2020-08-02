@@ -6,7 +6,7 @@
 AC_PREREQ([2.59])
 
 # Initialize autoconf.
-AC_INIT([GPTL], [8.0.2], [rosinski@ucar.edu])
+AC_INIT([GPTL], [8.0.3], [jmrosinski@gmail.com])
 
 # Find out about the host we're building on.
 AC_CANONICAL_HOST
@@ -337,6 +337,8 @@ if test "x$have_libmpi" = xyes; then
     AC_DEFINE([MPI_STATUS_SIZE_IN_INTS], [5], [size of status in MPI])
     AC_MSG_WARN([Could not determine MPI_STATUS_SIZE_IN_INTS -- GUESSING 5])
   fi
+else
+  AC_MSG_WARN([MPI_Init not found. GPTL MPI capabilities pr_summary and PMPI will NOT be enabled])
 fi
 AM_CONDITIONAL([HAVE_LIBMPI], [test "x$have_libmpi" = xyes])
 
@@ -387,6 +389,9 @@ if test "x$fortran_support" = xyes; then
 
 # Make sure this file is copied to build directories for tests to work.
   AC_CONFIG_LINKS([fortran/tests/gptlnl:fortran/tests/gptlnl])
+
+# Discover the extension used for Fortran modules (will be stored in $FC_MODEXT)
+  AC_FC_MODULE_EXTENSION()
 
 # Test OMP for Fortran and set flags accordingly, only if OMP support was enabled above for C
 # AC_OPENMP sets OPENMP_FCFLAGS

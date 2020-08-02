@@ -31,7 +31,7 @@ typedef enum {
   GPTLdopr_multparent = 14, // Print multiple parent info (true)
   GPTLdopr_collision  = 15, // Print hastable collision info (true)
   GPTLdopr_memusage   = 27, // Print memory usage stats when growth exceeds some threshhold %
-  GPTLprint_method    = 16, // Tree print method: first parent, last parent
+  GPTLprint_method    = 16, // Tree print method: first parent, last parent,
 			    //   most frequent, or full tree (most frequent)
   GPTLtablesize       = 50, // per-thread size of hash table
   GPTLmaxthreads      = 51, // maximum number of threads

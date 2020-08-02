@@ -30,4 +30,5 @@ gptl.mod: gptlf.$(OBJEXT)
 # Install these in the include directory.
 include_HEADERS = gptl.mod
 
-CLEANFILES = *.mod
+# Remove module files
+CLEANFILES = *.$(FC_MODEXT)
