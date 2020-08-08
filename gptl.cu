@@ -17,7 +17,7 @@
 #include <sys/types.h>     /* u_int8_t, u_int16_t */
 
 #include <cuda.h>
-#include <helper_cuda.h>
+//#include <helper_cuda.h>
 
 #ifdef HAVE_LIBRT
 #include <time.h>
@@ -3429,7 +3429,47 @@ int GPTLget_gpu_props (int *khz, int *warpsize, int *devnum, int *SMcount,
   *khz           = prop.clockRate;
   *warpsize      = prop.warpSize;
   *SMcount       = prop.multiProcessorCount;
-  *cores_per_sm  = _ConvertSMVer2Cores (prop.major, prop.minor);
+
+  // Begin code derived from stackoverflow to determine cores_per_sm
+  switch (prop.major){
+  case 2: // Fermi
+    if (prop.minor == 1)
+      *cores_per_sm = 48;
+    else
+      *cores_per_sm = 32;
+    break;
+  case 3: // Kepler
+    *cores_per_sm = 192;
+    break;
+  case 5: // Maxwell
+    *cores_per_sm = 128;
+    break;
+  case 6: // Pascal
+    if ((prop.minor == 1) || (prop.minor == 2))
+      *cores_per_sm = 128;
+    else if (prop.minor == 0)
+      *cores_per_sm = 64;
+    else
+      printf("Unknown device type\n");
+    break;
+  case 7: // Volta and Turing
+    if ((prop.minor == 0) || (prop.minor == 5))
+      *cores_per_sm = 64;
+    else
+      printf("Unknown device type\n");
+    break;
+  case 8: // Ampere
+    if (prop.minor == 0)
+      *cores_per_sm = 64;
+    else
+      printf("Unknown device type\n");
+    break;
+  default:
+    printf("Unknown device type\n"); 
+    break;
+  }
+  // End code derived from stackoverflow to determine cores_per_sm
+  
   *cores_per_gpu = *cores_per_sm * (*SMcount);
   
   // Use _ConvertSMVer2Cores when it is available from nvidia

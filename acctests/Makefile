@@ -1,4 +1,4 @@
-FC = pgfortran
+FC = nvfortran
 GPTL = ..
 # Using -Mcuda=cc60 instead of -Mcuda=cuda8 fixes the static memory address compiler bug
 FFLAGS  = -g -O0 -I$(GPTL) -I$(GPTL)/cuda -acc -Minfo=accel -Minfo -ta=tesla:cc60,keepgpu -m64

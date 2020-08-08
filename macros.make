@@ -9,7 +9,7 @@
 # Where to install GPTL library and include files.
 # if "git" is not available, set REVNO by hand
 REVNO = $(shell git describe)
-INSTALLDIR = $(HOME)/gptl_flatten_nostrings
+INSTALLDIR = $(HOME)/install
 
 # Where to install man pages (if blank, defaults to $INSTALLDIR)
 MANDIR = 
@@ -22,7 +22,7 @@ CU = nvcc
 
 # Whether to build debug lib or optimized lib, and associated flags
 DEBUG = no
-CUFLAGS_ALL = $(UNDERSCORING) -I$(CUDA_ROOT)/samples/common/inc -g -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true -keep
+CUFLAGS_ALL = $(UNDERSCORING) -g -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true -keep
 ifeq ($(DEBUG),yes)
   CUFLAGS = -DDEBUG -O0 -G -lineinfo $(CUFLAGS_ALL)
 else
@@ -82,7 +82,7 @@ ifeq ($(FORTRAN),yes)
 # Set Fortran compiler, flags, and OpenMP compiler flag. Note that Fortran
 # OpenMP tests are possible with OPENMP=no as long as PTHREADS=yes
 # These settings are only used by the Fortran test applications in ftests/.
-  FC     = pgfortran
+  FC     = nvfortran
   FFLAGS = -g -O2 -m64
   FOMPFLAG = -mp
 endif
