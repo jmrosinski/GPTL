@@ -16,6 +16,18 @@ if HAVE_FORTRAN
 SUBDIRS += fortran
 endif
 
+if ENABLE_CUDA
+SUBDIRS += cuda
+endif
+
+if ENABLE_FACC
+SUBDIRS += facc
+endif
+
+if ENABLE_CACC
+SUBDIRS += cacc
+endif
+
 # Name and dir to hold pkgconfig info
 pkgconfigdir = ${libdir}/pkgconfig
 pkgconfig_DATA = gptl.pc

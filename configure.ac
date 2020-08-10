@@ -469,5 +469,48 @@ AC_CONFIG_FILES([tests/run_memusage.sh], [chmod ugo+x tests/run_memusage.sh])
 #   AC_MSG_WARN([Doxygen not found - documentation will not be built])
 #fi
 
+AC_ARG_ENABLE([cuda],
+  AS_HELP_STRING([--enable-cuda], [Include cuda support--REQUIRES CC be cuda-capable compiler]))
+
+AS_IF([test "x$enable_cuda" = xyes], [
+  enable_cuda=yes
+  AC_CONFIG_FILES([cuda/Makefile
+                   cuda/include/Makefile
+                   cuda/src/Makefile
+                   cuda/tests/Makefile
+		 ])
+])
+
+# OpenACC support REQUIRES cuda support
+AS_IF([test "x$enable_cuda" = xyes], [
+  AC_ARG_ENABLE([facc],
+    AS_HELP_STRING([--enable-facc], [Include Fortran OpenACC support--REQUIRES cuda enabled]))
+  AS_IF([test "x$enable_facc" = xyes], [
+    enable_facc=yes
+    AC_CONFIG_FILES([facc/Makefile
+                     facc/include/Makefile
+                     facc/src/Makefile
+                     facc/tests/Makefile
+    		   ])
+  ])
+])
+  
+AS_IF([test "x$enable_cuda" = xyes], [
+  AC_ARG_ENABLE([cacc],
+    AS_HELP_STRING([--enable-cacc], [Include C/C++ OpenACC support--REQUIRES cuda enabled]))
+  AS_IF([test "x$enable_cacc" = xyes], [
+    enable_cacc=yes
+    AC_CONFIG_FILES([cacc/Makefile
+                     cacc/include/Makefile
+                     cacc/src/Makefile
+                     cacc/tests/Makefile
+		     ])
+  ])
+])
+
+AM_CONDITIONAL([ENABLE_CUDA], [test "x$enable_cuda" = xyes])
+AM_CONDITIONAL([ENABLE_FACC], [test "x$enable_facc" = xyes])
+AM_CONDITIONAL([ENABLE_CACC], [test "x$enable_cacc" = xyes])
+
 # Build the files listed above.
 AC_OUTPUT()

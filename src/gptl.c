@@ -60,6 +60,11 @@ static bool dopr_multparent = true;    // whether to print multiple parent info
 static bool dopr_collision = false;    // whether to print hash collision info
 static bool dopr_memusage = false;     // whether to include memusage print on growth
 static float growth_pct = 0.;          // threshhold % for memory growth print
+static int SMcount = -1;               // SM count for each GPU
+#ifdef ENABLE_CUDA
+static int khz = -1;
+static int warpsize = -1;
+#endif
 
 static time_t ref_gettimeofday = -1;   // ref start point for gettimeofday
 static time_t ref_clock_gettime = -1;  // ref start point for clock_gettime
@@ -456,6 +461,18 @@ int GPTLinitialize (void)
     printf ("Underlying wallclock timing routine is %s\n", funclist[funcidx].name);
   }
 
+#ifdef ENABLE_CUDA
+  ret = GPTLget_gpu_props (&khz, &warpsize, &devnum, &SMcount, &GPTLcores_per_sm, &GPTLcores_per_gpu);
+  if (warpsize != WARPSIZE)
+    return GPTLerror ("%s: warpsize=%d WARPSIZE=%d\n", thisfunc, warpsize, WARPSIZE);
+  printf ("%s: device number=%d\n", thisfunc, devnum);
+
+  gpu_hz = khz * 1000.;
+  printf ("%s: GPU khz=%d\n", thisfunc, khz);
+  ret = GPTLinitialize_gpu (verbose, maxwarps_gpu, maxtimers_gpu, gpu_hz);
+  printf ("%s: Returned from GPTLinitialize_gpu\n", thisfunc);
+#endif
+  
   imperfect_nest = false;
   initialized = true;
   return 0;
