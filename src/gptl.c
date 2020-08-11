@@ -60,10 +60,10 @@ static bool dopr_multparent = true;    // whether to print multiple parent info
 static bool dopr_collision = false;    // whether to print hash collision info
 static bool dopr_memusage = false;     // whether to include memusage print on growth
 static float growth_pct = 0.;          // threshhold % for memory growth print
-static int SMcount = -1;               // SM count for each GPU
+
 #ifdef ENABLE_CUDA
-static int khz = -1;
-static int warpsize = -1;
+static int maxtimers_gpu = DEFAULT_MAXTIMERS_GPU;
+static int maxwarps_gpu = DEFAULT_MAXWARPS_GPU;
 #endif
 
 static time_t ref_gettimeofday = -1;   // ref start point for gettimeofday
@@ -336,7 +336,21 @@ int GPTLsetoption (const int option, const int val)
     if (verbose)
       printf ("%s: onlypr_rank0 = %d\n", thisfunc, val);
     return 0;
-    
+
+#ifdef ENABLE_CUDA
+  case GPTLmaxwarps_gpu:
+    if (val < 1)
+      return GPTLerror ("%s: maxwarps_gpu must be positive. %d is invalid\n", thisfunc, val);
+    maxwarps_gpu = val;
+    printf ("%s: maxwarps_gpu = %d\n", thisfunc, maxwarps_gpu);
+    return 0;
+  case GPTLmaxtimers_gpu:
+    if (val < 1)
+      return GPTLerror ("%s: maxtimers_gpu must be positive. %d is invalid\n", thisfunc, val);
+    maxtimers_gpu = val;
+    printf ("%s: maxtimers_gpu = %d\n", thisfunc, maxtimers_gpu);
+    return 0;
+#endif    
   case GPTLmultiplex:
     // Allow GPTLmultiplex to fall through because it will be handled by GPTL_PAPIsetoption()
   default:
@@ -397,6 +411,7 @@ int GPTLinitialize (void)
 {
   int i;
   int t;
+  int ret;        // return value
   double t1, t2;  // returned from underlying timer
   static const char *thisfunc = "GPTLinitialize";
 
@@ -462,10 +477,16 @@ int GPTLinitialize (void)
   }
 
 #ifdef ENABLE_CUDA
-  ret = GPTLget_gpu_props (&khz, &warpsize, &devnum, &SMcount, &GPTLcores_per_sm, &GPTLcores_per_gpu);
-  if (warpsize != WARPSIZE)
-    return GPTLerror ("%s: warpsize=%d WARPSIZE=%d\n", thisfunc, warpsize, WARPSIZE);
-  printf ("%s: device number=%d\n", thisfunc, devnum);
+  int SMcount;               // SM count for each GPU
+  int khz;
+  int warpsize;
+  int devnum;
+  double gpu_hz;             // GPU frequency in cycles per second
+  int cores_per_sm;
+  int cores_per_gpu;
+
+  ret = GPTLget_gpu_props (&khz, &warpsize, &devnum, &SMcount, &cores_per_sm, &cores_per_gpu);
+  printf ("%s: device number=%d warpsize=%d\n", thisfunc, devnum, warpsize);
 
   gpu_hz = khz * 1000.;
   printf ("%s: GPU khz=%d\n", thisfunc, khz);
@@ -559,6 +580,9 @@ int GPTLfinalize (void)
   tablesize = DEFAULT_TABLE_SIZE;
   tablesizem1 = tablesize - 1;
 
+#ifdef ENABLE_CUDA  
+  GPTLfinalize_gpu_fromhost ();
+#endif
   return 0;
 }
 
@@ -1198,6 +1222,9 @@ int GPTLreset (void)
     }
   }
 
+#ifdef ENABLE_CUDA
+  GPTLreset_gpu_fromhost ();
+#endif
   if (verbose)
     printf ("%s: accumulators for all timers set to zero\n", thisfunc);
 
@@ -2836,7 +2863,6 @@ void __cyg_profile_func_enter (void *this_fn, void *call_site)
     unw_cursor_t cursor;
     unw_context_t context;
     unw_word_t offset, pc;
-    int n;
     // Initialize cursor to current frame for local unwinding.
     unw_getcontext (&context);
     unw_init_local (&cursor, &context);

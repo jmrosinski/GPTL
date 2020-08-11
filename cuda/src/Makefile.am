@@ -16,11 +16,8 @@ libgptl_cuda_la_CPPFLAGS = -I$(top_srcdir)/cuda/include
 # API removed or changed since last public release => set "a"=0
 libgptl_cuda_la_LDFLAGS = -version-info 0:0:0
 
-# Maximum register count
-MAXRREGCOUNT = 8
-
 # These are the source files.
-libgptl_cuda_la_SOURCES = gptl_device.cu util_device.cu f_wrappers_device.cu
+libgptl_cuda_la_SOURCES = gptl_host.cu gptl_device.cu util_device.cu f_wrappers_device.cu print_gpustats.cu
 
 # For now just hardwire the compile flags
 # set max reg count to a small number to minimize GPTL interference with app

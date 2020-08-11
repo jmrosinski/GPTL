@@ -1,1 +1,4 @@
+switchgcc.sh (set to gcc8 because nvcc can't handle 9 or 10)
+module load nvidia/20.7
+Need --disable-shared when building with nvidia for some reason
 ./configure --disable-shared --enable-cuda --enable-facc

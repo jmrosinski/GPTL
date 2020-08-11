@@ -28,6 +28,8 @@ module gptl
   integer, parameter :: GPTLmaxthreads     = 51
   integer, parameter :: GPTLonlyprint_rank0= 52
   integer, parameter :: GPTLmem_growth     = 53
+  integer, parameter :: GPTLmaxwarps_gpu   = 54
+  integer, parameter :: GPTLmaxtimers_gpu  = 55
 
   integer, parameter :: GPTL_IPC           = 17
   integer, parameter :: GPTL_LSTPI         = 21

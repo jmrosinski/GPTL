@@ -5,9 +5,11 @@
 ** 
 ** Fortran wrappers for timing library routines
 */
+#include "config.h" // Must be first include.
+
 #include <stdlib.h>
 #include <stdio.h>
-#include "private.h"   // MAX_CHARS, private prototypes
+#include "device.h"     // MAX_CHARS, private prototypes
 #include "gptl_cuda.h"  // user-visible function prototypes
 
 #if ( defined FORTRANUNDERSCORE )

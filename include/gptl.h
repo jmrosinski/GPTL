@@ -13,7 +13,6 @@
 ** integer space. PAPI presets are big negative integers, and PAPI
 ** native events are big positive integers.
 */
-
 typedef enum {
   GPTLsync_mpi        = 0,  // Synchronize before certain MPI calls (PMPI-mode only)
   GPTLwall            = 1,  // Collect wallclock stats (true)
@@ -37,6 +36,8 @@ typedef enum {
   GPTLmaxthreads      = 51, // maximum number of threads
   GPTLonlyprint_rank0 = 52, // Restrict printout to rank 0 when MPI enabled
   GPTLmem_growth      = 53, // Print info when mem usage (RSS) has grown by more than some percent
+  GPTLmaxwarps_gpu    = 54, // Max warps allowed on GPU
+  GPTLmaxtimers_gpu   = 55, // Max timers allowed on GPU
 
   // These are derived counters based on PAPI counters. All default to false
   GPTL_IPC           = 17, // Instructions per cycle
@@ -110,6 +111,13 @@ extern int GPTLget_eventvalue (const char *, const char *, int, double *);
 extern int GPTLnum_errors (void);
 extern int GPTLnum_warn (void);
 extern int GPTLget_count (const char *, int, int *);
+
+#ifdef ENABLE_CUDA
+extern int GPTLget_gpu_props (int *, int *, int *, int *, int *, int *);
+extern int GPTLcompute_chunksize (const int, const int);
+extern int GPTLcudadevsync (void);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

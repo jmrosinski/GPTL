@@ -474,6 +474,7 @@ AC_ARG_ENABLE([cuda],
 
 AS_IF([test "x$enable_cuda" = xyes], [
   enable_cuda=yes
+  AC_DEFINE([ENABLE_CUDA], [1], [enable CUDA capability--needed also for OpenACC])
   AC_CONFIG_FILES([cuda/Makefile
                    cuda/include/Makefile
                    cuda/src/Makefile

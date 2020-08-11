@@ -2,10 +2,12 @@
 ** $Id: util.c,v 1.13 2010-01-01 01:34:07 rosinski Exp $
 */
 
+#include "config.h" // Must be first include.
+
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "private.h"
+#include "device.h"
 
 __device__ static const int max_errors = 100;     // max number of error print msgs
 __device__ static volatile int num_errors = 0;    // number of times GPTLerror was called

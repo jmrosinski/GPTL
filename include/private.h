@@ -12,6 +12,12 @@
 #include <stdio.h>
 #include <sys/time.h>
 
+// Pascal: 56 SMs 64 cuda cores each = 3584 cores
+#ifdef ENABLE_CUDA
+#define DEFAULT_MAXWARPS_GPU 1792
+#define DEFAULT_MAXTIMERS_GPU 30
+#endif
+
 #ifndef MIN
 #define MIN(X,Y) ((X) < (Y) ? (X) : (Y))
 #endif
@@ -40,7 +46,9 @@
 // max allowable number of PAPI counters, or derived events.
 #define MAX_AUX 3
 
+#ifndef __cplusplus
 typedef enum {false = 0, true = 1} bool;  // mimic C++
+#endif
 
 typedef struct {
   int val;                  // depth in calling tree
@@ -129,7 +137,6 @@ extern void GPTLprint_memstats (FILE *, Timer **, int);
 extern Timer **GPTLget_timersaddr (void);
 // For now this one is local to gptl.c but that may change if needs calling from pr_summary
 extern int GPTLrename_duplicate_addresses (void);
-
 extern void __cyg_profile_func_enter (void *, void *);
 extern void __cyg_profile_func_exit (void *, void *);
 
@@ -138,6 +145,13 @@ extern bool GPTLonlypr_rank0;     // flag says ignore all stdout/stderr print fr
 #ifdef ENABLE_PMPI
 extern Timer *GPTLgetentry (const char *);
 extern int GPTLpmpi_setoption (const int, const int);
+#endif
+
+#ifdef ENABLE_CUDA
+extern int GPTLinitialize_gpu (const int, const int, const int, const double);
+extern int GPTLreset_gpu_fromhost (void);
+extern int GPTLfinalize_gpu_fromhost (void);
+extern int GPTLreset_gpu_fromhost (void);
 #endif
 
 #endif // _GPTL_PRIVATE_

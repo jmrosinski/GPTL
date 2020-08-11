@@ -43,9 +43,42 @@ typedef struct {
   char name[MAX_CHARS+1];
 } Timername;
 
+typedef struct {
+  long long accum_max;
+  long long accum_min;
+  long long max;
+  long long min;
+  unsigned long count;
+  unsigned int negdelta_count_max;
+  int negdelta_count_max_warp;
+  unsigned int negdelta_nwarps;
+  int accum_max_warp;
+  int accum_min_warp;
+  int nwarps;
+  int count_max;
+  int count_max_warp;
+  int count_min;
+  int count_min_warp;
+  uint badsmid_count;
+  char name[MAX_CHARS+1];
+} Gpustats;
+
 // Function prototypes
 extern "C" {
-  /* These are callable from within gptl.cu */
+__global__ void GPTLreset_gpu (void);
+__global__ void GPTLfinalize_gpu (void);
+__global__ void GPTLfill_gpustats (Gpustats *, int *, int *);
+__global__ void GPTLget_memstats_gpu (float *, float *);
+__global__ void GPTLget_gpusizes (int *, int *);
+__global__ void GPTLget_overhead_gpu (long long *,            // Getting my warp index
+				      long long *,            // start/stop pair
+				      long long *,            // Underlying timing routine
+				      long long *,            // misc start code
+				      long long *,            // misc stop code
+				      long long *,            // self_ohd
+				      long long *,            // parent_ohd
+				      long long *,            // my_strlen ohd
+				      long long *);           // STRMATCH ohd
 __device__ extern int GPTLerror_1s (const char *, const char *);
 __device__ extern int GPTLerror_2s (const char *, const char *, const char *);
 __device__ extern int GPTLerror_3s (const char *, const char *, const char *, const char *);

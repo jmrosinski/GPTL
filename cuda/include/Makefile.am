@@ -1,1 +1,1 @@
-noinst_HEADERS = private.h gptl_cuda.h
+noinst_HEADERS = device.h gptl_cuda.h
