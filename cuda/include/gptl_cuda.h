@@ -12,7 +12,9 @@
 /*
 ** User-visible function prototypes
 */
+#ifdef __cplusplus
 extern "C" {
+#endif
 // These first 3 are host routines
 int GPTLget_gpu_props (int *, int *, int *, int *, int *, int *);
 int GPTLcompute_chunksize (const int, const int);
@@ -31,5 +33,7 @@ __device__ int GPTLmy_sleep (float);
 __device__ int GPTLget_wallclock_gpu (const int, double *, double *, double *);
 #pragma acc routine seq
 __device__ void GPTLwhoami (const char *);
+#ifdef __cplusplus
 };
+#endif
 #endif
