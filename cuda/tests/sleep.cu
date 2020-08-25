@@ -1,5 +1,5 @@
 #include <cuda.h>
-#include "../cuda/gptl_cuda.h"
+#include "gptl_cuda.h"
 __global__ void sleep (float seconds, int outerlooplen)
 {
   int ret;

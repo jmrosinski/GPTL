@@ -1,6 +1,9 @@
-#include "config.h" // Must be first include.
+#include "config.h"  // Must be first include.
+#include "device.h"
 #include <stdio.h>
 #include <cuda.h>
+
+extern "C" {
 
 // Return useful GPU properties. Use arg list for SMcount, cores_per_sm, and cores_per_gpu even 
 // though they're globals, because this is a user-callable routine
@@ -114,12 +117,13 @@ __host__ int GPTLcudadevsync (void)
 // in play.
 __host__ int GPTLreset_gpu_fromhost (void)
 {
-  GPTLreset_gpu <<<1,1>>> (void);
+  GPTLreset_gpu <<<1,1>>> ();
   return 0;
 }
 
 __host__ int GPTLfinalize_gpu_fromhost (void)
 {
-  GPTLfinalize_gpu <<<1,1>>> (void);
+  GPTLfinalize_gpu <<<1,1>>> ();
   return 0;
+}
 }

@@ -1,5 +1,5 @@
 extern __host__ int persist (int, int, int, int, int);
-extern __host__ int sleep1 (int, int);
+extern __host__ int sleep1 (int, int, int);
 extern __host__ int getval_int (const char *, const int);
 
 extern __global__ void warmup (void);

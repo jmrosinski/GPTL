@@ -1,6 +1,6 @@
 #include <stdio.h>
-#include "../../include/gptl.h"
-#include "../include/gptl_cuda.h"
+#include "gptl.h"
+#include "gptl_cuda.h"
 #include "./localproto.h"
 
 int main ()
@@ -83,7 +83,7 @@ int main ()
   printf ("Enter 1 to run just sleep, anything else to run the full \"persist\" suite\n");
   (void) scanf ("%d", &ans);
   if (ans == 1) {
-    sleep1 (outerlooplen, oversub);
+    sleep1 (outerlooplen, oversub, cores_per_sm);
   } else {
     persist (mostwork, outerlooplen, innerlooplen, balfact, oversub);
   }

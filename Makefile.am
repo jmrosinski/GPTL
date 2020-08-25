@@ -11,13 +11,17 @@ ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = COPYING README INSTALL
 
 # This is the list of subdirs for which Makefiles will be constructed
-SUBDIRS = include src tests bin man
-if HAVE_FORTRAN
-SUBDIRS += fortran
-endif
+SUBDIRS = include src 
 
+# Need to build cuda lib before tests
 if ENABLE_CUDA
 SUBDIRS += cuda
+endif
+
+SUBDIRS += tests bin man
+
+if HAVE_FORTRAN
+SUBDIRS += fortran
 endif
 
 if ENABLE_FACC

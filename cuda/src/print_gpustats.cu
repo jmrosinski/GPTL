@@ -5,17 +5,11 @@
 #include <cuda.h>
 
 #include "device.h"
+__device__ extern int warpsize;
+// This def is for CPU
+#define WARPSIZE 32
 
-#define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
-inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
-{
-  if (code != cudaSuccess) 
-    {
-      fprintf(stderr,"GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
-      if (abort) exit(code);
-    }
-}
-
+extern "C" {
 __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double gpu_hz, int devnum)
 {
   Gpustats *gpustats;
@@ -261,4 +255,5 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   fprintf (fp, "GPTL GPU memory usage (Timer names) = %8g KB\n", timernamemem[0]*.001);
   fprintf (fp, "                                      --------\n");
   fprintf (fp, "GPTL GPU memory usage (Total)       = %8g KB\n", (regionmem[0] + timernamemem[0])*.001);
+}
 }

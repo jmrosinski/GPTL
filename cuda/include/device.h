@@ -6,20 +6,18 @@
 ** Contains definitions private to GPTL and inaccessible to invoking user environment
 */
 
-#include "../devicehost.h"
+#ifndef GPTL_DEVICE_H
+#define GPTL_DEVICE_H
 
-#ifndef MIN
-#define MIN(X,Y) ((X) < (Y) ? (X) : (Y))
-#endif
+#include <stdio.h>
+#include "devicehost.h"
 
-#ifndef MAX
-#define MAX(X,Y) ((X) > (Y) ? (X) : (Y))
-#endif
-
-#define STRMATCH(X,Y) (my_strcmp((X),(Y)) == 0)
-
+#define SUCCESS 0
+#define FAILURE -1
 #define NOT_ROOT_OF_WARP -2
 #define WARPID_GT_MAXWARPS -3
+
+#define STRMATCH(X,Y) (my_strcmp((X),(Y)) == 0)
 
 typedef struct {
   long long last;              // timestamp from last call
@@ -99,3 +97,4 @@ __device__ extern void GPTLreset_errors_gpu (void);                  /* num_erro
 	if (abort) exit(code);
       }
   }
+#endif

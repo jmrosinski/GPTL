@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <cuda.h>
-#include "../gptl.h"
-#include "../cuda/gptl_cuda.h"
+#include "gptl.h"
+#include "gptl_cuda.h"
 
 __global__ void runit (float, float, int *, int *);
 __global__ void setup_handles (int *, int *);

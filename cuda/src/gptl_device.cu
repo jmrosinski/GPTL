@@ -28,12 +28,13 @@ __device__ static int maxwarpid_timed = 0;      // number of warps analyzed : in
 __device__ static bool initialized = false;     // GPTLinitialize has been called
 __device__ static bool verbose = false;         // output verbosity
 __device__ static double gpu_hz = 0.;           // clock freq
+__device__ int warpsize = 0;                    // warp size
 __device__ static volatile int mutex = 0;       // critical section unscrambles printf output
 
 extern "C" {
 
 // Local function prototypes
-__global__ static void initialize_gpu (const int, const int, const double, Timer *, Timername *);
+__global__ static void initialize_gpu (const int, const int, const double, Timer *, Timername *, const int);
 __device__ static inline int get_warp_num (void);         // get 0-based 1d warp number
 __device__ static inline int update_stats_gpu (const int, Timer *, const long long, const int,
 					       const uint);
@@ -57,7 +58,8 @@ __device__ static void prbits8 (uint64_t);
 __host__ int GPTLinitialize_gpu (const int verbose_in,
 				 const int maxwarps_in,
 				 const int maxtimers_in,
-				 const double gpu_hz_in)
+				 const double gpu_hz_in,
+				 const int warpsize_in)
 {
   size_t nbytes;  // number of bytes to allocate
   static Timer *timers_cpu = 0;          // array of timers
@@ -76,7 +78,8 @@ __host__ int GPTLinitialize_gpu (const int verbose_in,
 			    maxwarps_in,
 			    gpu_hz_in,
 			    timers_cpu,
-			    timernames_cpu);
+			    timernames_cpu,
+			    warpsize_in);
   // This should flush any existing print buffers
   cudaDeviceSynchronize ();
   return 0;
@@ -92,7 +95,8 @@ __global__ static void initialize_gpu (const int verbose_in,
 				       const int maxwarps_in,
 				       const double gpu_hz_in,
 				       Timer *timers_cpu,
-				       Timername *timernames_cpu)
+				       Timername *timernames_cpu,
+				       const int warpsize_in)
 {
   int w, wi;        // warp, flattened indices
   long long t1, t2; // returned from underlying timer
@@ -107,6 +111,7 @@ __global__ static void initialize_gpu (const int verbose_in,
   }
 
   // Set global vars from input args
+  warpsize          = warpsize_in;
   verbose           = verbose_in;
   maxwarps          = maxwarps_in;
   gpu_hz            = gpu_hz_in;
@@ -129,7 +134,7 @@ __global__ static void initialize_gpu (const int verbose_in,
     if (t1 > t2)
       printf ("GPTL %s: negative delta-t=%lld\n", thisfunc, t2-t1);
 
-    printf ("Per call overhead est. t2-t1=%g should be near zero\n", t2-t1);
+    printf ("Per call overhead est. t2-t1=%g should be near zero\n", (float) (t2-t1));
     printf ("Underlying wallclock timing routine is clock64\n");
   }
 
@@ -461,10 +466,10 @@ __device__ static inline int get_warp_num ()
         +  blockDim.x  *  blockDim.y  *  blockDim.z  *  gridDim.x  *  gridDim.y  * blockIdx.z;
 
   // Only thread 0 of the warp will be timed
-  if (threadId % WARPSIZE != 0)
+  if (threadId % warpsize != 0)
     return NOT_ROOT_OF_WARP;
 
-  warpId = threadId / WARPSIZE;
+  warpId = threadId / warpsize;
 
   // maxwarpid_found is needed only by CPU code when printing results
   if (warpId+1 > maxwarpid_found)

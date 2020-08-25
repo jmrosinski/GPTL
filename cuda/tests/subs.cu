@@ -1,6 +1,6 @@
 #include <cuda.h>
 #include <math.h>
-#include "../cuda/gptl_cuda.h"
+#include "gptl_cuda.h"
 #include "./localproto.h"
 
 __device__ float doalot_log (int n, int innerlooplen)

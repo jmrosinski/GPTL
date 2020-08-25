@@ -6,9 +6,10 @@
 ** Contains definitions private to GPTL and inaccessible to invoking user environment
 */
 
-#ifndef _GPTL_PRIVATE_
-#define _GPTL_PRIVATE_
+#ifndef _GPTL_PRIVATE_H
+#define _GPTL_PRIVATE_H
 
+#include "devicehost.h"
 #include <stdio.h>
 #include <sys/time.h>
 
@@ -18,24 +19,10 @@
 #define DEFAULT_MAXTIMERS_GPU 30
 #endif
 
-#ifndef MIN
-#define MIN(X,Y) ((X) < (Y) ? (X) : (Y))
-#endif
-
-#ifndef MAX
-#define MAX(X,Y) ((X) > (Y) ? (X) : (Y))
-#endif
-
 #define STRMATCH(X,Y) (strcmp((X),(Y)) == 0)
-
-// Output counts less than PRTHRESH will be printed as integers
-#define PRTHRESH 1000000L
 
 // Maximum allowed callstack depth
 #define MAX_STACK 128
-
-// longest timer name allowed (probably safe to just change)
-#define MAX_CHARS 63
 
 // Longest allowed symbol name for libunwind
 #define MAX_SYMBOL_NAME 255
@@ -109,7 +96,6 @@ typedef struct {
 } Hashentry;
 
 // Function prototypes
-extern int GPTLerror (const char *, ...);                  // print error msg and return
 extern void GPTLwarn (const char *, ...);                  // print warning msg and return
 extern void GPTLnote (const char *, ...);                  // print warning msg and return
 extern void GPTLset_abort_on_error (bool val);             // set flag to abort on error
@@ -148,7 +134,7 @@ extern int GPTLpmpi_setoption (const int, const int);
 #endif
 
 #ifdef ENABLE_CUDA
-extern int GPTLinitialize_gpu (const int, const int, const int, const double);
+extern int GPTLinitialize_gpu (const int, const int, const int, const double, const int);
 extern int GPTLreset_gpu_fromhost (void);
 extern int GPTLfinalize_gpu_fromhost (void);
 extern int GPTLreset_gpu_fromhost (void);

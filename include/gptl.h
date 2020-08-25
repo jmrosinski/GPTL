@@ -113,9 +113,6 @@ extern int GPTLnum_warn (void);
 extern int GPTLget_count (const char *, int, int *);
 
 #ifdef ENABLE_CUDA
-extern int GPTLget_gpu_props (int *, int *, int *, int *, int *, int *);
-extern int GPTLcompute_chunksize (const int, const int);
-extern int GPTLcudadevsync (void);
 #endif
 
 #ifdef __cplusplus

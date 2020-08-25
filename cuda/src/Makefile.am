@@ -1,27 +1,35 @@
 # This automake file generates the Makefile to build the GPTL cuda library.
 
 # For now hardwire the compiler
-CC = nvcc
-
-# This is our output. The GPTL library of cuda routines
-lib_LTLIBRARIES = libgptl_cuda.la
+NVCC = nvcc
 
 # Look for include files here
-libgptl_cuda_la_CPPFLAGS = -I$(top_srcdir)/cuda/include
+libgptl_cudaincludedir = ../include
 
-# Follow libtool versioning rules (c:r:a) (current:revision:age)
-# lib source changes since last update => increment "r"
-# lib API added, removed, or changed since last update => increment "c" and set "r"=0
-# API added since last public release => increment "a"
-# API removed or changed since last public release => set "a"=0
-libgptl_cuda_la_LDFLAGS = -version-info 0:0:0
+# This is our output. The GPTL library of cuda routines
+lib_LIBRARIES = libgptl_cuda.a
 
 # These are the source files.
-libgptl_cuda_la_SOURCES = gptl_host.cu gptl_device.cu util_device.cu f_wrappers_device.cu print_gpustats.cu
+libgptl_cuda_a_SOURCES = gptl_host.cu \
+	                 gptl_device.cu \
+                         util_device.cu \
+                         f_wrappers_device.cu \
+                         print_gpustats.cu
 
 # For now just hardwire the compile flags
 # set max reg count to a small number to minimize GPTL interference with app
-CFLAGS = -c -g -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true --maxrregcount 32
+libgptl_cuda_a_CFLAGS = -g -O2 -I$(top_srcdir) -I$(top_srcdir)/include -I$(top_srcdir)/cuda/include \
+                        -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true \
+                        --maxrregcount 32
+
+libgptl_cuda_a_AR = $(NVCC) $(libgptl_cuda_a_CFLAGS) -lib -o
 
 .cu.o:
-	$(CC) -c $< $(CFLAGS)
+	$(NVCC) -c $< $(libgptl_cuda_a_CFLAGS)
+
+f_wrappers_device.o: f_wrappers_device.cu
+gptl_device.o: gptl_device.cu
+gptl_host.o: gptl_host.cu
+print_gpustats.o: print_gpustats.cu
+util_device.o: util_device.cu
+

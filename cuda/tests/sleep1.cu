@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "../gptl.h"
+#include "gptl.h"
+#include "gptl_cuda.h"
 #include "./localproto.h"
 
-__host__ int sleep1 (int outerlooplen, int oversub)
+__host__ int sleep1 (int outerlooplen, int oversub, int cores_per_sm)
 {
   int blocksize, gridsize;
   int ret;
@@ -31,7 +32,7 @@ __host__ int sleep1 (int outerlooplen, int oversub)
   ret = GPTLstart ("sleep1ongpu");
   for (nn = 0; nn < outerlooplen; nn += chunksize) {
     totalwork = MIN (chunksize, outerlooplen - nn);
-    blocksize = MIN (GPTLcores_per_sm, totalwork);
+    blocksize = MIN (cores_per_sm, totalwork);
     gridsize = (totalwork-1) / blocksize + 1;
     sleep <<<gridsize, blocksize>>> (1.f, outerlooplen);
     cudaDeviceSynchronize();

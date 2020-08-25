@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <cuda.h>
-#include "../gptl.h"
-#include "../cuda/gptl_cuda.h"
+#include "gptl.h"
+#include "gptl_cuda.h"
 #include "./localproto.h"
 
 __global__ void setup_handles (int *, int *, int *, int *, int *, int *);
@@ -75,9 +75,12 @@ __host__ int persist (int mostwork, int outerlooplen,
     ++n;
   }
 
+  int khz, warpsize, devnum, SMcount, cores_per_sm, cores_per_gpu;
+  ret = GPTLget_gpu_props (&khz, &warpsize, &devnum, &SMcount, &cores_per_sm, &cores_per_gpu);
+
   for (nn = 0; nn < outerlooplen; nn += chunksize) {
     totalwork = MIN (chunksize, outerlooplen - nn);
-    blocksize = MIN (GPTLcores_per_sm, totalwork);
+    blocksize = MIN (cores_per_sm, totalwork);
     gridsize = (totalwork-1) / blocksize + 1;
 
     ret = GPTLstart ("total_kerneltime");
@@ -90,7 +93,7 @@ __host__ int persist (int mostwork, int outerlooplen,
 
   for (nn = 0; nn < outerlooplen; nn += chunksize) {
     totalwork = MIN (chunksize, outerlooplen - nn);
-    blocksize = MIN (GPTLcores_per_sm, totalwork);
+    blocksize = MIN (cores_per_sm, totalwork);
     gridsize = (totalwork-1) / blocksize + 1;
 
     printf ("Invoking doalot gridsize=%d blocksize=%d\n", gridsize, blocksize);
@@ -117,7 +120,7 @@ __host__ int persist (int mostwork, int outerlooplen,
   ret = GPTLstart ("sleep1ongpu");
   for (nn = 0; nn < outerlooplen; nn += chunksize) {
     totalwork = MIN (chunksize, outerlooplen - nn);
-    blocksize = MIN (GPTLcores_per_sm, totalwork);
+    blocksize = MIN (cores_per_sm, totalwork);
     gridsize = (totalwork-1) / blocksize + 1;
     sleep <<<gridsize, blocksize>>> (1.f, outerlooplen);
     cudaDeviceSynchronize();

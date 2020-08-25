@@ -490,7 +490,7 @@ int GPTLinitialize (void)
 
   gpu_hz = khz * 1000.;
   printf ("%s: GPU khz=%d\n", thisfunc, khz);
-  ret = GPTLinitialize_gpu (verbose, maxwarps_gpu, maxtimers_gpu, gpu_hz);
+  ret = GPTLinitialize_gpu (verbose, maxwarps_gpu, maxtimers_gpu, gpu_hz, warpsize);
   printf ("%s: Returned from GPTLinitialize_gpu\n", thisfunc);
 #endif
   

@@ -2,3 +2,6 @@ switchgcc.sh (set to gcc8 because nvcc can't handle 9 or 10)
 module load nvidia/20.7
 Need --disable-shared when building with nvidia for some reason
 ./configure --disable-shared --enable-cuda --enable-facc
+
+Current status: Link fails in first exe creation in cuda/tests
+Linking with nvc instead of nvcc seems to help but fails with unsat. externals.
