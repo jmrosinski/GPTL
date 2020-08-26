@@ -10,6 +10,8 @@
 #define GPTL_DEVICE_H
 
 #include <stdio.h>
+// Need cuda.h for cudaGetErrorString() below
+#include <cuda.h>
 #include "devicehost.h"
 
 #define SUCCESS 0

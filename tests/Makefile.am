@@ -8,7 +8,10 @@ AM_CPPFLAGS = -I$(top_srcdir)/include
 CFLAGS += -g -O0
 
 # When CUDA enabled, libtool was not used and the lib ends in .a not .la
+# Also, when CUDA was enabled, CUFLAGS needs to be added to LDFLAGS because device functions
+# WILL be called, e.g. from GPTLinitialize. Without these flags a runtime hard error occurs.
 if ENABLE_CUDA
+LDFLAGS += ${CUFLAGS}
 LIBNAME = libgptl.a
 else
 LIBNAME = libgptl.la
