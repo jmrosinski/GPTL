@@ -470,9 +470,9 @@ AC_ARG_ENABLE([cuda],
 AS_IF([test "x$enable_cuda" = xyes], [
   use_cuda=yes
   if test "x$use_debug" = xyes; then
-    CUFLAGS="$CUFLAGS    -lineinfo -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true"
+    CUFLAGS="$CUFLAGS -g -lineinfo -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true"
   else
-    CUFLAGS="$CUFLAGS -g           -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true"
+    CUFLAGS="$CUFLAGS -g -O2       -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true"
   fi
   AC_DEFINE([ENABLE_CUDA], [1], [enable CUDA capability--needed also for OpenACC])
   AC_CONFIG_FILES([cuda/Makefile

@@ -43,9 +43,8 @@ endif
 
 all: $(lib_LIBRARIES)
 
-# set max reg count to a small number to minimize GPTL interference with app
 libgptl_cuda_a_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include -I$(top_srcdir)/cuda/include \
-                        -g -O2 $(CUFLAGS) --maxrregcount 32
+                        $(CUFLAGS)
 
 .cu.o:
 	$(CC) -c $< $(libgptl_cuda_a_CFLAGS)
