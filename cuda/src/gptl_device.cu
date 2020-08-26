@@ -34,7 +34,7 @@ __device__ static volatile int mutex = 0;       // critical section unscrambles 
 extern "C" {
 
 // Local function prototypes
-__global__ static void initialize_gpu (const int, const int, const double, Timer *, Timername *, const int);
+__global__ static void initialize_gpu (const int, const int, const int, const double, const int);
 __device__ static inline int get_warp_num (void);         // get 0-based 1d warp number
 __device__ static inline int update_stats_gpu (const int, Timer *, const long long, const int,
 					       const uint);
@@ -61,24 +61,13 @@ __host__ int GPTLinitialize_gpu (const int verbose_in,
 				 const double gpu_hz_in,
 				 const int warpsize_in)
 {
-  size_t nbytes;  // number of bytes to allocate
-  static Timer *timers_cpu = 0;          // array of timers
-  static Timername *timernames_cpu = 0; // array of timer names
-
-  nbytes = maxwarps_in * maxtimers_in * sizeof (Timer);
-  gpuErrchk (cudaMalloc (&timers_cpu, nbytes));
-
-  nbytes =               maxtimers_in * sizeof (Timername);
-  gpuErrchk (cudaMalloc (&timernames_cpu, nbytes));
-
   // Set constant memory values: First arg is pass by reference so no "&"
   gpuErrchk (cudaMemcpyToSymbol (maxtimers,   &maxtimers_in,    sizeof (int)));
 
   initialize_gpu <<<1,1>>> (verbose_in,
 			    maxwarps_in,
+			    maxtimers_in,
 			    gpu_hz_in,
-			    timers_cpu,
-			    timernames_cpu,
 			    warpsize_in);
   // This should flush any existing print buffers
   cudaDeviceSynchronize ();
@@ -93,13 +82,14 @@ __host__ int GPTLinitialize_gpu (const int verbose_in,
 */
 __global__ static void initialize_gpu (const int verbose_in,
 				       const int maxwarps_in,
+				       const int maxtimers_in,
 				       const double gpu_hz_in,
-				       Timer *timers_cpu,
-				       Timername *timernames_cpu,
 				       const int warpsize_in)
 {
   int w, wi;        // warp, flattened indices
   long long t1, t2; // returned from underlying timer
+  size_t nbytes;    // number of bytes to allocate
+  cudaError_t ret;  // return from cudaMalloc
   static const char *thisfunc = "initialize_gpu";
 
 #ifdef VERBOSE
@@ -111,12 +101,20 @@ __global__ static void initialize_gpu (const int verbose_in,
   }
 
   // Set global vars from input args
-  warpsize          = warpsize_in;
-  verbose           = verbose_in;
-  maxwarps          = maxwarps_in;
-  gpu_hz            = gpu_hz_in;
-  timers            = timers_cpu;
-  timernames        = timernames_cpu;
+  verbose  = verbose_in;
+  maxwarps = maxwarps_in;
+  gpu_hz   = gpu_hz_in;
+  warpsize = warpsize_in;
+
+  nbytes = (size_t) (maxwarps_in * maxtimers_in * sizeof (Timer));
+  ret = cudaMalloc (&timers, nbytes);
+  if (ret != cudaSuccess)
+    printf ("%s cudaMalloc error for timers: %s\n", thisfunc, cudaGetErrorString (ret));
+
+  nbytes = (size_t) (maxtimers_in * sizeof (Timername));
+  ret = cudaMalloc (&timernames, nbytes);
+  if (ret != cudaSuccess)
+    printf ("%s cudaMalloc error for timernames: %s\n", thisfunc, cudaGetErrorString (ret));
 
   // Initialize timers
   ntimers = 0;

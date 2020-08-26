@@ -1,7 +1,14 @@
-switchgcc.sh (set to gcc8 because nvcc can't handle 9 or 10)
-module load nvidia/20.7
-Need --disable-shared when building with nvidia for some reason
-./configure --disable-shared --enable-cuda --enable-facc
+% switchgcc.sh (set to gcc8 because nvcc can't handle 9 or 10)
+% module load nvidia/20.7
+Need --disable-shared when building with nvidia--CUDA fails with shared, maybe CPU as well?
+Need CFLAGS="" because brain-dead nvcc barfs on multiple "-O" settings, and configure initializes
+Need --disable-inline-threading because the #include demands .c files not .cu--probably easy fix
+  CFLAGS to -O2
+% env CC=nvcc FC=nvfortran CFLAGS="" ./configure --cache-file=/dev/null --disable-shared --enable-cuda --disable-inline-threading
 
-Current status: Link fails in first exe creation in cuda/tests
-Linking with nvc instead of nvcc seems to help but fails with unsat. externals.
+Current status: Both tests in cuda/tests succeed
+Test W/O nvidia module loaded:
+  % ./configure
+  % make clean; make; make check
+  Succeeds
+  

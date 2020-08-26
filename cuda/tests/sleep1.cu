@@ -4,7 +4,7 @@
 #include "gptl_cuda.h"
 #include "./localproto.h"
 
-__host__ int sleep1 (int outerlooplen, int oversub, int cores_per_sm)
+__host__ int sleep1 (int outerlooplen, int oversub, int cores_per_sm, int cores_per_gpu)
 {
   int blocksize, gridsize;
   int ret;
@@ -15,7 +15,7 @@ __host__ int sleep1 (int outerlooplen, int oversub, int cores_per_sm)
   int nchunks;
   static const char *thisfunc = "onlysleep";
 
-  chunksize = MIN (GPTLcompute_chunksize (oversub, 1), outerlooplen);
+  chunksize = MIN (GPTLcompute_chunksize (oversub, 1, cores_per_gpu), outerlooplen);
   nchunks = (outerlooplen + (chunksize-1)) / chunksize;
   printf ("outerlooplen=%d broken into %d kernels of chunksize=%d\n",
 	  outerlooplen, nchunks, chunksize);

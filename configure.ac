@@ -177,12 +177,15 @@ AS_IF([test "x$enable_double_underscore" = xyes], [
 
 # --enable-debug means build with low optimization and add some code inside some #ifdef DEBUG
 # Default disabled
+use_debug=no
 AC_ARG_ENABLE([debug], [AS_HELP_STRING([--enable-debug], [Enable DEBUG ifdef and -g -O0])])
 AS_IF([test "x$enable_debug" = xyes], [
- AC_DEFINE([DEBUG], [1], [set debug ifdef])
- CFLAGS="$CFLAGS -g -O0"
- FCFLAGS="$FCFLAGS -g -O0"
+  use_debug=yes
+  AC_DEFINE([DEBUG], [1], [set debug ifdef])
+  CFLAGS="$CFLAGS -g -O0"
+  FCFLAGS="$FCFLAGS -g -O0"
 ])
+echo "use_debug is $use_debug"
 
 # Whether to enable GPTL hooks into the PAPI performance counter library. PAPI must already
 # be installed.
@@ -448,15 +451,6 @@ AC_SUBST([LDFLAGS_PC], [$LDFLAGS_PC])
 AC_SUBST([OPENMP_CFLAGS], [$OPENMP_CFLAGS])
 AC_SUBST([OPENMP_FCFLAGS], [$OPENMP_FCFLAGS])
 
-# Files to be built
-AC_CONFIG_FILES([Makefile
-                 gptl.pc
-                 include/Makefile
-                 tests/Makefile
-                 src/Makefile
-                 bin/Makefile
-		 man/Makefile
-	       ])
 AC_CONFIG_FILES([tests/run_par_summary_test.sh], [chmod ugo+x tests/run_par_summary_test.sh])
 AC_CONFIG_FILES([tests/run_par_pmpi_test.sh], [chmod ugo+x tests/run_par_pmpi_test.sh])
 AC_CONFIG_FILES([tests/run_par_global_test.sh], [chmod ugo+x tests/run_par_global_test.sh])
@@ -469,11 +463,17 @@ AC_CONFIG_FILES([tests/run_memusage.sh], [chmod ugo+x tests/run_memusage.sh])
 #   AC_MSG_WARN([Doxygen not found - documentation will not be built])
 #fi
 
+use_cuda=no
 AC_ARG_ENABLE([cuda],
   AS_HELP_STRING([--enable-cuda], [Include cuda support--REQUIRES CC be cuda-capable compiler]))
 
 AS_IF([test "x$enable_cuda" = xyes], [
-  enable_cuda=yes
+  use_cuda=yes
+  if test "x$use_debug" = xyes; then
+    CUFLAGS="$CUFLAGS    -lineinfo -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true"
+  else
+    CUFLAGS="$CUFLAGS -g           -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true"
+  fi
   AC_DEFINE([ENABLE_CUDA], [1], [enable CUDA capability--needed also for OpenACC])
   AC_CONFIG_FILES([cuda/Makefile
                    cuda/include/Makefile
@@ -481,9 +481,22 @@ AS_IF([test "x$enable_cuda" = xyes], [
                    cuda/tests/Makefile
 		 ])
 ])
+AC_SUBST([CUFLAGS], [$CUFLAGS])
 
+# Files to be built. 
+AC_CONFIG_FILES([Makefile
+                 gptl.pc
+                 include/Makefile
+                 tests/Makefile
+                 bin/Makefile
+		 man/Makefile
+	       ])
+	       
 # OpenACC support REQUIRES cuda support
-AS_IF([test "x$enable_cuda" = xyes], [
+if test "x$use_cuda" = xyes; then
+# Create special Makefile when CUDA not enabled
+  AC_CONFIG_FILES([src_cuda/Makefile])
+
   AC_ARG_ENABLE([facc],
     AS_HELP_STRING([--enable-facc], [Include Fortran OpenACC support--REQUIRES cuda enabled]))
   AS_IF([test "x$enable_facc" = xyes], [
@@ -494,10 +507,8 @@ AS_IF([test "x$enable_cuda" = xyes], [
                      facc/tests/Makefile
     		   ])
   ])
-])
-  
-AS_IF([test "x$enable_cuda" = xyes], [
-  AC_ARG_ENABLE([cacc],
+
+AC_ARG_ENABLE([cacc],
     AS_HELP_STRING([--enable-cacc], [Include C/C++ OpenACC support--REQUIRES cuda enabled]))
   AS_IF([test "x$enable_cacc" = xyes], [
     enable_cacc=yes
@@ -507,7 +518,10 @@ AS_IF([test "x$enable_cuda" = xyes], [
                      cacc/tests/Makefile
 		     ])
   ])
-])
+else
+# Create standard Makefile when CUDA not enabled
+  AC_CONFIG_FILES([src/Makefile])
+fi
 
 AM_CONDITIONAL([ENABLE_CUDA], [test "x$enable_cuda" = xyes])
 AM_CONDITIONAL([ENABLE_FACC], [test "x$enable_facc" = xyes])

@@ -30,10 +30,6 @@ int main ()
   float sleep_percall;
 
   ret = GPTLget_gpu_props (&khz, &warpsize, &devnum, &smcount, &cores_per_sm, &cores_per_gpu);
-  printf ("warpsize=%d\n",      warpsize);
-  printf ("smcount=%d\n",       smcount);
-  printf ("cores_per_sm=%d\n",  cores_per_sm);
-  printf ("cores_per_gpu=%d\n", cores_per_gpu);
 
   printf ("Enter oversubsubscription factor\n");
   scanf ("%d", &oversub);
@@ -86,7 +82,6 @@ __global__ void runit (float sleep_tot, float sleep_percall, int *runit_handle, 
   __shared__ double maxtime, mintime;
 
   ret = GPTLstart_gpu (*runit_handle);
-
   while (slept < sleep_tot) {
     ret = GPTLstart_gpu (*percall_handle);
     ret = GPTLmy_sleep (sleep_percall);

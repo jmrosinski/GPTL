@@ -24,7 +24,8 @@ __device__ float *sqrtvals;
 __device__ double *dsqrtvals;
 
 __host__ int persist (int mostwork, int outerlooplen, 
-		      int innerlooplen, int balfact, int oversub)
+		      int innerlooplen, int balfact, int oversub,
+		      int cores_per_sm, int cores_per_gpu)
 {
   int blocksize, gridsize;
   int inner_parallel = 1; // parallel iteration count per outermost kernel iterator
@@ -64,7 +65,7 @@ __host__ int persist (int mostwork, int outerlooplen,
   cudaDeviceSynchronize();
   printf ("called cudaDeviceSynchronize 1\n");
 
-  chunksize = MIN (GPTLcompute_chunksize (oversub, inner_parallel), outerlooplen);
+  chunksize = MIN (GPTLcompute_chunksize (oversub, inner_parallel, cores_per_gpu), outerlooplen);
   nchunks = (outerlooplen + (chunksize-1)) / chunksize;
   printf ("outerlooplen=%d broken into %d kernels of chunksize=%d\n",
 	  outerlooplen, nchunks, chunksize);
@@ -74,9 +75,6 @@ __host__ int persist (int mostwork, int outerlooplen,
     printf ("chunk=%d totalwork=%d\n", n, MIN (chunksize, outerlooplen - nn));
     ++n;
   }
-
-  int khz, warpsize, devnum, SMcount, cores_per_sm, cores_per_gpu;
-  ret = GPTLget_gpu_props (&khz, &warpsize, &devnum, &SMcount, &cores_per_sm, &cores_per_gpu);
 
   for (nn = 0; nn < outerlooplen; nn += chunksize) {
     totalwork = MIN (chunksize, outerlooplen - nn);

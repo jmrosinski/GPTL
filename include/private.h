@@ -96,6 +96,9 @@ typedef struct {
 } Hashentry;
 
 // Function prototypes
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void GPTLwarn (const char *, ...);                  // print warning msg and return
 extern void GPTLnote (const char *, ...);                  // print warning msg and return
 extern void GPTLset_abort_on_error (bool val);             // set flag to abort on error
@@ -138,6 +141,9 @@ extern int GPTLinitialize_gpu (const int, const int, const int, const double, co
 extern int GPTLreset_gpu_fromhost (void);
 extern int GPTLfinalize_gpu_fromhost (void);
 extern int GPTLreset_gpu_fromhost (void);
+extern void GPTLprint_gpustats (FILE *, int, int, double, int);
 #endif
-
+#ifdef __cplusplus
+}
+#endif  
 #endif // _GPTL_PRIVATE_

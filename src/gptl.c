@@ -66,6 +66,8 @@ static bool dopr_memusage = false;     // whether to include memusage print on g
 static float growth_pct = 0.;          // threshhold % for memory growth print
 
 #ifdef ENABLE_CUDA
+static int devnum = -1;                // GPU device number (init to bad)
+static double gpu_hz = 0.;             // GPU frequency in cycles per second (init to bad)
 static int maxtimers_gpu = DEFAULT_MAXTIMERS_GPU;
 static int maxwarps_gpu = DEFAULT_MAXWARPS_GPU;
 #endif
@@ -484,8 +486,6 @@ int GPTLinitialize (void)
   int SMcount;               // SM count for each GPU
   int khz;
   int warpsize;
-  int devnum;
-  double gpu_hz;             // GPU frequency in cycles per second
   int cores_per_sm;
   int cores_per_gpu;
 
@@ -1607,6 +1607,11 @@ int GPTLpr_file (const char *outfile)
   GPTLprint_memstats (fp, timers, tablesize);
 
   free (sum);
+
+#ifdef ENABLE_CUDA
+  // Retrieve  and print the GPU info
+  GPTLprint_gpustats (fp, maxwarps_gpu, maxtimers_gpu, gpu_hz, devnum);
+#endif
 
   if (fp != stderr && fclose (fp) != 0)
     fprintf (stderr, "%s: Attempt to close %s failed\n", thisfunc, outfile);

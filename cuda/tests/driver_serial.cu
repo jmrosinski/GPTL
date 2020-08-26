@@ -83,9 +83,9 @@ int main ()
   printf ("Enter 1 to run just sleep, anything else to run the full \"persist\" suite\n");
   (void) scanf ("%d", &ans);
   if (ans == 1) {
-    sleep1 (outerlooplen, oversub, cores_per_sm);
+    sleep1 (outerlooplen, oversub, cores_per_sm, cores_per_gpu);
   } else {
-    persist (mostwork, outerlooplen, innerlooplen, balfact, oversub);
+    persist (mostwork, outerlooplen, innerlooplen, balfact, oversub, cores_per_sm, cores_per_gpu);
   }
   ret = GPTLpr (0);
 }

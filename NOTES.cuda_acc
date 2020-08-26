@@ -1,0 +1,20 @@
+Top-level compilation (minus #defines):
+  % nvcc -c -O2 -g -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true -keep gptl.cu
+  % nvfortran -c -g -O2 -m64 gptlf.F90
+Top-level lib creation:
+  % ar ruv libgptl.a gptl.o util.o memusage.o getoverhead.o hashstats.o [...]
+
+CUDA-specific compilation/lib creation (minus #defines):
+  % nvcc -c gptl_device.cu -O2 -g -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true -keep --maxrregcount 32
+  % nvfortran -c gptl_acc.F90 -acc -Minfo=accel -Minfo -ta=tesla:cc60
+  % ar ruv libgptl_cuda.a gptl_device.o gptl_acc.o [...]
+  % ranlib libgptl_cuda.a
+
+CUDA-specific compilation/linking of tests (minus #defines):
+  % nvcc -c driver_serial.cu -O2 -g -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true -keep
+  % nvcc -o driver_serial getval.o [...] -O2 -g -ftz=true -gencode arch=compute_60,code=compute_60 \
+         -rdc=true -keep -L.. -lgptl -L../cuda -lgptl_cuda -lstdc++
+
+ACC compilation/linking of tests:
+  % nvfortran -c getval.F90 -g -O0 -I.. -I../cuda -acc -Minfo=accel -Minfo -ta=tesla:cc60,keepgpu -m64
+  % nvfortran -o driver_serial driver_serial.o persist.o sleep1.o getval.o subs.o -L.. -lgptl -L../cuda -lgptl_cuda -Mcuda=cc60 -ta=tesla:cc60 -m64 -lstdc++

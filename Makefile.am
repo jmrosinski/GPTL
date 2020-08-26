@@ -11,11 +11,13 @@ ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = COPYING README INSTALL
 
 # This is the list of subdirs for which Makefiles will be constructed
-SUBDIRS = include src 
+SUBDIRS = include
 
-# Need to build cuda lib before tests
+# src_cuda contains soft links of src/*.c to .cu, and a different Makefile.am
 if ENABLE_CUDA
-SUBDIRS += cuda
+SUBDIRS += src_cuda cuda
+else
+SUBDIRS += src
 endif
 
 SUBDIRS += tests bin man
