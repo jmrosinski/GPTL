@@ -8,7 +8,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/include
 CFLAGS += -g -O0
 
 # Link to GPTL library.
-AM_LDFLAGS = ${top_builddir}/src/libgptl.la @INSTR_LINK@
+AM_LDFLAGS = ${top_builddir}/${CPU_SRCDIR}/libgptl.la @INSTR_LINK@
 
 # These programs will be built but not installed.
 noinst_PROGRAMS = printwhileon imperfect_nest

@@ -4,7 +4,7 @@
 AM_CPPFLAGS = -I../include
 
 # Link to GPTL cpu and cuda libraries.
-AM_LDFLAGS = ${top_builddir}/src/libgptl.la ${top_builddir}/cuda/src/libgptlf_cuda.la ${top_builddir}/cuda/src/libgptl_cuda.la
+AM_LDFLAGS = ${top_builddir}/${CPU_SRCDIR}/libgptl.la ${top_builddir}/cuda/src/libgptlf_cuda.la ${top_builddir}/cuda/src/libgptl_cuda.la
 
 # Need unwind library if configure was set up that way
 if HAVE_LIBUNWIND

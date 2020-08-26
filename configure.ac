@@ -185,7 +185,6 @@ AS_IF([test "x$enable_debug" = xyes], [
   CFLAGS="$CFLAGS -g -O0"
   FCFLAGS="$FCFLAGS -g -O0"
 ])
-echo "use_debug is $use_debug"
 
 # Whether to enable GPTL hooks into the PAPI performance counter library. PAPI must already
 # be installed.
@@ -483,20 +482,27 @@ AS_IF([test "x$enable_cuda" = xyes], [
 ])
 AC_SUBST([CUFLAGS], [$CUFLAGS])
 
-# Files to be built. 
+# Handle the wart of nvcc-specific behavior
+if test "x$use_cuda" = xyes; then
+  CPU_SRCDIR=src_nvcc
+else
+  CPU_SRCDIR=src
+fi
+AC_SUBST([CPU_SRCDIR], [$CPU_SRCDIR])
+
+# Only one of src/Makefile or src_nvcc will be used. Unfortunately AC_CONFIG_FILES doesn't
+# take variables or we could just use $CPU_SRCDIR
 AC_CONFIG_FILES([Makefile
+                 src/Makefile
+                 src_nvcc/Makefile
                  gptl.pc
                  include/Makefile
                  tests/Makefile
                  bin/Makefile
 		 man/Makefile
 	       ])
-	       
-# OpenACC support REQUIRES cuda support
 if test "x$use_cuda" = xyes; then
-# Create special Makefile when CUDA not enabled
-  AC_CONFIG_FILES([src_cuda/Makefile])
-
+# OpenACC support REQUIRES cuda support
   AC_ARG_ENABLE([facc],
     AS_HELP_STRING([--enable-facc], [Include Fortran OpenACC support--REQUIRES cuda enabled]))
   AS_IF([test "x$enable_facc" = xyes], [
@@ -508,19 +514,17 @@ if test "x$use_cuda" = xyes; then
     		   ])
   ])
 
-AC_ARG_ENABLE([cacc],
-    AS_HELP_STRING([--enable-cacc], [Include C/C++ OpenACC support--REQUIRES cuda enabled]))
-  AS_IF([test "x$enable_cacc" = xyes], [
-    enable_cacc=yes
-    AC_CONFIG_FILES([cacc/Makefile
-                     cacc/include/Makefile
-                     cacc/src/Makefile
-                     cacc/tests/Makefile
-		     ])
+# OpenACC support REQUIRES cuda support
+  AC_ARG_ENABLE([cacc],
+      AS_HELP_STRING([--enable-cacc], [Include C/C++ OpenACC support--REQUIRES cuda enabled]))
+    AS_IF([test "x$enable_cacc" = xyes], [
+      enable_cacc=yes
+      AC_CONFIG_FILES([cacc/Makefile
+                       cacc/include/Makefile
+                       cacc/src/Makefile
+                       cacc/tests/Makefile
+	             ])
   ])
-else
-# Create standard Makefile when CUDA not enabled
-  AC_CONFIG_FILES([src/Makefile])
 fi
 
 AM_CONDITIONAL([ENABLE_CUDA], [test "x$enable_cuda" = xyes])

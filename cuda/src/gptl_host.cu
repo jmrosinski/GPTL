@@ -13,9 +13,6 @@ __host__ int GPTLget_gpu_props (int *khz, int *warpsize, int *devnum, int *SMcou
   cudaDeviceProp prop;
   size_t size;
   cudaError_t err;
-  static const size_t onemb = 1024 * 1024;
-  //static const size_t heap_mb = 8;  // this number should avoid needing to reset the limit
-  //static const size_t heap_mb = 128;
   static const char *thisfunc = "GPTLget_gpu_props";
 
   if ((err = cudaGetDeviceProperties (&prop, 0)) != cudaSuccess) {
@@ -71,14 +68,8 @@ __host__ int GPTLget_gpu_props (int *khz, int *warpsize, int *devnum, int *SMcou
   //  cores_per_gpu = _ConvertSMVer2Cores (prop.major, prop.minor) * prop.multiProcessorCount);
   *cores_per_gpu = *cores_per_sm * (*SMcount);
   
-  printf ("%s: major.minor=%d.%d\n", thisfunc, prop.major, prop.minor);
-  printf ("%s: SM count=%d\n",      thisfunc, *SMcount);
-  printf ("%s: cores per sm=%d\n",  thisfunc, *cores_per_sm);
-  printf ("%s: cores per GPU=%d\n", thisfunc, *cores_per_gpu);
-
   err = cudaGetDevice (devnum);  // device number
   err = cudaDeviceGetLimit (&size, cudaLimitMallocHeapSize);
-  printf ("%s: default cudaLimitMallocHeapSize=%d MB\n", thisfunc, (int) (size / onemb));
   return 0;
 }
 

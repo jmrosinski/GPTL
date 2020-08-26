@@ -15,7 +15,7 @@ AM_CPPFLAGS = -I../include -I../src
 AM_FFLAGS = -I${top_srcdir}/fortran/include
 
 # Link to GPTL fortran and C libraries.
-MYLIBS = ${top_builddir}/fortran/src/libgptlf.la ${top_builddir}/src/libgptl.la
+MYLIBS = ${top_builddir}/fortran/src/libgptlf.la ${top_builddir}/${CPU_SRCDIR}/libgptl.la
 AM_LDFLAGS = ${MYLIBS} @INSTR_LINK@
 
 # Need unwind library if configure was set up that way
