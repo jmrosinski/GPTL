@@ -504,19 +504,15 @@ AC_CONFIG_FILES([Makefile
 if test "x$use_cuda" = xyes; then
 # OpenACC support REQUIRES cuda support
   AC_ARG_ENABLE([facc],
-    AS_HELP_STRING([--enable-facc], [Include Fortran OpenACC support--REQUIRES cuda enabled]))
+    AS_HELP_STRING([--enable-facc], [Include Fortran OpenACC support: REQUIRES --enable-cuda]))
   AS_IF([test "x$enable_facc" = xyes], [
     enable_facc=yes
-    AC_CONFIG_FILES([facc/Makefile
-                     facc/include/Makefile
-                     facc/src/Makefile
-                     facc/tests/Makefile
-    		   ])
+    AC_CONFIG_FILES([facctests/Makefile])
   ])
 
 # OpenACC support REQUIRES cuda support
   AC_ARG_ENABLE([cacc],
-      AS_HELP_STRING([--enable-cacc], [Include C/C++ OpenACC support--REQUIRES cuda enabled]))
+      AS_HELP_STRING([--enable-cacc], [Include C/C++ OpenACC support: REQUIRES --enable-cuda]))
     AS_IF([test "x$enable_cacc" = xyes], [
       enable_cacc=yes
       AC_CONFIG_FILES([cacc/Makefile

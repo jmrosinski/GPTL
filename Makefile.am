@@ -26,7 +26,7 @@ SUBDIRS += fortran
 endif
 
 if ENABLE_FACC
-SUBDIRS += facc
+SUBDIRS += facctests
 endif
 
 if ENABLE_CACC

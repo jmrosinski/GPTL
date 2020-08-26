@@ -4,7 +4,7 @@
 AM_CPPFLAGS = -I../include
 
 # Link to GPTL cpu and cuda libraries.
-AM_LDFLAGS = ${top_builddir}/${CPU_SRCDIR}/libgptl.la ${top_builddir}/cuda/src/libgptlf_cuda.la ${top_builddir}/cuda/src/libgptl_cuda.la
+AM_LDFLAGS = ${top_builddir}/${CPU_SRCDIR}/libgptl.a ${top_builddir}/cuda/src/libgptl_cuda.a
 
 # Need unwind library if configure was set up that way
 if HAVE_LIBUNWIND
@@ -12,11 +12,11 @@ if HAVE_LIBUNWIND
 endif
 
 # These programs will be built but not installed.
-noinst_PROGRAMS = driver_serial vdmints3
+noinst_PROGRAMS = basic
 
 # Test programs that will be built for all configurations.
-check_PROGRAMS = driver_serial vdmints3
-TESTS          = driver_serial vdmints3
+check_PROGRAMS = basic
+TESTS          = basic
 
 # Hardwire FFLAGS for now
-FFLAGS  = -g -O0 -I../include -acc -Minfo=accel -Minfo -ta=tesla:cc60,keepgpu -m64
+FCFLAGS = -acc -Minfo=accel -ta=tesla:cc60 -m64

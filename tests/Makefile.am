@@ -7,8 +7,19 @@ AM_CPPFLAGS = -I$(top_srcdir)/include
 # Need optimization disabled for correct behavior of some tests
 CFLAGS += -g -O0
 
-# Link to GPTL library.
-AM_LDFLAGS = ${top_builddir}/${CPU_SRCDIR}/libgptl.la @INSTR_LINK@
+# When CUDA enabled, libtool was not used and the lib ends in .a not .la
+if ENABLE_CUDA
+LIBNAME = libgptl.a
+else
+LIBNAME = libgptl.la
+endif
+
+# Link to GPTL library. CUDA lib also required when enabled due to static build
+AM_LDFLAGS = ${top_builddir}/${CPU_SRCDIR}/${LIBNAME} @INSTR_LINK@
+if ENABLE_CUDA
+AM_LDFLAGS += ${top_builddir}/cuda/src/libgptl_cuda.a
+endif
+AM_LDFLAGS += @INSTR_LINK@
 
 # These programs will be built but not installed.
 noinst_PROGRAMS = printwhileon imperfect_nest
