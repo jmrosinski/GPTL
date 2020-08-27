@@ -10,10 +10,15 @@
 #include "private.h" // MAX_CHARS, bool
 #include "gptl.h"
 
+#ifdef ENABLE_CUDA
+#include "gptl_cuda.h"
+#endif
+
 #ifdef HAVE_LIBMPI
 #include "gptlmpi.h"
 #include <mpi.h>
 #endif
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -56,6 +61,8 @@
 #define gptl_papilibraryinit gptl_papilibraryinit_
 #define gptlevent_name_to_code gptlevent_name_to_code_
 #define gptlevent_code_to_name gptlevent_code_to_name_
+#define gptlget_gpu_props gptlget_gpu_props_
+#define gptlcudadevsync gptlcudadevsync_
 
 #elif ( defined FORTRANDOUBLEUNDERSCORE )
 
@@ -95,6 +102,8 @@
 #define gptl_papilibraryinit gptl_papilibraryinit__
 #define gptlevent_name_to_code gptlevent_name_to_code__
 #define gptlevent_code_to_name gptlevent_code_to_name__
+#define gptlget_gpu_props gptlget_gpu_props__
+#define gptlcudadevsync gptlcudadevsync_
 
 #endif
 
@@ -144,6 +153,10 @@ int gptlget_count (char *, int *, int *, int);
 int gptl_papilibraryinit (void);
 int gptlevent_name_to_code (const char *str, int *code, int nc);
 int gptlevent_code_to_name (int *code, char *str, int nc);
+#endif
+#ifdef ENABLE_CUDA
+int gptlget_gpu_props (int *, int *,int *, int *,int *, int *);
+int gptldevsync (void);
 #endif
 
 // Fortran wrapper functions start here
@@ -401,6 +414,19 @@ int gptlevent_code_to_name (int *code, char *str, int nc)
     return GPTLerror ("");
   }
   return 0;
+}
+#endif
+
+#ifdef ENABLE_CUDA
+int gptlget_gpu_props (int *khz, int *warpsize, int *devnum, int *SMcount, int *cores_per_sm,
+		       int *cores_per_gpu)
+{
+  return GPTLget_gpu_props (khz, warpsize, devnum, SMcount, cores_per_sm, cores_per_gpu);
+}
+
+int gptlcudadevsync (void)
+{
+  return GPTLcudadevsync ();
 }
 #endif
 

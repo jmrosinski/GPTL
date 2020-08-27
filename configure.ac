@@ -410,6 +410,7 @@ if test "x$fortran_support" = xyes; then
     AC_MSG_NOTICE([Skipping check for Fortran OMP support because it was not found or disabled for C])
   fi
   AM_CONDITIONAL([HAVE_FORT_OPENMP], [test "x$have_fort_omp" = xyes])
+  AM_CONDITIONAL([ENABLE_CUDA], [test "x$use_cuda" = xyes])
 
 # Modify FCFLAGS for MPI
   if test "x$have_libmpi" = xyes; then
@@ -419,6 +420,11 @@ if test "x$fortran_support" = xyes; then
 # Modify FCFLAGS for PAPI
   if test "x$have_papi" = xyes; then
     FCFLAGS="-DHAVE_PAPI $FCFLAGS"
+  fi
+  
+# Modify FCFLAGS for PAPI
+  if test "x$use_cuda" = xyes; then
+    FCFLAGS="-DENABLE_CUDA $FCFLAGS"
   fi
   
 # This is a list of files to be built when Fortran support enabled

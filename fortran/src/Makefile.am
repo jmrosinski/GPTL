@@ -24,6 +24,10 @@ if HAVE_LIBMPI
 libgptlf_la_FCFLAGS += -DHAVE_LIBMPI
 endif
 
+if ENABLE_CUDA
+libgptlf_la_FCFLAGS += -DENABLE_CUDA
+endif
+
 # Each mod file depends on the .o file.
 gptl.mod: gptlf.$(OBJEXT)
 

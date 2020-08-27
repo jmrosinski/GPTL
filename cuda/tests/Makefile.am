@@ -15,8 +15,8 @@ endif
 noinst_PROGRAMS = basic test1 driver_serial
 
 # Test programs that will be built for all configurations.
-check_PROGRAMS = basic test1 driver_serial
-TESTS          = basic test1 driver_serial
+check_PROGRAMS = basic
+TESTS          = basic
 
 basic_SOURCES = basic.cu
 basic_OBJS    = basic.o

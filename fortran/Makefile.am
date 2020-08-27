@@ -6,7 +6,9 @@ ACLOCAL_AMFLAGS = -I m4
 
 # This is the list of subdirs for which Makefiles will be constructed
 # and run.
+#JR skip CPU-only tests for now
 SUBDIRS = include src tests
+#SUBDIRS = include src
 
 install-data-hook:
 
