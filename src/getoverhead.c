@@ -27,7 +27,7 @@ static bool initialized = true;
 static bool disabled = false;
 
 // Local prototypes
-static int gptlstart_sim (char *, int);
+static int gptlstart_sim (const char *, int);
 static Timer *getentry_instr_sim (const Hashentry *,void *, unsigned int *, const int);
 static void misc_sim (Nofalse *, Timer ***, int);
 
@@ -258,7 +258,7 @@ int GPTLget_overhead (FILE *fp,
 **   name: timer name
 **   nc:  number of characters in "name"
 */
-static int gptlstart_sim (char *name, int nc)
+static int gptlstart_sim (const char *name, int nc)
 {
   char cname[nc+1];
 

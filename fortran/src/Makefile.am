@@ -24,8 +24,8 @@ if HAVE_LIBMPI
 libgptlf_la_FCFLAGS += -DHAVE_LIBMPI
 endif
 
-# Each mod file depends on the .o file.
-gptl.mod: gptlf.$(OBJEXT)
+# Enforce serial build here or bad things happen due to .mod file issues
+.NOTPARALLEL:
 
 # Install these in the include directory.
 include_HEADERS = gptl.mod
