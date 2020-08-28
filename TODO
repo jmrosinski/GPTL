@@ -1,0 +1,4 @@
+o Link to GPTL libs rather than load directly
+o --enable-debug fails due to multipe "-O0" settings
+o Build all the codes in facctests
+o Fix warnings

@@ -30,7 +30,7 @@ SUBDIRS += facctests
 endif
 
 if ENABLE_CACC
-SUBDIRS += cacc
+SUBDIRS += cacctests
 endif
 
 # Name and dir to hold pkgconfig info

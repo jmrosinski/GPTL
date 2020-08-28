@@ -1,6 +1,5 @@
 # This is the automake file for GPTL cuda tests.
 
-# Find include directory
 AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/cuda/include
 
 # Link to GPTL cpu and cuda libraries.

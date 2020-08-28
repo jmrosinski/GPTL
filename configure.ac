@@ -185,6 +185,7 @@ AS_IF([test "x$enable_debug" = xyes], [
   CFLAGS="$CFLAGS -g -O0"
   FCFLAGS="$FCFLAGS -g -O0"
 ])
+AM_CONDITIONAL([DEBUG], [test "x$use_debug" = xyes])
 
 # Whether to enable GPTL hooks into the PAPI performance counter library. PAPI must already
 # be installed.
@@ -521,11 +522,7 @@ if test "x$use_cuda" = xyes; then
       AS_HELP_STRING([--enable-cacc], [Include C/C++ OpenACC support: REQUIRES --enable-cuda]))
     AS_IF([test "x$enable_cacc" = xyes], [
       enable_cacc=yes
-      AC_CONFIG_FILES([cacc/Makefile
-                       cacc/include/Makefile
-                       cacc/src/Makefile
-                       cacc/tests/Makefile
-	             ])
+      AC_CONFIG_FILES([cacctests/Makefile])
   ])
 fi
 

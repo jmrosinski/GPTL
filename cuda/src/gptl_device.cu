@@ -407,7 +407,7 @@ __device__ static inline int update_stats_gpu (const int handle,
 
   ++ptr->count;
   ptr->wall.accum += delta;
-
+  
   if (ptr->count == 1) {
     ptr->wall.max = delta;
     ptr->wall.min = delta;
@@ -417,7 +417,6 @@ __device__ static inline int update_stats_gpu (const int handle,
     if (delta < ptr->wall.min)
       ptr->wall.min = delta;
   }
-
   return SUCCESS;
 }
 

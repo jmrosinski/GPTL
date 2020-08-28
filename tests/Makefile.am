@@ -4,8 +4,12 @@
 # Find include directory.
 AM_CPPFLAGS = -I$(top_srcdir)/include
 
-# Need optimization disabled for correct behavior of some tests
+# Need optimization disabled for correct behavior of some tests. Guard against multiple "-O0"
+# settings mainly because nvcc will barf
+if DEBUG
+else
 CFLAGS += -g -O0
+endif
 
 # When CUDA enabled, libtool was not used and the lib ends in .a not .la
 # Also, when CUDA was enabled, CUFLAGS needs to be added to LDFLAGS because device functions

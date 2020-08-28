@@ -1,12 +1,13 @@
 # This is the automake file for GPTL cuda tests.
 
 # Hardwire FFLAGS for now
-AM_FCFLAGS = $(FCFLAGS) -I../include -I../fortran/src -I../cuda/src -acc -Minfo=accel -ta=tesla:cc60 -m64
+AM_FCFLAGS = $(FCFLAGS) -I../fortran/src -I../cuda/src -acc -Minfo=accel -ta=tesla:cc60 -m64
 
 # Link to GPTL cpu and cuda libraries.
 # -Mcuda=cc60 required for CUDA functions
 # -lstdc++ required for gxx_personality compllaints
-AM_LDFLAGS =  ${top_builddir}/${CPU_SRCDIR}/libgptl.a ${top_builddir}/cuda/src/libgptl_cuda.a -Mcuda=cc60 -lstdc++
+AM_LDFLAGS = ../fortran/src/libgptlf.a ../src_nvcc/libgptl.a ../cuda/src/libgptl_cuda.a \
+             -Mcuda=cc60 -lstdc++
 
 # Need unwind library if configure was set up that way
 if HAVE_LIBUNWIND
