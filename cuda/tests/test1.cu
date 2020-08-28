@@ -6,8 +6,8 @@
 __global__ void runit (float, float, int *, int *);
 __global__ void setup_handles (int *, int *);
 
-__device__ int *runit_handle;
-__device__ int *percall_handle;
+int *runit_handle;
+int *percall_handle;
 
 int main ()
 {
@@ -22,8 +22,6 @@ int main ()
   int nwarps;
   int nthreads;
   int nblocks;
-  int ans;
-  int ok;
   
   int ret;
   float sleep_tot;

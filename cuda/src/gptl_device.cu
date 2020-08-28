@@ -772,7 +772,7 @@ __device__ static void start_misc (int w, const int handle)
     printf ("%s: bad w value\n", thisfunc);
 
   if (handle < 0 || handle > ntimers)
-    printf ("%s: bad handle value\n", handle);
+    printf ("%s: bad handle value %d\n", thisfunc, handle);
 
   wi = FLATTEN_TIMERS (w, handle);
   ptr = &timers[wi];
@@ -799,7 +799,7 @@ __device__ static void stop_misc (int w, const int handle)
     printf ("%s: bad w value\n", thisfunc);
 
   if (handle < 0 || handle > ntimers)
-    printf ("%s: bad handle value\n", handle);
+    printf ("%s: bad handle value %d\n", thisfunc, handle);
 
   wi = FLATTEN_TIMERS (w, handle);
   timer = timers[wi];

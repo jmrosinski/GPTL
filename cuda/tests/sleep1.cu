@@ -10,7 +10,6 @@ __host__ int sleep1 (int outerlooplen, int oversub, int cores_per_sm, int cores_
   int ret;
   int n, nn;
   int totalwork;
-  float dt;  
   int chunksize;
   int nchunks;
   static const char *thisfunc = "onlysleep";

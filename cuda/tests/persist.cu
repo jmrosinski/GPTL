@@ -12,16 +12,16 @@ __global__ void doalot (int, int, int, int, int,
 			int *, int *, int *,
 			int *, int *);
 
-__device__ int *total_gputime;
-__device__ int *donothing_handle;
-__device__ int *doalot_log_handle;
-__device__ int *doalot_log_inner_handle;
-__device__ int *doalot_sqrt_handle;
-__device__ int *doalot_sqrt_double_handle;
+int *total_gputime;
+int *donothing_handle;
+int *doalot_log_handle;
+int *doalot_log_inner_handle;
+int *doalot_sqrt_handle;
+int *doalot_sqrt_double_handle;
 
-__device__ float *logvals;
-__device__ float *sqrtvals;
-__device__ double *dsqrtvals;
+float *logvals;
+float *sqrtvals;
+double *dsqrtvals;
 
 __host__ int persist (int mostwork, int outerlooplen, 
 		      int innerlooplen, int balfact, int oversub,

@@ -5,7 +5,7 @@
 
 __global__ void runit (float, int *);  // global routine drives GPU calculations
 __global__ void setup_handles (int *); // global routine initialize GPU handles
-__device__ int *sleep_handle;          // handle required for start/stop on GPU
+int *sleep_handle;                     // handle required for start/stop on GPU
 
 int main ()
 {

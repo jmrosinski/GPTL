@@ -1,4 +1,7 @@
 o Link to GPTL libs rather than load directly
-o --enable-debug fails due to multipe "-O0" settings
+o --enable-debug fails due to multiple "-O0" settings
 o Build all the codes in facctests
-o Fix warnings
+o Compile Fortran lib routines into libgptl.a, as is now done for GPU
+o Fix cacctests. But how??? The following says it can be done but it doesn't seem to work:
+  https://on-demand.gputechconf.com/gtc/2015/presentation/S5195-Jeff-Larkin.pdf
+  
