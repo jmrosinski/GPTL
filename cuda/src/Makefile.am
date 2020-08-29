@@ -14,6 +14,9 @@ libgptl_cuda_a_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include -I$(top_srcdir)/
                         $(CFLAGS) $(CUFLAGS) --maxrregcount 32
 
 if ENABLE_FACC
+# Install these in the include directory.
+include_HEADERS = gptl_acc.mod
+
 libgptl_cuda_a_SOURCES += gptl_acc.F90
 libgptl_cuda_a_FCFLAGS = -DENABLE_CUDA -acc -ta=tesla:cc60 -m64
 .F90.o:

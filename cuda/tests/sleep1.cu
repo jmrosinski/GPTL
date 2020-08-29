@@ -14,7 +14,7 @@ __host__ int sleep1 (int outerlooplen, int oversub, int cores_per_sm, int cores_
   int nchunks;
   static const char *thisfunc = "onlysleep";
 
-  chunksize = MIN (GPTLcompute_chunksize (oversub, 1, cores_per_gpu), outerlooplen);
+  chunksize = outerlooplen;
   nchunks = (outerlooplen + (chunksize-1)) / chunksize;
   printf ("outerlooplen=%d broken into %d kernels of chunksize=%d\n",
 	  outerlooplen, nchunks, chunksize);

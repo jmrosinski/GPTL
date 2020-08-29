@@ -15,16 +15,21 @@ if HAVE_LIBUNWIND
 endif
 
 # These programs will be built but not installed.
-noinst_PROGRAMS = basic
+noinst_PROGRAMS = basic driver_vdmints3
 
 # Test programs that will be built for all configurations.
 check_PROGRAMS = basic
 TESTS          = basic
 
+driver_vdmints3_SOURCES = driver_vdmints3.cu vdmints3_sim.cu getval.cu
+driver_vdmints3_OBJS =    driver_vdmints3.o  vdmints3_sim.o  getval.o
+
 .F90.o:
 	$(FC) -c $< $(AM_FCFLAGS)
 
 basic.o: basic.F90
-
 basic$(EXEEXT): basic.o
 	$(FC) -o $@ basic.o $(AM_FCFLAGS) $(AM_LDFLAGS)
+
+driver_vdmints3$(EXEEXT): $(driver_vdmints3_OBJS)
+	$(FC) -o $@ $(driver_vdmints3_OBJS) $(AM_FCFLAGS) $(AM_LDFLAGS)

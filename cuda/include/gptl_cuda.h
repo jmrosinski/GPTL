@@ -17,7 +17,6 @@ extern "C" {
 #endif
 // These first 3 are host routines
 int GPTLget_gpu_props (int *, int *, int *, int *, int *, int *);
-int GPTLcompute_chunksize (const int, const int, const int);
 int GPTLcudadevsync (void);
 #pragma acc routine seq
 __device__ int GPTLinit_handle_gpu (const char *, int *);

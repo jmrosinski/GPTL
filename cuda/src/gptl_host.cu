@@ -73,30 +73,6 @@ __host__ int GPTLget_gpu_props (int *khz, int *warpsize, int *devnum, int *SMcou
   return 0;
 }
 
-__host__ int GPTLcompute_chunksize (const int oversub, const int inner_iter_count,
-				    const int cores_per_gpu)
-{
-  int chunksize;
-  float oversub_factor;
-  static const char *thisfunc = "GPTLcompute_chunksize";
-
-  if (oversub < 1)
-    return GPTLerror ("%s: oversub=%d must be > 0\n", thisfunc, oversub);
-
-  if (cores_per_gpu < 1)
-    return GPTLerror ("%s: Input arg cores_per_gpu=%d means it hasn't been set or is bad\n",
-		      thisfunc, cores_per_gpu);
-
-  chunksize = (oversub * cores_per_gpu) / inner_iter_count;
-  if (chunksize < 1) {
-    chunksize = 1;
-    oversub_factor = (float) inner_iter_count / (float) cores_per_gpu;
-    printf ("%s: WARNING: chunksize=1 still results in an oversubscription factor=%f"
-	    "compared to request=%d\n", thisfunc, oversub_factor, oversub);
-  }
-  return chunksize;
-}
-
 __host__ int GPTLcudadevsync (void)
 {
   cudaDeviceSynchronize ();

@@ -65,7 +65,7 @@ __host__ int persist (int mostwork, int outerlooplen,
   cudaDeviceSynchronize();
   printf ("called cudaDeviceSynchronize 1\n");
 
-  chunksize = MIN (GPTLcompute_chunksize (oversub, inner_parallel, cores_per_gpu), outerlooplen);
+  chunksize = oversub * cores_per_gpu;
   nchunks = (outerlooplen + (chunksize-1)) / chunksize;
   printf ("outerlooplen=%d broken into %d kernels of chunksize=%d\n",
 	  outerlooplen, nchunks, chunksize);
