@@ -72,11 +72,20 @@ if test "x$ac_cv_sizeof_void_p" = x8; then
 fi
 
 # Check for enabling gather/print stats on extra comparisons due to collisions
-# Default disabled due to extra runtime cost
+# Default disabled due to extra overhead
 AC_ARG_ENABLE([collide],
   AS_HELP_STRING([--enable-collide], [Include stats on extra comparisons due to hash collisions]))
 AS_IF([test "x$enable_collide" = xyes], [
   AC_DEFINE([COLLIDE], [1], [Include stats on extra comparisons due to hash collisions])
+])
+
+# Check if discovering maxwarpid_found is wanted. Computing it adds quite a bit of overhead
+# because it is computed in get_warp_num.
+# Default disabled due to extra overhead
+AC_ARG_ENABLE([maxwarpid_found],
+  AS_HELP_STRING([--enable-maxwarpid_found], [Include output of maxwarpid found--adds overhead]))
+AS_IF([test "x$enable_maxwarpid_found" = xyes], [
+  AC_DEFINE([ENABLE_FOUND], [1], [Include output of maxwarpid found--adds overhead])
 ])
 
 # Check whether to inline threading routines rather than compile separately

@@ -24,7 +24,6 @@ __device__ static int ntimers = 0;              // number of timers
 __device__ __constant__ static int maxtimers;   // max number of timers
 __device__ static int maxwarps = -1;            // max warps
 __device__ static int maxwarpid_found = 0;      // number of warps found : init to 0
-__device__ static int maxwarpid_timed = 0;      // number of warps analyzed : init to 0
 __device__ static bool initialized = false;     // GPTLinitialize has been called
 __device__ static bool verbose = false;         // output verbosity
 __device__ static double gpu_hz = 0.;           // clock freq
@@ -435,14 +434,20 @@ __device__ static inline int update_stats_gpu (const int handle,
 __global__ void GPTLreset_gpu (void)
 {
   int i;
-  int w;             /* index over warps */
+  int w;
   int wi;
+  int maxwarpid_timed;
   static const char *thisfunc = "GPTLreset_gpu";
 
   if ( ! initialized) {
     (void) GPTLerror_1s ("%s: GPTLinitialize_gpu has not been called\n", thisfunc);
     return;
   }
+
+  if (get_warp_num () != 0)
+    return;
+
+  maxwarpid_timed = GPTLget_maxwarpid_timed ();
 
   for (w = 0; w <= maxwarpid_timed; ++w) {
     for (i = 0; i < maxtimers; ++i) {
@@ -475,30 +480,44 @@ __device__ static inline int get_warp_num ()
 
   warpId = threadId / warpsize;
 
-  // maxwarpid_found is needed only by CPU code when printing results
+  // Setting maxwarpid_found is a race condition that is ignored due to efficiency considerations
+  // It is only printed as an estimate when GPTLpr is called.
+#ifdef ENABLE_FOUND
   if (warpId+1 > maxwarpid_found)
     maxwarpid_found = warpId;
-
+#endif
+  
   if (warpId > maxwarps-1)
     return WARPID_GT_MAXWARPS;
-
-  // if we get here we have a usable warpId
-  if (warpId > maxwarpid_timed)
-    maxwarpid_timed = warpId;
 
   return warpId;
 }
 
-__global__ void GPTLget_gpusizes (int *maxwarpid_found_out, int *maxwarpid_timed_out)
+__device__ int GPTLget_maxwarpid_timed (void)
 {
-  *maxwarpid_found_out = maxwarpid_found;
-  *maxwarpid_timed_out = maxwarpid_timed;
+  int wi;
+  int maxwarpid_timed = 0;
+  static const char *thisfunc = "GPTLget_maxwarpid_timed";
+
+  if (get_warp_num () != 0) {
+    (void) GPTLerror_1s ("%s: must only be called by thread 0 of warp 0\n", thisfunc);
+    return -1;
+  }
+
+  for (int w = 0; w < maxwarps; ++w) {
+    for (int i = ntimers; i > 0; --i) {
+      wi = FLATTEN_TIMERS(w,i);
+      if (timers[wi].count > 0 && w > maxwarpid_timed)
+	maxwarpid_timed = w;
+    }
+  }
+  return maxwarpid_timed;
 }
 
 __device__ int GPTLget_wallclock_gpu (const int handle,
 				      double *accum, double *max, double *min)
 {
-  int w;               // warp index
+  int w;
   int wi;
   static const char *thisfunc = "GPTLget_wallclock_gpu";
   
@@ -528,9 +547,22 @@ __global__ void GPTLfill_gpustats (Gpustats *gpustats,
 				   int *max_name_len_out,
 				   int *ngputimers)
 {
-  int w;      // warp index
-  int n;      // timer index
+  int w, wi;
+  int n;
+  int maxwarpid_timed;
+  static const char *thisfunc = "GPTLfill_gpustats";
 
+  if ( ! initialized) {
+    (void) GPTLerror_1s ("%s: GPTLinitialize_gpu has not been called\n", thisfunc);
+    return;
+  }
+
+  if (get_warp_num () != 0) {
+    (void) GPTLerror_1s ("%s: must only be called by thread 0 of warp 0\n", thisfunc);
+    return;
+  }
+
+  maxwarpid_timed = GPTLget_maxwarpid_timed ();
   *max_name_len_out = max_name_len;
   *ngputimers = ntimers;
 
@@ -676,7 +708,9 @@ __device__ static int my_strcmp (const char *str1, const char *str2)
 **   self_ohd:           Estimate of GPTL-induced overhead in the timer itself (included in "Wallclock")
 **   parent_ohd:         Estimate of GPTL-induced overhead for the timer which appears in its parents
 */
-__global__ void GPTLget_overhead_gpu (long long *get_warp_num_ohd,  // Getting my warp index
+__global__ void GPTLget_overhead_gpu (int *maxwarpid_timed_out,
+				      int *maxwarpid_found_out,
+				      long long *get_warp_num_ohd,  // Getting my warp index
 				      long long *startstop_ohd,     // start/stop pair
 				      long long *utr_ohd,           // Underlying timing routine
 				      long long *start_misc_ohd,    // misc start code
@@ -694,6 +728,9 @@ __global__ void GPTLget_overhead_gpu (long long *get_warp_num_ohd,  // Getting m
   char name[MAX_CHARS+1];     // Name to be used for various OHD tests
   char samename[MAX_CHARS+1]; // Copy of "name" for STRMATCH test
 
+  *maxwarpid_timed_out = GPTLget_maxwarpid_timed ();
+  *maxwarpid_found_out = maxwarpid_found;
+  
   // Define name to be used in OHD estimates. Use GPTL_ROOT because it's always there
   my_strcpy (name, timernames[0].name); // GPTL_ROOT
   my_strcpy (samename, name);
@@ -710,10 +747,11 @@ __global__ void GPTLget_overhead_gpu (long long *get_warp_num_ohd,  // Getting m
   t2 = clock64();
   startstop_ohd[0] = (t2 - t1) / 1000;
 
-  // get_warp_num overhead
+  // get_warp_num overhead. Need a bogus computation or compiler may optimize out the code
   t1 = clock64();
   for (i = 0; i < 1000; ++i) {
-    mywarp = get_warp_num ();
+    if ((mywarp = get_warp_num ()) < -999)
+      get_warp_num_ohd[0] = -999;
   }
   t2 = clock64();
   get_warp_num_ohd[0] = (t2 - t1) / 1000;

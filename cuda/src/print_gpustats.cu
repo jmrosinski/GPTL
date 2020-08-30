@@ -101,8 +101,9 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   ret = gethostname (hostname, HOSTSIZE);
   fprintf (fp, "%s: hostname=%s\n", thisfunc, hostname);
 
-  GPTLget_gpusizes <<<1,1>>> (maxwarpid_found, maxwarpid_timed);
-  GPTLget_overhead_gpu <<<1,1>>> (get_warp_num_ohdgpu,
+  GPTLget_overhead_gpu <<<1,1>>> (maxwarpid_timed,
+				  maxwarpid_found,
+				  get_warp_num_ohdgpu,
 				  startstop_ohdgpu,
 				  utr_ohdgpu,
 				  start_misc_ohdgpu,
@@ -146,8 +147,11 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   fprintf (fp, "\nGPU timing stats\n");
   fprintf (fp, "GPTL could handle up to %d warps (%d threads)\n", maxwarps, maxwarps * WARPSIZE);
   fprintf (fp, "This setting can be changed with: GPTLsetoption(GPTLmaxthreads_gpu,<number>)\n");
-  fprintf (fp, "%d = max warpId found\n", maxwarpid_found[0]);
   fprintf (fp, "%d = max warpId examined\n", maxwarpid_timed[0]);
+#ifdef ENABLE_FOUND
+  fprintf (fp, "%d = ESTIMATE of max warpId found. Could be bigger caused by race condition\n",
+	   maxwarpid_found[0]);
+#endif
   fprintf (fp, "Only warps which were timed are counted in the following stats\n");
   fprintf (fp, "Overhead estimates self_OH and parent_OH are for warp with \'maxcount\' calls\n");
   fprintf (fp, "Assuming SMs are always busy computing, GPTL overhead can be vaguely estimated by this calculation:\n");

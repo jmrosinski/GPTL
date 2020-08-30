@@ -69,8 +69,9 @@ __global__ void GPTLreset_gpu (void);
 __global__ void GPTLfinalize_gpu (void);
 __global__ void GPTLfill_gpustats (Gpustats *, int *, int *);
 __global__ void GPTLget_memstats_gpu (float *, float *);
-__global__ void GPTLget_gpusizes (int *, int *);
-__global__ void GPTLget_overhead_gpu (long long *,            // Getting my warp index
+__global__ void GPTLget_overhead_gpu (int *,                  // maxwarpid_timed
+				      int *,                  // maxwarpid_found
+				      long long *,            // Getting my warp index
 				      long long *,            // start/stop pair
 				      long long *,            // Underlying timing routine
 				      long long *,            // misc start code
@@ -79,15 +80,16 @@ __global__ void GPTLget_overhead_gpu (long long *,            // Getting my warp
 				      long long *,            // parent_ohd
 				      long long *,            // my_strlen ohd
 				      long long *);           // STRMATCH ohd
-__device__ extern int GPTLerror_1s (const char *, const char *);
-__device__ extern int GPTLerror_2s (const char *, const char *, const char *);
-__device__ extern int GPTLerror_3s (const char *, const char *, const char *, const char *);
-__device__ extern int GPTLerror_1s1d (const char *, const char *, const int);
-__device__ extern int GPTLerror_2s1d (const char *, const char *, const char *, const int);
-__device__ extern int GPTLerror_2s2d (const char *, const char *, const char *, const int, const int);
-__device__ extern int GPTLerror_1s2d (const char *, const char *, const int, const int);
-__device__ extern int GPTLerror_1s1d1s (const char *, const char *, const int, const char *);
-__device__ extern void GPTLreset_errors_gpu (void);                  /* num_errors to zero */
+__device__ int GPTLget_maxwarpid_timed (void);
+__device__ int GPTLerror_1s (const char *, const char *);
+__device__ int GPTLerror_2s (const char *, const char *, const char *);
+__device__ int GPTLerror_3s (const char *, const char *, const char *, const char *);
+__device__ int GPTLerror_1s1d (const char *, const char *, const int);
+__device__ int GPTLerror_2s1d (const char *, const char *, const char *, const int);
+__device__ int GPTLerror_2s2d (const char *, const char *, const char *, const int, const int);
+__device__ int GPTLerror_1s2d (const char *, const char *, const int, const int);
+__device__ int GPTLerror_1s1d1s (const char *, const char *, const int, const char *);
+__device__ void GPTLreset_errors_gpu (void);                  /* num_errors to zero */
 }
 
 #define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
