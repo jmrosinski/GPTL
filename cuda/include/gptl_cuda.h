@@ -18,19 +18,12 @@ extern "C" {
 // These first 3 are host routines
 int GPTLget_gpu_props (int *, int *, int *, int *, int *, int *);
 int GPTLcudadevsync (void);
-#pragma acc routine seq
 __device__ int GPTLinit_handle_gpu (const char *, int *);
-#pragma acc routine seq
 __device__ int GPTLstart_gpu (const int);
-#pragma acc routine seq
 __device__ int GPTLstop_gpu (const int);
-#pragma acc routine seq
 __device__ void GPTLdummy_gpu (void);
-#pragma acc routine seq
 __device__ int GPTLmy_sleep (float);
-#pragma acc routine seq
 __device__ int GPTLget_wallclock_gpu (const int, double *, double *, double *);
-#pragma acc routine seq
 __device__ void GPTLwhoami (const char *);
 #ifdef __cplusplus
 };

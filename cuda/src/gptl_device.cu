@@ -107,12 +107,12 @@ __global__ static void initialize_gpu (const int verbose_in,
   warpsize = warpsize_in;
 
   nbytes = (size_t) (maxwarps_in * maxtimers_in * sizeof (Timer));
-  ret = cudaMalloc (&timers, nbytes);
+  timers = (Timer *) malloc (nbytes);
   if (ret != cudaSuccess)
     printf ("%s cudaMalloc error for timers: %s\n", thisfunc, cudaGetErrorString (ret));
 
   nbytes = (size_t) (maxtimers_in * sizeof (Timername));
-  ret = cudaMalloc (&timernames, nbytes);
+  timernames = (Timername *) malloc (nbytes);
   if (ret != cudaSuccess)
     printf ("%s cudaMalloc error for timernames: %s\n", thisfunc, cudaGetErrorString (ret));
 
@@ -153,8 +153,8 @@ __global__ void GPTLfinalize_gpu (void)
     return;
   }
 
-  cudaFree (timers);
-  cudaFree (timernames);
+  free (timers);
+  free (timernames);
   
   GPTLreset_errors_gpu ();
 
