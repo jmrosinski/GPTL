@@ -5,10 +5,12 @@ Need CFLAGS="" because brain-dead nvcc barfs on multiple "-O" settings, and conf
 Need --disable-inline-threading because the #include demands .c files not .cu--probably easy fix
   CFLAGS to -O2
 % env CC=nvcc FC=nvfortran CFLAGS="" ./configure --cache-file=/dev/null --disable-shared --enable-cuda --enable-facc --disable-inline-threading 2>&1 | tee out.configure
+% make clean; make -j8
+% make check
 
 Current status: Both tests in cuda/tests succeed
 Test W/O nvidia module loaded:
-  % ./configure
-  % make clean; make; make check
+  % env CC=mpicc FC=mpif90 ./configure --enable-pmpi
+  % make clean; make -j8; make check
   Succeeds
   

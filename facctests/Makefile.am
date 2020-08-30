@@ -6,7 +6,7 @@ AM_FCFLAGS = $(FCFLAGS) -I../fortran/src -I../cuda/src -acc -Minfo=accel -ta=tes
 # Link to GPTL cpu and cuda libraries.
 # -Mcuda=cc60 required for CUDA functions
 # -lstdc++ required for gxx_personality compllaints
-AM_LDFLAGS = ../fortran/src/libgptlf.a ../src_nvcc/libgptl.a ../cuda/src/libgptl_cuda.a \
+AM_LDFLAGS = -L../fortran/src -lgptlf -L../src_nvcc -lgptl -L../cuda/src -lgptl_cuda \
              -Mcuda=cc60 -lstdc++
 
 # Need unwind library if configure was set up that way

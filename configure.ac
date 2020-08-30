@@ -386,6 +386,34 @@ AS_IF([test "x$enable_pmpi" = xyes], [
 AC_MSG_RESULT([$usepmpi])
 AM_CONDITIONAL([ENABLE_PMPI], [test x$usepmpi = xyes])
 
+use_cuda=no
+AC_ARG_ENABLE([cuda],
+  AS_HELP_STRING([--enable-cuda], [Include cuda support--REQUIRES CC be cuda-capable compiler]))
+
+AS_IF([test "x$enable_cuda" = xyes], [
+  use_cuda=yes
+  if test "x$use_debug" = xyes; then
+    CUFLAGS="$CUFLAGS -lineinfo -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true"
+  else
+    CUFLAGS="$CUFLAGS           -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true"
+  fi
+  AC_DEFINE([ENABLE_CUDA], [1], [enable CUDA capability--needed also for OpenACC])
+  AC_CONFIG_FILES([cuda/Makefile
+                   cuda/include/Makefile
+                   cuda/src/Makefile
+                   cuda/tests/Makefile
+		 ])
+])
+AC_SUBST([CUFLAGS], [$CUFLAGS])
+
+# Handle the wart of nvcc-specific behavior
+if test "x$use_cuda" = xyes; then
+  CPU_SRCDIR=src_nvcc
+else
+  CPU_SRCDIR=src
+fi
+AC_SUBST([CPU_SRCDIR], [$CPU_SRCDIR])
+
 # Whether Fortran suppport is to be enabled. If so check for working compiler
 # Default enabled
 fortran_support=no
@@ -432,7 +460,7 @@ if test "x$fortran_support" = xyes; then
     FCFLAGS="-DHAVE_PAPI $FCFLAGS"
   fi
   
-# Modify FCFLAGS for PAPI
+# Modify FCFLAGS for CUDA
   if test "x$use_cuda" = xyes; then
     FCFLAGS="-DENABLE_CUDA $FCFLAGS"
   fi
@@ -477,34 +505,6 @@ AC_CONFIG_FILES([tests/run_memusage.sh], [chmod ugo+x tests/run_memusage.sh])
 #if test -z "$DOXYGEN"; then
 #   AC_MSG_WARN([Doxygen not found - documentation will not be built])
 #fi
-
-use_cuda=no
-AC_ARG_ENABLE([cuda],
-  AS_HELP_STRING([--enable-cuda], [Include cuda support--REQUIRES CC be cuda-capable compiler]))
-
-AS_IF([test "x$enable_cuda" = xyes], [
-  use_cuda=yes
-  if test "x$use_debug" = xyes; then
-    CUFLAGS="$CUFLAGS -lineinfo -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true"
-  else
-    CUFLAGS="$CUFLAGS           -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true"
-  fi
-  AC_DEFINE([ENABLE_CUDA], [1], [enable CUDA capability--needed also for OpenACC])
-  AC_CONFIG_FILES([cuda/Makefile
-                   cuda/include/Makefile
-                   cuda/src/Makefile
-                   cuda/tests/Makefile
-		 ])
-])
-AC_SUBST([CUFLAGS], [$CUFLAGS])
-
-# Handle the wart of nvcc-specific behavior
-if test "x$use_cuda" = xyes; then
-  CPU_SRCDIR=src_nvcc
-else
-  CPU_SRCDIR=src
-fi
-AC_SUBST([CPU_SRCDIR], [$CPU_SRCDIR])
 
 # Only one of src/Makefile or src_nvcc will be used. Unfortunately AC_CONFIG_FILES doesn't
 # take variables or we could just use $CPU_SRCDIR
