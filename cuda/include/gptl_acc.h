@@ -12,10 +12,11 @@
 /*
 ** User-visible function prototypes
 */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-// These first 3 are host routines
+// First 2 are host routines
 int GPTLget_gpu_props (int *, int *, int *, int *, int *, int *);
 int GPTLcudadevsync (void);
 #pragma acc routine seq

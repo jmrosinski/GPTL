@@ -53,7 +53,7 @@ __device__ static void prbits8 (uint64_t);
 #endif
 
 /* VERBOSE is a debugging ifdef local to the rest of this file */
-#define VERBOSE
+#undef VERBOSE
 
 __host__ int GPTLinitialize_gpu (const int verbose_in,
 				 const int maxwarps_in,
@@ -107,12 +107,12 @@ __global__ static void initialize_gpu (const int verbose_in,
   warpsize = warpsize_in;
 
   nbytes = (size_t) (maxwarps_in * maxtimers_in * sizeof (Timer));
-  timers = (Timer *) malloc (nbytes);
+  ret = cudaMalloc (&timers, nbytes);
   if (ret != cudaSuccess)
     printf ("%s cudaMalloc error for timers: %s\n", thisfunc, cudaGetErrorString (ret));
 
   nbytes = (size_t) (maxtimers_in * sizeof (Timername));
-  timernames = (Timername *) malloc (nbytes);
+  ret = cudaMalloc (&timernames, nbytes);
   if (ret != cudaSuccess)
     printf ("%s cudaMalloc error for timernames: %s\n", thisfunc, cudaGetErrorString (ret));
 
@@ -137,7 +137,6 @@ __global__ static void initialize_gpu (const int verbose_in,
   }
 
   initialized = true;
-  printf("end %s: maxwarps=%d\n", thisfunc, maxwarps);
 }
 
 /*
@@ -245,6 +244,10 @@ __device__ int GPTLstart_gpu (const int handle)
   if (w == NOT_ROOT_OF_WARP || w == WARPID_GT_MAXWARPS)
     return SUCCESS;
 
+#ifdef VERBOSE
+  printf ("Entered %s w=%d handle=%d\n", thisfunc, w, handle);
+#endif
+
   // Input handle should be a positive integer not greater than ntimers (0 accepted for GPTL_ROOT)
   if (handle < 0 || handle > ntimers)
     return GPTLerror_1s1d ("%s: Invalid input handle=%d. Perhaps GPTLinit_handle_gpu not called?\n",
@@ -304,6 +307,10 @@ __device__ int GPTLstop_gpu (const int handle)
   // Return if not thread 0 of the warp, or warpId is outside range of available timers
   if (w == NOT_ROOT_OF_WARP || w == WARPID_GT_MAXWARPS)
     return SUCCESS;
+
+#ifdef VERBOSE
+  printf ("Entered %s w=%d handle=%d\n", thisfunc, w, handle);
+#endif
 
   // Input handle should be a positive integer not greater than ntimers (0 accepted for GPTL_ROOT)
   if (handle < 0 || handle > ntimers)
@@ -831,6 +838,12 @@ __device__ int GPTLmy_sleep (float seconds)
   volatile double delta;
   static const char *thisfunc = "GPTLmy_sleep";
 
+  int mywarp = get_warp_num ();
+
+  // Only sleep if we're root of warp
+  if (mywarp == NOT_ROOT_OF_WARP)
+    return SUCCESS;
+
   if (gpu_hz == 0.)
     return GPTLerror_1s ("%s: need to set gpu_hz via call to GPTLinitialize_gpu() first\n",
 			 thisfunc);
@@ -841,9 +854,6 @@ __device__ int GPTLmy_sleep (float seconds)
     delta = (now - start) / gpu_hz;
   } while (delta < seconds);
 
-  // For some reason, w/o syncthreads, ACC tests often sleep much less than 1 sec
-  // But CUDA tests all seem to work fine
-  // __syncthreads();
   return SUCCESS;
 }
 

@@ -348,7 +348,6 @@ int GPTLsetoption (const int option, const int val)
     if (val < 1)
       return GPTLerror ("%s: maxwarps_gpu must be positive. %d is invalid\n", thisfunc, val);
     maxwarps_gpu = val;
-    printf ("%s: maxwarps_gpu = %d\n", thisfunc, maxwarps_gpu);
     return 0;
   case GPTLmaxtimers_gpu:
     if (val < 1)
@@ -490,12 +489,10 @@ int GPTLinitialize (void)
   int cores_per_gpu;
 
   ret = GPTLget_gpu_props (&khz, &warpsize, &devnum, &SMcount, &cores_per_sm, &cores_per_gpu);
-  printf ("%s: device number=%d warpsize=%d\n", thisfunc, devnum, warpsize);
+  printf ("%s: device number=%d warpsize=%d khz=%d\n", thisfunc, devnum, warpsize, khz);
 
   gpu_hz = khz * 1000.;
-  printf ("%s: GPU khz=%d\n", thisfunc, khz);
   ret = GPTLinitialize_gpu (verbose, maxwarps_gpu, maxtimers_gpu, gpu_hz, warpsize);
-  printf ("%s: Returned from GPTLinitialize_gpu\n", thisfunc);
 #endif
   
   imperfect_nest = false;

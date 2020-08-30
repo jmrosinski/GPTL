@@ -143,9 +143,6 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
 	   STRMATCH_ohdgpu[0] / gpu_hz);
   fprintf (fp, "\n");
 
-  printf ("%s: calling gpu kernel GPTLfill_gpustats...\n", thisfunc);
-  printf ("%s: returned from GPTLfill_gpustats: printing results\n", thisfunc);
-
   fprintf (fp, "\nGPU timing stats\n");
   fprintf (fp, "GPTL could handle up to %d warps (%d threads)\n", maxwarps, maxwarps * WARPSIZE);
   fprintf (fp, "This setting can be changed with: GPTLsetoption(GPTLmaxthreads_gpu,<number>)\n");
@@ -247,7 +244,6 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
     fprintf (fp, "\n");
   }
 
-  printf ("%s: calling gpu kernel GPTLget_memstats_gpu...\n", thisfunc);
   GPTLget_memstats_gpu <<<1,1>>> (regionmem, timernamemem);
   cudaDeviceSynchronize();
   fprintf (fp, "\n");
