@@ -112,9 +112,6 @@ extern int GPTLnum_errors (void);
 extern int GPTLnum_warn (void);
 extern int GPTLget_count (const char *, int, int *);
 
-#ifdef ENABLE_CUDA
-#endif
-
 #ifdef __cplusplus
 }
 #endif

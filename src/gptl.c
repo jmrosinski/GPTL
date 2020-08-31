@@ -9,8 +9,7 @@
 #include "gptl_papi.h"
 #include "thread.h"
 #ifdef ENABLE_CUDA
-// Maybe add path so can just #include "gptl_cuda.h"?
-#include "../cuda/include/gptl_cuda.h"
+#include "gptl_cuda.h"
 #endif
 
 #ifdef HAVE_LIBMPI
