@@ -79,15 +79,6 @@ AS_IF([test "x$enable_collide" = xyes], [
   AC_DEFINE([COLLIDE], [1], [Include stats on extra comparisons due to hash collisions])
 ])
 
-# Check if discovering maxwarpid_found is wanted. Computing it adds quite a bit of overhead
-# because it is computed in get_warp_num.
-# Default disabled due to extra overhead
-AC_ARG_ENABLE([maxwarpid_found],
-  AS_HELP_STRING([--enable-maxwarpid_found], [Include output of maxwarpid found--adds overhead]))
-AS_IF([test "x$enable_maxwarpid_found" = xyes], [
-  AC_DEFINE([ENABLE_FOUND], [1], [Include output of maxwarpid found--adds overhead])
-])
-
 # Check whether to inline threading routines rather than compile separately
 # Default enabled
 AC_ARG_ENABLE([inline-threading],
@@ -355,7 +346,7 @@ fi
 AM_CONDITIONAL([HAVE_LIBMPI], [test "x$have_libmpi" = xyes])
 
 # Did the user specify an MPI launcher other than mpiexec?
-AC_MSG_CHECKING([whether a user specified program to run mpi programs])
+AC_MSG_CHECKING([if mpi run command is not mpiexec])
 AC_ARG_WITH([mpiexec],
               [AS_HELP_STRING([--with-mpiexec=<command>],
                [Replace mpiexec for launching MPI parallel tests e.g. mpirun, srun])],
@@ -387,10 +378,14 @@ AC_MSG_RESULT([$usepmpi])
 AM_CONDITIONAL([ENABLE_PMPI], [test x$usepmpi = xyes])
 
 use_cuda=no
-AC_ARG_ENABLE([cuda],
-  AS_HELP_STRING([--enable-cuda], [Include cuda support--REQUIRES CC be cuda-capable compiler]))
+AC_MSG_CHECKING([for cuda compiler])
+AC_ARG_WITH([nvcc],
+              [AS_HELP_STRING([--with-nvcc=<path>],
+               [Enable CUDA compilation with nvcc])],
+            [NVCC=$with_nvcc],NVCC=no)
+AC_MSG_RESULT([$NVCC])
 
-AS_IF([test "x$enable_cuda" = xyes], [
+if test "x$with_nvcc" != xno; then
   use_cuda=yes
   if test "x$use_debug" = xyes; then
     CUFLAGS="$CUFLAGS -lineinfo -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true"
@@ -403,7 +398,7 @@ AS_IF([test "x$enable_cuda" = xyes], [
                    cuda/src/Makefile
                    cuda/tests/Makefile
 		 ])
-])
+fi
 AC_SUBST([CUFLAGS], [$CUFLAGS])
 
 # Handle the wart of nvcc-specific behavior
@@ -413,6 +408,15 @@ else
   CPU_SRCDIR=src
 fi
 AC_SUBST([CPU_SRCDIR], [$CPU_SRCDIR])
+
+# Check if discovering maxwarpid_found is wanted. Computing it adds quite a bit of overhead
+# because it is computed in get_warp_num.
+# Default disabled due to extra overhead
+AC_ARG_ENABLE([maxwarpid_found],
+  AS_HELP_STRING([--enable-maxwarpid_found], [Include output of maxwarpid found--adds overhead]))
+AS_IF([test "x$enable_maxwarpid_found" = xyes], [
+  AC_DEFINE([ENABLE_FOUND], [1], [Include output of maxwarpid found--adds overhead])
+])
 
 # Whether Fortran suppport is to be enabled. If so check for working compiler
 # Default enabled
@@ -535,7 +539,7 @@ if test "x$use_cuda" = xyes; then
   ])
 fi
 
-AM_CONDITIONAL([ENABLE_CUDA], [test "x$enable_cuda" = xyes])
+AM_CONDITIONAL([ENABLE_CUDA], [test "x$use_cuda" = xyes])
 AM_CONDITIONAL([ENABLE_FACC], [test "x$enable_facc" = xyes])
 AM_CONDITIONAL([ENABLE_CACC], [test "x$enable_cacc" = xyes])
 
