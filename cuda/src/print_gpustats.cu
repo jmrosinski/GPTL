@@ -167,7 +167,7 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   fprintf (fp, "mincount (warp) = min number of times region invoked by any timed warp, followed by the warp number\n");
   fprintf (fp, "negmax (warp)   = if a region had a negative interval, biggest count is printed along with the warp number responsible\n");
   fprintf (fp, "nwarps          = number of warps encountering a negative interval\n");
-  fprintf (fp, "Bad_SM          = number of times smid changed (these instances are NOT timed!) Max possible = 'calls'\n");
+  fprintf (fp, "Bad_SM          = number of times smid changed Max possible = 'calls.' Reported time could be WILDLY wrong\n");
   fprintf (fp, "self_OH         = estimate of GPTL overhead (sec) in the timer incurred by 'maxcount' invocations of it\n");
   fprintf (fp, "parent_OH       = estimate of GPTL overhead (sec) in the parent of the timer incurred by 'maxcount' invocations of it\n\n");
   // Print header, padding to length of longest name

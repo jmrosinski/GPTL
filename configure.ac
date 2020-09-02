@@ -384,6 +384,7 @@ AC_ARG_WITH([nvcc],
                [Enable CUDA compilation with nvcc])],
             [NVCC=$with_nvcc],NVCC=no)
 AC_MSG_RESULT([$NVCC])
+AC_SUBST([NVCC], [$NVCC])
 
 if test "x$with_nvcc" != xno; then
   use_cuda=yes

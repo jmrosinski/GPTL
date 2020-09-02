@@ -156,7 +156,7 @@ int gptlevent_code_to_name (int *code, char *str, int nc);
 #endif
 #ifdef ENABLE_CUDA
 int gptlget_gpu_props (int *, int *,int *, int *,int *, int *);
-int gptldevsync (void);
+int gptlcudadevsync (void);
 #endif
 
 // Fortran wrapper functions start here

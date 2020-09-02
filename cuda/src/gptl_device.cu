@@ -46,7 +46,7 @@ __device__ static void init_gpustats (Gpustats *, int);
 __device__ static void fill_gpustats (Gpustats *, int, int);
 // Defining PRINTNEG will print to stdout whenever a negative interval (stop minus start) is
 // encountered. Only useful when non-zero negative intervals are reported in timing output
-#undef PRINTNEG
+#define PRINTNEG
 #ifdef PRINTNEG
 __device__ static void prbits8 (uint64_t);
 #endif
@@ -236,7 +236,6 @@ __device__ int GPTLstart_gpu (const int handle)
   if ( ! initialized)
     return GPTLerror_1s1d ("%s handle=%d: GPTLinitialize_gpu has not been called\n", 
 			   thisfunc, handle);
-
   w = get_warp_num ();
 
   // Return if not thread 0 of the warp, or warpId is outside range of available timers
@@ -378,12 +377,10 @@ __device__ static inline int update_stats_gpu (const int handle,
   delta = tp1 - ptr->wall.last;
 
   if (smid != ptr->smid) {
-#ifdef DEBUG_PRINT
-    printf ("GPTL %s: name=%s w=%d sm changed from %d to %d: SKIPPING timing\n", 
+    printf ("GPTL %s: name=%s w=%d sm changed from %d to %d: new kernel? "
+	    "TIMINGS COULD BE INACCURATE\n", 
 	    thisfunc, timernames[handle].name, w, ptr->smid, smid);
-#endif
     ++ptr->badsmid_count;
-    return SUCCESS;
   }
 
   if (delta < 0) {
