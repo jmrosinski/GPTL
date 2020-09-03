@@ -9,6 +9,7 @@ integer, external :: gptlstop_handle_gpu
 integer, external :: gptlstop_handle_gpu_c
 integer, external :: gptlmy_sleep
 integer, external :: gptlget_wallclock_gpu
+integer, external :: gptlget_warp_thread
 
 !$acc routine (gptlinit_handle_gpu) seq
 !$acc routine (gptlstart_gpu) seq
@@ -21,4 +22,4 @@ integer, external :: gptlget_wallclock_gpu
 !$acc routine (gptlstop_handle_gpu_c) seq
 !$acc routine (gptlmy_sleep) seq
 !$acc routine (gptlget_wallclock_gpu) seq
-
+!$acc routine (gptlget_warp_thread) seq

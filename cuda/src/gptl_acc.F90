@@ -42,5 +42,10 @@ module gptl_acc
       real(c_double) :: minval
 !$acc routine seq
     end function gptlget_wallclock_gpu
+    
+    integer function gptlget_warp_thread (warp, thread)
+      integer :: warp, thread
+!$acc routine seq                                                               
+    end function gptlget_warp_thread
   end interface
 end module gptl_acc

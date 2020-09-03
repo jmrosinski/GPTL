@@ -19,6 +19,7 @@
 #define gptlstop_gpu gptlstop_gpu_
 #define gptlmy_sleep gptlmy_sleep_
 #define gptlget_wallclock_gpu gptlget_wallclock_gpu_
+#define gptlget_warp_thread gptlget_warp_thread_
 
 #elif ( defined FORTRANDOUBLEUNDERSCORE )
 
@@ -27,6 +28,7 @@
 #define gptlstop_gpu gptlstop_gpu__
 #define gptlmy_sleep gptlmy_sleep__
 #define gptlget_wallclock_gpu gptlget_wallclock_gpu__
+#define gptlget_warp_thread gptlget_warp_thread__
 
 #endif
 
@@ -38,8 +40,9 @@ __device__ int gptlstart_gpu (const int *);
 __device__ int gptlstop_gpu (const int *);
 __device__ int gptlmy_sleep (float *);
 __device__ int gptget_wallclock_gpu (const int *, double *, double *, double *);
-/* Fortran wrapper functions start here */
+__device__ int gptlget_warp_thread (int *, int *);
 
+// Fortran wrapper functions start here
 //JR Cannot dimension local cname[nc+1] because nc is an input argument
 __device__ int gptlinit_handle_gpu (const char *name, int *handle, long long nc)
 {
@@ -78,4 +81,10 @@ __device__ int gptlget_wallclock_gpu (int *handle, double *accum, double *maxval
 {
   return GPTLget_wallclock_gpu (*handle, accum, maxval, minval);
 }
+
+__device__ int gptlget_warp_thread (int *warp, int *thread)
+{
+  return GPTLget_warp_thread (warp, thread);
 }
+}
+

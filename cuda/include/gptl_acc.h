@@ -32,7 +32,7 @@ int GPTLmy_sleep (float);
 #pragma acc routine seq
 int GPTLget_wallclock_gpu (const int, double *, double *, double *);
 #pragma acc routine seq
-void GPTLwhoami (const char *);
+int GPTLget_warp_thread (int *, int *);
 #ifdef __cplusplus
 };
 #endif

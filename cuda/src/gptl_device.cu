@@ -377,8 +377,9 @@ __device__ static inline int update_stats_gpu (const int handle,
   delta = tp1 - ptr->wall.last;
 
   if (smid != ptr->smid) {
-    printf ("GPTL %s: name=%s w=%d sm changed from %d to %d: new kernel? "
-	    "TIMINGS COULD BE INACCURATE\n", 
+    printf ("GPTL %s: name=%s w=%d sm changed from %d to %d: new kernel? \n"
+	    "TIMINGS WITH Bad_SM > 0 PROBABLY INACCURATE.\n"
+	    "NEGATIVE STOP MINUS START INCIDENTS WILL BE SKIPPED.\n", 
 	    thisfunc, timernames[handle].name, w, ptr->smid, smid);
     ++ptr->badsmid_count;
   }
@@ -544,7 +545,7 @@ __global__ void GPTLfill_gpustats (Gpustats *gpustats,
 				   int *max_name_len_out,
 				   int *ngputimers)
 {
-  int w, wi;
+  int w;
   int n;
   int maxwarpid_timed;
   static const char *thisfunc = "GPTLfill_gpustats";
@@ -922,15 +923,21 @@ __device__ static void prbits8 (uint64_t val)
 }
 #endif
   
-__device__ void GPTLwhoami (const char *caller)
+__device__ int GPTLget_warp_thread (int *warp, int *thread)
 {
-  int blockId = blockIdx.x 
-    + blockIdx.y * gridDim.x 
-    + gridDim.x * gridDim.y * blockIdx.z; 
-  int threadId = blockId * (blockDim.x * blockDim.y * blockDim.z)
-    + (threadIdx.z * (blockDim.x * blockDim.y))
-    + (threadIdx.y * blockDim.x)
-    + threadIdx.x;
-  printf ("%s: blockId=%d threadId=%d\n", caller, blockId, threadId);
+  static const char *thisfunc = "GPTLget_warp_thread";
+  if ( ! initialized) {
+    (void) GPTLerror_1s ("%s: initialization was not completed\n", thisfunc);
+    return -1;
+  }
+
+  *thread = threadIdx.x
+        +  blockDim.x  * threadIdx.y
+        +  blockDim.x  *  blockDim.y  * threadIdx.z
+        +  blockDim.x  *  blockDim.y  *  blockDim.z  * blockIdx.x
+        +  blockDim.x  *  blockDim.y  *  blockDim.z  *  gridDim.x  * blockIdx.y
+        +  blockDim.x  *  blockDim.y  *  blockDim.z  *  gridDim.x  *  gridDim.y  * blockIdx.z;
+  *warp = (*thread) / warpsize;
+  return 0;
 }
 }
