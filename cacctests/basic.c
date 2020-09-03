@@ -96,7 +96,7 @@ int main (int argc, char **argv)
   ret = GPTLstop ("total");
 
   ret = GPTLget_wallclock ("total", -1, &wc);
-  printf ("CPU says total wallclock=%9.3f\n seconds", wc);
+  printf ("CPU says total wallclock=%9.3f seconds\n", wc);
 
   accummax = 0.;
   warpsav = -1;
@@ -111,7 +111,9 @@ int main (int argc, char **argv)
   accummin = 1.e36;
   warpsav = -1;
   for (warp = 0; warp < nwarps; ++warp) {
+#ifdef DEBUG
     printf ("accum[%2.2d]=%-12.9g\n", warp, accum[warp]);
+#endif
     if (accum[warp] < accummin) {
       accummin = accum[warp];
       warpsav = warp;
