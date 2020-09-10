@@ -11,7 +11,6 @@ __global__ void stop_timer (int);
 __global__ void runit (int, int, int, int, int, float, bool, double *); // global routine drives GPU calculations
 __global__ void dosleep_glob (int, int, float, double *);
 __device__ void dosleep_dev (int, int, float, double *);
-__device__ void whereami (void);
 
 int main (int argc, char **argv)
 {
@@ -43,11 +42,6 @@ int main (int argc, char **argv)
     case 'b':
       if ((blocksize = atoi (optarg)) < 1) {
 	printf ("blocksize must be > 0 %d is invalid\n", blocksize);
-	return -1;
-      }
-      if (cores_per_gpu % blocksize != 0) {
-	printf ("blocksize=%d must divide evenly into cores_per_gpu=%d\n",
-		blocksize, cores_per_gpu);
 	return -1;
       }
       break;
@@ -181,9 +175,11 @@ __global__ void stop_timer (int handle)
 __global__ void runit (int niter, int nblocks, int blocksize, int total_gputime, int sleep1,
 		       float sleepsec, bool kernelkernel, double *accum)
 {
-  int ret;
+  int ret = GPTLsliced_up_how ("runit");
+  
   if (kernelkernel) {
     ret = GPTLstart_gpu (total_gputime);
+    cudaDeviceSynchronize ();   // Ensure the dispatched kernel has finished before timer call
     dosleep_glob<<<nblocks,blocksize>>> (niter, sleep1, sleepsec, accum);
     cudaDeviceSynchronize ();   // Ensure the dispatched kernel has finished before timer call
     ret = GPTLstop_gpu (total_gputime);
@@ -198,6 +194,7 @@ __global__ void dosleep_glob (int niter, int sleep1, float sleepsec, double *acc
   int mywarp, mythread;
   double maxsav, minsav;
 
+  ret = GPTLsliced_up_how ("dosleep_glob");
   ret = GPTLget_warp_thread (&mywarp, &mythread);
   if (mythread < niter) {
     ret = GPTLstart_gpu (sleep1);
@@ -213,6 +210,7 @@ __device__ void dosleep_dev (int niter, int sleep1, float sleepsec, double *accu
   int mywarp, mythread;
   double maxsav, minsav;
 
+  ret = GPTLsliced_up_how ("dosleep_dev");
   ret = GPTLget_warp_thread (&mywarp, &mythread);
   if (mythread < niter) {
     ret = GPTLstart_gpu (sleep1);

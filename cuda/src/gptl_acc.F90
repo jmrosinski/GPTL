@@ -47,5 +47,10 @@ module gptl_acc
       integer :: warp, thread
 !$acc routine seq                                                               
     end function gptlget_warp_thread
+
+    integer function gptlsliced_up_how (txt)
+      character(len=*) :: txt
+!$acc routine seq                                                               
+    end function gptlsliced_up_how
   end interface
 end module gptl_acc

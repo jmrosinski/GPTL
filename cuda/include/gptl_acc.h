@@ -33,6 +33,8 @@ int GPTLmy_sleep (float);
 int GPTLget_wallclock_gpu (const int, double *, double *, double *);
 #pragma acc routine seq
 int GPTLget_warp_thread (int *, int *);
+#pragma acc routine seq
+int GPTLsliced_up_how (const char *);
 #ifdef __cplusplus
 };
 #endif

@@ -76,6 +76,7 @@ int main (int argc, char **argv)
     ret = GPTLinit_handle_gpu ("total_gputime", &total_gputime);
     ret = GPTLinit_handle_gpu ("sleep1",        &sleep1);
   }
+  ret = GPTLcudadevsync ();
 
   printf ("Sleeping %f seconds on GPU\n", sleepsec);
 
@@ -84,6 +85,7 @@ int main (int argc, char **argv)
   for (int n = 0; n < niter; ++n) {
     int mywarp, mythread;
     double maxsav, minsav;
+    ret = GPTLsliced_up_how ("loop");
     ret = GPTLstart_gpu (total_gputime);
     ret = GPTLstart_gpu (sleep1);
     ret = GPTLmy_sleep (sleepsec);

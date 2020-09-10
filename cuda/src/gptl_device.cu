@@ -940,4 +940,26 @@ __device__ int GPTLget_warp_thread (int *warp, int *thread)
   *warp = (*thread) / warpsize;
   return 0;
 }
+
+__device__ int GPTLsliced_up_how (const char *txt)
+{
+  if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0 &&
+      blockIdx.x == 0 && blockIdx.y == 0 && blockIdx.z == 0) {
+    printf ("GPTLsliced_up_how: %s\n", txt);
+    if (blockDim.x > 1)
+      printf ("blockDim.x=%d ", blockDim.x);
+    if (blockDim.y > 1)
+      printf ("blockDim.y=%d ", blockDim.y);
+    if (blockDim.z > 1)
+      printf ("blockDim.z=%d ", blockDim.z);
+    printf ("\n");
+
+    if (gridDim.x > 1)
+      printf ("gridDim.x=%d ", gridDim.x);
+    if (gridDim.y > 1)
+      printf ("gridDim.y=%d ", gridDim.y);
+    printf ("\n");
+  }
+  return 0;
+}
 }

@@ -20,6 +20,7 @@
 #define gptlmy_sleep gptlmy_sleep_
 #define gptlget_wallclock_gpu gptlget_wallclock_gpu_
 #define gptlget_warp_thread gptlget_warp_thread_
+#define gptlsliced_up_how gptlsliced_up_how_
 
 #elif ( defined FORTRANDOUBLEUNDERSCORE )
 
@@ -29,6 +30,7 @@
 #define gptlmy_sleep gptlmy_sleep__
 #define gptlget_wallclock_gpu gptlget_wallclock_gpu__
 #define gptlget_warp_thread gptlget_warp_thread__
+#define gptlsliced_up_how gptlsliced_up_how__
 
 #endif
 
@@ -41,6 +43,7 @@ __device__ int gptlstop_gpu (const int *);
 __device__ int gptlmy_sleep (float *);
 __device__ int gptget_wallclock_gpu (const int *, double *, double *, double *);
 __device__ int gptlget_warp_thread (int *, int *);
+__device__ int gptlsliced_up_how (const char *, long long);
 
 // Fortran wrapper functions start here
 //JR Cannot dimension local cname[nc+1] because nc is an input argument
@@ -85,6 +88,24 @@ __device__ int gptlget_wallclock_gpu (int *handle, double *accum, double *maxval
 __device__ int gptlget_warp_thread (int *warp, int *thread)
 {
   return GPTLget_warp_thread (warp, thread);
+}
+__device__ int gptlsliced_up_how (const char *txt, long long nc)
+{
+  char ctxt[128+1];
+  const char *thisfunc = "gptlsliced_up_how";
+
+  if (nc > 128)
+    return GPTLerror_1s2d ("%s: %d exceeds %d\n", thisfunc, nc, 128);
+
+  if (txt[nc-1] == '\0') {
+    return GPTLsliced_up_how (txt);
+  } else {
+    for (int n = 0; n < nc; ++n)
+      ctxt[n] = txt[n];
+    ctxt[nc] = '\0';
+    return GPTLsliced_up_how (ctxt);
+  }
+  return 0;
 }
 }
 
