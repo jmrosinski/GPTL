@@ -22,7 +22,7 @@ noinst_PROGRAMS = basic
 check_PROGRAMS = basic
 TESTS          = basic
 
-basic_SOURCES = basic.cu
+basic_SOURCES = basic.c
 basic_OBJS    = basic.o
 
 .c.o: $(AM_LDFLAGS)

@@ -27,7 +27,7 @@ driver_vdmints3_OBJS =    driver_vdmints3.o  vdmints3_sim.o  getval.o
 .F90.o:
 	$(FC) -c $< $(AM_FCFLAGS)
 
-basic.o: basic.F90
+basic.o: basic.F90 getval.o
 basic$(EXEEXT): basic.o
 	$(FC) -o $@ basic.o $(AM_FCFLAGS) $(AM_LDFLAGS)
 
