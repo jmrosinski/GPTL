@@ -47,7 +47,7 @@ libgptl_cuda_a_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include -I$(top_srcdir)/
                         $(CUFLAGS)
 
 .cu.o:
-	$(CC) -c $< $(libgptl_cuda_a_CFLAGS)
+	$(NVCC) -c $< $(libgptl_cuda_a_CFLAGS)
 
 f_wrappers.o: f_wrappers.cu
 f_wrappers_pmpi.o: f_wrappers_pmpi.cu

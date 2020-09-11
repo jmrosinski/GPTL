@@ -1,13 +1,11 @@
 # This is the automake file for GPTL cuda tests.
 
-CC = nvc
-
 # -acc gpu says to recognize OpenACC directives
 AM_CFLAGS = -I${top_srcdir} -I../include -I../cuda/include -acc gpu
 
 # Link to GPTL cpu and cuda libraries.
 # -cudalib says link in all necessary cuda libraries
-AM_LDFLAGS = -cudalib -L${top_builddir}/${CPU_SRCDIR} -lgptl -L${top_builddir}/cuda/src -lgptl_cuda \
+AM_LDFLAGS = -cudalib -L../${CPU_SRCDIR} -lgptl -L../cuda/src -lgptl_cuda \
              -ta=tesla,cc60
 
 # Need unwind library if configure was set up that way

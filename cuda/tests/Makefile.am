@@ -27,15 +27,15 @@ driver_serial_SOURCES = driver_serial.cu getval.cu persist.cu sleep1.cu sleep.cu
 driver_serial_OBJS    = driver_serial.o  getval.o  persist.o  sleep1.o  sleep.o  subs.o 
 
 .cu.o: $(AM_LDFLAGS)
-	$(CC) -c $< $(AM_CPPFLAGS) $(CUFLAGS)
+	$(NVCC) -c $< $(AM_CPPFLAGS) $(CUFLAGS)
 
 $(basic_OBJS): $(basic_SOURCES)
 $(test1_OBJS): $(test1_SOURCES)
 $(driver_serial_OBJS): $(driver_serial_SOURCES)
 
 basic$(EXEEXT): $(basic_OBJS)
-	$(CC) -o $@ $(basic_OBJS) $(CUFLAGS) $(AM_LDFLAGS)
+	$(NVCC) -o $@ $(basic_OBJS) $(CUFLAGS) $(AM_LDFLAGS)
 test1$(EXEEXT): $(test1_OBJS)
-	$(CC) -o $@ $(test1_OBJS) $(CUFLAGS) $(AM_LDFLAGS)
+	$(NVCC) -o $@ $(test1_OBJS) $(CUFLAGS) $(AM_LDFLAGS)
 driver_serial$(EXEEXT):  $(driver_serial_OBJS)
-	$(CC) -o $@ $(driver_serial_OBJS) $(CUFLAGS) $(AM_LDFLAGS)
+	$(NVCC) -o $@ $(driver_serial_OBJS) $(CUFLAGS) $(AM_LDFLAGS)

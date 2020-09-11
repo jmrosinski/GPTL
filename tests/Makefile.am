@@ -3,6 +3,9 @@
 
 # Find include directory.
 AM_CPPFLAGS = -I$(top_srcdir)/include
+if ENABLE_CUDA
+AM_CPPFLAGS += -I../cuda/include
+endif
 
 # Need optimization disabled for correct behavior of some tests. Guard against multiple "-O0"
 # settings mainly because nvcc will barf
@@ -11,17 +14,11 @@ else
 CFLAGS += -g -O0
 endif
 
-# When CUDA enabled, libtool was not used and the lib ends in .a not .la
-# Also, when CUDA was enabled, CUFLAGS needs to be added to LDFLAGS because device functions
-# WILL be called, e.g. from GPTLinitialize. Without these flags a runtime hard error occurs.
-if ENABLE_CUDA
-LDFLAGS += ${CUFLAGS}
-endif
-
 # Link to GPTL library. CUDA lib also required when enabled due to static build
-AM_LDFLAGS = -L${top_builddir}/${CPU_SRCDIR} -lgptl
+# -cudalib and -ta args also required to avoid unsat externals
+AM_LDFLAGS = -L../${CPU_SRCDIR} -lgptl
 if ENABLE_CUDA
-AM_LDFLAGS += -L${top_builddir}/cuda/src -lgptl_cuda
+  AM_LDFLAGS += -L../cuda/src -lgptl_cuda -cudalib -ta=tesla,cc60
 endif
 AM_LDFLAGS += @INSTR_LINK@
 

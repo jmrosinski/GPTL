@@ -1,10 +1,9 @@
 % switchgcc.sh (set to gcc8 because nvcc can't handle 9 or 10)
 % module load nvidia/20.7
 Need --disable-shared when building with nvidia--CUDA fails with shared, maybe CPU as well?
-Need CFLAGS="" because brain-dead nvcc barfs on multiple "-O" settings, and configure initializes
 Need --disable-inline-threading because the #include demands .c files not .cu--probably easy fix
   CFLAGS to -O2
-% env CC=nvcc FC=nvfortran CFLAGS="" ./configure --cache-file=/dev/null --disable-shared --with-nvcc=nvcc --enable-cacc --enable-facc --disable-inline-threading 2>&1 | tee out.configure
+% env CC=nvc FC=nvfortran ./configure --cache-file=/dev/null --disable-shared --disable-openmp --with-nvcc=nvcc --enable-cacc --enable-facc --disable-inline-threading 2>&1 | tee out.configure
 % make clean; make -j8
 % make check
 
