@@ -16,15 +16,12 @@ endif
 # WILL be called, e.g. from GPTLinitialize. Without these flags a runtime hard error occurs.
 if ENABLE_CUDA
 LDFLAGS += ${CUFLAGS}
-LIBNAME = libgptl.a
-else
-LIBNAME = libgptl.la
 endif
 
 # Link to GPTL library. CUDA lib also required when enabled due to static build
-AM_LDFLAGS = ${top_builddir}/${CPU_SRCDIR}/${LIBNAME} @INSTR_LINK@
+AM_LDFLAGS = -L${top_builddir}/${CPU_SRCDIR} -lgptl
 if ENABLE_CUDA
-AM_LDFLAGS += ${top_builddir}/cuda/src/libgptl_cuda.a
+AM_LDFLAGS += -L${top_builddir}/cuda/src -lgptl_cuda
 endif
 AM_LDFLAGS += @INSTR_LINK@
 
