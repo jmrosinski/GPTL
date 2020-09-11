@@ -4,6 +4,12 @@ libdir=@libdir@
 includedir=@includedir@
 ccompiler=@CC@
 fcompiler=@FC@
+# These things are non-standard to pkg-config so use variables
+Fflags=-I${includedir}
+Faccflags=@FACCFLAGS@
+Faccldflags=@FACCLDFLAGS@
+Caccflags=@CACCFLAGS@
+Caccldflags=@CACCLDFLAGS@
 
 Name: @PACKAGE@
 Description: GPTL profiling library
@@ -13,4 +19,3 @@ Requires.private: @PAPI_PC@
 Libs: -L${libdir} @LDFLAGS_PC@
 Libs.private: @OPENMP_CFLAGS@
 Cflags: -I${includedir}
-Fflags: -I${includedir}

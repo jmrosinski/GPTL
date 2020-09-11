@@ -393,6 +393,16 @@ if test "x$NVCC" != xno; then
   else
     CUFLAGS="$CUFLAGS           -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true"
   fi
+# For OpenACC (currently only nvc and nvfortran), codes will need the following flags
+# Too complicated and fragile to enforce via env. vars. so just hardwire here.
+  CACCFLAGS="-acc gpu -Minfo=accel"
+  CACCLDFLAGS="-cudalib -ta=tesla,cc60"
+  FACCFLAGS="-acc -Minfo=accel -ta=tesla:cc60 -m64"
+  FACCLDFLAGS="-acc -Mcuda=cc60 -lstdc++"
+  AC_SUBST([CACCFLAGS],   [$CACCFLAGS])
+  AC_SUBST([CACCLDFLAGS], [$CACCLDFLAGS])
+  AC_SUBST([FACCFLAGS],   [$FACCFLAGS])
+  AC_SUBST([FACCLDFLAGS], [$FACCLDFLAGS])
   AC_DEFINE([ENABLE_CUDA], [1], [enable CUDA capability--needed also for OpenACC])
   AC_CONFIG_FILES([cuda/Makefile
                    cuda/include/Makefile
@@ -488,6 +498,11 @@ if test "x$fortran_support" = xyes; then
 else
   GPTL_LIBS="-lgptl"
 fi
+
+if test "x$use_cuda" = xyes; then
+  GPTL_LIBS="$GPTL_LIBS -lgptl_cuda"
+fi
+
 if test "x$found_libunwind" = xyes; then
   GPTL_LIBS="$GPTL_LIBS -lunwind"
 fi

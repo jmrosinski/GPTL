@@ -16,11 +16,11 @@ CUFLAGS += -I$(top_srcdir) -I../../include -I../include --maxrregcount 32
 
 if ENABLE_FACC
 # Install these in the include directory.
-include_HEADERS = gptl_acc.mod
+include_HEADERS = gptl_acc.$(FC_MODEXT)
 
 libgptl_cuda_a_SOURCES += gptl_acc.F90
 # Override FCFLAGS settings because this is OpenACC
-FCFLAGS_LOC = -DENABLE_CUDA -acc -ta=tesla:cc60 -m64
+FCFLAGS_LOC = -DENABLE_CUDA @FACCFLAGS@
 .F90.o:
 	$(FC) -c $< $(FCFLAGS_LOC)
 endif

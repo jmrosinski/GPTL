@@ -1,13 +1,12 @@
 # This is the automake file for GPTL cuda tests.
 
 # Hardwire FFLAGS for now
-AM_FCFLAGS = $(FCFLAGS) -I../fortran/src -I../cuda/src -acc -Minfo=accel -ta=tesla:cc60 -m64
+AM_FCFLAGS = $(FCFLAGS) -I../fortran/src -I../cuda/src @FACCFLAGS@
 
 # Link to GPTL cpu and cuda libraries.
 # -Mcuda=cc60 required for CUDA functions
 # -lstdc++ required for gxx_personality compllaints
-AM_LDFLAGS = -L../fortran/src -lgptlf -L../src_nvcc -lgptl -L../cuda/src -lgptl_cuda \
-             -Mcuda=cc60 -lstdc++
+AM_LDFLAGS = -L../fortran/src -lgptlf -L../src_nvcc -lgptl -L../cuda/src -lgptl_cuda @FACCLDFLAGS@
 
 # Need unwind library if configure was set up that way
 if HAVE_LIBUNWIND
@@ -29,7 +28,7 @@ driver_vdmints3_OBJS =    driver_vdmints3.o  vdmints3_sim.o  getval.o
 
 basic.o: basic.F90 getval.o
 basic$(EXEEXT): basic.o
-	$(FC) -o $@ basic.o $(AM_FCFLAGS) $(AM_LDFLAGS)
+	$(FC) -o $@ basic.o $(AM_LDFLAGS)
 
 driver_vdmints3$(EXEEXT): $(driver_vdmints3_OBJS)
-	$(FC) -o $@ $(driver_vdmints3_OBJS) $(AM_FCFLAGS) $(AM_LDFLAGS)
+	$(FC) -o $@ $(driver_vdmints3_OBJS) $(AM_LDFLAGS)

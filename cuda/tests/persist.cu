@@ -28,7 +28,6 @@ __host__ int persist (int mostwork, int outerlooplen,
 		      int cores_per_sm, int cores_per_gpu)
 {
   int blocksize, gridsize;
-  int inner_parallel = 1; // parallel iteration count per outermost kernel iterator
   int ret;
   int n, nn;
   int totalwork;
