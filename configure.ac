@@ -386,7 +386,7 @@ AC_ARG_WITH([nvcc],
 AC_MSG_RESULT([$NVCC])
 AC_SUBST([NVCC], [$NVCC])
 
-if test "x$with_nvcc" != xno; then
+if test "x$NVCC" != xno; then
   use_cuda=yes
   if test "x$use_debug" = xyes; then
     CUFLAGS="$CUFLAGS -lineinfo -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true"
