@@ -6,7 +6,7 @@ AM_FCFLAGS = $(FCFLAGS) -I../fortran/src -I../cuda/src @FACCFLAGS@
 # Link to GPTL cpu and cuda libraries.
 # -Mcuda=cc60 required for CUDA functions
 # -lstdc++ required for gxx_personality compllaints
-AM_LDFLAGS = -L../fortran/src -lgptlf -L../src_nvcc -lgptl -L../cuda/src -lgptl_cuda @FACCLDFLAGS@
+AM_LDFLAGS = -L../fortran/src -lgptlf -L../src/.libs -lgptl -L../cuda/src -lgptl_cuda @FACCLDFLAGS@
 
 # Need unwind library if configure was set up that way
 if HAVE_LIBUNWIND
@@ -25,10 +25,14 @@ driver_vdmints3_OBJS =    driver_vdmints3.o  vdmints3_sim.o  getval.o
 
 .F90.o:
 	$(FC) -c $< $(AM_FCFLAGS)
+# Need this rule to enable parallel make
+.F90.mod:
+	$(FC) -c $< $(AM_FCFLAGS)
 
-basic.o: basic.F90 getval.o
+basic.o: basic.F90 getval.o getval.mod
 basic$(EXEEXT): basic.o
 	$(FC) -o $@ basic.o $(AM_LDFLAGS)
 
+driver_vdmints3.o: getval.mod
 driver_vdmints3$(EXEEXT): $(driver_vdmints3_OBJS)
 	$(FC) -o $@ $(driver_vdmints3_OBJS) $(AM_LDFLAGS)

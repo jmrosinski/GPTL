@@ -431,11 +431,15 @@ AC_SUBST([CUFLAGS], [$CUFLAGS])
 
 # Handle the wart of nvcc-specific behavior
 if test "x$use_cuda" = xyes; then
-  CPU_SRCDIR=src_nvcc
-else
-  CPU_SRCDIR=src
+  AC_MSG_CHECKING(whether fPIC compiler option is accepted)
+  SAVED_CFLAGS="$CFLAGS"
+  CFLAGS="$CFLAGS -fPIC"
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [return 0;])],
+    [AC_MSG_RESULT(yes)
+     CFLAGS="$SAVED_CFLAGS -fPIC"],
+    [AC_MSG_RESULT(no)
+     CFLAGS="$SAVED_CFLAGS"])
 fi
-AC_SUBST([CPU_SRCDIR], [$CPU_SRCDIR])
 
 # Check if discovering maxwarpid_found is wanted. Computing it adds quite a bit of overhead
 # because it is computed in get_warp_num.
@@ -543,11 +547,8 @@ AC_CONFIG_FILES([tests/run_memusage.sh], [chmod ugo+x tests/run_memusage.sh])
 #   AC_MSG_WARN([Doxygen not found - documentation will not be built])
 #fi
 
-# Only one of src/Makefile or src_nvcc will be used. Unfortunately AC_CONFIG_FILES doesn't
-# take variables or we could just use $CPU_SRCDIR
 AC_CONFIG_FILES([Makefile
                  src/Makefile
-                 src_nvcc/Makefile
                  gptl.pc
                  include/Makefile
                  tests/Makefile

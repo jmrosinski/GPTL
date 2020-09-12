@@ -11,9 +11,7 @@ ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = COPYING README INSTALL
 
 # This is the list of subdirs for which Makefiles will be constructed
-# If ${CPU_SRCDIR} is src_nvcc it contains soft links of src/*.c to .cu, and a different Makefile.am
-# Otherwise ${CPU_SRCDIR} is just src. This is a painful wart.
-SUBDIRS = include ${CPU_SRCDIR}
+SUBDIRS = include src
 
 if ENABLE_CUDA
 SUBDIRS += cuda

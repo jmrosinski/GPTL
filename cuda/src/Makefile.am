@@ -23,6 +23,9 @@ libgptl_cuda_a_SOURCES += gptl_acc.F90
 FCFLAGS_LOC = -DENABLE_CUDA @FACCFLAGS@
 .F90.o:
 	$(FC) -c $< $(FCFLAGS_LOC)
+# Need this rule to enable parallel make
+.F90.mod:
+	$(FC) -c $< $(FCFLAGS_LOC)
 endif
 
 .cu.o:

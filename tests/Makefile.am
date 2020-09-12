@@ -16,7 +16,7 @@ endif
 
 # Link to GPTL library. CUDA lib also required when enabled due to static build
 # -cudalib and -ta args also required to avoid unsat externals
-AM_LDFLAGS = -L../${CPU_SRCDIR} -lgptl
+AM_LDFLAGS = -L../src -lgptl
 if ENABLE_CUDA
   AM_LDFLAGS += -L../cuda/src -lgptl_cuda -cudalib -ta=tesla,cc60
 endif

@@ -18,12 +18,12 @@ AM_FFLAGS = -I${top_srcdir}/fortran/include
 if ENABLE_CUDA
 LIBNAME = libgptl.a
 FLIBNAME = libgptlf.a
-LIBPATHS = ../src/${FLIBNAME} ${top_builddir}/${CPU_SRCDIR}/${LIBNAME} \
-           ${top_builddir}/cuda/src/libgptl_cuda.a -Mcuda=cc60 -lstdc++
+LIBPATHS = ../src/${FLIBNAME} ../../src/.libs/${LIBNAME} \
+           ../../cuda/src/libgptl_cuda.a -Mcuda=cc60 -lstdc++
 else
 LIBNAME = libgptl.la
 FLIBNAME = libgptlf.la
-LIBPATHS = ../src/${FLIBNAME} ${top_builddir}/${CPU_SRCDIR}/${LIBNAME}
+LIBPATHS = ../src/${FLIBNAME} ../../src/${LIBNAME}
 endif
 AM_LDFLAGS = ${LIBPATHS} @INSTR_LINK@
 

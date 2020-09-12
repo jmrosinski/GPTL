@@ -3,7 +3,7 @@
 Need --disable-shared when building with nvidia--CUDA fails with shared, maybe CPU as well?
 Need --disable-inline-threading because the #include demands .c files not .cu--probably easy fix
   CFLAGS to -O2
-% env CC=nvc FC=nvfortran ./configure --cache-file=/dev/null --disable-shared --disable-openmp --with-nvcc=nvcc --enable-cacc --enable-facc --disable-inline-threading 2>&1 | tee out.configure
+% env CC=nvc FC=nvfortran ./configure --prefix=/home/rosinski/install/gptl_cuda --disable-shared --disable-openmp --with-nvcc=nvcc --enable-cacc --enable-facc 2>&1 | tee out.configure
 % make clean; make -j8
 % make check
 

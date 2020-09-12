@@ -1,7 +1,7 @@
 # This automake file generates the Makefile to build the GPTL C library.
 
 # Look for include files here
-libgptl_la_CPPFLAGS = -I$(top_srcdir)/include 
+libgptl_la_CPPFLAGS = -I$(top_srcdir)/include
 
 # This is our output. The GPTL library.
 lib_LTLIBRARIES = libgptl.la
