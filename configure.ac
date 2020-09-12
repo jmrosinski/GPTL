@@ -395,10 +395,27 @@ if test "x$NVCC" != xno; then
   fi
 # For OpenACC (currently only nvc and nvfortran), codes will need the following flags
 # Too complicated and fragile to enforce via env. vars. so just hardwire here.
-  CACCFLAGS="-acc gpu -Minfo=accel"
-  CACCLDFLAGS="-cudalib -ta=tesla,cc60"
-  FACCFLAGS="-acc -Minfo=accel -ta=tesla:cc60 -m64"
-  FACCLDFLAGS="-acc -Mcuda=cc60 -lstdc++"
+# Unfortunately AC_ARG_VAR doesn't expand variable names in description.
+  AC_ARG_VAR(CACCFLAGS, [C-OpenACC compiler flags--defaults to -acc gpu -Minfo=accel])
+  if test "x$CACCFLAGS" = x; then
+    CACCFLAGS="-acc gpu -Minfo=accel"
+  fi
+
+  AC_ARG_VAR(CACCLDFLAGS, [C-OpenACC link flags--defaults to -cudalib -ta=tesla,cc60])
+  if test "x$CACCLDFLAGS" = x; then
+    CACCLDFLAGS="-cudalib -ta=tesla,cc60"
+  fi
+  
+  AC_ARG_VAR(FACCFLAGS, [F-OpenACC compiler flags--defaults to -acc -Minfo=accel -ta=tesla:cc60 -m64])
+  if test "x$FACCFLAGS" = x; then
+    FACCFLAGS="-acc -Minfo=accel -ta=tesla:cc60 -m64"
+  fi
+
+  AC_ARG_VAR(FACCLDFLAGS, [F-OpenACC link flags--defaults to -acc -Mcuda=cc60 -lstdc++])
+  if test "x$FACCLDFLAGS" = x; then
+    FACCLDFLAGS="-acc -Mcuda=cc60 -lstdc++"
+  fi
+  
   AC_SUBST([CACCFLAGS],   [$CACCFLAGS])
   AC_SUBST([CACCLDFLAGS], [$CACCLDFLAGS])
   AC_SUBST([FACCFLAGS],   [$FACCFLAGS])
