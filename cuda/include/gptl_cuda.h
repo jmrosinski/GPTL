@@ -15,9 +15,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-// These first 3 are host routines
-int GPTLget_gpu_props (int *, int *, int *, int *, int *, int *);
-int GPTLcudadevsync (void);
 __device__ int GPTLinit_handle_gpu (const char *, int *);
 __device__ int GPTLstart_gpu (const int);
 __device__ int GPTLstop_gpu (const int);

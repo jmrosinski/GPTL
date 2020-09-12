@@ -32,7 +32,7 @@ if HAVE_LIBUNWIND
   AM_LDFLAGS += -lunwind
 endif
 
-MODFILE = ${top_builddir}/fortran/src/gptl.mod
+MODFILE = ${top_builddir}/fortran/src/gptl.$(FC_MODEXT)
 
 # These programs will be built but not installed.
 noinst_PROGRAMS = overhead handle utrtest

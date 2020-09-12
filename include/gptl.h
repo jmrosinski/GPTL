@@ -111,6 +111,9 @@ extern int GPTLget_eventvalue (const char *, const char *, int, double *);
 extern int GPTLnum_errors (void);
 extern int GPTLnum_warn (void);
 extern int GPTLget_count (const char *, int, int *);
+// These are GPU routines run from host (non-existent in CPU-only mode)
+extern int GPTLget_gpu_props (int *, int *, int *, int *, int *, int *);
+extern int GPTLcudadevsync (void);
 
 #ifdef __cplusplus
 }

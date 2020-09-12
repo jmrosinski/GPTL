@@ -10,10 +10,6 @@
 #include "private.h" // MAX_CHARS, bool
 #include "gptl.h"
 
-#ifdef ENABLE_CUDA
-#include "gptl_cuda.h"
-#endif
-
 #ifdef HAVE_LIBMPI
 #include "gptlmpi.h"
 #include <mpi.h>

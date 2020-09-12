@@ -8,9 +8,6 @@
 #include "gptl.h"
 #include "gptl_papi.h"
 #include "thread.h"
-#ifdef ENABLE_CUDA
-#include "gptl_cuda.h"
-#endif
 
 #ifdef HAVE_LIBMPI
 #include <mpi.h>
