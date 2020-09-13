@@ -12,7 +12,7 @@ libgptl_cuda_a_SOURCES = gptl_host.cu \
 
 # Prepend include dirs to CUFLAGS, and set max reg count to a small number
 # to minimize GPTL interference with app
-CUFLAGS += -I$(top_srcdir) -I../../include -I../include --maxrregcount 32
+CUFLAGS += -I$(top_srcdir) -I../../include -I../include --ptxas-options=-v
 
 if ENABLE_FACC
 # Install these in the include directory.
