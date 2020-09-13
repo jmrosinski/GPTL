@@ -387,6 +387,9 @@ AC_MSG_RESULT([$NVCC])
 AC_SUBST([NVCC], [$NVCC])
 
 if test "x$NVCC" != xno; then
+  if test "x$useomp" = xyes; then
+    AC_MSG_ERROR([CUDA is currently incompatible with CPU OpenMP. Rerun configure with --disable-openmp])
+  fi
   use_cuda=yes
   if test "x$use_debug" = xyes; then
     CUFLAGS="$CUFLAGS -lineinfo -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true"
