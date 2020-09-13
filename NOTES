@@ -1,8 +1,8 @@
 % switchgcc.sh (set to gcc8 because nvcc can't handle 9 or 10)
 % module load nvidia/20.7
 Need --disable-shared when building with nvidia--CUDA fails with shared, maybe CPU as well?
-Need --disable-inline-threading because the #include demands .c files not .cu--probably easy fix
-  CFLAGS to -O2
+Need --disable-openmp only because AC_OPENMP says -fopenmp works with nvc when it does not
+  (use -mp instead)
 % env CC=nvc FC=nvfortran ./configure --prefix=/home/rosinski/install/gptl_cuda --disable-shared --disable-openmp --with-nvcc=nvcc --enable-cacc --enable-facc 2>&1 | tee out.configure
 % make clean; make -j8
 % make check
