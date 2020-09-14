@@ -175,9 +175,10 @@ __global__ void stop_timer (int handle)
 __global__ void runit (int niter, int nblocks, int blocksize, int total_gputime, int sleep1,
 		       float sleepsec, bool kernelkernel, double *accum)
 {
-  int ret = GPTLsliced_up_how ("runit");
+  int ret;
   
   if (kernelkernel) {
+    ret = GPTLsliced_up_how ("runit");
     ret = GPTLstart_gpu (total_gputime);
     cudaDeviceSynchronize ();   // Ensure the dispatched kernel has finished before timer call
     dosleep_glob<<<nblocks,blocksize>>> (niter, sleep1, sleepsec, accum);

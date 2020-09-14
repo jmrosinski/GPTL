@@ -392,7 +392,7 @@ if test "x$NVCC" != xno; then
   fi
   use_cuda=yes
   if test "x$use_debug" = xyes; then
-    CUFLAGS="$CUFLAGS -lineinfo -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true"
+    CUFLAGS="$CUFLAGS -G -lineinfo -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true"
   else
     CUFLAGS="$CUFLAGS           -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true"
   fi
