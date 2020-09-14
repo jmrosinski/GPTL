@@ -240,9 +240,11 @@ __device__ int GPTLstart_gpu (const int handle)
 
   static const char *thisfunc = "GPTLstart_gpu";
 
+#ifdef ENABLE_GPUCHECKS
   if ( ! initialized)
     return GPTLerror_1s1d ("%s handle=%d: GPTLinitialize_gpu has not been called\n", 
 			   thisfunc, handle);
+#endif
   w = get_warp_num ();
 
   // Return if not thread 0 of the warp, or warpId is outside range of available timers
@@ -254,10 +256,11 @@ __device__ int GPTLstart_gpu (const int handle)
 #endif
 
   // Input handle should be a positive integer not greater than ntimers (0 accepted for GPTL_ROOT)
+#ifdef ENABLE_GPUCHECKS
   if (handle < 0 || handle > ntimers)
     return GPTLerror_1s1d ("%s: Invalid input handle=%d. Perhaps GPTLinit_handle_gpu not called?\n",
 			   thisfunc, handle);
-
+#endif
   wi = FLATTEN_TIMERS (w, handle);
   ptr = &timers[wi];
   
@@ -266,10 +269,12 @@ __device__ int GPTLstart_gpu (const int handle)
   ** because we don't want to restart the timer.  We want the reported time for
   ** the timer to reflect the outermost layer of recursion.
   */
+#ifdef ENABLE_GPUCHECKS
   if (ptr->onflg) {
     ++ptr->recurselvl;
     return SUCCESS;
   }
+#endif
 
 #ifdef DEBUG_PRINT
   printf ("%s: ptr=%p setting onflg=true\n", thisfunc, ptr);
@@ -304,9 +309,11 @@ __device__ int GPTLstop_gpu (const int handle)
   uint smid;                 // SM id
   static const char *thisfunc = "GPTLstop_gpu";
 
+#ifdef ENABLE_GPUCHECKS
   if ( ! initialized)
     return GPTLerror_1s ("%s: GPTLinitialize_gpu has not been called\n", thisfunc);
-
+#endif
+  
   w = get_warp_num ();
 
   // Return if not thread 0 of the warp, or warpId is outside range of available timers
@@ -317,11 +324,12 @@ __device__ int GPTLstop_gpu (const int handle)
   printf ("Entered %s w=%d handle=%d\n", thisfunc, w, handle);
 #endif
 
+#ifdef ENABLE_GPUCHECKS
   // Input handle should be a positive integer not greater than ntimers (0 accepted for GPTL_ROOT)
   if (handle < 0 || handle > ntimers)
     return GPTLerror_1s1d ("%s: Invalid input handle=%d. Perhaps GPTLinit_handle_gpu not called?\n",
 			   thisfunc, handle);
-
+#endif
   // Get the timestamp and smid
   // IMPORTANT: Issue the cmds in sequence because SM changing between clock64() call and getting
   // the SM number would be bad.
@@ -332,21 +340,23 @@ __device__ int GPTLstop_gpu (const int handle)
   wi = FLATTEN_TIMERS (w, handle);
   timer = timers[wi];
 
+#ifdef ENABLE_GPUCHECKS
   if ( ! timer.onflg )
     return GPTLerror_2s ("%s: timer %s was already off.\n", thisfunc, timernames[handle].name);
-
+#endif
   /* 
   ** Recursion => decrement depth in recursion and return.  We need to return
   ** because we don't want to stop the timer.  We want the reported time for
   ** the timer to reflect the outermost layer of recursion.
   */
+#ifdef ENABLE_GPUCHECKS
   if (timer.recurselvl > 0) {
     --timer.recurselvl;
     ++timer.count;
     timers[wi] = timer;
     return SUCCESS;
   }
-
+#endif
   if (update_stats_gpu (handle, &timer, tp1, w, smid) != 0)
     return GPTLerror_1s ("%s: error from update_stats_gpu\n", thisfunc);
 #ifdef DEBUG_PRINT
@@ -382,7 +392,7 @@ __device__ static inline int update_stats_gpu (const int handle,
 
   ptr->onflg = false;
   delta = tp1 - ptr->wall.last;
-
+#ifdef ENABLE_GPUCHECKS
   if (smid != ptr->smid) {
     printf ("GPTL %s: name=%s w=%d sm changed from %d to %d: new kernel? \n"
 	    "TIMINGS WITH Bad_SM > 0 PROBABLY INACCURATE.\n"
@@ -390,7 +400,7 @@ __device__ static inline int update_stats_gpu (const int handle,
 	    thisfunc, timernames[handle].name, w, ptr->smid, smid);
     ++ptr->badsmid_count;
   }
-
+#endif
   if (delta < 0) {
 #ifdef PRINTNEG
     bool isSet; 
@@ -815,24 +825,28 @@ __device__ static void start_misc (int w, const int handle)
   Timer *ptr;
   static const char *thisfunc = "startmisc";
 
+#ifdef ENABLE_GPUCHECKS
   if ( ! initialized)
     printf ("%s: ! initialized\n", thisfunc);
-
+#endif
   if (w == NOT_ROOT_OF_WARP || w == WARPID_GT_MAXWARPS)
     printf ("%s: bad w value\n", thisfunc);
 
+#ifdef ENABLE_GPUCHECKS
   if (handle < 0 || handle > ntimers)
     printf ("%s: bad handle value %d\n", thisfunc, handle);
-
+#endif
   wi = FLATTEN_TIMERS (w, handle);
   ptr = &timers[wi];
 
+#ifdef ENABLE_GPUCHECKS
   if (ptr->onflg) {
     ++ptr->recurselvl;
     printf ("%s: onflg should be off\n", thisfunc);
     ptr->smid = 0;
     ptr->wall.last = 0L;
   }
+#endif
   ptr->onflg = false;  // GPTLstart actually sets this true but set false for better OHD est.
 }
 
@@ -842,25 +856,27 @@ __device__ static void stop_misc (int w, const int handle)
   Timer timer;
   static const char *thisfunc = "stopmisc";
 
+#ifdef ENABLE_GPUCHECKS
   if ( ! initialized)
     printf ("%s: ! initialized\n", thisfunc);
-
   if (w == NOT_ROOT_OF_WARP || w == WARPID_GT_MAXWARPS)
     printf ("%s: bad w value\n", thisfunc);
 
   if (handle < 0 || handle > ntimers)
     printf ("%s: bad handle value %d\n", thisfunc, handle);
+#endif
 
   wi = FLATTEN_TIMERS (w, handle);
   timer = timers[wi];
 
+#ifdef ENABLE_GPUCHECKS
   if ( timer.onflg )
     printf ("%s: onflg was on\n", thisfunc); // Invert logic for better OHD est.
-
   if (timer.recurselvl > 0) {
     --timer.recurselvl;
     ++timer.count;
   }
+#endif
 
   // Last 3 args are timestamp, w, smid
   if (update_stats_gpu (handle, &timer, timer.wall.last, 0, 0) != 0)

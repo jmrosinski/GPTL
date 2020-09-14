@@ -91,6 +91,14 @@ AS_IF([test "x$enable_inline_threading" != xno], [
 ])
 AM_CONDITIONAL([INLINE_THREADING], [test "x$enable_inline_threading" = xyes])
 
+# Check whether to disable validity checks in GPU start/stop routines
+# Default enabled
+AC_ARG_ENABLE([gpuchecks],
+  AS_HELP_STRING([--disable-gpuchecks], [Disable validity checks in GPU start/stop routines]))
+AS_IF([test "x$enable_gpuchecks" != xno], [
+  AC_DEFINE([ENABLE_GPUCHECKS], [1], [Enable validity checks in GPU start/stop routines])
+])
+
 # Check for enabling OpenMP support
 # Default enabled
 AC_ARG_ENABLE([openmp], [AS_HELP_STRING([--disable-openmp],
