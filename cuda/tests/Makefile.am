@@ -33,9 +33,9 @@ $(basic_OBJS): $(basic_SOURCES)
 $(test1_OBJS): $(test1_SOURCES)
 $(driver_serial_OBJS): $(driver_serial_SOURCES)
 
-basic$(EXEEXT): $(basic_OBJS)
+basic$(EXEEXT): $(basic_OBJS) ../../include/gptl.h ../include/gptl_cuda.h
 	$(NVCC) -o $@ $(basic_OBJS) $(CUFLAGS) $(AM_LDFLAGS)
-test1$(EXEEXT): $(test1_OBJS)
+test1$(EXEEXT): $(test1_OBJS) ../../include/gptl.h ../include/gptl_cuda.h
 	$(NVCC) -o $@ $(test1_OBJS) $(CUFLAGS) $(AM_LDFLAGS)
-driver_serial$(EXEEXT):  $(driver_serial_OBJS)
+driver_serial$(EXEEXT):  $(driver_serial_OBJS) ../../include/gptl.h ../include/gptl_cuda.h localproto.h
 	$(NVCC) -o $@ $(driver_serial_OBJS) $(CUFLAGS) $(AM_LDFLAGS)
