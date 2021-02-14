@@ -72,7 +72,7 @@ if test "x$ac_cv_sizeof_void_p" = x8; then
 fi
 
 # Check for enabling gather/print stats on extra comparisons due to collisions
-# Default disabled due to extra overhead
+# Default disabled due to extra runtime cost
 AC_ARG_ENABLE([collide],
   AS_HELP_STRING([--enable-collide], [Include stats on extra comparisons due to hash collisions]))
 AS_IF([test "x$enable_collide" = xyes], [
@@ -354,7 +354,7 @@ fi
 AM_CONDITIONAL([HAVE_LIBMPI], [test "x$have_libmpi" = xyes])
 
 # Did the user specify an MPI launcher other than mpiexec?
-AC_MSG_CHECKING([if mpi run command is not mpiexec])
+AC_MSG_CHECKING([for non-default cmd to launch MPI programs])
 AC_ARG_WITH([mpiexec],
               [AS_HELP_STRING([--with-mpiexec=<command>],
                [Replace mpiexec for launching MPI parallel tests e.g. mpirun, srun])],

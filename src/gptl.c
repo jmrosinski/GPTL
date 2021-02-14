@@ -412,7 +412,6 @@ int GPTLinitialize (void)
 {
   int i;
   int t;
-  int ret;        // return value
   double t1, t2;  // returned from underlying timer
   static const char *thisfunc = "GPTLinitialize";
 
@@ -478,11 +477,12 @@ int GPTLinitialize (void)
   }
 
 #ifdef ENABLE_CUDA
-  int SMcount;               // SM count for each GPU
+  int SMcount;        // SM count for each GPU
   int khz;
   int warpsize;
   int cores_per_sm;
   int cores_per_gpu;
+  int ret;            // return value
 
   ret = GPTLget_gpu_props (&khz, &warpsize, &devnum, &SMcount, &cores_per_sm, &cores_per_gpu);
   printf ("%s: device number=%d warpsize=%d khz=%d\n", thisfunc, devnum, warpsize, khz);
