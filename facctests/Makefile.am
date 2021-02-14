@@ -26,13 +26,14 @@ driver_vdmints3_OBJS =    driver_vdmints3.o  vdmints3_sim.o  getval.o
 .F90.o:
 	$(FC) -c $< $(AM_FCFLAGS)
 # Need this rule to enable parallel make
-.F90.mod:
+.F90.$(FC_MODEXT):
 	$(FC) -c $< $(AM_FCFLAGS)
 
-basic.o: basic.F90 getval.o getval.mod
+# Cannot remember if/why need both getval.o and getval.$(FC_MODEXT) here???
+basic.o: basic.F90 getval.o getval.$(FC_MODEXT) ../fortran/src/gptl.$(FC_MODEXT) ../cuda/src/gptl_acc.mod
 basic$(EXEEXT): basic.o
 	$(FC) -o $@ basic.o $(AM_LDFLAGS)
 
-driver_vdmints3.o: getval.mod
+driver_vdmints3.o: getval.$(FC_MODEXT) ../fortran/src/gptl.$(FC_MODEXT) ../cuda/src/gptl_acc.mod
 driver_vdmints3$(EXEEXT): $(driver_vdmints3_OBJS)
 	$(FC) -o $@ $(driver_vdmints3_OBJS) $(AM_LDFLAGS)

@@ -31,9 +31,9 @@ endif
 .cu.o:
 	$(NVCC) -c $< $(CUFLAGS)
 
-f_wrappers_device.o: f_wrappers_device.cu
-gptl_device.o: gptl_device.cu
-gptl_host.o: gptl_host.cu
-print_gpustats.o: print_gpustats.cu
-util_device.o: util_device.cu
+f_wrappers_device.o: f_wrappers_device.cu ../include/device.h ../include/gptl_cuda.h
+gptl_device.o: gptl_device.cu ../include/device.h ../include/gptl_cuda.h
+gptl_host.o: gptl_host.cu ../include/device.h
+print_gpustats.o: print_gpustats.cu ../include/device.h
+util_device.o: util_device.cu ../include/device.h
 gptl_acc.o: gptl_acc.F90

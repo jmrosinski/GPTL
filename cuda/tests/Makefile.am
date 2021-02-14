@@ -29,13 +29,13 @@ driver_serial_OBJS    = driver_serial.o  getval.o  persist.o  sleep1.o  sleep.o 
 .cu.o: $(AM_LDFLAGS)
 	$(NVCC) -c $< $(AM_CPPFLAGS) $(CUFLAGS)
 
-$(basic_OBJS): $(basic_SOURCES)
-$(test1_OBJS): $(test1_SOURCES)
-$(driver_serial_OBJS): $(driver_serial_SOURCES)
+$(basic_OBJS): $(basic_SOURCES) ../../include/gptl.h ../include/gptl_cuda.h
+$(test1_OBJS): $(test1_SOURCES) ../../include/gptl.h ../include/gptl_cuda.h
+$(driver_serial_OBJS): $(driver_serial_SOURCES) ../../include/gptl.h ../include/gptl_cuda.h localproto.h
 
 basic$(EXEEXT): $(basic_OBJS) ../../include/gptl.h ../include/gptl_cuda.h
 	$(NVCC) -o $@ $(basic_OBJS) $(CUFLAGS) $(AM_LDFLAGS)
 test1$(EXEEXT): $(test1_OBJS) ../../include/gptl.h ../include/gptl_cuda.h
 	$(NVCC) -o $@ $(test1_OBJS) $(CUFLAGS) $(AM_LDFLAGS)
-driver_serial$(EXEEXT):  $(driver_serial_OBJS) ../../include/gptl.h ../include/gptl_cuda.h localproto.h
+driver_serial$(EXEEXT):  $(driver_serial_OBJS)
 	$(NVCC) -o $@ $(driver_serial_OBJS) $(CUFLAGS) $(AM_LDFLAGS)

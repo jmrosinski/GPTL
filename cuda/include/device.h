@@ -31,7 +31,6 @@ typedef struct {
 typedef struct TIMER {
   Wallstats wall;              // wallclock stats
   unsigned long count;         // number of start/stop calls
-  uint negcount_stop;          // number of times a stop time < start time
   uint recurselvl;             // recursion level
   uint smid;                   // SM the region is running on
   uint badsmid_count;          // number of times SM id changed

@@ -28,4 +28,4 @@ basic_OBJS    = basic.o
 basic$(EXEEXT): $(basic_OBJS)
 	$(CC) -o $@ $(basic_OBJS) $(AM_LDFLAGS)
 
-$(basic_OBJS): $(basic_SOURCES)
+$(basic_OBJS): $(basic_SOURCES) ../include/gptl.h ../cuda/include/gptl_acc.h
