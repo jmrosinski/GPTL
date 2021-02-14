@@ -343,7 +343,7 @@ fi
 AM_CONDITIONAL([HAVE_LIBMPI], [test "x$have_libmpi" = xyes])
 
 # Did the user specify an MPI launcher other than mpiexec?
-AC_MSG_CHECKING([whether a user specified program to run mpi programs])
+AC_MSG_CHECKING([for non-default cmd to launch MPI programs])
 AC_ARG_WITH([mpiexec],
               [AS_HELP_STRING([--with-mpiexec=<command>],
                [Replace mpiexec for launching MPI parallel tests e.g. mpirun, srun])],
