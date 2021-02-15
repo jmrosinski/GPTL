@@ -270,10 +270,12 @@ __device__ int GPTLstart_gpu (const int handle)
   ** the timer to reflect the outermost layer of recursion.
   */
 #ifdef ENABLE_GPUCHECKS
+#ifdef ENABLE_GPURECURSION
   if (ptr->onflg) {
     ++ptr->recurselvl;
     return SUCCESS;
   }
+#endif
 #endif
 
 #ifdef DEBUG_PRINT
@@ -350,12 +352,14 @@ __device__ int GPTLstop_gpu (const int handle)
   ** the timer to reflect the outermost layer of recursion.
   */
 #ifdef ENABLE_GPUCHECKS
+#ifdef ENABLE_GPURECURSION
   if (timer.recurselvl > 0) {
     --timer.recurselvl;
     ++timer.count;
     timers[wi] = timer;
     return SUCCESS;
   }
+#endif
 #endif
   if (update_stats_gpu (handle, &timer, tp1, w, smid) != 0)
     return GPTLerror_1s ("%s: error from update_stats_gpu\n", thisfunc);
@@ -840,12 +844,14 @@ __device__ static void start_misc (int w, const int handle)
   ptr = &timers[wi];
 
 #ifdef ENABLE_GPUCHECKS
+#ifdef ENABLE_GPURECURSION
   if (ptr->onflg) {
     ++ptr->recurselvl;
     printf ("%s: onflg should be off\n", thisfunc);
     ptr->smid = 0;
     ptr->wall.last = 0L;
   }
+#endif
 #endif
   ptr->onflg = false;  // GPTLstart actually sets this true but set false for better OHD est.
 }
@@ -872,10 +878,12 @@ __device__ static void stop_misc (int w, const int handle)
 #ifdef ENABLE_GPUCHECKS
   if ( timer.onflg )
     printf ("%s: onflg was on\n", thisfunc); // Invert logic for better OHD est.
+#ifdef ENABLE_GPURECURSION
   if (timer.recurselvl > 0) {
     --timer.recurselvl;
     ++timer.count;
   }
+#endif
 #endif
 
   // Last 3 args are timestamp, w, smid

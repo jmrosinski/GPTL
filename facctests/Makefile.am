@@ -26,7 +26,8 @@ driver_vdmints3_OBJS =    driver_vdmints3.o  vdmints3_sim.o  getval.o
 .F90.o:
 	$(FC) -c $< $(AM_FCFLAGS)
 # Need this rule to enable parallel make
-.F90.$(FC_MODEXT):
+# Why require .mod and cannot use .$(FC_MODEXT) ???
+.F90.mod:
 	$(FC) -c $< $(AM_FCFLAGS)
 
 # Cannot remember if/why need both getval.o and getval.$(FC_MODEXT) here???

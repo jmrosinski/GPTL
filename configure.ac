@@ -398,12 +398,25 @@ if test "x$NVCC" != xno; then
   if test "x$useomp" = xyes; then
     AC_MSG_ERROR([CUDA is currently incompatible with CPU OpenMP. Rerun configure with --disable-openmp])
   fi
+# Hardwire to cc_60
   use_cuda=yes
   if test "x$use_debug" = xyes; then
     CUFLAGS="$CUFLAGS -G -lineinfo -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true"
   else
     CUFLAGS="$CUFLAGS --ptxas-options=-v -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true"
   fi
+  
+# Whether to check for recursion on GPU.
+# Default disabled since recursion is a bad idea on GPU and checking for it adds overhead
+  AC_MSG_CHECKING([whether to check for recursive calls on GPU])
+  AC_ARG_ENABLE([gpurecursion], [AS_HELP_STRING([--enable-gpurecursion],
+                [Check for recursive calls on GPU])])
+  AS_IF([test "x$enable_gpurecursion" = "xyes"], [
+    AC_DEFINE([ENABLE_GPURECURSION], [1], [enable checks for recursion on GPU])
+    gpurecursion=yes
+  ],gpurecursion=no)
+  AC_MSG_RESULT($gpurecursion)
+
 # For OpenACC (currently only nvc and nvfortran), codes will need the following flags
 # Too complicated and fragile to enforce via env. vars. so just hardwire here.
 # Unfortunately AC_ARG_VAR doesn't expand variable names in description.
