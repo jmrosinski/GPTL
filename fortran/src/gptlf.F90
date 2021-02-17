@@ -228,20 +228,6 @@ module gptl
      end function gptlevent_code_to_name
 #endif
 
-#ifdef ENABLE_CUDA
-     integer function gptlget_gpu_props (khz, warpsize, devnum, smcount, cores_per_sm, cores_per_gpu)
-       integer, intent(out) :: khz
-       integer, intent(out) :: warpsize
-       integer, intent(out) :: devnum
-       integer, intent(out) :: smcount
-       integer, intent(out) :: cores_per_sm
-       integer, intent(out) :: cores_per_gpu
-     end function gptlget_gpu_props
-
-     integer function gptlcudadevsync ()
-     end function gptlcudadevsync
-#endif
-
    end interface
   
 contains

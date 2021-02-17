@@ -23,6 +23,10 @@ __device__ int GPTLmy_sleep (float);
 __device__ int GPTLget_wallclock_gpu (const int, double *, double *, double *);
 __device__ int GPTLget_warp_thread (int *, int *);
 __device__ int GPTLsliced_up_how (const char *);
+
+/* These GPU-related routines run on host */
+__host__ int GPTLget_gpu_props (int *, int *, int *, int *, int *, int *);
+__host__ int GPTLcudadevsync (void);
 #ifdef __cplusplus
 };
 #endif

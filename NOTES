@@ -3,8 +3,13 @@
 Need --disable-shared when building with nvidia--CUDA fails with shared, maybe CPU as well?
 Need --disable-openmp only because using nvcc as linker cannot find CPU OpenMP libs.
 % env CC=nvc FC=nvfortran ./configure --prefix=/home/rosinski/install/gptl_cuda --disable-shared --disable-openmp --with-nvcc=nvcc --enable-cacc --enable-facc 2>&1 | tee out.configure
+
 To disable GPU consistency checks:
 % env CC=nvc FC=nvfortran ./configure --prefix=/home/rosinski/install/gptl_cuda --disable-shared --disable-openmp --with-nvcc=nvcc --enable-cacc --enable-facc --disable-gpuchecks 2>&1 | tee out.configure
+
+Can add --enable-gpurecursion to "configure" if timing recursive routines on GPU. But this will
+add measurable overhead.
+
 % make clean; make -j8
 % make check
 

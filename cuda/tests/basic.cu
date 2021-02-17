@@ -111,10 +111,12 @@ int main (int argc, char **argv)
   // It is now legal for kernels to run kernels. But when "runit" runs "dosleep", the SM changes
   // between "start" and "stop" calls, resulting in vastly wrong and possibly negative delta.
   if (kernelkernel) {
-    runit<<<1,1>>> (niter, nblocks, blocksize, *total_gputime, *sleep1, sleepsec, kernelkernel, accum);
+    runit<<<1,1>>> (niter, nblocks, blocksize, *total_gputime, *sleep1, sleepsec,
+		    kernelkernel, accum);
   } else {
     start_timer <<<1,1>>> (*total_gputime);
-    runit<<<nblocks,blocksize>>> (niter, nblocks, blocksize, *total_gputime, *sleep1, sleepsec, kernelkernel, accum);
+    runit<<<nblocks,blocksize>>> (niter, nblocks, blocksize, *total_gputime, *sleep1, sleepsec,
+				  kernelkernel, accum);
     stop_timer <<<1,1>>> (*total_gputime);
   }
 
@@ -148,6 +150,15 @@ int main (int argc, char **argv)
   printf ("Min time slept=%-12.9g at warp=%d\n", accummin, warpsav);
   
   ret = GPTLpr (0);           // Print the timing results, both for CPU and GPU
+
+  // Since running on CPU here could instead call GPTLcudadevsync().
+  cudaDeviceSynchronize ();   // Ensure printing of GPU results is complete before resetting
+  ret = GPTLreset ();         // Reset CPU and GPU timers
+
+  cudaDeviceSynchronize ();   // Ensure resetting of timers is done before finalizing
+  ret = GPTLfinalize ();      // Shutdown (incl. GPU)
+
+  cudaDeviceSynchronize ();   // Ensure any printing from GPTLfinalize_gpu is done before quitting
   return 0;
 }
 

@@ -124,5 +124,13 @@ int main (int argc, char **argv)
   printf ("Min time slept=%-12.9g at warp=%d\n", accummin, warpsav);
 
   ret = GPTLpr (0);
+
+  ret = GPTLcudadevsync ();  // Ensure printing of GPU results is complete before resetting
+  ret = GPTLreset ();        // Reset CPU and GPU timers
+
+  ret = GPTLcudadevsync ();  // Ensure resetting of timers is done before finalizing
+  ret = GPTLfinalize ();     // Shutdown (incl. GPU)
+
+  ret = GPTLcudadevsync ();  // Ensure any printing from GPTLfinalize_gpu is done before quitting
   return 0;
 }

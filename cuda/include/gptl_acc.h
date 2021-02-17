@@ -32,6 +32,10 @@ int GPTLget_wallclock_gpu (const int, double *, double *, double *);
 int GPTLget_warp_thread (int *, int *);
 #pragma acc routine seq
 int GPTLsliced_up_how (const char *);
+
+/* These GPU-related routines run on host */
+extern int GPTLget_gpu_props (int *, int *, int *, int *, int *, int *);
+extern int GPTLcudadevsync (void);
 #ifdef __cplusplus
 };
 #endif

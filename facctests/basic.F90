@@ -131,5 +131,13 @@ program basic
   write(6,'(a,f12.9,a,i)') 'Min time slept=',accummin,' at warp=', warpsav
 
   ret = gptlpr (0)
+
+  ret = gptlcudadevsync ();  ! Ensure printing of GPU results is complete before resetting
+  ret = gptlreset ();        ! Reset CPU and GPU timers
+
+  ret = gptlcudadevsync ();  ! Ensure resetting of timers is done before finalizing
+  ret = gptlfinalize ();     ! Shutdown (incl. GPU)
+
+  ret = gptlcudadevsync ();  ! Ensure any printing from GPTLfinalize_gpu is done before quitting
   stop 0
 end program basic

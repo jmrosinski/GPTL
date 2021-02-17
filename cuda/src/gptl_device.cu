@@ -53,7 +53,7 @@ __device__ static void fill_gpustats (Gpustats *, int, int);
 __device__ static void prbits8 (uint64_t);
 #endif
 
-/* VERBOSE is a debugging ifdef local to the rest of this file */
+// VERBOSE is a debugging ifdef local to the rest of this file
 #undef VERBOSE
 
 __host__ int GPTLinitialize_gpu (const int verbose_in,
@@ -463,9 +463,6 @@ __global__ void GPTLreset_gpu (void)
     return;
   }
 
-  if (get_warp_num () != 0)
-    return;
-
   maxwarpid_timed = GPTLget_maxwarpid_timed ();
 
   for (w = 0; w <= maxwarpid_timed; ++w) {
@@ -477,8 +474,11 @@ __global__ void GPTLreset_gpu (void)
     }
   }
 
-  if (verbose)
-    printf ("%s: accumulators for all GPU timers set to zero\n", thisfunc);
+  // Verify all timers have been zeroed
+  if (GPTLget_maxwarpid_timed () == 0)
+    printf ("%s: accumulators for all GPU timers reset to zero\n", thisfunc);
+  else
+    printf ("%s: Problem resetting GPU timers to 0\n", thisfunc);
 }
 
 __device__ static inline int get_warp_num ()
@@ -598,7 +598,8 @@ __global__ void GPTLfill_gpustats (Gpustats *gpustats,
   printf ("%s: ngputimers=%d\n", thisfunc, n);
   for (n = 0; n < *ngputimers; ++n) {
     printf ("%s: timer=%s accum_max=%lld accum_min=%lld count_max=%d nwarps=%d\n", 
-	    thisfunc, gpustats[n].name, gpustats[n].accum_max, gpustats[n].accum_min, gpustats[n].count_max, gpustats[n].nwarps);
+	    thisfunc, gpustats[n].name, gpustats[n].accum_max, gpustats[n].accum_min,
+	    gpustats[n].count_max, gpustats[n].nwarps);
   }
 #endif
   return;
