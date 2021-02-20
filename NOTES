@@ -10,7 +10,8 @@ To disable GPU consistency checks (default enabled):
 To enable GPU recursion (adds significant overhead so default disabled):
 % env CC=nvc FC=nvfortran ./configure --prefix=/home/rosinski/install/gptl_cuda --disable-shared --disable-openmp --with-nvcc=nvcc --enable-cacc --enable-facc --enable-gpurecursion 2>&1 | tee out.configure
 
-NOTE max efficiency obtained with --disable-gpuchecks --disable-gpurecursion
+NOTE max efficiency obtained with --disable-gpuchecks --disable-gpurecursion:
+% env CC=nvc FC=nvfortran ./configure --prefix=/home/rosinski/install/gptl_cuda --disable-shared --disable-openmp --with-nvcc=nvcc --enable-cacc --enable-facc --disable-gpuchecks --disable-gpurecursion 2>&1 | tee out.configure
 
 % make clean; make -j8
 % make check
