@@ -128,6 +128,8 @@
       integer gptlnum_errors
       integer gptlnum_warn
       integer gptlget_count
+      integer gptlget_gpu_props
+      integer gptlcudadevsync
 
       external gptlsetoption
       external gptlinitialize
@@ -162,3 +164,5 @@
       external gptlnum_errors
       external gptlnum_warn
       external gptlget_count
+      external gptlget_gpu_props
+      external gptlcudadevsync

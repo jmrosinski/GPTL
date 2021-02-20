@@ -13,7 +13,3 @@ integer, external :: gptlsliced_up_how
 !$acc routine (gptlget_wallclock_gpu) seq
 !$acc routine (gptlget_warp_thread) seq
 !$acc routine (gptlsliced_up_how) seq
-
-! These last 2 GPU-related routines run on CPU
-integer, external :: gptlget_gpu_props
-integer, external :: gptlcudadevsync

@@ -91,14 +91,6 @@ AS_IF([test "x$enable_inline_threading" != xno], [
 ])
 AM_CONDITIONAL([INLINE_THREADING], [test "x$enable_inline_threading" = xyes])
 
-# Check whether to disable validity checks in GPU start/stop routines
-# Default enabled
-AC_ARG_ENABLE([gpuchecks],
-  AS_HELP_STRING([--disable-gpuchecks], [Disable validity checks in GPU start/stop routines]))
-AS_IF([test "x$enable_gpuchecks" != xno], [
-  AC_DEFINE([ENABLE_GPUCHECKS], [1], [Enable validity checks in GPU start/stop routines])
-])
-
 # Check for enabling OpenMP support
 # Default enabled
 AC_ARG_ENABLE([openmp], [AS_HELP_STRING([--disable-openmp],
@@ -406,13 +398,24 @@ if test "x$NVCC" != xno; then
     CUFLAGS="$CUFLAGS --ptxas-options=-v -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true"
   fi
   
+# Check whether to disable validity checks in GPU start/stop routines
+# Default enabled
+  AC_MSG_CHECKING([whether to enable validity checking on GPU])
+  AC_ARG_ENABLE([gpuchecks],
+    AS_HELP_STRING([--disable-gpuchecks], [Disable validity checks in GPU start/stop routines]))
+  AS_IF([test "x$enable_gpuchecks" != xno], [
+    AC_DEFINE([ENABLE_GPUCHECKS], [1], [Enable validity checks in GPU start/stop routines])
+    gpuchecks=yes
+  ],gpuchecks=no)
+  AC_MSG_RESULT($gpuchecks)
+
 # Whether to check for recursion on GPU.
 # Default disabled since recursion is a bad idea on GPU and checking for it adds overhead
-  AC_MSG_CHECKING([whether to check for recursive calls on GPU])
-  AC_ARG_ENABLE([gpurecursion], [AS_HELP_STRING([--enable-gpurecursion],
-                [Check for recursive calls on GPU])])
+  AC_MSG_CHECKING([whether to allow recursive calls on GPU])
+  AC_ARG_ENABLE([gpurecursion],
+    AS_HELP_STRING([--enable-gpurecursion], [Check for recursive calls on GPU]))
   AS_IF([test "x$enable_gpurecursion" = "xyes"], [
-    AC_DEFINE([ENABLE_GPURECURSION], [1], [enable checks for recursion on GPU])
+    AC_DEFINE([ENABLE_GPURECURSION], [1], [enable recursion on GPU])
     gpurecursion=yes
   ],gpurecursion=no)
   AC_MSG_RESULT($gpurecursion)

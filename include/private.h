@@ -139,6 +139,9 @@ extern int GPTLpmpi_setoption (const int, const int);
 #ifdef ENABLE_CUDA
 extern int GPTLinitialize_gpu (const int, const int, const int, const double, const int);
 extern void GPTLprint_gpustats (FILE *, int, int, double, int);
+// These  last 2 are private routines--public interface is to their parent
+extern int GPTLreset_gpu_fromhost (void);
+extern int GPTLfinalize_gpu_fromhost (void);
 #endif
 #ifdef __cplusplus
 }

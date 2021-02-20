@@ -52,19 +52,5 @@ module gptl_acc
       character(len=*) :: txt
 !$acc routine seq                                                               
     end function gptlsliced_up_how
-
-! These last 2 routines run on CPU
-    integer function gptlget_gpu_props (khz, warpsize, devnum, smcount, cores_per_sm, cores_per_gpu)
-      integer, intent(out) :: khz
-      integer, intent(out) :: warpsize
-      integer, intent(out) :: devnum
-      integer, intent(out) :: smcount
-      integer, intent(out) :: cores_per_sm
-      integer, intent(out) :: cores_per_gpu
-    end function gptlget_gpu_props
-    
-    integer function gptlcudadevsync ()
-    end function gptlcudadevsync
-
   end interface
 end module gptl_acc
