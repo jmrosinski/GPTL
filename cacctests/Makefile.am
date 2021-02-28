@@ -13,7 +13,7 @@ if HAVE_LIBUNWIND
 endif
 
 # These programs will be build but not installed
-noinst_PROGRAMS = basic
+noinst_PROGRAMS = basic ohdest
 
 # Test programs that will be built for all configurations.
 check_PROGRAMS = basic
@@ -22,10 +22,17 @@ TESTS          = basic
 basic_SOURCES = basic.c
 basic_OBJS    = basic.o
 
+ohdest_SOURCES = ohdest.c
+ohdest_OBJS    = ohdest.o
+
 .c.o: $(AM_LDFLAGS)
 	$(CC) -c $< $(AM_CFLAGS)
 
 basic$(EXEEXT): $(basic_OBJS)
 	$(CC) -o $@ $(basic_OBJS) $(AM_LDFLAGS)
 
+ohdest$(EXEEXT): $(ohdest_OBJS)
+	$(CC) -o $@ $(ohdest_OBJS) $(AM_LDFLAGS)
+
 $(basic_OBJS): $(basic_SOURCES) ../include/gptl.h ../cuda/include/gptl_acc.h
+$(ohdest_OBJS): $(ohdest_SOURCES) ../include/gptl.h ../cuda/include/gptl_acc.h

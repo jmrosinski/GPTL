@@ -989,4 +989,16 @@ __device__ int GPTLsliced_up_how (const char *txt)
   }
   return 0;
 }
+
+__device__ int GPTLcuProfilerStart ()
+{
+  //JR fails (void) cuProfilerStart ();
+  return 0;
+}
+
+__device__ int GPTLcuProfilerStop ()
+{
+  //JR fails (void) cuProfilerStop ();
+  return 0;
+}
 }

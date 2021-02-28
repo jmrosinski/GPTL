@@ -17,7 +17,9 @@ subroutine vdmints3_sim (nz, ips, ipe, chunksize, warpsize, nworkers)
     do ipnn=ips,ipe,chunksize
       write(6,*)'ipnn=',ipnn,' chunksize=',min(chunksize,ipe-ipnn+1)
     end do
+
 !$acc parallel private(ret) copyout(vdmints3_gpu,vdmints3,vdmints3_ipn,vdmints3_k)
+!JR fails    ret = gptlcuprofilerstart ()
     ret = gptlinit_handle_gpu ('vdmints3_gpu', vdmints3_gpu)
     ret = gptlinit_handle_gpu ('vdmints3',     vdmints3)
     ret = gptlinit_handle_gpu ('vdmints3_ipn', vdmints3_ipn)
@@ -68,6 +70,7 @@ subroutine vdmints3_sim (nz, ips, ipe, chunksize, warpsize, nworkers)
 
 !$acc parallel private(ret) copyin(vdmints3_gpu)
   ret = gptlstop_gpu (vdmints3_gpu)
+!JR fails  ret = gptlcuprofilerstop ()
 !$acc end parallel
 end subroutine vdmints3_sim
 

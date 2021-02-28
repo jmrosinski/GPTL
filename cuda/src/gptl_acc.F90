@@ -52,5 +52,16 @@ module gptl_acc
       character(len=*) :: txt
 !$acc routine seq                                                               
     end function gptlsliced_up_how
+
+    integer(c_int) function gptlcuprofilerstart () bind(C,name="GPTLcuProfilerStart")
+      use iso_c_binding
+!$acc routine seq                                                               
+    end function gptlcuprofilerstart
+
+    integer(c_int) function gptlcuprofilerstop () bind(C,name="GPTLcuProfilerStop")
+      use iso_c_binding
+
+!$acc routine seq                                                               
+    end function gptlcuprofilerstop
   end interface
 end module gptl_acc
