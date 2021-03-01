@@ -125,7 +125,7 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
 
   fprintf (fp, "Underlying timing routine was clock64() assumed @ %f Ghz\n", gpu_hz * 1.e-9);
   fprintf (fp, "Total overhead of 1 GPTLstart_gpu + GPTLstop_gpu pair call=%7.1e seconds\n", startstop);
-  fprintf (fp, "Components of the pair are as follows (Fortran layer ignored):\n");
+  fprintf (fp, "Components of the pair are as follows:\n");
   fprintf (fp, "Sum of overheads should be near start+stop but not necessarily exact (scalefac = %6.2f)\n",
 	   scalefac);
   fprintf (fp, "This is because start/stop timing est. is done separately from components\n");
