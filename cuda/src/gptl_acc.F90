@@ -58,6 +58,11 @@ module gptl_acc
 !$acc routine seq                                                               
     end function gptlsliced_up_how
 
+    integer function gptlget_sm_thiswarp (smarr) bind(C,name="GPTLget_sm_thiswarp")
+      integer :: smarr(:)
+!$acc routine seq                                                               
+    end function gptlget_sm_thiswarp
+
     integer function gptlcuprofilerstart () bind(C,name="GPTLcuProfilerStart")
 !$acc routine seq                                                               
     end function gptlcuprofilerstart

@@ -990,6 +990,20 @@ __device__ int GPTLsliced_up_how (const char *txt)
   return 0;
 }
 
+__device__ int GPTLget_sm_thiswarp (int smarr[])
+{
+  int mywarp;
+  uint smid;
+  
+  mywarp = get_warp_num ();
+  if (mywarp == NOT_ROOT_OF_WARP || mywarp == WARPID_GT_MAXWARPS)
+    return -1;
+  
+  asm volatile ("mov.u32 %0, %smid;" : "=r"(smid));
+  smarr[mywarp] = smid;
+  return mywarp;
+}
+
 __device__ int GPTLcuProfilerStart ()
 {
   //JR fails (void) cuProfilerStart ();
