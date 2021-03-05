@@ -420,6 +420,17 @@ if test "x$NVCC" != xno; then
   ],gpurecursion=no)
   AC_MSG_RESULT($gpurecursion)
 
+# Whether to check for adding internal timers to GPTL
+# Default disabled due to significant overhead
+  AC_MSG_CHECKING([whether to enable internal GPTL timers on GPU])
+  AC_ARG_ENABLE([timegptl],
+    AS_HELP_STRING([--enable-timegptl], [enable internal GPTL timers on GPU]))
+  AS_IF([test "x$enable_timegptl" = "xyes"], [
+    AC_DEFINE([TIME_GPTL], [1], [enable internal GPTL timers on GPU])
+    internal_gptl_timers=yes
+  ],internal_gptl_timers=no)
+  AC_MSG_RESULT($internal_gptl_timers)
+
 # For OpenACC (currently only nvc and nvfortran), codes will need the following flags
 # Too complicated and fragile to enforce via env. vars. so just hardwire here.
 # Unfortunately AC_ARG_VAR doesn't expand variable names in description.
@@ -585,7 +596,7 @@ AC_CONFIG_FILES([Makefile
 if test "x$use_cuda" = xyes; then
 # OpenACC support REQUIRES cuda support
   AC_ARG_ENABLE([facc],
-    AS_HELP_STRING([--enable-facc], [Include Fortran OpenACC support: REQUIRES --enable-cuda]))
+    AS_HELP_STRING([--enable-facc], [Include Fortran OpenACC support: REQUIRES --with-nvcc]))
   AS_IF([test "x$enable_facc" = xyes], [
     enable_facc=yes
     AC_CONFIG_FILES([facctests/Makefile])
@@ -593,7 +604,7 @@ if test "x$use_cuda" = xyes; then
 
 # OpenACC support REQUIRES cuda support
   AC_ARG_ENABLE([cacc],
-      AS_HELP_STRING([--enable-cacc], [Include C/C++ OpenACC support: REQUIRES --enable-cuda]))
+      AS_HELP_STRING([--enable-cacc], [Include C/C++ OpenACC support: REQUIRES --with-nvcc]))
     AS_IF([test "x$enable_cacc" = xyes], [
       enable_cacc=yes
       AC_CONFIG_FILES([cacctests/Makefile])

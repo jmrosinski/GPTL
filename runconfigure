@@ -1,0 +1,96 @@
+#!/bin/bash
+# Automatically fail when any command fails:
+#set -e
+# Echo cmds as they are performed
+#set -x
+
+# setvar_chk: Set variable defined by string in $1 to one of the values in array @2.
+#             Default is first element of @2
+function setvar_chk () {
+  if test "$#" -lt 2; then
+    echo "${FUNCNAME[0]}: requires at least 2 args: varname, array of valids"
+    exit 1
+  fi
+
+  local varname=$1
+  shift
+  local validvals=($@)
+  local defans=${validvals[0]}
+  local ans
+
+  while [ true ]; do
+    ans=''
+    echo -n "Enter $varname (${validvals[@]}) [$defans]"
+    read ans < /dev/stdin
+    if [[ -z $ans ]]; then
+      ans=$defans
+    fi
+  
+    for i in "${validvals[@]}"; do
+      if [[ $ans == $i ]]; then break; fi
+    done
+    if [[ $ans == $i ]]; then
+      break
+    else
+      echo "$ans not in list: ${validvals[@]}"
+    fi
+  done
+  eval "$varname=\$ans"
+}
+
+########################## Begin main script ####################################
+
+# Base command for GPU build with all required settings plus OpenACC
+cmd="env CC=nvc FC=nvfortran ./configure --prefix=/home/rosinski/install/gptl_cuda --disable-shared --disable-openmp --with-nvcc=nvcc --enable-cacc --enable-facc"
+
+# Add options
+declare -a defyes=("y" "n")
+declare -a defno=("n" "y")
+
+printf "debug adds overhead to both CPU and GPU\n"
+setvar_chk "debug" ${defno[@]}
+printf "debug is $debug\n\n"
+if [[ $debug == "y" ]]; then
+  newcmd="$cmd --enable-debug"
+  cmd="$newcmd"
+fi
+
+printf "gpuchecks should be enabled first time, but adds overhead so disable if no problems\n" 
+setvar_chk "gpuchecks" ${defyes[@]}
+printf "gpuchecks is $gpuchecks\n\n"
+if [[ $gpuchecks == "n" ]]; then
+  newcmd="$cmd --disable-gpuchecks"
+  cmd="$newcmd"
+fi
+
+printf "gpurecursion enables testing for recursive GPU function calls: Disable if none exist\n"
+setvar_chk "gpurecursion" ${defno[@]}
+printf "gpurecursion is $gpurecursion\n\n"
+if [[ $gpurecursion == "y" ]]; then
+  newcmd="$cmd --enable-gpurecursion"
+  cmd="$newcmd"
+fi
+
+printf "timegptl enables assessment/printing of library overhead estimate: Disable unless expert\n"
+setvar_chk "timegptl" ${defno[@]}
+printf "timegptl is $timegptl\n\n"
+if [[ $timegptl == "y" ]]; then
+  newcmd="$cmd --enable-timegptl"
+  cmd="$newcmd"
+fi
+
+printf "maxwarpid_found can be useful for setting number of warps to examine but is imprecise\n"
+setvar_chk "maxwarpid_found" ${defno[@]}
+printf "maxwarpid_found is $maxwarpid_found\n\n"
+if [[ $maxwarpid_found == "y" ]]; then
+  newcmd="$cmd --enable-maxwarpid_found"
+  cmd="$newcmd"
+fi
+
+echo "Hit return to run:"
+echo "${cmd}"
+read ans < /dev/stdin
+$cmd 2>&1 | tee out
+echo "$cmd" > out.configure
+cat out >> out.configure
+exit 0

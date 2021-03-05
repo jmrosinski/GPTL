@@ -22,7 +22,7 @@ __device__ static Timername *timernames;        // array of timer names
 __device__ static int max_name_len;             // max length of timer name
 __device__ static int ntimers = 0;              // number of timers
 __device__ __constant__ static int maxtimers;   // max number of timers
-__device__ static int maxwarps = -1;            // max warps
+__device__ static int maxwarps = -1;            // max number of warps that will be examined
 __device__ static int maxwarpid_found = 0;      // number of warps found : init to 0
 __device__ static bool initialized = false;     // GPTLinitialize has been called
 __device__ static bool verbose = false;         // output verbosity
@@ -30,11 +30,22 @@ __device__ static double gpu_hz = 0.;           // clock freq
 __device__ int warpsize = 0;                    // warp size
 __device__ static volatile int mutex = 0;       // critical section unscrambles printf output
 
+#ifdef TIME_GPTL
+__device__ long long *globcount = 0;            // for timing GPTL itself
+// Indices for internal timers
+__device__ static const int istart = 0;
+__device__ static const int istop = 1;
+__device__ static const int update_stats = 2;
+__device__ static const char *internal_name[NUM_INTERNAL_TIMERS] = {"GPTLstart_gpu",
+								    "GPTLstop_gpu",
+								    "update_stats"};
+#endif
+
 extern "C" {
 
 // Local function prototypes
 __global__ static void initialize_gpu (const int, const int, const double, Timer *,
-				       Timername *, const int);
+				       Timername *, const int, long long *);
 __device__ static inline int get_warp_num (void);         // get 0-based 1d warp number
 __device__ static inline int update_stats_gpu (const int, Timer *, const long long, const int,
 					       const uint);
@@ -67,7 +78,8 @@ __host__ int GPTLinitialize_gpu (const int verbose_in,
   // Issue cudaMalloc from CPU, and pass address to GPU to avoid mem problems: When run from
   // __global__ routine, mallocable memory is severely decreased for some reason.
   static Timer *timers_cpu = 0;          // array of timers
-  static Timername *timernames_cpu = 0; // array of timer names
+  static Timername *timernames_cpu = 0;  // array of timer names
+  static long long *globcount_cpu = 0;   // for internally timing GPTL
 
   // Set constant memory values: First arg is pass by reference so no "&"
   gpuErrchk (cudaMemcpyToSymbol (maxtimers,   &maxtimers_in,    sizeof (int)));
@@ -78,12 +90,18 @@ __host__ int GPTLinitialize_gpu (const int verbose_in,
   nbytes =               maxtimers_in * sizeof (Timername);
   gpuErrchk (cudaMalloc (&timernames_cpu, nbytes));
 
+#ifdef TIME_GPTL
+  nbytes =               maxwarps_in * NUM_INTERNAL_TIMERS * sizeof (long long);
+  gpuErrchk (cudaMalloc (&globcount_cpu, nbytes));
+#endif
+
   initialize_gpu <<<1,1>>> (verbose_in,
 			    maxwarps_in,
 			    gpu_hz_in,
 			    timers_cpu,
 			    timernames_cpu,
-			    warpsize_in);
+			    warpsize_in,
+			    globcount_cpu);
   // This should flush any existing print buffers
   cudaDeviceSynchronize ();
   return 0;
@@ -100,7 +118,8 @@ __global__ static void initialize_gpu (const int verbose_in,
 				       const double gpu_hz_in,
 				       Timer *timers_cpu,
 				       Timername *timernames_cpu,
-				       const int warpsize_in)
+				       const int warpsize_in,
+				       long long *globcount_cpu)
 {
   int w, wi;        // warp, flattened indices
   long long t1, t2; // returned from underlying timer
@@ -121,6 +140,10 @@ __global__ static void initialize_gpu (const int verbose_in,
   warpsize   = warpsize_in;
   timers     = timers_cpu;
   timernames = timernames_cpu;
+#ifdef TIME_GPTL
+  globcount  = globcount_cpu;
+  memset (globcount, 0, maxwarps * NUM_INTERNAL_TIMERS * sizeof (long long));
+#endif
 
   // Initialize timers
   ntimers = 0;
@@ -237,8 +260,11 @@ __device__ int GPTLstart_gpu (const int handle)
   Timer *ptr;        // linked list pointer
   int w;             // warp index (of this thread)
   int wi;            // flattened 2d index for warp number and timer name
-
   static const char *thisfunc = "GPTLstart_gpu";
+
+#ifdef TIME_GPTL
+  long long start = clock64 ();
+#endif
 
 #ifdef ENABLE_GPUCHECKS
   if ( ! initialized)
@@ -284,10 +310,12 @@ __device__ int GPTLstart_gpu (const int handle)
   // IMPORTANT: Issue the cmds in sequence because SM changing between clock64() call and getting
   // the SM number would be bad.
   // NOTE: Timing value will be thrown away if SM changes upon stop() call.
-  ptr->wall.last = clock64 ();
   asm volatile ("mov.u32 %0, %smid;" : "=r"(ptr->smid));
+  ptr->wall.last = clock64 ();
   ptr->onflg = true;
-
+#ifdef TIME_GPTL
+  globcount[istart*maxwarps + w] += ptr->wall.last - start;
+#endif
   return SUCCESS;
 }
 
@@ -303,11 +331,14 @@ __device__ int GPTLstart_gpu (const int handle)
 __device__ int GPTLstop_gpu (const int handle)
 {
   register long long tp1;    // time stamp
-  Timer timer;               // local copy of timers[wi]: gives some speedup vs. global array
   int w;                     // warp number for this process
   int wi;                    // flattened (1-d) index into 2-d array [timer][warp]
   uint smid;                 // SM id
   static const char *thisfunc = "GPTLstop_gpu";
+
+#ifdef TIME_GPTL
+  tp1 = clock64 ();
+#endif
 
 #ifdef ENABLE_GPUCHECKS
   if ( ! initialized)
@@ -334,14 +365,15 @@ __device__ int GPTLstop_gpu (const int handle)
   // IMPORTANT: Issue the cmds in sequence because SM changing between clock64() call and getting
   // the SM number would be bad.
   // NOTE: Timing value will be thrown away if SM changed from start() call.
+#ifndef TIME_GPTL
   tp1 = clock64 ();
+#endif
   asm ("mov.u32 %0, %smid;" : "=r"(smid));
 
   wi = FLATTEN_TIMERS (w, handle);
-  timer = timers[wi];
 
 #ifdef ENABLE_GPUCHECKS
-  if ( ! timer.onflg )
+  if ( ! timers[wi].onflg )
     return GPTLerror_2s ("%s: timer %s was already off.\n", thisfunc, timernames[handle].name);
 #endif
   /* 
@@ -350,20 +382,28 @@ __device__ int GPTLstop_gpu (const int handle)
   ** the timer to reflect the outermost layer of recursion.
   */
 #ifdef ENABLE_GPURECURSION
-  if (timer.recurselvl > 0) {
-    --timer.recurselvl;
-    ++timer.count;
-    timers[wi] = timer;
+  if (timers[wi].recurselvl > 0) {
+    --timers[wi].recurselvl;
+    ++timers[wi].count;
     return SUCCESS;
   }
 #endif
-  if (update_stats_gpu (handle, &timer, tp1, w, smid) != 0)
+
+#ifdef TIME_GPTL
+  long long start = clock64 ();
+#endif
+  if (update_stats_gpu (handle, &timers[wi], tp1, w, smid) != 0)
     return GPTLerror_1s ("%s: error from update_stats_gpu\n", thisfunc);
 #ifdef DEBUG_PRINT
-  printf ("%s: handle=%d count=%d\n", thisfunc, handle, (int) timer.count);
+  printf ("%s: handle=%d count=%d\n", thisfunc, handle, (int) timers[wi].count);
 #endif
-  timers[wi] = timer;
   
+#ifdef TIME_GPTL
+  long long stop = clock64 ();
+  globcount[istop*maxwarps + w]        += stop - tp1;
+  globcount[update_stats*maxwarps + w] += stop - start;
+#endif
+
   return SUCCESS;
 }
 
@@ -386,6 +426,7 @@ __device__ static inline int update_stats_gpu (const int handle,
 {
   register long long delta;           // time diff from start()
   static const char *thisfunc = "update_stats_gpu";
+
 #ifdef DEBUG_PRINT
   printf ("%s: ptr=%p setting onflg=false\n", thisfunc, ptr);
 #endif
@@ -438,6 +479,7 @@ __device__ static inline int update_stats_gpu (const int handle,
     if (delta < ptr->wall.min)
       ptr->wall.min = delta;
   }
+  
   return SUCCESS;
 }
 
@@ -589,6 +631,36 @@ __global__ void GPTLfill_gpustats (Gpustats *gpustats,
       fill_gpustats (&gpustats[n], n+1, w);
     }
   }
+  
+#ifdef TIME_GPTL
+  long long maxval;
+  long long minval;
+  int w_maxsave;
+  int w_minsave;
+  for (n = 0; n < NUM_INTERNAL_TIMERS; ++n) {
+    maxval = 0;
+    minval = 99999999;
+    w_maxsave = -1;
+    w_minsave = -1;
+    float maxsec, minsec;
+    
+    for (int w = 0; w < maxwarps; ++w) {
+      int idx = n*maxwarps + w;
+      if (globcount[idx] > maxval) {
+	maxval = globcount[idx];
+	w_maxsave = w;
+      }
+      if (globcount[idx] < minval && globcount[idx] > 0) {
+	minval = globcount[idx];
+	w_minsave = w;
+      }
+    }
+    maxsec = maxval / gpu_hz;
+    minsec = minval / gpu_hz;
+    printf ("%s: max time %g sec on warp %d\n", internal_name[n], maxsec, w_maxsave);
+    printf ("%s: min time %g sec on warp %d\n", internal_name[n], minsec, w_minsave);
+  }
+#endif
 
 #ifdef DEBUG_PRINT
   printf ("%s: ngputimers=%d\n", thisfunc, n);
@@ -854,7 +926,6 @@ __device__ static void start_misc (int w, const int handle)
 __device__ static void stop_misc (int w, const int handle)
 {
   int wi;
-  Timer timer;
   static const char *thisfunc = "stopmisc";
 
 #ifdef ENABLE_GPUCHECKS
@@ -868,24 +939,22 @@ __device__ static void stop_misc (int w, const int handle)
 #endif
 
   wi = FLATTEN_TIMERS (w, handle);
-  timer = timers[wi];
 
 #ifdef ENABLE_GPUCHECKS
-  if ( timer.onflg )
+  if ( timers[wi].onflg )
     printf ("%s: onflg was on\n", thisfunc); // Invert logic for better OHD est.
 #endif
 
 #ifdef ENABLE_GPURECURSION
-  if (timer.recurselvl > 0) {
-    --timer.recurselvl;
-    ++timer.count;
+  if (timers[wi].recurselvl > 0) {
+    --timers[wi].recurselvl;
+    ++timers[wi].count;
   }
 #endif
 
   // Last 3 args are timestamp, w, smid
-  if (update_stats_gpu (handle, &timer, timer.wall.last, 0, 0) != 0)
+  if (update_stats_gpu (handle, &timers[wi], timers[wi].wall.last, 0, 0) != 0)
     printf ("%s: problem with update_stats_gpu\n", thisfunc);
-  timers[wi] = timer;
 }
 
 __global__ void GPTLget_memstats_gpu (float *regionmem, float *timernamemem)
