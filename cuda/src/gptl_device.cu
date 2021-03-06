@@ -331,6 +331,7 @@ __device__ int GPTLstart_gpu (const int handle)
 __device__ int GPTLstop_gpu (const int handle)
 {
   register long long tp1;    // time stamp
+  Timer timer;               // local copy of timers[wi]: gives some speedup vs. global array
   int w;                     // warp number for this process
   int wi;                    // flattened (1-d) index into 2-d array [timer][warp]
   uint smid;                 // SM id
@@ -371,9 +372,10 @@ __device__ int GPTLstop_gpu (const int handle)
   asm ("mov.u32 %0, %smid;" : "=r"(smid));
 
   wi = FLATTEN_TIMERS (w, handle);
+  timer = timers[wi];
 
 #ifdef ENABLE_GPUCHECKS
-  if ( ! timers[wi].onflg )
+  if ( ! timer.onflg )
     return GPTLerror_2s ("%s: timer %s was already off.\n", thisfunc, timernames[handle].name);
 #endif
   /* 
@@ -382,9 +384,10 @@ __device__ int GPTLstop_gpu (const int handle)
   ** the timer to reflect the outermost layer of recursion.
   */
 #ifdef ENABLE_GPURECURSION
-  if (timers[wi].recurselvl > 0) {
-    --timers[wi].recurselvl;
-    ++timers[wi].count;
+  if (timer.recurselvl > 0) {
+    --timer.recurselvl;
+    ++timer.count;
+    timers[wi] = timer;
     return SUCCESS;
   }
 #endif
@@ -392,11 +395,12 @@ __device__ int GPTLstop_gpu (const int handle)
 #ifdef TIME_GPTL
   long long start = clock64 ();
 #endif
-  if (update_stats_gpu (handle, &timers[wi], tp1, w, smid) != 0)
+  if (update_stats_gpu (handle, &timer, tp1, w, smid) != 0)
     return GPTLerror_1s ("%s: error from update_stats_gpu\n", thisfunc);
 #ifdef DEBUG_PRINT
-  printf ("%s: handle=%d count=%d\n", thisfunc, handle, (int) timers[wi].count);
+  printf ("%s: handle=%d count=%d\n", thisfunc, handle, (int) timer.count);
 #endif
+  timers[wi] = timer;
   
 #ifdef TIME_GPTL
   long long stop = clock64 ();
@@ -844,7 +848,7 @@ __global__ void GPTLget_overhead_gpu (int *maxwarpid_timed_out,
   t2 = clock64();
   get_warp_num_ohd[0] = (t2 - t1) / 1000;
 
-  // utr overhead
+  // utr plus smid overhead
   t1 = clock64();
   for (i = 0; i < 1000; ++i) {
     asm volatile ("mov.u32 %0, %smid;" : "=r"(smid));
@@ -926,6 +930,7 @@ __device__ static void start_misc (int w, const int handle)
 __device__ static void stop_misc (int w, const int handle)
 {
   int wi;
+  Timer timer;
   static const char *thisfunc = "stopmisc";
 
 #ifdef ENABLE_GPUCHECKS
@@ -939,22 +944,24 @@ __device__ static void stop_misc (int w, const int handle)
 #endif
 
   wi = FLATTEN_TIMERS (w, handle);
+  timer = timers[wi];
 
 #ifdef ENABLE_GPUCHECKS
-  if ( timers[wi].onflg )
+  if ( timer.onflg )
     printf ("%s: onflg was on\n", thisfunc); // Invert logic for better OHD est.
 #endif
 
 #ifdef ENABLE_GPURECURSION
-  if (timers[wi].recurselvl > 0) {
-    --timers[wi].recurselvl;
-    ++timers[wi].count;
+  if (timer.recurselvl > 0) {
+    --timer.recurselvl;
+    ++timer.count;
   }
 #endif
 
   // Last 3 args are timestamp, w, smid
-  if (update_stats_gpu (handle, &timers[wi], timers[wi].wall.last, 0, 0) != 0)
+  if (update_stats_gpu (handle, &timer, timer.wall.last, 0, 0U) != 0)
     printf ("%s: problem with update_stats_gpu\n", thisfunc);
+  timers[wi] = timer;
 }
 
 __global__ void GPTLget_memstats_gpu (float *regionmem, float *timernamemem)

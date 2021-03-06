@@ -131,9 +131,9 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   fprintf (fp, "This is because start/stop timing est. is done separately from components\n");
   fprintf (fp, "Get warp number:                %7.1e = %5.1f%% of total\n", gwn, 100.*(gwn/tot));
   fprintf (fp, "Underlying timing routine+SMID: %7.1e = %5.1f%% of total\n", utr, 100.*(utr/tot));
-  fprintf (fp, "Misc calcs in GPTL_start_gpu:   %7.1e = %5.1f%% of total\n",
+  fprintf (fp, "Misc calcs in GPTLstart_gpu:    %7.1e = %5.1f%% of total\n",
 	   startmisc, 100.*(startmisc/tot));
-  fprintf (fp, "Misc calcs in GPTL_stop_gpu:    %7.1e = %5.1f%% of total\n",
+  fprintf (fp, "Misc calcs in GPTLstop_gpu:     %7.1e = %5.1f%% of total\n",
 	   stopmisc, 100.*(stopmisc/tot));
   fprintf (fp, "\n");
 
