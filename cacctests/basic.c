@@ -18,7 +18,6 @@ int main (int argc, char **argv)
   int warp, warpsav;
   float sleepsec = 1.;         // default: sleep 1 sec
   double wc;                   // wallclock measured on CPU
-  double accummax, accummin;
   int total_gputime, sleep1;   // handles required by GPTLstart_gpu and GPTLstop_gpu
 
   // Retrieve information about the GPU and set defaults
@@ -66,10 +65,6 @@ int main (int argc, char **argv)
   // Initialize the GPTL library on CPU and GPU
   ret = GPTLinitialize ();
 
-  double accum[nwarps];
-  for (warp = 0; warp < nwarps; ++warp)
-    accum[warp] = 0.;
-
   // Define handles
 #pragma acc parallel private(ret) copyout(total_gputime, sleep1)
   {
@@ -81,17 +76,12 @@ int main (int argc, char **argv)
   printf ("Sleeping %f seconds on GPU\n", sleepsec);
 
   ret = GPTLstart ("total");
-#pragma acc parallel loop private(ret) copyin(total_gputime,sleep1,warpsize) copyout(accum)
+#pragma acc parallel loop private(ret) copyin(total_gputime,sleep1)
   for (int n = 0; n < niter; ++n) {
-    int mywarp, mythread;
-    double maxsav, minsav;
-    ret = GPTLsliced_up_how ("loop");
     ret = GPTLstart_gpu (total_gputime);
     ret = GPTLstart_gpu (sleep1);
     ret = GPTLmy_sleep (sleepsec);
     ret = GPTLstop_gpu (sleep1);
-    ret = GPTLget_warp_thread (&mywarp, &mythread);
-    ret = GPTLget_wallclock_gpu (sleep1, &accum[mywarp], &maxsav, &minsav);
     ret = GPTLstop_gpu (total_gputime);
   }
   ret = GPTLcudadevsync ();
@@ -100,29 +90,6 @@ int main (int argc, char **argv)
   ret = GPTLget_wallclock ("total", -1, &wc);
   printf ("CPU says total wallclock=%9.3f seconds\n", wc);
 
-  accummax = 0.;
-  warpsav = -1;
-  for (warp = 0; warp < nwarps; ++warp) {
-    if (accum[warp] > accummax) {
-      accummax = accum[warp];
-      warpsav = warp;
-    }
-  }
-  printf ("Max time slept=%-12.9g at warp=%d\n", accummax, warpsav);
-
-  accummin = 1.e36;
-  warpsav = -1;
-  for (warp = 0; warp < nwarps; ++warp) {
-#ifdef DEBUG
-    printf ("accum[%2.2d]=%-12.9g\n", warp, accum[warp]);
-#endif
-    if (accum[warp] < accummin) {
-      accummin = accum[warp];
-      warpsav = warp;
-    }
-  }
-  printf ("Min time slept=%-12.9g at warp=%d\n", accummin, warpsav);
-
   ret = GPTLpr (0);
 
   ret = GPTLcudadevsync ();  // Ensure printing of GPU results is complete before resetting
@@ -130,7 +97,5 @@ int main (int argc, char **argv)
 
   ret = GPTLcudadevsync ();  // Ensure resetting of timers is done before finalizing
   ret = GPTLfinalize ();     // Shutdown (incl. GPU)
-
-  ret = GPTLcudadevsync ();  // Ensure any printing from GPTLfinalize_gpu is done before quitting
   return 0;
 }

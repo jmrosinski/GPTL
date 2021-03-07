@@ -21,28 +21,9 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   int *maxwarpid_found;
   int *maxwarpid_timed;
 
-  // Returned from GPTLget_overhead_gpu:
-  long long *get_warp_num_ohdgpu; // Getting my thread index
-  long long *startstop_ohdgpu;    // Cost est of start/stop pair
-  long long *utr_ohdgpu;          // Underlying timing routine
-  long long *start_misc_ohdgpu;   // misc code from GPTLstart_gpu
-  long long *stop_misc_ohdgpu;    // misc code from GPTLstop_gpu
-  long long *self_ohdgpu;         // Cost est. for timing this region
-  long long *parent_ohdgpu;       // Cost est. to parent of this region
-  long long *my_strlen_ohdgpu;    // my_strlen function
-  long long *STRMATCH_ohdgpu;     // my_strcmp function
-  // Returned from GPTLget_memstats_gpu:
-  float *regionmem, *timernamemem;
-
   int count_max, count_min;
   double wallmax, wallmin;
   double self, parent;
-  double gwn;
-  double utr;
-  double startstop;
-  double tot;
-  double startmisc, stopmisc;
-  double scalefac;
 #ifdef HAVE_MPI
   int myrank = 0;
   int mpi_active;
@@ -58,20 +39,6 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
 
   gpuErrchk (cudaMallocManaged (&maxwarpid_found,     sizeof (int)));
   gpuErrchk (cudaMallocManaged (&maxwarpid_timed,     sizeof (int)));
-
-  gpuErrchk (cudaMallocManaged (&get_warp_num_ohdgpu, sizeof (long long)));
-  gpuErrchk (cudaMallocManaged (&startstop_ohdgpu,    sizeof (long long)));
-  gpuErrchk (cudaMallocManaged (&utr_ohdgpu,          sizeof (long long)));
-  gpuErrchk (cudaMallocManaged (&start_misc_ohdgpu,   sizeof (long long)));
-  gpuErrchk (cudaMallocManaged (&stop_misc_ohdgpu,    sizeof (long long)));
-  gpuErrchk (cudaMallocManaged (&self_ohdgpu,         sizeof (long long)));
-  gpuErrchk (cudaMallocManaged (&parent_ohdgpu,       sizeof (long long)));
-
-  gpuErrchk (cudaMallocManaged (&my_strlen_ohdgpu,    sizeof (long long)));
-  gpuErrchk (cudaMallocManaged (&STRMATCH_ohdgpu,     sizeof (long long)));
-
-  gpuErrchk (cudaMallocManaged (&regionmem,           sizeof (float)));
-  gpuErrchk (cudaMallocManaged (&timernamemem,        sizeof (float)));
 
   GPTLfill_gpustats<<<1,1>>> (gpustats, max_name_len_gpu, ngputimers);
   if (cudaGetLastError() != cudaSuccess)
@@ -101,49 +68,9 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   ret = gethostname (hostname, HOSTSIZE);
   fprintf (fp, "%s: hostname=%s\n", thisfunc, hostname);
 
-  GPTLget_overhead_gpu <<<1,1>>> (maxwarpid_timed,
-				  maxwarpid_found,
-				  get_warp_num_ohdgpu,
-				  startstop_ohdgpu,
-				  utr_ohdgpu,
-				  start_misc_ohdgpu,
-				  stop_misc_ohdgpu,
-				  self_ohdgpu,
-				  parent_ohdgpu,
-				  my_strlen_ohdgpu,
-				  STRMATCH_ohdgpu);
   cudaDeviceSynchronize();
 
-  gwn       = 2.*get_warp_num_ohdgpu[0] / gpu_hz;  // 2. is due to calls from both start and stop
-  utr       = 2.*utr_ohdgpu[0] / gpu_hz;           // 2. is due to calls from both start and stop
-  startmisc = start_misc_ohdgpu[0] / gpu_hz;
-  stopmisc  = stop_misc_ohdgpu[0] / gpu_hz;
-  tot       = gwn + utr + startmisc + stopmisc;
-
-  startstop = startstop_ohdgpu[0] / gpu_hz;
-  scalefac  = startstop / tot;
-
   fprintf (fp, "Underlying timing routine was clock64() assumed @ %f Ghz\n", gpu_hz * 1.e-9);
-  fprintf (fp, "Total overhead of 1 GPTLstart_gpu + GPTLstop_gpu pair call=%7.1e seconds\n", startstop);
-  fprintf (fp, "Components of the pair are as follows:\n");
-  fprintf (fp, "Sum of overheads should be near start+stop but not necessarily exact (scalefac = %6.2f)\n",
-	   scalefac);
-  fprintf (fp, "This is because start/stop timing est. is done separately from components\n");
-  fprintf (fp, "Get warp number:                %7.1e = %5.1f%% of total\n", gwn, 100.*(gwn/tot));
-  fprintf (fp, "Underlying timing routine+SMID: %7.1e = %5.1f%% of total\n", utr, 100.*(utr/tot));
-  fprintf (fp, "Misc calcs in GPTLstart_gpu:    %7.1e = %5.1f%% of total\n",
-	   startmisc, 100.*(startmisc/tot));
-  fprintf (fp, "Misc calcs in GPTLstop_gpu:     %7.1e = %5.1f%% of total\n",
-	   stopmisc, 100.*(stopmisc/tot));
-  fprintf (fp, "\n");
-
-  fprintf (fp, "These 2 are called only by GPTLinit_handle_gpu, thus not part of overhead:\n");
-  fprintf (fp, "my_strlen:                      %7.1e (name=GPTL_ROOT)\n",
-	   my_strlen_ohdgpu[0] / gpu_hz);
-  fprintf (fp, "STRMATCH:                       %7.1e (matched name=GPTL_ROOT)\n",
-	   STRMATCH_ohdgpu[0] / gpu_hz);
-  fprintf (fp, "\n");
-
   fprintf (fp, "\nGPU timing stats\n");
   fprintf (fp, "GPTL could handle up to %d warps (%d threads)\n", maxwarps, maxwarps * WARPSIZE);
   fprintf (fp, "This setting can be changed with: GPTLsetoption(GPTLmaxthreads_gpu,<number>)\n");
@@ -231,29 +158,9 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
     else
       fprintf (fp, "|%6d |", gpustats[n].badsmid_count);      // number of times SM changed on "stop" call
 
-    self = (gpustats[n].count_max * self_ohdgpu[0]) / gpu_hz; // self ohd est
-    self *= scalefac;                                         // try to get a closer estimate
-    if (self < 0.01)
-      fprintf (fp, "%8.2e  ", self);
-    else
-      fprintf (fp, "%8.3f  ", self);	       
-    
-    parent = (gpustats[n].count_max * parent_ohdgpu[0]) / gpu_hz; // parent ohd est
-    parent *= scalefac;                                           // try to get a closer estimate
-    if (self < 0.01)
-      fprintf (fp, "%8.2e ", parent);
-    else
-      fprintf (fp, "%8.3f ", parent);	       
-
     fprintf (fp, "\n");
   }
 
-  GPTLget_memstats_gpu <<<1,1>>> (regionmem, timernamemem);
   cudaDeviceSynchronize();
-  fprintf (fp, "\n");
-  fprintf (fp, "GPTL GPU memory usage (Timers)      = %8g KB\n", regionmem[0]*.001);
-  fprintf (fp, "GPTL GPU memory usage (Timer names) = %8g KB\n", timernamemem[0]*.001);
-  fprintf (fp, "                                      --------\n");
-  fprintf (fp, "GPTL GPU memory usage (Total)       = %8g KB\n", (regionmem[0] + timernamemem[0])*.001);
 }
 }

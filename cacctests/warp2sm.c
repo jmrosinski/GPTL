@@ -11,8 +11,6 @@ int main ()
 #define nwarps 30726
   int inner = 96;
   int outer = 10242;
-  //  int *smarr;
-  int smarr[nwarps];
   int ret;
   int total_gputime, inner_loop, outer_loop;
 
@@ -21,16 +19,6 @@ int main ()
   ret = GPTLsetoption (GPTLmaxwarps_gpu, nwarps);
   ret = GPTLinitialize ();
 
-  /*
-  int totaliters = inner*outer;
-  nwarps = totaliters / warpsize;
-  if (totaliters % warpsize != 0) 
-    ++nwarps;
-  smarr = (int *) malloc (nwarps*sizeof (int));
-  */
-  for (int n = 0; n < nwarps; ++n)
-    smarr[n] = -1;
-  
 #pragma acc parallel private(ret) copyout(total_gputime, inner_loop, outer_loop)
   {
     ret = GPTLinit_handle_gpu ("total_gputime", &total_gputime);
@@ -45,14 +33,12 @@ int main ()
     ret = GPTLstart_gpu (total_gputime);
   }
 
-#pragma acc parallel loop private(ret) copyin(outer,inner) copy(smarr)
+#pragma acc parallel loop private(ret) copyin(outer,inner)
   for (int n = 0; n < outer; ++n) {
     ret = GPTLstart_gpu (outer_loop);
 #pragma acc loop vector
     for (int k = 0; k < inner; ++k) {
-      int mywarp;
       ret = GPTLstart_gpu (inner_loop);
-      mywarp = GPTLget_sm_thiswarp (smarr);
       ret = GPTLstop_gpu (inner_loop);
     }
     ret = GPTLstop_gpu (outer_loop);
@@ -67,10 +53,5 @@ int main ()
   }
   ret = GPTLstop ("total");
   ret = GPTLpr (0);
-
-  for (int n = 0; n < nwarps; ++n) {
-    if (smarr[n] > -1)
-      printf ("warp %d sm %d\n", n, smarr[n]);
-  }
   return 0;
 }

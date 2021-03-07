@@ -17,7 +17,6 @@ int main (int argc, char **argv)
   double wc_untimed;           // wallclock for untimed GPU loop (measured on CPU)
   double wc_devsync;           // wallclock for GPTLcudadevsync ();
   double ohdest;               // overhead estimate for single start/stop pair on GPU
-  double accummax, accummin;   // max/min time taken across GPU warps
   // GPU handles:
   int timed_loop;
 
@@ -38,10 +37,6 @@ int main (int argc, char **argv)
 
   // Initialize the GPTL library on CPU and GPU
   ret = GPTLinitialize ();
-
-  double accum[nwarps];
-  for (warp = 0; warp < nwarps; ++warp)
-    accum[warp] = 0.;
 
   // Define handles
 #pragma acc parallel private(ret) copyout(timed_loop)
@@ -80,36 +75,6 @@ int main (int argc, char **argv)
   }
 
   ret = GPTLstop ("total");
-
-  // Next: discover time spread across warps for timed loop 
-#pragma acc parallel loop private(ret) copyout(accum)
-  for (int n = 0; n < niter; ++n) {
-    int mywarp, mythread;
-    double maxsav, minsav;
-    ret = GPTLget_warp_thread (&mywarp, &mythread);
-    ret = GPTLget_wallclock_gpu (timed_loop, &accum[mywarp], &maxsav, &minsav);
-  }
-
-  ret = GPTLcudadevsync ();
-  accummax = 0.;
-  warpsav = -1;
-  for (warp = 0; warp < nwarps; ++warp) {
-    if (accum[warp] > accummax) {
-      accummax = accum[warp];
-      warpsav = warp;
-    }
-  }
-  printf ("Max time=%-12.9g seconds at warp=%d\n", accummax, warpsav);
-
-  accummin = 1.e36;
-  warpsav = -1;
-  for (warp = 0; warp < nwarps; ++warp) {
-    if (accum[warp] < accummin) {
-      accummin = accum[warp];
-      warpsav = warp;
-    }
-  }
-  printf ("Min time=%-12.9g seconds at warp=%d\n", accummin, warpsav);
 
   // Finally: Estimate overhead as GPU start/stop minus GPU do-nothing
   ret = GPTLget_wallclock ("timed_loop",   -1, &wc_timed);

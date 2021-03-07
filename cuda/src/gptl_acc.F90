@@ -47,22 +47,6 @@ module gptl_acc
 !$acc routine seq
     end function gptlget_wallclock_gpu
     
-    integer function gptlget_warp_thread (warp, thread) bind(C,name="GPTLget_warp_thread")
-      use iso_c_binding, only: c_int
-      integer(c_int) :: warp, thread
-!$acc routine seq                                                               
-    end function gptlget_warp_thread
-
-    integer function gptlsliced_up_how (txt)
-      character(len=*) :: txt
-!$acc routine seq                                                               
-    end function gptlsliced_up_how
-
-    integer function gptlget_sm_thiswarp (smarr) bind(C,name="GPTLget_sm_thiswarp")
-      integer :: smarr(:)
-!$acc routine seq                                                               
-    end function gptlget_sm_thiswarp
-
     integer function gptlcuprofilerstart () bind(C,name="GPTLcuProfilerStart")
 !$acc routine seq                                                               
     end function gptlcuprofilerstart

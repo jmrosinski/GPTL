@@ -52,8 +52,6 @@ __device__ static inline int update_stats_gpu (const int, Timer *, const long lo
 __device__ static int my_strlen (const char *);
 __device__ static char *my_strcpy (char *, const char *);
 __device__ static int my_strcmp (const char *, const char *);
-__device__ static void start_misc (int, const int);
-__device__ static void stop_misc (int w, const int handle);
 __device__ static void init_gpustats (Gpustats *, int);
 __device__ static void fill_gpustats (Gpustats *, int, int);
 // Defining PRINTNEG will print to stdout whenever a negative interval (stop minus start) is
@@ -166,32 +164,6 @@ __global__ static void initialize_gpu (const int verbose_in,
   }
 
   initialized = true;
-}
-
-/*
-** GPTLfinalize_gpu (): Finalization routine must be called from single-threaded
-**   region. Free all malloc'd space
-*/
-__global__ void GPTLfinalize_gpu (void)
-{
-  static const char *thisfunc = "GPTLfinalize_gpu";
-
-  if ( ! initialized) {
-    (void) GPTLerror_1s ("%s: initialization was not completed\n", thisfunc);
-    return;
-  }
-
-  free (timers);
-  free (timernames);
-  
-  GPTLreset_errors_gpu ();
-
-  // Reset initial values
-  timers = 0;
-  timernames = 0;
-  max_name_len = 0;
-  initialized = false;
-  verbose = false;
 }
 
 /*
@@ -487,42 +459,6 @@ __device__ static inline int update_stats_gpu (const int handle,
   return SUCCESS;
 }
 
-/*
-** GPTLreset_gpu: reset all timers to 0
-**
-** Return value: 0 (success) or GPTLerror (failure)
-*/
-__global__ void GPTLreset_gpu (void)
-{
-  int i;
-  int w;
-  int wi;
-  int maxwarpid_timed;
-  static const char *thisfunc = "GPTLreset_gpu";
-
-  if ( ! initialized) {
-    (void) GPTLerror_1s ("%s: GPTLinitialize_gpu has not been called\n", thisfunc);
-    return;
-  }
-
-  maxwarpid_timed = GPTLget_maxwarpid_timed ();
-
-  for (w = 0; w <= maxwarpid_timed; ++w) {
-    for (i = 0; i < maxtimers; ++i) {
-      wi = FLATTEN_TIMERS(w,i);
-      timers[wi].onflg = false;
-      timers[wi].count = 0;
-      memset (&timers[wi].wall, 0, sizeof (timers[wi].wall));
-    }
-  }
-
-  // Verify all timers have been zeroed
-  if (GPTLget_maxwarpid_timed () == 0)
-    printf ("%s: accumulators for all GPU timers reset to zero\n", thisfunc);
-  else
-    printf ("%s: Problem resetting GPU timers to 0\n", thisfunc);
-}
-
 __device__ static inline int get_warp_num ()
 {
   int threadId;
@@ -789,188 +725,6 @@ __device__ static int my_strcmp (const char *str1, const char *str2)
 #endif
 }
 
-// Overhead estimate functions start here
-/*
-** GPTLget_overhead: return current status info about a timer. If certain stats are not enabled, 
-** they should just have zeros in them.
-** 
-** Output args:
-**   get_warp_num_ohd: Getting my warp index
-**   utr_ohd:            Underlying timer routine
-**   self_ohd:           Estimate of GPTL-induced overhead in the timer itself (included in "Wallclock")
-**   parent_ohd:         Estimate of GPTL-induced overhead for the timer which appears in its parents
-*/
-__global__ void GPTLget_overhead_gpu (int *maxwarpid_timed_out,
-				      int *maxwarpid_found_out,
-				      long long *get_warp_num_ohd,  // Getting my warp index
-				      long long *startstop_ohd,     // start/stop pair
-				      long long *utr_ohd,           // Underlying timing routine
-				      long long *start_misc_ohd,    // misc start code
-				      long long *stop_misc_ohd,     // misc stop code
-				      long long *self_ohd,          // OHD in timer itself
-				      long long *parent_ohd,        // OHD in parent
-				      long long *my_strlen_ohd,
-				      long long *STRMATCH_ohd)
-{
-  volatile uint smid;         // SM id
-  long long t1, t2;           // Initial, final timer values
-  int i;
-  int ret;
-  int mywarp;                 // our warp number
-  char name[MAX_CHARS+1];     // Name to be used for various OHD tests
-  char samename[MAX_CHARS+1]; // Copy of "name" for STRMATCH test
-
-  *maxwarpid_timed_out = GPTLget_maxwarpid_timed ();
-  *maxwarpid_found_out = maxwarpid_found;
-  
-  // Define name to be used in OHD estimates. Use GPTL_ROOT because it's always there
-  my_strcpy (name, timernames[0].name); // GPTL_ROOT
-  my_strcpy (samename, name);
-
-  /*
-  ** Gather timings by running each test 1000 times
-  ** First: start/stop overhead 
-  */
-  t1 = clock64();
-  for (i = 0; i < 1000; ++i) {
-    ret = GPTLstart_gpu (0);
-    ret = GPTLstop_gpu (0);
-  }
-  t2 = clock64();
-  startstop_ohd[0] = (t2 - t1) / 1000;
-
-  // get_warp_num overhead. Need a bogus computation or compiler may optimize out the code
-  t1 = clock64();
-  for (i = 0; i < 1000; ++i) {
-    if ((mywarp = get_warp_num ()) < -999)
-      get_warp_num_ohd[0] = -999;
-  }
-  t2 = clock64();
-  get_warp_num_ohd[0] = (t2 - t1) / 1000;
-
-  // utr plus smid overhead
-  t1 = clock64();
-  for (i = 0; i < 1000; ++i) {
-    asm volatile ("mov.u32 %0, %smid;" : "=r"(smid));
-    t2 = clock64();
-  }
-  *utr_ohd = (t2 - t1) / 1000;
-
-  // start misc overhead
-  t1 = clock64();
-  for (i = 0; i < 1000; ++i) {
-    start_misc (0, 0);  // w, handle (handle=0 is GPTL_ROOT)
-  }
-  t2 = clock64();
-  start_misc_ohd[0] = (t2 - t1) / 1000;
-
-  // stop misc overhead
-  t1 = clock64();
-  for (i = 0; i < 1000; ++i) {
-    stop_misc (0, 0);  // w, handle (handle=0 is GPTL_ROOT)
-  }
-  t2 = clock64();
-  stop_misc_ohd[0] = (t2 - t1) / 1000;
-
-  // Self and parent OHD estimates: A few settings at the end of GPTLstart_gpu should instead be 
-  // applied to parent. A few settings at the beginning of GPTLstop_gpu should instead be
-  // applied to self. But those errors are likely minor.
-  self_ohd[0]   = utr_ohd[0] + start_misc_ohd[0];
-  parent_ohd[0] = utr_ohd[0] + 2*get_warp_num_ohd[0] + stop_misc_ohd[0];
-
-  // my_strlen overhead
-  t1 = clock64();
-  for (i = 0; i < 1000; ++i) {
-    ret = my_strlen (name);
-  }
-  t2 = clock64();
-  *my_strlen_ohd = (t2 - t1) / 1000;
-
-  // STRMATCH overhead
-  t1 = clock64();
-  for (i = 0; i < 1000; ++i) {
-    ret = STRMATCH (samename, name);
-  }
-  t2 = clock64();
-  *STRMATCH_ohd = (t2 - t1) / 1000;
-  return;
-}
-
-__device__ static void start_misc (int w, const int handle)
-{
-  int wi;
-  Timer *ptr;
-  static const char *thisfunc = "startmisc";
-
-#ifdef ENABLE_GPUCHECKS
-  if ( ! initialized)
-    printf ("%s: ! initialized\n", thisfunc);
-#endif
-  if (w == NOT_ROOT_OF_WARP || w == WARPID_GT_MAXWARPS)
-    printf ("%s: bad w value\n", thisfunc);
-
-#ifdef ENABLE_GPUCHECKS
-  if (handle < 0 || handle > ntimers)
-    printf ("%s: bad handle value %d\n", thisfunc, handle);
-#endif
-  wi = FLATTEN_TIMERS (w, handle);
-  ptr = &timers[wi];
-
-#ifdef ENABLE_GPURECURSION
-  if (ptr->onflg) {
-    ++ptr->recurselvl;
-    printf ("%s: onflg should be off\n", thisfunc);
-    ptr->smid = 0;
-    ptr->wall.last = 0L;
-  }
-#endif
-  ptr->onflg = false;  // GPTLstart actually sets this true but set false for better OHD est.
-}
-
-__device__ static void stop_misc (int w, const int handle)
-{
-  int wi;
-  Timer timer;
-  static const char *thisfunc = "stopmisc";
-
-#ifdef ENABLE_GPUCHECKS
-  if ( ! initialized)
-    printf ("%s: ! initialized\n", thisfunc);
-  if (w == NOT_ROOT_OF_WARP || w == WARPID_GT_MAXWARPS)
-    printf ("%s: bad w value\n", thisfunc);
-
-  if (handle < 0 || handle > ntimers)
-    printf ("%s: bad handle value %d\n", thisfunc, handle);
-#endif
-
-  wi = FLATTEN_TIMERS (w, handle);
-  timer = timers[wi];
-
-#ifdef ENABLE_GPUCHECKS
-  if ( timer.onflg )
-    printf ("%s: onflg was on\n", thisfunc); // Invert logic for better OHD est.
-#endif
-
-#ifdef ENABLE_GPURECURSION
-  if (timer.recurselvl > 0) {
-    --timer.recurselvl;
-    ++timer.count;
-  }
-#endif
-
-  // Last 3 args are timestamp, w, smid
-  if (update_stats_gpu (handle, &timer, timer.wall.last, 0, 0U) != 0)
-    printf ("%s: problem with update_stats_gpu\n", thisfunc);
-  timers[wi] = timer;
-}
-
-__global__ void GPTLget_memstats_gpu (float *regionmem, float *timernamemem)
-{
-  *regionmem    = (float) maxwarps * maxtimers * sizeof (Timer);
-  *timernamemem = (float)            maxtimers * sizeof (Timername);
-  return;
-}
-
 __device__ int GPTLmy_sleep (float seconds)
 {
   volatile long long start, now;
@@ -1026,60 +780,6 @@ __device__ static void prbits8 (uint64_t val)
 }
 #endif
   
-__device__ int GPTLget_warp_thread (int *warp, int *thread)
-{
-  static const char *thisfunc = "GPTLget_warp_thread";
-  if ( ! initialized) {
-    (void) GPTLerror_1s ("%s: initialization was not completed\n", thisfunc);
-    return -1;
-  }
-
-  *thread = threadIdx.x
-        +  blockDim.x  * threadIdx.y
-        +  blockDim.x  *  blockDim.y  * threadIdx.z
-        +  blockDim.x  *  blockDim.y  *  blockDim.z  * blockIdx.x
-        +  blockDim.x  *  blockDim.y  *  blockDim.z  *  gridDim.x  * blockIdx.y
-        +  blockDim.x  *  blockDim.y  *  blockDim.z  *  gridDim.x  *  gridDim.y  * blockIdx.z;
-  *warp = (*thread) / warpsize;
-  return 0;
-}
-
-__device__ int GPTLsliced_up_how (const char *txt)
-{
-  if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0 &&
-      blockIdx.x == 0 && blockIdx.y == 0 && blockIdx.z == 0) {
-    printf ("GPTLsliced_up_how: %s\n", txt);
-    if (blockDim.x > 1)
-      printf ("blockDim.x=%d ", blockDim.x);
-    if (blockDim.y > 1)
-      printf ("blockDim.y=%d ", blockDim.y);
-    if (blockDim.z > 1)
-      printf ("blockDim.z=%d ", blockDim.z);
-    printf ("\n");
-
-    if (gridDim.x > 1)
-      printf ("gridDim.x=%d ", gridDim.x);
-    if (gridDim.y > 1)
-      printf ("gridDim.y=%d ", gridDim.y);
-    printf ("\n");
-  }
-  return 0;
-}
-
-__device__ int GPTLget_sm_thiswarp (int smarr[])
-{
-  int mywarp;
-  uint smid;
-  
-  mywarp = get_warp_num ();
-  if (mywarp == NOT_ROOT_OF_WARP || mywarp == WARPID_GT_MAXWARPS)
-    return -1;
-  
-  asm volatile ("mov.u32 %0, %smid;" : "=r"(smid));
-  smarr[mywarp] = smid;
-  return mywarp;
-}
-
 __device__ int GPTLcuProfilerStart ()
 {
   //JR fails (void) cuProfilerStart ();

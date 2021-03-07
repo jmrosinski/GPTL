@@ -577,9 +577,6 @@ int GPTLfinalize (void)
   tablesize = DEFAULT_TABLE_SIZE;
   tablesizem1 = tablesize - 1;
 
-#ifdef ENABLE_CUDA  
-  GPTLfinalize_gpu_fromhost ();
-#endif
   return 0;
 }
 
@@ -1219,9 +1216,6 @@ int GPTLreset (void)
     }
   }
 
-#ifdef ENABLE_CUDA
-  GPTLreset_gpu_fromhost ();
-#endif
   if (verbose)
     printf ("%s: accumulators for all timers set to zero\n", thisfunc);
 

@@ -5,12 +5,10 @@ program warp2sm
 
   integer :: khz, warpsize, devnum, smcount, cores_per_sm, cores_per_gpu
   integer :: nwarps
-  integer :: mywarp
   integer :: inner = 96
   integer :: outer = 10242
   integer :: totaliters
   integer :: n, nn, k
-  integer, allocatable :: smarr(:)
   integer :: ret
   integer :: total_gputime, inner_loop, outer_loop
 
@@ -25,9 +23,6 @@ program warp2sm
   ret = gptlsetoption (gptlmaxwarps_gpu, nwarps)
   ret = gptlinitialize ()
 
-  allocate (smarr(0:nwarps-1))
-  smarr(:) = -1
-
 !$acc parallel private(ret) copyout(total_gputime, inner_loop, outer_loop)
   ret = gptlinit_handle_gpu ('total_gputime'//char(0), total_gputime)
   ret = gptlinit_handle_gpu ('inner_loop'//char(0),    inner_loop)
@@ -40,13 +35,12 @@ program warp2sm
   ret = gptlstart_gpu (total_gputime)
 !$acc end parallel
 
-!$acc parallel loop private(n,k,ret,mywarp) copyin(outer, inner) copy(smarr)
+!$acc parallel loop private(n,k,ret) copyin(outer, inner)
   do n=0,outer-1
     ret = gptlstart_gpu (outer_loop)
 !$acc loop vector
     do k=0,inner-1
       ret = gptlstart_gpu (inner_loop)
-      mywarp = gptlget_sm_thiswarp (smarr)
       ret = gptlstop_gpu (inner_loop)
     end do
     ret = gptlstop_gpu (outer_loop)
@@ -60,11 +54,6 @@ program warp2sm
 !$acc end parallel
   ret = gptlstop ('total')
 
-  do n=0,nwarps-1
-    if (smarr(n) > -1) then
-      write(6,*) 'warp ', n, 'sm ', smarr(n)
-    end if
-  end do
   ret = gptlpr (0)
   stop 0
 end program warp2sm

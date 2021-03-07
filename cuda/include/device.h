@@ -69,21 +69,7 @@ typedef struct {
 
 // Function prototypes
 extern "C" {
-__global__ void GPTLreset_gpu (void);
-__global__ void GPTLfinalize_gpu (void);
 __global__ void GPTLfill_gpustats (Gpustats *, int *, int *);
-__global__ void GPTLget_memstats_gpu (float *, float *);
-__global__ void GPTLget_overhead_gpu (int *,                  // maxwarpid_timed
-				      int *,                  // maxwarpid_found
-				      long long *,            // Getting my warp index
-				      long long *,            // start/stop pair
-				      long long *,            // Underlying timing routine
-				      long long *,            // misc start code
-				      long long *,            // misc stop code
-				      long long *,            // self_ohd
-				      long long *,            // parent_ohd
-				      long long *,            // my_strlen ohd
-				      long long *);           // STRMATCH ohd
 __device__ int GPTLget_maxwarpid_timed (void);
 __device__ int GPTLerror_1s (const char *, const char *);
 __device__ int GPTLerror_2s (const char *, const char *, const char *);

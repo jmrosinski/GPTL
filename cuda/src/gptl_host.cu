@@ -78,19 +78,4 @@ __host__ int GPTLcudadevsync (void)
   cudaDeviceSynchronize ();
   return 0;
 }
-
-// The need for these 2 wrapping functions enables gptl.c above to be built with a pure C compiler
-// and therefore not require a .cu extension, which itself can cause problems when CUDA is not
-// in play.
-__host__ int GPTLreset_gpu_fromhost (void)
-{
-  GPTLreset_gpu <<<1,1>>> ();
-  return 0;
-}
-
-__host__ int GPTLfinalize_gpu_fromhost (void)
-{
-  GPTLfinalize_gpu <<<1,1>>> ();
-  return 0;
-}
 }
