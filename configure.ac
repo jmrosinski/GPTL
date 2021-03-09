@@ -398,6 +398,17 @@ if test "x$NVCC" != xno; then
     CUFLAGS="$CUFLAGS --ptxas-options=-v -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true"
   fi
   
+# Check for optimizing max register count
+  AC_MSG_CHECKING([for maxrregcount setting])
+  AC_ARG_WITH([maxrregcount],
+              [AS_HELP_STRING([--with-maxrregcount=<value>],
+               [add --maxrregcount flag to nvcc])],
+            [regs=$with_maxrregcount],regs=no)
+  AC_MSG_RESULT([$regs])
+  if test "x$regs" != xno; then
+    CUFLAGS="$CUFLAGS --maxrregcount $regs"
+  fi
+  
 # Check whether to disable validity checks in GPU start/stop routines
 # Default enabled
   AC_MSG_CHECKING([whether to enable validity checking on GPU])
