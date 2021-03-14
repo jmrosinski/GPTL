@@ -482,13 +482,15 @@ int GPTLinitialize (void)
   int warpsize;
   int cores_per_sm;
   int cores_per_gpu;
+  int warps_per_sm;
   int ret;            // return value
 
   ret = GPTLget_gpu_props (&khz, &warpsize, &devnum, &SMcount, &cores_per_sm, &cores_per_gpu);
   printf ("%s: device number=%d warpsize=%d khz=%d\n", thisfunc, devnum, warpsize, khz);
 
   gpu_hz = khz * 1000.;
-  ret = GPTLinitialize_gpu (verbose, maxwarps_gpu, maxtimers_gpu, gpu_hz, warpsize);
+  warps_per_sm = cores_per_sm / warpsize;
+  ret = GPTLinitialize_gpu (verbose, maxwarps_gpu, maxtimers_gpu, gpu_hz, warpsize, warps_per_sm);
 #endif
   
   imperfect_nest = false;

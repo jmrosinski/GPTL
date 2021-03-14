@@ -23,6 +23,7 @@ program basic
   ! GPU-local variables
   integer :: mywarp, mythread
   real*8  :: maxsav, minsav
+  logical, allocatable :: retstop(:)
   
   ret = gptlget_gpu_props (khz, warpsize, devnum, smcount, cores_per_sm, cores_per_gpu)
   niter = cores_per_gpu
@@ -75,6 +76,7 @@ program basic
   ret = gptlinitialize ()
 
   allocate(accum(0:nwarps-1))
+  allocate(retstop(0:niter-1))
   accum(:) = 0
 
   ! Define handles
@@ -88,19 +90,24 @@ program basic
 
   ret = gptlstart ('total')
 !$acc parallel loop private(ret,mywarp,mythread,maxsav,minsav) &
-!$acc&              copyin(total_gputime,sleep1,warpsize,sleepsec) copyout(accum)
+!$acc&              copyin(total_gputime,sleep1,warpsize,sleepsec) copyout(accum,retstop)
   do n=0,niter-1
     ret = gptlsliced_up_how ('loop');
     ret = gptlstart_gpu (total_gputime)
     ret = gptlstart_gpu (sleep1)
     ret = gptlmy_sleep (sleepsec)
-    ret = gptlstop_gpu (sleep1)
+    retstop(n) = gptlstop_gpu (sleep1)
     ret = gptlget_warp_thread (mywarp, mythread)
     ret = gptlget_wallclock_gpu (sleep1, accum(mywarp), maxsav, minsav)
     ret = gptlstop_gpu (total_gputime)
   end do
 !$acc end parallel
-  
+
+  if (any(retstop(:))) then
+    write(6,*)'Got a bad return from gptlstop_gpu at location ', findloc(retstop, .true.)
+    write(6,*)'Stopping prematurely'
+    stop 1
+  end if
   ret = gptlcudadevsync ()
   ret = gptlstop ('total')
 

@@ -18,6 +18,7 @@
 #define FAILURE -1
 #define NOT_ROOT_OF_WARP -2
 #define WARPID_GT_MAXWARPS -3
+#define WARPS_PER_SM 4
 #ifdef TIME_GPTL
 #define NUM_INTERNAL_TIMERS 3
 #endif

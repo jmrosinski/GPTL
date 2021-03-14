@@ -38,7 +38,6 @@ __device__ static const int istop = 1;
 __device__ static const int update_stats = 2;
 __device__ static const char *internal_name[NUM_INTERNAL_TIMERS] = {"GPTLstart_gpu",
 								    "GPTLstop_gpu",
-								    "update_stats"};
 #endif
 
 extern "C" {
@@ -71,8 +70,10 @@ __host__ int GPTLinitialize_gpu (const int verbose_in,
 				 const int maxwarps_in,
 				 const int maxtimers_in,
 				 const double gpu_hz_in,
-				 const int warpsize_in)
+				 const int warpsize_in,
+				 const int warps_per_sm_in)
 {
+  static const char *thisfunc = "GPTLinitialize_gpu";
   size_t nbytes;  // number of bytes to allocate
 
   // Issue cudaMalloc from CPU, and pass address to GPU to avoid mem problems: When run from
@@ -95,6 +96,11 @@ __host__ int GPTLinitialize_gpu (const int verbose_in,
   gpuErrchk (cudaMalloc (&globcount_cpu, nbytes));
 #endif
 
+  // WARPS_PER_SM is used in defining shared memory size, thus the need for the following
+  if (warps_per_sm_in > WARPS_PER_SM)
+    return GPTLerror ("%s: WARPS_PER_SM=%d (device.h) needs to be increased to %d\n",
+		      thisfunc, WARPS_PER_SM, warps_per_sm_in);
+  
   initialize_gpu <<<1,1>>> (verbose_in,
 			    maxwarps_in,
 			    gpu_hz_in,
@@ -134,14 +140,14 @@ __global__ static void initialize_gpu (const int verbose_in,
   }
 
   // Set global vars from input args
-  verbose    = verbose_in;
-  maxwarps   = maxwarps_in;
-  gpu_hz     = gpu_hz_in;
-  warpsize   = warpsize_in;
-  timers     = timers_cpu;
-  timernames = timernames_cpu;
+  verbose      = verbose_in;
+  maxwarps     = maxwarps_in;
+  gpu_hz       = gpu_hz_in;
+  warpsize     = warpsize_in;
+  timers       = timers_cpu;
+  timernames   = timernames_cpu;
 #ifdef TIME_GPTL
-  globcount  = globcount_cpu;
+  globcount    = globcount_cpu;
   memset (globcount, 0, maxwarps * NUM_INTERNAL_TIMERS * sizeof (long long));
 #endif
 
@@ -335,47 +341,38 @@ __device__ int GPTLstop_gpu (const int handle)
   int w;                     // warp number for this process
   int wi;                    // flattened (1-d) index into 2-d array [timer][warp]
   uint smid;                 // SM id
+  int idx;                   // Index into shared mem
   static const char *thisfunc = "GPTLstop_gpu";
+  __shared__ Timer shared_timer[WARPS_PER_SM];
 
-#ifdef TIME_GPTL
-  tp1 = clock64 ();
-#endif
-
-#ifdef ENABLE_GPUCHECKS
-  if ( ! initialized)
-    return GPTLerror_1s ("%s: GPTLinitialize_gpu has not been called\n", thisfunc);
-#endif
-  
   w = get_warp_num ();
-
   // Return if not thread 0 of the warp, or warpId is outside range of available timers
   if (w == NOT_ROOT_OF_WARP || w == WARPID_GT_MAXWARPS)
     return SUCCESS;
 
-#ifdef VERBOSE
-  printf ("Entered %s w=%d handle=%d\n", thisfunc, w, handle);
-#endif
+  // Get the timestamp and smid
+  // IMPORTANT: Issue the cmds in sequence because SM changing between clock64() call and getting
+  // the SM number would be bad.
+  // NOTE: Timing value will be thrown away if SM changed from start() call.
+  tp1 = clock64 ();
+  asm ("mov.u32 %0, %smid;" : "=r"(smid));
 
 #ifdef ENABLE_GPUCHECKS
+  if ( ! initialized)
+    return GPTLerror_1s ("%s: GPTLinitialize_gpu has not been called\n", thisfunc);
+
   // Input handle should be a positive integer not greater than ntimers (0 accepted for GPTL_ROOT)
   if (handle < 0 || handle > ntimers)
     return GPTLerror_1s1d ("%s: Invalid input handle=%d. Perhaps GPTLinit_handle_gpu not called?\n",
 			   thisfunc, handle);
 #endif
-  // Get the timestamp and smid
-  // IMPORTANT: Issue the cmds in sequence because SM changing between clock64() call and getting
-  // the SM number would be bad.
-  // NOTE: Timing value will be thrown away if SM changed from start() call.
-#ifndef TIME_GPTL
-  tp1 = clock64 ();
-#endif
-  asm ("mov.u32 %0, %smid;" : "=r"(smid));
 
   wi = FLATTEN_TIMERS (w, handle);
-  timer = timers[wi];
+  idx = threadIdx.x / warpsize;
+  shared_timer[idx] = timers[wi];
 
 #ifdef ENABLE_GPUCHECKS
-  if ( ! timer.onflg )
+  if ( ! shared_timer[idx].onflg )
     return GPTLerror_2s ("%s: timer %s was already off.\n", thisfunc, timernames[handle].name);
 #endif
   /* 
@@ -384,10 +381,10 @@ __device__ int GPTLstop_gpu (const int handle)
   ** the timer to reflect the outermost layer of recursion.
   */
 #ifdef ENABLE_GPURECURSION
-  if (timer.recurselvl > 0) {
-    --timer.recurselvl;
-    ++timer.count;
-    timers[wi] = timer;
+  if (shared_timer[idx].recurselvl > 0) {
+    --shared_timer[idx].recurselvl;
+    ++shared_timer[idx].count;
+    timers[wi] = shared_timer[idx];
     return SUCCESS;
   }
 #endif
@@ -395,12 +392,12 @@ __device__ int GPTLstop_gpu (const int handle)
 #ifdef TIME_GPTL
   long long start = clock64 ();
 #endif
-  if (update_stats_gpu (handle, &timer, tp1, w, smid) != 0)
+  if (update_stats_gpu (handle, &shared_timer[idx], tp1, w, smid) != 0)
     return GPTLerror_1s ("%s: error from update_stats_gpu\n", thisfunc);
 #ifdef DEBUG_PRINT
-  printf ("%s: handle=%d count=%d\n", thisfunc, handle, (int) timer.count);
+  printf ("%s: handle=%d count=%d\n", thisfunc, handle, (int) shared_timer[idx].count);
 #endif
-  timers[wi] = timer;
+  timers[wi] = shared_timer[idx];
   
 #ifdef TIME_GPTL
   long long stop = clock64 ();
@@ -930,7 +927,9 @@ __device__ static void start_misc (int w, const int handle)
 __device__ static void stop_misc (int w, const int handle)
 {
   int wi;
+  int idx;
   Timer timer;
+  __shared__ Timer shared_timer[WARPS_PER_SM];
   static const char *thisfunc = "stopmisc";
 
 #ifdef ENABLE_GPUCHECKS
@@ -944,24 +943,26 @@ __device__ static void stop_misc (int w, const int handle)
 #endif
 
   wi = FLATTEN_TIMERS (w, handle);
-  timer = timers[wi];
+  idx = threadIdx.x / warpsize;
+  shared_timer[idx] = timers[wi];
 
 #ifdef ENABLE_GPUCHECKS
-  if ( timer.onflg )
+  if ( shared_timer[idx].onflg )
     printf ("%s: onflg was on\n", thisfunc); // Invert logic for better OHD est.
 #endif
 
 #ifdef ENABLE_GPURECURSION
-  if (timer.recurselvl > 0) {
-    --timer.recurselvl;
-    ++timer.count;
+  if (shared_timer[idx].recurselvl > 0) {
+    --shared_timer[idx].recurselvl;
+    ++shared_timer[idx].count;
+    timers[wi] = shared_timer[idx];
   }
 #endif
 
   // Last 3 args are timestamp, w, smid
-  if (update_stats_gpu (handle, &timer, timer.wall.last, 0, 0U) != 0)
+  if (update_stats_gpu (handle, &shared_timer[idx], shared_timer[idx].wall.last, 0, 0U) != 0)
     printf ("%s: problem with update_stats_gpu\n", thisfunc);
-  timers[wi] = timer;
+  timers[wi] = shared_timer[idx];
 }
 
 __global__ void GPTLget_memstats_gpu (float *regionmem, float *timernamemem)

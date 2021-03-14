@@ -41,7 +41,7 @@ function setvar_chk () {
 ########################## Begin main script ####################################
 
 # Base command for GPU build with all required settings plus OpenACC
-cmd="env CC=nvc FC=nvfortran ./configure --prefix=/home/rosinski/install/gptl_cuda --disable-shared --disable-openmp --with-nvcc=nvcc --enable-cacc --enable-facc"
+cmd="env CC=nvc FC=nvfortran ./configure --prefix=/home/rosinski/install/gptl_cuda_shmem --disable-shared --disable-openmp --with-nvcc=nvcc --enable-cacc --enable-facc"
 
 # Add options
 declare -a defyes=("y" "n")
