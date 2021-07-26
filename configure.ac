@@ -390,13 +390,30 @@ if test "x$NVCC" != xno; then
   if test "x$useomp" = xyes; then
     AC_MSG_ERROR([CUDA is currently incompatible with CPU OpenMP. Rerun configure with --disable-openmp])
   fi
-# Hardwire to cc_61
+
   use_cuda=yes
-  if test "x$use_debug" = xyes; then
-    CUFLAGS="$CUFLAGS -G -lineinfo -ftz=true -gencode arch=compute_61,code=compute_61 -rdc=true"
-  else
-    CUFLAGS="$CUFLAGS --ptxas-options=-v -ftz=true -gencode arch=compute_61,code=compute_61 -rdc=true"
+
+# Compute capability. Default to 61
+  CCAB=61
+  AC_MSG_CHECKING([for user specification of compute capability to override default $CCAB])
+  AC_ARG_WITH([ccab],
+              [AS_HELP_STRING([--with-ccab=<value>],
+               [specify compute capability])],
+            [userccab=$with_ccab],userccab=no)
+  AC_MSG_RESULT([$userccab])
+  if test "x$userccab" != xno; then
+    CCAB=$userccab
   fi
+  CUFLAGS="$CUFLAGS -gencode arch=compute_$CCAB,code=compute_$CCAB"
+
+  if test "x$use_debug" = xyes; then
+    CUFLAGS="$CUFLAGS -G -ftz=true -rdc=true"
+  else
+    CUFLAGS="$CUFLAGS --ptxas-options=-v -ftz=true -rdc=true"
+  fi
+  
+# For Makefiles which do testing
+  AC_SUBST([CCAB], [$CCAB])
   
 # Check for optimizing max register count
   AC_MSG_CHECKING([for maxrregcount setting])
@@ -450,19 +467,19 @@ if test "x$NVCC" != xno; then
     CACCFLAGS="-acc gpu -Minfo=accel"
   fi
 
-  AC_ARG_VAR(CACCLDFLAGS, [C-OpenACC link flags--defaults to -cudalib=nvshmem -ta=tesla,cc61])
+  AC_ARG_VAR(CACCLDFLAGS, [C-OpenACC link flags--defaults to -cudalib=nvshmem -ta=tesla,cc$CCAB])
   if test "x$CACCLDFLAGS" = x; then
-    CACCLDFLAGS="-cudalib=nvshmem -ta=tesla,cc61"
+    CACCLDFLAGS="-cudalib=nvshmem -ta=tesla,cc$CCAB"
   fi
   
-  AC_ARG_VAR(FACCFLAGS, [F-OpenACC compiler flags--defaults to -acc -Minfo=accel -ta=tesla:cc61 -m64])
+  AC_ARG_VAR(FACCFLAGS, [F-OpenACC compiler flags--defaults to -acc gpu -Minfo=accel -m64])
   if test "x$FACCFLAGS" = x; then
-    FACCFLAGS="-acc -Minfo=accel -ta=tesla:cc61 -m64"
+    FACCFLAGS="-acc gpu -Minfo=accel -m64"
   fi
 
-  AC_ARG_VAR(FACCLDFLAGS, [F-OpenACC link flags--defaults to -acc -Mcuda=cc61 -lstdc++])
+  AC_ARG_VAR(FACCLDFLAGS, [F-OpenACC link flags--defaults to -acc -Mcuda=cc$CCAB -lstdc++])
   if test "x$FACCLDFLAGS" = x; then
-    FACCLDFLAGS="-acc -Mcuda=cc61 -lstdc++"
+    FACCLDFLAGS="-acc -Mcuda=cc$CCAB -lstdc++"
   fi
   
   AC_SUBST([CACCFLAGS],   [$CACCFLAGS])

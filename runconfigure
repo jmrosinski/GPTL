@@ -47,6 +47,7 @@ cmd="env CC=nvc FC=nvfortran ./configure --prefix=/home/rosinski/install/gptl_cu
 declare -a defyes=("y" "n")
 declare -a defno=("n" "y")
 declare -a defnonum=("n" 16 24 32 48 64 96 128)
+declare -a validccab=(35 37 50 52 53 60 61 62 70 72 75 80 86 87)
 
 printf "debug adds overhead to both CPU and GPU\n"
 setvar_chk "debug" ${defno[@]}
@@ -86,6 +87,17 @@ printf "maxwarpid_found is $maxwarpid_found\n\n"
 if [[ $maxwarpid_found == "y" ]]; then
   newcmd="$cmd --enable-maxwarpid_found"
   cmd="$newcmd"
+fi
+
+printf "Do you want to change compute capability from default value of 61?"
+setvar_chk "setccab" ${defno[@]}
+if [[ $setccab == "y" ]]; then
+  setvar_chk "ccab" ${validccab[@]}
+  printf "ccab is $ccab\n\n"
+  if [[ $setccab != "n" ]]; then
+    newcmd="$cmd --with-ccab=$ccab"
+    cmd="$newcmd"
+  fi
 fi
 
 printf "maxrregcount can be useful for optimizing GPTL performance"

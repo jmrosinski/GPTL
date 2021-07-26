@@ -29,7 +29,7 @@ program utrtest
     end if
   end do
 
-  write(6,*) 'Purpose: estimate overhead of GPTL underlying timing routine (UTR)'
+  write(6,*) 'Purpose: assess accuracy of GPTL overhead estimates'
   
   ret = gptlinitialize ()
 
@@ -50,12 +50,12 @@ program utrtest
   if (enable_expensive) then
 !$acc parallel copyin(handle1,handle2,handle3,handle4,handle5,handle6,handle7,handle8,sum)
     call sub (1, 10000000, sum, handle1)
-    call sub (10, 1000000, sum, handle2)   ! collides
+    call sub (10, 1000000, sum, handle2)
     call sub (100, 100000, sum, handle3)
     call sub (1000, 10000, sum, handle4)
     call sub (10000, 1000, sum, handle5)
     call sub (100000, 100, sum, handle6)
-    call sub (1000000, 10, sum, handle7)   ! collides
+    call sub (1000000, 10, sum, handle7)
     call sub (10000000, 1, sum, handle8)
 !$acc end parallel
   else
