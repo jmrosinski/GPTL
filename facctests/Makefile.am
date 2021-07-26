@@ -4,7 +4,6 @@
 AM_FCFLAGS = $(FCFLAGS) -I../fortran/src -I../cuda/src @FACCFLAGS@
 
 # Link to GPTL cpu and cuda libraries.
-# -Mcuda=cc60 required for CUDA functions
 # -lstdc++ required for gxx_personality compllaints
 AM_LDFLAGS = -L../fortran/src -lgptlf -L../src/.libs -lgptl -L../cuda/src -lgptl_cuda @FACCLDFLAGS@
 
@@ -14,7 +13,7 @@ if HAVE_LIBUNWIND
 endif
 
 # These programs will be built but not installed.
-noinst_PROGRAMS = basic driver_vdmints3 warp2sm
+noinst_PROGRAMS = basic driver_vdmints3 warp2sm utrtest
 
 # Test programs that will be built for all configurations.
 check_PROGRAMS = basic
@@ -25,6 +24,9 @@ driver_vdmints3_OBJS =    driver_vdmints3.o  vdmints3_sim.o  getval.o
 
 warp2sm_SOURCES = warp2sm.F90
 warp2sm_OBJS    = warp2sm.o
+
+utrtest_SOURCES = utrtest.F90
+utrtest_OBJS    = utrtest.o
 
 .F90.o:
 	$(FC) -c $< $(AM_FCFLAGS)
@@ -45,3 +47,7 @@ driver_vdmints3$(EXEEXT): $(driver_vdmints3_OBJS)
 warp2sm.o: warp2sm.F90
 warp2sm$(EXEEXT): warp2sm.o
 	$(FC) -o $@ warp2sm.o $(AM_LDFLAGS)
+
+utrtest.o: utrtest.F90
+utrtest$(EXEEXT): utrtest.o
+	$(FC) -o $@ utrtest.o $(AM_LDFLAGS)

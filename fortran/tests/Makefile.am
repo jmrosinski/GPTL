@@ -19,7 +19,7 @@ if ENABLE_CUDA
 LIBNAME = libgptl.a
 FLIBNAME = libgptlf.a
 LIBPATHS = ../src/${FLIBNAME} ../../src/.libs/${LIBNAME} \
-           ../../cuda/src/libgptl_cuda.a -Mcuda=cc60 -lstdc++
+           ../../cuda/src/libgptl_cuda.a -Mcuda=cc61 -lstdc++
 else
 LIBNAME = libgptl.la
 FLIBNAME = libgptlf.la

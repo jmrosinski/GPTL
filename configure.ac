@@ -390,12 +390,12 @@ if test "x$NVCC" != xno; then
   if test "x$useomp" = xyes; then
     AC_MSG_ERROR([CUDA is currently incompatible with CPU OpenMP. Rerun configure with --disable-openmp])
   fi
-# Hardwire to cc_60
+# Hardwire to cc_61
   use_cuda=yes
   if test "x$use_debug" = xyes; then
-    CUFLAGS="$CUFLAGS -G -lineinfo -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true"
+    CUFLAGS="$CUFLAGS -G -lineinfo -ftz=true -gencode arch=compute_61,code=compute_61 -rdc=true"
   else
-    CUFLAGS="$CUFLAGS --ptxas-options=-v -ftz=true -gencode arch=compute_60,code=compute_60 -rdc=true"
+    CUFLAGS="$CUFLAGS --ptxas-options=-v -ftz=true -gencode arch=compute_61,code=compute_61 -rdc=true"
   fi
   
 # Check for optimizing max register count
@@ -450,19 +450,19 @@ if test "x$NVCC" != xno; then
     CACCFLAGS="-acc gpu -Minfo=accel"
   fi
 
-  AC_ARG_VAR(CACCLDFLAGS, [C-OpenACC link flags--defaults to -cudalib -ta=tesla,cc60])
+  AC_ARG_VAR(CACCLDFLAGS, [C-OpenACC link flags--defaults to -cudalib=nvshmem -ta=tesla,cc61])
   if test "x$CACCLDFLAGS" = x; then
-    CACCLDFLAGS="-cudalib -ta=tesla,cc60"
+    CACCLDFLAGS="-cudalib=nvshmem -ta=tesla,cc61"
   fi
   
-  AC_ARG_VAR(FACCFLAGS, [F-OpenACC compiler flags--defaults to -acc -Minfo=accel -ta=tesla:cc60 -m64])
+  AC_ARG_VAR(FACCFLAGS, [F-OpenACC compiler flags--defaults to -acc -Minfo=accel -ta=tesla:cc61 -m64])
   if test "x$FACCFLAGS" = x; then
-    FACCFLAGS="-acc -Minfo=accel -ta=tesla:cc60 -m64"
+    FACCFLAGS="-acc -Minfo=accel -ta=tesla:cc61 -m64"
   fi
 
-  AC_ARG_VAR(FACCLDFLAGS, [F-OpenACC link flags--defaults to -acc -Mcuda=cc60 -lstdc++])
+  AC_ARG_VAR(FACCLDFLAGS, [F-OpenACC link flags--defaults to -acc -Mcuda=cc61 -lstdc++])
   if test "x$FACCLDFLAGS" = x; then
-    FACCLDFLAGS="-acc -Mcuda=cc60 -lstdc++"
+    FACCLDFLAGS="-acc -Mcuda=cc61 -lstdc++"
   fi
   
   AC_SUBST([CACCFLAGS],   [$CACCFLAGS])
