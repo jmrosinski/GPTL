@@ -57,7 +57,8 @@ if [[ $debug == "y" ]]; then
   cmd="$newcmd"
 fi
 
-printf "gpuchecks should be enabled first time, but adds overhead so disable if no problems\n" 
+printf "gpuchecks should be enabled first time, but adds overhead so disable if no problems\n"
+printf "gpuchecks enables testing for GPTL not initialized, bad handle, timer already on/off, bad smid\n"
 setvar_chk "gpuchecks" ${defyes[@]}
 printf "gpuchecks is $gpuchecks\n\n"
 if [[ $gpuchecks == "n" ]]; then

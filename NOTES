@@ -24,3 +24,5 @@ Test W/O nvidia module loaded:
 
 Now with nvidia 21.7 instead of 21.2, substantial speedup in spiralOverlap
 (around 10%)
+
+Now with nvidia 21.7 OpenACC under cuda-gdb fails.
