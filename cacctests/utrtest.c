@@ -9,7 +9,7 @@ int main (int argc, char **argv)
   int ret;
   int handle1, handle2, handle3, handle4, handle5, handle6, handle7, handle8;
   int handle1_gpu, handle2_gpu, handle3_gpu, handle4_gpu, handle5_gpu, handle6_gpu,
-    handle7_gpu, handle8_gpu;
+    handle7_gpu, handle8_gpu, handle_total;
 
   extern void sub (int, int, double, char *, int);
 #pragma acc routine seq
@@ -30,17 +30,19 @@ int main (int argc, char **argv)
   ret = GPTLinit_handle ("1x1e7", &handle1);
 
 // Set GPU handles
-#pragma acc parallel private(ret) copyout(handle8_gpu,handle7_gpu,handle6_gpu,handle5_gpu, \
-					  handle4_gpu,handle3_gpu,handle2_gpu,handle1_gpu)
+#pragma acc parallel private(ret) \
+  copyout(handle8_gpu,handle7_gpu,handle6_gpu,handle5_gpu,handle4_gpu, \
+	  handle3_gpu,handle2_gpu,handle1_gpu,handle_total)
   {
-   ret = GPTLinit_handle_gpu ("1e7x1", &handle8_gpu);
-   ret = GPTLinit_handle_gpu ("1e6x10", &handle7_gpu);
-   ret = GPTLinit_handle_gpu ("1e5x100", &handle6_gpu);
-   ret = GPTLinit_handle_gpu ("1e4x1000", &handle5_gpu);
-   ret = GPTLinit_handle_gpu ("1000x1e4", &handle4_gpu);
-   ret = GPTLinit_handle_gpu ("100x1e5", &handle3_gpu);
-   ret = GPTLinit_handle_gpu ("10x1e6", &handle2_gpu);
-   ret = GPTLinit_handle_gpu ("1x1e7", &handle1_gpu);
+    ret = GPTLinit_handle_gpu ("total", &handle_total);
+    ret = GPTLinit_handle_gpu ("1e7x1", &handle8_gpu);
+    ret = GPTLinit_handle_gpu ("1e6x10", &handle7_gpu);
+    ret = GPTLinit_handle_gpu ("1e5x100", &handle6_gpu);
+    ret = GPTLinit_handle_gpu ("1e4x1000", &handle5_gpu);
+    ret = GPTLinit_handle_gpu ("1000x1e4", &handle4_gpu);
+    ret = GPTLinit_handle_gpu ("100x1e5", &handle3_gpu);
+    ret = GPTLinit_handle_gpu ("10x1e6", &handle2_gpu);
+    ret = GPTLinit_handle_gpu ("1x1e7", &handle1_gpu);
   }
   ret = GPTLcudadevsync ();
 
@@ -58,17 +60,24 @@ int main (int argc, char **argv)
   ret = GPTLstop ("total_cpu");
 
   sum = 0.;
-#pragma acc parallel copyin(handle1_gpu,handle2_gpu,handle3_gpu,handle4_gpu,handle5_gpu, \
-			    handle6_gpu,handle7_gpu,handle8_gpu,sum)
+  // GPU loop: hardwire for 5 SMs, 128 cores per SM
+#pragma acc parallel private (ret) \
+  copyin(handle1_gpu,handle2_gpu,handle3_gpu,handle4_gpu,handle5_gpu,	\
+	 handle6_gpu,handle7_gpu,handle8_gpu,handle_total,sum) \
+  vector_length(128), num_workers(5)
   {
-    sub_gpu (10000000, 1, sum, handle8_gpu);
-    sub_gpu (1000000, 10, sum, handle7_gpu);
-    sub_gpu (100000, 100, sum, handle6_gpu);
-    sub_gpu (10000, 1000, sum, handle5_gpu);
-    sub_gpu (1000, 10000, sum, handle4_gpu);
-    sub_gpu (100, 100000, sum, handle3_gpu);
-    sub_gpu (10, 1000000, sum, handle2_gpu);
-    sub_gpu (1, 10000000, sum, handle1_gpu);
+    for (int n = 0; n < 640; ++n) {
+      ret = GPTLstart_gpu (handle_total);
+      sub_gpu (10000000, 1, sum, handle8_gpu);
+      sub_gpu (1000000, 10, sum, handle7_gpu);
+      sub_gpu (100000, 100, sum, handle6_gpu);
+      sub_gpu (10000, 1000, sum, handle5_gpu);
+      sub_gpu (1000, 10000, sum, handle4_gpu);
+      sub_gpu (100, 100000, sum, handle3_gpu);
+      sub_gpu (10, 1000000, sum, handle2_gpu);
+      sub_gpu (1, 10000000, sum, handle1_gpu);
+      ret = GPTLstop_gpu (handle_total);
+    }
   }
   ret = GPTLcudadevsync ();
   ret = GPTLstop ("total");
