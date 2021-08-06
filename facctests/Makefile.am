@@ -16,8 +16,8 @@ endif
 noinst_PROGRAMS = basic driver_vdmints3 warp2sm utrtest
 
 # Test programs that will be built for all configurations.
-check_PROGRAMS = basic
-TESTS          = basic
+check_PROGRAMS = basic badinput
+TESTS          = basic badinput
 
 driver_vdmints3_SOURCES = driver_vdmints3.cu vdmints3_sim.cu getval.cu
 driver_vdmints3_OBJS =    driver_vdmints3.o  vdmints3_sim.o  getval.o
@@ -36,9 +36,13 @@ utrtest_OBJS    = utrtest.o
 	$(FC) -c $< $(AM_FCFLAGS)
 
 # Cannot remember if/why need both getval.o and getval.$(FC_MODEXT) here???
-basic.o: basic.F90 getval.o getval.$(FC_MODEXT) ../fortran/src/gptl.$(FC_MODEXT) ../cuda/src/gptl_acc.mod
+basic.o: basic.F90 getval.o getval.$(FC_MODEXT) ../fortran/src/gptl.$(FC_MODEXT) ../cuda/src/gptl_acc.$(FC_MODEXT)
 basic$(EXEEXT): basic.o
 	$(FC) -o $@ basic.o $(AM_LDFLAGS)
+
+badinput.o: badinput.F90 ../fortran/src/gptl.$(FC_MODEXT) ../cuda/src/gptl_acc.$(FC_MODEXT)
+badinput$(EXEEXT): badinput.o
+	$(FC) -o $@ badinput.o $(AM_LDFLAGS)
 
 driver_vdmints3.o: getval.$(FC_MODEXT) ../fortran/src/gptl.$(FC_MODEXT) ../cuda/src/gptl_acc.mod
 driver_vdmints3$(EXEEXT): $(driver_vdmints3_OBJS)

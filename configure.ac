@@ -436,6 +436,9 @@ if test "x$NVCC" != xno; then
     gpuchecks=yes
   ],gpuchecks=no)
   AC_MSG_RESULT($gpuchecks)
+  if test "x$gpuchecks" = xyes; then
+    FCFLAGS="$FCFLAGS -DENABLE_GPUCHECKS"
+  fi
 
 # Whether to check for recursion on GPU.
 # Default disabled since recursion is a bad idea on GPU and checking for it adds overhead

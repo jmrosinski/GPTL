@@ -11,6 +11,7 @@
 #include <string.h>        // memcpy
 #include <stdint.h>        // uint types
 #include <cuda.h>
+#include <limits.h>        // LLONG_MAX
 
 #include "device.h"
 #include "gptl_cuda.h"
@@ -149,8 +150,11 @@ __global__ static void initialize_gpu (const int verbose_in,
   ntimers = 0;
   max_name_len = 0;
   for (w = 0; w < maxwarps; ++w) {
-    wi = FLATTEN_TIMERS(w,0);
-    memset (&timers[wi], 0, maxtimers * sizeof (Timer));
+    for (int i = 0; i < maxtimers; ++i) {
+      wi = FLATTEN_TIMERS(w,i);
+      memset (&timers[wi], 0, sizeof (Timer));
+      timers[wi].wall.min = LLONG_MAX;
+    }
   }
   // Make a timer "GPTL_ROOT" to ensure no orphans, and to simplify printing.
   memcpy (timernames[0].name, "GPTL_ROOT", 9+1);
@@ -213,14 +217,21 @@ __device__ int GPTLinit_handle_gpu (const char *name,
   int i;
   static const char *thisfunc = "GPTLinit_handle_gpu";
 
-  // Guts of this function are run only by thread 0 of warp 0 due to loop over warps below. 
-  // Need to have each timer have the same index for all warps.
-  // Nice feature: Can be called by just thread 0 of warp 0, OR NOT
-  if ((mywarp = get_warp_num ()) != 0) {
-    return SUCCESS;
-  }
+  // Initialize handle to a bad value. This prevents mistakes e.g. "acc copyout(handle)" which
+  // MAY end up setting handle=0 if this routine fails (valid but not desired GPTL_ROOT).
+  // Note "acc copy(handle)" for this routine is better
+  *handle = -999;
 
-  // First check if a handle for the requested timer already exists (i=1 skips GPTL_ROOT)
+  if ( ! initialized)
+    return GPTLerror_1s ("%s: GPTLinitialize has not been called\n", thisfunc);
+  
+  // Guts of this function are run only by thread 0 of warp 0 to prevent race conditions on handle. 
+  // Nice feature: Can be called by just thread 0 of warp 0, OR NOT
+  if ((mywarp = get_warp_num ()) != 0)
+    return GPTLerror_1s1d ("%s: must be called ONLY from thread 0 warp 0 got warp=%d\n",
+			   thisfunc, mywarp);
+
+  // Check if a handle for the requested timer already exists (i=1 skips GPTL_ROOT)
   for (i = 1; i <= ntimers; ++i) {
     if (STRMATCH (name, timernames[i].name)) {
 #ifdef DEBUG_PRINT
@@ -268,23 +279,23 @@ __device__ int GPTLstart_gpu (const int handle)
 
 #ifdef ENABLE_GPUCHECKS
   if ( ! initialized)
-    return GPTLerror_1s1d ("%s handle=%d: GPTLinitialize_gpu has not been called\n", 
+    return GPTLerror_1s1d ("%s handle=%d: GPTLinitialize has not been called\n", 
 			   thisfunc, handle);
 #endif
   w = get_warp_num ();
 
   // Return if not thread 0 of the warp, or warpId is outside range of available timers
-  if (w == NOT_ROOT_OF_WARP || w == WARPID_GT_MAXWARPS)
+  if (w < 0)
     return SUCCESS;
 
 #ifdef VERBOSE
   printf ("Entered %s w=%d handle=%d\n", thisfunc, w, handle);
 #endif
 
-  // Input handle should be a positive integer not greater than ntimers (0 accepted for GPTL_ROOT)
+  // Input handle should be a positive integer not greater than ntimers (GPTL_ROOT is 0))
 #ifdef ENABLE_GPUCHECKS
   if (handle < 0 || handle > ntimers)
-    return GPTLerror_1s1d ("%s: Invalid input handle=%d. Perhaps GPTLinit_handle_gpu not called?\n",
+    return GPTLerror_1s1d ("%s: Invalid input handle=%d. GPTLinit_handle_gpu not called?\n",
 			   thisfunc, handle);
 #endif
   wi = FLATTEN_TIMERS (w, handle);
@@ -306,10 +317,7 @@ __device__ int GPTLstart_gpu (const int handle)
   printf ("%s: ptr=%p setting onflg=true\n", thisfunc, ptr);
 #endif
 
-  // Get the timestamp and smid
-  // IMPORTANT: Issue the cmds in sequence because SM changing between clock64() call and getting
-  // the SM number would be bad.
-  // NOTE: Timing value will be thrown away if SM changes upon stop() call.
+  // Get the timestamp and smid.
   asm volatile ("mov.u32 %0, %smid;" : "=r"(ptr->smid));
   ptr->wall.last = clock64 ();
   ptr->onflg = true;
@@ -343,13 +351,14 @@ __device__ int GPTLstop_gpu (const int handle)
 
 #ifdef ENABLE_GPUCHECKS
   if ( ! initialized)
-    return GPTLerror_1s ("%s: GPTLinitialize_gpu has not been called\n", thisfunc);
+    return GPTLerror_1s1d ("%s handle=%d: GPTLinitialize has not been called\n", 
+			   thisfunc, handle);
 #endif
   
   w = get_warp_num ();
 
   // Return if not thread 0 of the warp, or warpId is outside range of available timers
-  if (w == NOT_ROOT_OF_WARP || w == WARPID_GT_MAXWARPS)
+  if (w < 0)
     return SUCCESS;
 
 #ifdef VERBOSE
@@ -359,13 +368,10 @@ __device__ int GPTLstop_gpu (const int handle)
 #ifdef ENABLE_GPUCHECKS
   // Input handle should be a positive integer not greater than ntimers (0 accepted for GPTL_ROOT)
   if (handle < 0 || handle > ntimers)
-    return GPTLerror_1s1d ("%s: Invalid input handle=%d. Perhaps GPTLinit_handle_gpu not called?\n",
+    return GPTLerror_1s1d ("%s: Invalid input handle=%d. GPTLinit_handle_gpu not called?\n",
 			   thisfunc, handle);
 #endif
   // Get the timestamp and smid
-  // IMPORTANT: Issue the cmds in sequence because SM changing between clock64() call and getting
-  // the SM number would be bad.
-  // NOTE: Timing value will be thrown away if SM changed from start() call.
 #ifndef TIME_GPTL
   tp1 = clock64 ();
 #endif
@@ -407,7 +413,7 @@ __device__ int GPTLstop_gpu (const int handle)
   globcount[istop*maxwarps + w]        += stop - tp1;
   globcount[update_stats*maxwarps + w] += stop - start;
 #endif
-
+  
   return SUCCESS;
 }
 
@@ -470,22 +476,17 @@ __device__ static inline int update_stats_gpu (const int handle,
 #endif
     
     ++ptr->negdelta_count;
-    return SUCCESS;
-  }
 
-  ++ptr->count;
-  ptr->wall.accum += delta;
-  
-  if (ptr->count == 1) {
-    ptr->wall.max = delta;
-    ptr->wall.min = delta;
   } else {
-    if (delta > ptr->wall.max)
+
+    ++ptr->count;
+    ptr->wall.accum += delta;
+  
+    if (delta > ptr->wall.max)  // On first call ptr->wall.max will be 0
       ptr->wall.max = delta;
-    if (delta < ptr->wall.min)
+    if (delta < ptr->wall.min)  // On first call ptr->wall.min will be LLONG_MAX
       ptr->wall.min = delta;
   }
-  
   return SUCCESS;
 }
 
@@ -515,6 +516,7 @@ __global__ void GPTLreset_gpu (void)
       timers[wi].onflg = false;
       timers[wi].count = 0;
       memset (&timers[wi].wall, 0, sizeof (timers[wi].wall));
+      timers[wi].wall.min = LLONG_MAX;
     }
   }
 
@@ -529,6 +531,7 @@ __device__ static inline int get_warp_num ()
 {
   int threadId;
   int warpId;
+  int retval;
 
   threadId = threadIdx.x
         +  blockDim.x  * threadIdx.y
@@ -539,9 +542,14 @@ __device__ static inline int get_warp_num ()
 
   // Only thread 0 of the warp will be timed
   if (threadId % warpsize != 0)
-    return NOT_ROOT_OF_WARP;
+    retval = NOT_ROOT_OF_WARP;
 
   warpId = threadId / warpsize;
+
+  if (warpId > maxwarps-1)
+    retval = WARPID_GT_MAXWARPS;
+  else
+    retval = warpId;
 
   // Setting maxwarpid_found is a race condition that is ignored due to efficiency considerations
   // It is only printed as an estimate when GPTLpr is called.
@@ -549,11 +557,8 @@ __device__ static inline int get_warp_num ()
   if (warpId+1 > maxwarpid_found)
     maxwarpid_found = warpId;
 #endif
-  
-  if (warpId > maxwarps-1)
-    return WARPID_GT_MAXWARPS;
 
-  return warpId;
+  return retval;
 }
 
 __device__ int GPTLget_maxwarpid_timed (void)
@@ -562,10 +567,11 @@ __device__ int GPTLget_maxwarpid_timed (void)
   int maxwarpid_timed = 0;
   static const char *thisfunc = "GPTLget_maxwarpid_timed";
 
-  if (get_warp_num () != 0) {
-    (void) GPTLerror_1s ("%s: must only be called by thread 0 of warp 0\n", thisfunc);
-    return -1;
-  }
+  if ( ! initialized)
+    return GPTLerror_1s ("%s: GPTLinitialize_gpu has not been called\n", thisfunc);
+
+  if (get_warp_num () != 0)
+    return GPTLerror_1s ("%s: must only be called by thread 0 of warp 0\n", thisfunc);
 
   for (int w = 0; w < maxwarps; ++w) {
     for (int i = ntimers; i > 0; --i) {
@@ -585,13 +591,13 @@ __device__ int GPTLget_wallclock_gpu (const int handle,
   static const char *thisfunc = "GPTLget_wallclock_gpu";
   
   if ( ! initialized)
-    (void) GPTLerror_1s ("%s: GPTLinitialize_gpu has not been called\n", thisfunc);
+    return GPTLerror_1s ("%s: GPTLinitialize_gpu has not been called\n", thisfunc);
 
   if (gpu_hz == 0.)
-    (void) GPTLerror_1s ("%s: gpu_hz has not been set\n", thisfunc);
+    return GPTLerror_1s ("%s: gpu_hz has not been set\n", thisfunc);
 
   w = get_warp_num ();
-  if (w == NOT_ROOT_OF_WARP || w == WARPID_GT_MAXWARPS)
+  if (w < 0)
     return SUCCESS;
 
   if (handle < 0 || handle > ntimers)
@@ -831,8 +837,11 @@ __global__ void GPTLget_overhead_gpu (int *maxwarpid_timed_out,
 
   /*
   ** Gather timings by running each test 1000 times
-  ** First: start/stop overhead 
+  ** First: start/stop overhead
+  ** FIrst 2 are warmups
   */
+  ret = GPTLstart_gpu (0);
+  ret = GPTLstop_gpu (0);
   t1 = clock64();
   for (i = 0; i < 1000; ++i) {
     ret = GPTLstart_gpu (0);
@@ -908,7 +917,7 @@ __device__ static void start_misc (int w, const int handle)
   if ( ! initialized)
     printf ("%s: ! initialized\n", thisfunc);
 #endif
-  if (w == NOT_ROOT_OF_WARP || w == WARPID_GT_MAXWARPS)
+  if (w < 0)
     printf ("%s: bad w value\n", thisfunc);
 
 #ifdef ENABLE_GPUCHECKS
@@ -938,7 +947,7 @@ __device__ static void stop_misc (int w, const int handle)
 #ifdef ENABLE_GPUCHECKS
   if ( ! initialized)
     printf ("%s: ! initialized\n", thisfunc);
-  if (w == NOT_ROOT_OF_WARP || w == WARPID_GT_MAXWARPS)
+  if (w < 0)
     printf ("%s: bad w value\n", thisfunc);
 
   if (handle < 0 || handle > ntimers)
@@ -957,6 +966,7 @@ __device__ static void stop_misc (int w, const int handle)
   if (timer.recurselvl > 0) {
     --timer.recurselvl;
     ++timer.count;
+    timers[wi] = timer;
   }
 #endif
 
@@ -1030,12 +1040,6 @@ __device__ static void prbits8 (uint64_t val)
   
 __device__ int GPTLget_warp_thread (int *warp, int *thread)
 {
-  static const char *thisfunc = "GPTLget_warp_thread";
-  if ( ! initialized) {
-    (void) GPTLerror_1s ("%s: initialization was not completed\n", thisfunc);
-    return -1;
-  }
-
   *thread = threadIdx.x
         +  blockDim.x  * threadIdx.y
         +  blockDim.x  *  blockDim.y  * threadIdx.z
@@ -1074,7 +1078,7 @@ __device__ int GPTLget_sm_thiswarp (int smarr[])
   uint smid;
   
   mywarp = get_warp_num ();
-  if (mywarp == NOT_ROOT_OF_WARP || mywarp == WARPID_GT_MAXWARPS)
+  if (mywarp < 0)
     return -1;
   
   asm volatile ("mov.u32 %0, %smid;" : "=r"(smid));
