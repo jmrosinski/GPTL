@@ -9,8 +9,9 @@ program utrtest
   integer :: ret
   integer :: handle1, handle2, handle3, handle4, handle5, handle6, handle7, handle8
   integer :: handle1_gpu, handle2_gpu, handle3_gpu, handle4_gpu, handle5_gpu, handle6_gpu, &
-             handle7_gpu, handle8_gpu
-  integer :: n                 ! iterator through argument list
+             handle7_gpu, handle8_gpu, handle_total
+  integer :: khz, warpsize, devnum, smcount, cores_per_sm, cores_per_gpu
+  integer :: n                 ! iterator
   integer :: narg              ! number of cmd-line args
   character(len=256) :: arg    ! cmd-line arg
 
@@ -32,29 +33,33 @@ program utrtest
 
   write(6,*) 'Purpose: assess accuracy of GPTL overhead estimates'
   
+! Retrieve information about the GPU. Need only cores_per_gpu
+  ret = gptlget_gpu_props (khz, warpsize, devnum, smcount, cores_per_sm, cores_per_gpu)
   ret = gptlinitialize ()
 
 ! Set CPU handles
-  ret = gptlinit_handle ('1e7x1'//char(0),handle8)
-  ret = gptlinit_handle ('1e6x10'//char(0),handle7)
-  ret = gptlinit_handle ('1e5x100'//char(0),handle6)
-  ret = gptlinit_handle ('1e4x1000'//char(0),handle5)
-  ret = gptlinit_handle ('1000x1e4'//char(0),handle4)
-  ret = gptlinit_handle ('100x1e5'//char(0),handle3)
-  ret = gptlinit_handle ('10x1e6'//char(0),handle2)
-  ret = gptlinit_handle ('1x1e7'//char(0),handle1)
+  ret = gptlinit_handle ('1e7x1',handle8)
+  ret = gptlinit_handle ('1e6x10',handle7)
+  ret = gptlinit_handle ('1e5x100',handle6)
+  ret = gptlinit_handle ('1e4x1000',handle5)
+  ret = gptlinit_handle ('1000x1e4',handle4)
+  ret = gptlinit_handle ('100x1e5',handle3)
+  ret = gptlinit_handle ('10x1e6',handle2)
+  ret = gptlinit_handle ('1x1e7',handle1)
 
 ! Set GPU handles
-!$acc parallel private(ret) copyout(handle8_gpu,handle7_gpu,handle6_gpu,handle5_gpu, &
-!$acc&                              handle4_gpu,handle3_gpu,handle2_gpu,handle1_gpu)
-  ret = gptlinit_handle_gpu ('1e7x1'//char(0),handle8_gpu)
-  ret = gptlinit_handle_gpu ('1e6x10'//char(0),handle7_gpu)
-  ret = gptlinit_handle_gpu ('1e5x100'//char(0),handle6_gpu)
-  ret = gptlinit_handle_gpu ('1e4x1000'//char(0),handle5_gpu)
-  ret = gptlinit_handle_gpu ('1000x1e4'//char(0),handle4_gpu)
-  ret = gptlinit_handle_gpu ('100x1e5'//char(0),handle3_gpu)
-  ret = gptlinit_handle_gpu ('10x1e6'//char(0),handle2_gpu)
-  ret = gptlinit_handle_gpu ('1x1e7'//char(0),handle1_gpu)
+!$acc parallel private(ret) &
+!$acc&  copyout(handle8_gpu,handle7_gpu,handle6_gpu,handle5_gpu,handle4_gpu, &
+!$acc&          handle3_gpu,handle2_gpu,handle1_gpu,handle_total)
+  ret = gptlinit_handle_gpu ('total', handle_total);
+  ret = gptlinit_handle_gpu ('1e7x1',handle8_gpu)
+  ret = gptlinit_handle_gpu ('1e6x10',handle7_gpu)
+  ret = gptlinit_handle_gpu ('1e5x100',handle6_gpu)
+  ret = gptlinit_handle_gpu ('1e4x1000',handle5_gpu)
+  ret = gptlinit_handle_gpu ('1000x1e4',handle4_gpu)
+  ret = gptlinit_handle_gpu ('100x1e5',handle3_gpu)
+  ret = gptlinit_handle_gpu ('10x1e6',handle2_gpu)
+  ret = gptlinit_handle_gpu ('1x1e7',handle1_gpu)
 !$acc end parallel
   ret = gptlcudadevsync ()
 
@@ -72,16 +77,22 @@ program utrtest
   ret = gptlstop ('total_cpu')
 
   sum = 0.
- !$acc parallel copyin(handle1_gpu,handle2_gpu,handle3_gpu,handle4_gpu,handle5_gpu, &
- !$acc&                handle6_gpu,handle7_gpu,handle8_gpu,sum)
-  call sub_gpu (10000000, 1, sum, handle8_gpu)
-  call sub_gpu (1000000, 10, sum, handle7_gpu)
-  call sub_gpu (100000, 100, sum, handle6_gpu)
-  call sub_gpu (10000, 1000, sum, handle5_gpu)
-  call sub_gpu (1000, 10000, sum, handle4_gpu)
-  call sub_gpu (100, 100000, sum, handle3_gpu)
-  call sub_gpu (10, 1000000, sum, handle2_gpu)
-  call sub_gpu (1, 10000000, sum, handle1_gpu)
+!$acc parallel private (ret,n) &
+!$acc  copyin(handle1_gpu,handle2_gpu,handle3_gpu,handle4_gpu,handle5_gpu,   &
+!$acc	      handle6_gpu,handle7_gpu,handle8_gpu,handle_total,cores_per_gpu,sum)
+!$acc loop gang worker vector
+  do n=1,cores_per_gpu
+    ret = gptlstart_gpu (handle_total)
+    call sub_gpu (10000000, 1, sum, handle8_gpu)
+    call sub_gpu (1000000, 10, sum, handle7_gpu)
+    call sub_gpu (100000, 100, sum, handle6_gpu)
+    call sub_gpu (10000, 1000, sum, handle5_gpu)
+    call sub_gpu (1000, 10000, sum, handle4_gpu)
+    call sub_gpu (100, 100000, sum, handle3_gpu)
+    call sub_gpu (10, 1000000, sum, handle2_gpu)
+    call sub_gpu (1, 10000000, sum, handle1_gpu)
+    ret = gptlstop_gpu (handle_total)
+  end do
 !$acc end parallel
   ret = gptlcudadevsync ()
   ret = gptlstop ('total')
