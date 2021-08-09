@@ -66,8 +66,9 @@ int main (int argc, char **argv)
   sum = 0.;
   // GPU loop: hardwire for 5 SMs, 128 cores per SM
 #pragma acc parallel private (ret) \
-  copyin(handle1_gpu,handle2_gpu,handle3_gpu,handle4_gpu,handle5_gpu,       \
-	 handle6_gpu,handle7_gpu,handle8_gpu,handle_total,cores_per_gpu,sum)
+  copyin(handle1_gpu,handle2_gpu,handle3_gpu,handle4_gpu,handle5_gpu,    \
+	 handle6_gpu,handle7_gpu,handle8_gpu,handle_total,cores_per_gpu) \
+  copy(sum) reduction(+:sum)
 
 #pragma acc loop gang worker vector
   for (int n = 0; n < cores_per_gpu; ++n) {
@@ -86,6 +87,8 @@ int main (int argc, char **argv)
   ret = GPTLstop ("total");
     
   ret = GPTLpr (-1);  // negative number means write to stderr
+  ret = GPTLcudadevsync ();
+  printf ("Final value of sum=%g\n", sum);
   return 0;
 }
 

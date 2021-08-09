@@ -78,8 +78,9 @@ program utrtest
 
   sum = 0.
 !$acc parallel private (ret,n) &
-!$acc  copyin(handle1_gpu,handle2_gpu,handle3_gpu,handle4_gpu,handle5_gpu,   &
-!$acc	      handle6_gpu,handle7_gpu,handle8_gpu,handle_total,cores_per_gpu,sum)
+!$acc  copyin(handle1_gpu,handle2_gpu,handle3_gpu,handle4_gpu,handle5_gpu,    &
+!$acc	      handle6_gpu,handle7_gpu,handle8_gpu,handle_total,cores_per_gpu) &
+!$acc  copy(sum) reduction(sum)
 !$acc loop gang worker vector
   do n=1,cores_per_gpu
     ret = gptlstart_gpu (handle_total)
@@ -98,6 +99,8 @@ program utrtest
   ret = gptlstop ('total')
     
   ret = gptlpr (-1)  ! negative number means write to stderr
+  ret = gptlcudadevsync ()
+  write(6,*) 'Final value of sum=',sum
   stop 0
 
 CONTAINS
