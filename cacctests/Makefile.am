@@ -13,7 +13,7 @@ if HAVE_LIBUNWIND
 endif
 
 # These programs will be build but not installed
-noinst_PROGRAMS = basic ohdest warp2sm utrtest simplesum
+noinst_PROGRAMS = basic ohdest warp2sm utrtest simplesum nogptl
 
 # Test programs that will be built for all configurations.
 check_PROGRAMS = basic
@@ -34,6 +34,9 @@ utrtest_OBJS    = utrtest.o
 simplesum_SOURCES = simplesum.c
 simplesum_OBJS    = simplesum.o
 
+nogptl_SOURCES = nogptl.c
+nogptl_OBJS    = nogptl.o
+
 .c.o: $(AM_LDFLAGS)
 	$(CC) -c $< $(AM_CFLAGS)
 
@@ -52,6 +55,10 @@ utrtest$(EXEEXT): utrtest.o
 simplesum$(EXEEXT): simplesum.o
 	$(CC) -o $@ simplesum.o $(AM_LDFLAGS)
 
+nogptl$(EXEEXT): nogptl.o
+	$(CC) -o $@ nogptl.o $(AM_LDFLAGS)
+
 $(basic_OBJS): $(basic_SOURCES) ../include/gptl.h ../cuda/include/gptl_acc.h
 $(warp2sm_OBJS): $(warp2sm_SOURCES) ../include/gptl.h ../cuda/include/gptl_acc.h
 $(simplesum_OBJS): $(simplesum_SOURCES)
+$(nogptl_OBJS): $(nogptl_SOURCES)
