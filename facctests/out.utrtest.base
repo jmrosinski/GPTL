@@ -1,0 +1,131 @@
+ Purpose: assess accuracy of GPTL overhead estimates
+GPTLinitialize: device number=0 warpsize=32 khz=1493000
+GPTL note:GPTLpr id=-1 means output will be written to stderr
+GPTL version info: speedup_get_warp_num_100X-3-gd596-dirty
+GPTL was built without threading
+HAVE_LIBMPI was false
+HAVE_PAPI was false
+ENABLE_NESTEDOMP was false
+Autoprofiling capability was enabled with libunwind
+Underlying timing routine was gettimeofday.
+GPTLget_overhead: using hash entry 23=100x1e5 for getentry estimate
+Total overhead of 1 GPTL start or GPTLstop call=7.6e-08 seconds
+Components are as follows:
+Fortran layer:             0.0e+00 =   0.0% of total
+Get thread number:         2.0e-09 =   2.6% of total
+Generate hash index:       7.0e-09 =   9.2% of total
+Find hashtable entry:      2.4e-08 =  31.6% of total
+Underlying timing routine: 4.0e-08 =  52.6% of total
+Misc start/stop functions: 3.0e-09 =   3.9% of total
+
+Overhead of libunwind (invoked once per auto-instrumented start entry)=3.5566e-05 seconds
+NOTE: If GPTL is called from C not Fortran, the 'Fortran layer' overhead is zero
+NOTE: For calls to GPTLstart_handle()/GPTLstop_handle(), the 'Generate hash index' overhead is zero
+NOTE: For auto-instrumented calls, the cost of generating the hash index plus finding
+      the hashtable entry is 0.0e+00 not the 3.1e-08 portion taken by GPTLstart
+NOTE: Each hash collision roughly doubles the 'Find hashtable entry' cost of that timer
+
+If overhead stats are printed, they are the columns labeled self_OH and parent_OH
+self_OH is estimated as 2X the Fortran layer cost (start+stop) plust the cost of 
+a single call to the underlying timing routine.
+parent_OH is the overhead for the named timer which is subsumed into its parent.
+It is estimated as the cost of a single GPTLstart()/GPTLstop() pair.
+Print method was most_frequent.
+
+If a '%_of' field is present, it is w.r.t. the first timer for thread 0.
+If a 'e6_per_sec' field is present, it is in millions of PAPI counts per sec.
+
+A '*' in column 1 below means the timer had multiple parents, though the values
+printed are for all calls. Multiple parent stats appear later in the file in the
+section titled 'Multiple parent info'
+A '!' in column 1 means the timer is currently ON and the printed timings are only
+valid as of the previous GPTLstop. '!' overrides '*' if the region had multiple
+parents and was currently ON.
+
+Process size=9694.902344 MB rss=307.832031 MB
+
+Stats for thread 0:
+                 Called  Recurse     Wall      max      min   selfOH parentOH
+  total               1     -      30.854   30.854   30.854    0.000    0.000
+    total_cpu         1     -       0.857    0.857    0.857    0.000    0.000
+      1e7x1     1.0e+07     -       0.253 2.90e-05 0.00e+00    0.400    1.090
+      1e6x10    1.0e+06     -       0.031 2.30e-05 0.00e+00    0.040    0.109
+      1e5x100    100000     -       0.012 1.80e-05 0.00e+00    0.004    0.011
+      1e4x1000    10000     -       0.011 3.00e-06 1.00e-06    0.000    0.001
+      1000x1e4     1000     -       0.011 2.80e-05 1.00e-05    0.000    0.000
+      100x1e5       100     -       0.011 1.38e-04 1.05e-04    0.000    0.000
+      10x1e6         10     -       0.011 1.09e-03 1.06e-03    0.000    0.000
+      1x1e7           1     -       0.011    0.011    0.011    0.000    0.000
+
+Overhead sum =      1.66 wallclock seconds
+Total calls  = 1.111e+07
+thread 0 long name translations (empty when no auto-instrumentation):
+
+Total GPTL memory usage = 19.784 KB
+Components:
+Hashmem                 = 16.448 KB
+Regionmem               = 2.16 KB (papimem portion = 0 KB)
+Parent/child arrays     = 0.152 KB
+Callstackmem            = 1.024 KB
+
+GPTLthreadid[0] = 0
+
+
+GPU Results:
+GPTLprint_gpustats: device number=0
+GPTLprint_gpustats: hostname=laptop2018
+Underlying timing routine was clock64() assumed @ 1.493000 Ghz
+Total overhead of 1 GPTLstart_gpu + GPTLstop_gpu pair call=2.2e-06 seconds
+Components of the pair are as follows:
+Sum of overheads should be near start+stop but not necessarily exact (scalefac =   1.53)
+This is because start/stop timing est. is done separately from components
+Get warp number:                4.0e-09 =   0.3% of total
+Underlying timing routine+SMID: 7.1e-08 =   4.9% of total
+Misc calcs in GPTLstart_gpu:    4.9e-07 =  33.7% of total
+Misc calcs in GPTLstop_gpu:     8.8e-07 =  61.1% of total
+
+These 2 are called only by GPTLinit_handle_gpu, thus not part of overhead:
+my_strlen:                      0.0e+00 (name=GPTL_ROOT)
+STRMATCH:                       0.0e+00 (matched name=GPTL_ROOT)
+
+
+GPU timing stats
+GPTL could handle up to 1792 warps (57344 threads)
+This setting can be changed with: GPTLsetoption(GPTLmaxthreads_gpu,<number>)
+19 = max warpId examined
+Only warps which were timed are counted in the following stats
+Overhead estimates self_OH and parent_OH are for warp with 'maxcount' calls
+Assuming SMs are always busy computing, GPTL overhead can be vaguely estimated by this calculation:
+(num warps allocated / num warps on device) * (self_OH + parent_OH)
+name            = region name
+calls           = number of invocations across all examined warps
+warps           = number of examined warps for which region was timed at least once
+holes           = number of examined warps for which region was never executed (maxwarpid_timed + 1 - warps
+wallmax (warp)  = max wall time (sec) taken by any timed warp for this region, followed by the warp number
+wallmin (warp)  = min wall time (sec) taken by any timed warp for this region, followed by the warp number
+maxcount (warp) = max number of times region invoked by any timed warp, followed by the warp number
+mincount (warp) = min number of times region invoked by any timed warp, followed by the warp number
+negmax (warp)   = if a region had a negative interval, biggest count is printed along with the warp number responsible
+nwarps          = number of warps encountering a negative interval
+Bad_SM          = number of times smid changed Max possible = 'calls.' Reported time could be WILDLY wrong
+self_OH         = estimate of GPTL overhead (sec) in the timer incurred by 'maxcount' invocations of it
+parent_OH       = estimate of GPTL overhead (sec) in the parent of the timer incurred by 'maxcount' invocations of it
+
+    name    calls  warps  holes | wallmax  (warp)| wallmin (warp) | maxcount (warp)| mincount (warp)| negmax (warp) nwarps  | Bad_SM| self_OH parent_OH
+   total       20     20      0 |  33.702     18 |  32.755      6 |       1      0 |       1      0 |    -       -      -   |   -   |8.01e-07  1.42e-06 
+   1e7x1 2.00e+08     20      0 |   8.008     16 |   7.743      7 | 1.0e+07      0 | 1.0e+07      0 |    -       -      -   |   -   |   8.007    14.156 
+  1e6x10 2.00e+07     20      0 |   1.094     19 |   1.064      4 | 1.0e+06      0 | 1.0e+06      0 |    -       -      -   |   -   |   0.801     1.416 
+ 1e5x100 2.00e+06     20      0 |   0.374      2 |   0.371      7 |  100000      0 |  100000      0 |    -       -      -   |   -   |   0.080     0.142 
+1e4x1000   200000     20      0 |   0.468     14 |   0.452      3 |   10000      0 |   10000      0 |    -       -      -   |   -   |8.01e-03  1.42e-02 
+1000x1e4    20000     20      0 |   0.445     11 |   0.432     15 |    1000      0 |    1000      0 |    -       -      -   |   -   |8.01e-04  1.42e-03 
+ 100x1e5     2000     20      0 |   0.439     13 |   0.429      8 |     100      0 |     100      0 |    -       -      -   |   -   |8.01e-05  1.42e-04 
+  10x1e6      200     20      0 |   0.433     12 |   0.429      4 |      10      0 |      10      0 |    -       -      -   |   -   |8.01e-06  1.42e-05 
+   1x1e7       20     20      0 |   0.429     16 |   0.429     17 |       1      0 |       1      0 |    -       -      -   |   -   |8.01e-07  1.42e-06 
+
+GPTL GPU memory usage (Timers)      =  3010.56 KB
+GPTL GPU memory usage (Timer names) =     1.92 KB
+                                      --------
+GPTL GPU memory usage (Total)       =  3012.48 KB
+Warning: ieee_inexact is signaling
+    0
+ Final value of sum=   3.5555529600000000E+016

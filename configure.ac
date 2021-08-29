@@ -407,7 +407,7 @@ if test "x$NVCC" != xno; then
   CUFLAGS="$CUFLAGS -gencode arch=compute_$CCAB,code=compute_$CCAB"
 
   if test "x$use_debug" = xyes; then
-    CUFLAGS="$CUFLAGS -G -ftz=true -rdc=true"
+    CUFLAGS="$CUFLAGS -g -G -ftz=true -rdc=true"
   else
     CUFLAGS="$CUFLAGS --ptxas-options=-v -ftz=true -rdc=true"
   fi
@@ -468,6 +468,9 @@ if test "x$NVCC" != xno; then
   AC_ARG_VAR(CACCFLAGS, [C-OpenACC compiler flags--defaults to -acc gpu -Minfo=accel])
   if test "x$CACCFLAGS" = x; then
     CACCFLAGS="-acc gpu -Minfo=accel"
+  fi
+  if test "x$use_debug" = xyes; then
+    CACCFLAGS="-g $CACCFLAGS"
   fi
 
   AC_ARG_VAR(CACCLDFLAGS, [C-OpenACC link flags--defaults to -cudalib=nvshmem -ta=tesla,cc$CCAB])
