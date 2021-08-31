@@ -25,4 +25,7 @@ Test W/O nvidia module loaded:
 Now with nvidia 21.7 instead of 21.2, substantial speedup in spiralOverlap
 (around 10%)
 
-Now with nvidia 21.7 OpenACC under cuda-gdb fails.
+Now with nvidia 21.7 Fortran OpenACC under cuda-gdb fails.
+
+To run ddd:
+ % ddd --debugger /opt/nvidia/hpc_sdk/Linux_x86_64/21.7/compilers/bin/cuda-gdb <executable>

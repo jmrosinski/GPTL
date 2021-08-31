@@ -60,6 +60,14 @@ int main ()
       }
     }
   }
+  
+  if ((ret = acc_async_test_all ())) {
+    printf ("All async operations have completed\n");
+  } else {
+    printf ("Some async operations still outstanding\n");
+    acc_wait_all ();
+    printf ("Done now\n");
+  }
   printf ("sum=%d\n", sum);
   acc_shutdown (devtyp);
 }

@@ -13,7 +13,7 @@ if HAVE_LIBUNWIND
 endif
 
 # These programs will be build but not installed
-noinst_PROGRAMS = basic ohdest warp2sm utrtest simplesum nogptl
+noinst_PROGRAMS = basic ohdest warp2sm utrtest simplesum nogptl tile
 
 # Test programs that will be built for all configurations.
 check_PROGRAMS = basic
@@ -37,8 +37,15 @@ simplesum_OBJS    = simplesum.o
 nogptl_SOURCES = nogptl.c
 nogptl_OBJS    = nogptl.o
 
+tile_SOURCES = tile.cxx
+tile_OBJS    = tile.o
+
 .c.o: $(AM_LDFLAGS)
 	$(CC) -c $< $(AM_CFLAGS)
+
+#Optimize tile. Build with CXX so gdb can understand multi-dim arrays
+.cxx.o: $(AM_LDFLAGS)
+	$(CXX) -O -c $< $(AM_CFLAGS)
 
 basic$(EXEEXT): $(basic_OBJS)
 	$(CC) -o $@ $(basic_OBJS) $(AM_LDFLAGS)
@@ -58,7 +65,11 @@ simplesum$(EXEEXT): simplesum.o
 nogptl$(EXEEXT): nogptl.o
 	$(CC) -o $@ nogptl.o $(AM_LDFLAGS)
 
+tile$(EXEEXT): tile.o
+	$(CXX) -o $@ tile.o $(AM_LDFLAGS)
+
 $(basic_OBJS): $(basic_SOURCES) ../include/gptl.h ../cuda/include/gptl_acc.h
 $(warp2sm_OBJS): $(warp2sm_SOURCES) ../include/gptl.h ../cuda/include/gptl_acc.h
 $(simplesum_OBJS): $(simplesum_SOURCES)
 $(nogptl_OBJS): $(nogptl_SOURCES)
+$(tile_OBJS): $(tile_SOURCES)

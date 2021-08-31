@@ -1,4 +1,4 @@
-#include "../../config.h"
+#include "../config.h"
 #include <openacc.h>
 #include <stdio.h>
 #include "gptl.h"
@@ -31,9 +31,9 @@ int main ()
 #else
   acc_init (devtyp);
 #endif
-  int ganglen = SMcount*2;
-  int worklen = warps_per_sm*2;
-  int veclen = warpsize*2;
+  int ganglen = SMcount;
+  int worklen = warps_per_sm;
+  int veclen = warpsize;
   totwarps = ganglen*worklen*veclen / warpsize;
   int smarr[totwarps];
   
@@ -61,7 +61,7 @@ int main ()
       }
     }
   }
-  printf ("sum=%d\n", sum);
+  printf ("sum should be %d got %d\n", ganglen*worklen*veclen, sum);
 #ifdef PACKAGE
   for (int n = 0; n < totwarps; ++n) {
     if (smarr[n] != -1)
