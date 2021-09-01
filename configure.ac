@@ -23,9 +23,6 @@ AC_LANG(C)
 # Find the C compiler.
 AC_PROG_CC()
 
-# Find the C++ compiler (only needed for 1 file in cacctests)
-AC_PROG_CXX()
-
 # Keep libtool macros in an m4 directory.
 AC_CONFIG_MACRO_DIR([m4])
 
