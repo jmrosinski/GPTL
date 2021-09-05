@@ -527,6 +527,12 @@ __global__ void GPTLreset_gpu (void)
     printf ("%s: Problem resetting GPU timers to 0\n", thisfunc);
 }
 
+/*
+** get_warp_num: flatten CUDA thread, block, grid location to a linearized warp number
+**
+** Return value: warp number, or a negative number if not root of warp, or outside bounds
+** NOTE: Code structure gives 100X speedup vs. multiply nested "if"s
+*/
 __device__ static inline int get_warp_num ()
 {
   int threadId;
@@ -539,10 +545,6 @@ __device__ static inline int get_warp_num ()
         +  blockDim.x  *  blockDim.y  *  blockDim.z  * blockIdx.x
         +  blockDim.x  *  blockDim.y  *  blockDim.z  *  gridDim.x  * blockIdx.y
         +  blockDim.x  *  blockDim.y  *  blockDim.z  *  gridDim.x  *  gridDim.y  * blockIdx.z;
-
-  // Only thread 0 of the warp will be timed
-  if (threadId % warpsize != 0)
-    retval = NOT_ROOT_OF_WARP;
 
   warpId = threadId / warpsize;
 
@@ -557,6 +559,10 @@ __device__ static inline int get_warp_num ()
   if (warpId+1 > maxwarpid_found)
     maxwarpid_found = warpId;
 #endif
+
+  // Only thread 0 of the warp will be timed
+  if (threadId % warpsize != 0)
+    retval = NOT_ROOT_OF_WARP;
 
   return retval;
 }
