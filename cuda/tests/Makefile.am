@@ -39,3 +39,5 @@ test1$(EXEEXT): $(test1_OBJS) ../../include/gptl.h ../include/gptl_cuda.h
 	$(NVCC) -o $@ $(test1_OBJS) $(CUFLAGS) $(AM_LDFLAGS)
 driver_serial$(EXEEXT):  $(driver_serial_OBJS)
 	$(NVCC) -o $@ $(driver_serial_OBJS) $(CUFLAGS) $(AM_LDFLAGS)
+
+CLEANFILES = *.ptx
