@@ -29,7 +29,22 @@ __device__ static bool initialized = false;     // GPTLinitialize has been calle
 __device__ static bool verbose = false;         // output verbosity
 __device__ static double gpu_hz = 0.;           // clock freq
 __device__ int warpsize = 0;                    // warp size
-__device__ static volatile int mutex = 0;       // critical section unscrambles printf output
+
+#define WARPS_PER_SM 4                          // WILL VARY DEPENDING ON GPU
+#define MAX_OVERSUB 1                           // Allowed oversubscription factor (1 seems to work)
+#define SHARED_LOCS_PER_SM (WARPS_PER_SM * MAX_OVERSUB)
+__device__ static int shared_locs_per_sm = -1;  // Determined at runtime
+__shared__ static Timer timer[SHARED_LOCS_PER_SM]; // shared mem copy of a timer
+__device__ static volatile int mutex_print = 0; // critical section unscrambles printf output
+__device__ static volatile int *mutex_share;    // critical section per SM for shared memory
+__device__ static int warps_per_sm;             // determined at runtime
+__device__ static int maxidx = 0;               // diagnostic: max index found into shmem
+
+typedef struct {
+  int warp;
+  bool inuse;
+} Map;
+__shared__ static volatile Map map[SHARED_LOCS_PER_SM]; // which index is in use by which warp
 
 #ifdef TIME_GPTL
 __device__ long long *globcount = 0;            // for timing GPTL itself
@@ -46,10 +61,10 @@ extern "C" {
 
 // Local function prototypes
 __global__ static void initialize_gpu (const int, const int, const double, Timer *,
-				       Timername *, const int, long long *);
+				       Timername *, const int, long long *, const int, int *);
 __device__ static inline int get_warp_num (void);         // get 0-based 1d warp number
-__device__ static inline int update_stats_gpu (const int, Timer *, const long long, const int,
-					       const uint);
+__device__ static inline int update_stats_gpu (const int, volatile Timer *, const long long, 
+					       const int, const uint);
 __device__ static int my_strlen (const char *);
 __device__ static char *my_strcpy (char *, const char *);
 __device__ static int my_strcmp (const char *, const char *);
@@ -57,6 +72,11 @@ __device__ static void start_misc (int, const int);
 __device__ static void stop_misc (int w, const int handle);
 __device__ static void init_gpustats (Gpustats *, int);
 __device__ static void fill_gpustats (Gpustats *, int, int);
+__device__ static int get_shared_idx (int, uint);
+__device__ static void get_mutex (volatile int *);
+__device__ static void free_mutex (volatile int *);
+__device__ static void reset_shmem (int);
+  
 // Defining PRINTNEG will print to stdout whenever a negative interval (stop minus start) is
 // encountered. Only useful when non-zero negative intervals are reported in timing output
 // Should be turned OFF normally--very expensive even when no negatives found.
@@ -72,7 +92,8 @@ __host__ int GPTLinitialize_gpu (const int verbose_in,
 				 const int maxwarps_in,
 				 const int maxtimers_in,
 				 const double gpu_hz_in,
-				 const int warpsize_in)
+				 const int warpsize_in,
+				 const int warps_per_sm_in)
 {
   size_t nbytes;  // number of bytes to allocate
 
@@ -81,6 +102,7 @@ __host__ int GPTLinitialize_gpu (const int verbose_in,
   static Timer *timers_cpu = 0;          // array of timers
   static Timername *timernames_cpu = 0;  // array of timer names
   static long long *globcount_cpu = 0;   // for internally timing GPTL
+  static int *mutex_share_cpu = 0;       // mutex for shared memory
 
   // Set constant memory values: First arg is pass by reference so no "&"
   gpuErrchk (cudaMemcpyToSymbol (maxtimers,   &maxtimers_in,    sizeof (int)));
@@ -90,6 +112,9 @@ __host__ int GPTLinitialize_gpu (const int verbose_in,
 
   nbytes =               maxtimers_in * sizeof (Timername);
   gpuErrchk (cudaMalloc (&timernames_cpu, nbytes));
+
+  nbytes =               warps_per_sm_in * MAX_OVERSUB * sizeof (int);
+  gpuErrchk (cudaMalloc (&mutex_share_cpu, nbytes));
 
 #ifdef TIME_GPTL
   nbytes =               maxwarps_in * NUM_INTERNAL_TIMERS * sizeof (long long);
@@ -102,14 +127,17 @@ __host__ int GPTLinitialize_gpu (const int verbose_in,
 			    timers_cpu,
 			    timernames_cpu,
 			    warpsize_in,
-			    globcount_cpu);
+			    globcount_cpu,
+			    warps_per_sm_in,
+			    mutex_share_cpu);
+
   // This should flush any existing print buffers
   cudaDeviceSynchronize ();
   return 0;
 }
 
 /*
-** GPTLinitialize_gpu (): Initialization routine must be called from single-threaded
+** initialize_gpu (): Initialization routine must be called from single-threaded
 **   region before any other timing routines may be called.  The need for this
 **   routine could be eliminated if not targetting timing library for threaded
 **   capability. 
@@ -120,7 +148,9 @@ __global__ static void initialize_gpu (const int verbose_in,
 				       Timer *timers_cpu,
 				       Timername *timernames_cpu,
 				       const int warpsize_in,
-				       long long *globcount_cpu)
+				       long long *globcount_cpu,
+				       const int warps_per_sm_in,
+				       int *mutex_share_cpu)
 {
   int w, wi;        // warp, flattened indices
   long long t1, t2; // returned from underlying timer
@@ -139,12 +169,26 @@ __global__ static void initialize_gpu (const int verbose_in,
   maxwarps   = maxwarps_in;
   gpu_hz     = gpu_hz_in;
   warpsize   = warpsize_in;
+  warps_per_sm = warps_per_sm_in;
   timers     = timers_cpu;
   timernames = timernames_cpu;
+  mutex_share = mutex_share_cpu;
 #ifdef TIME_GPTL
   globcount  = globcount_cpu;
   memset (globcount, 0, maxwarps * NUM_INTERNAL_TIMERS * sizeof (long long));
 #endif
+
+  // Verify sufficient shared memory was declared
+  if (warps_per_sm > WARPS_PER_SM) {
+    printf ("GPTL %s: POSSIBLY INSUFFICIENT SHARED MEMORY: WARPS_PER_SM=%d warps_per_sm=%d\n",
+	    thisfunc, WARPS_PER_SM, warps_per_sm);
+    printf ("     Adjust WARPS_PER_SM definition in gptl_device.cu accordingly\n");
+  }
+  shared_locs_per_sm = warps_per_sm * MAX_OVERSUB;
+
+  // Initialize mutexes (one per SM) for shared memory
+  for (int i = 0; i < shared_locs_per_sm; ++i)
+    mutex_share[i] = 0;
 
   // Initialize timers
   ntimers = 0;
@@ -339,9 +383,9 @@ __device__ int GPTLstart_gpu (const int handle)
 __device__ int GPTLstop_gpu (const int handle)
 {
   register long long tp1;    // time stamp
-  Timer timer;               // local copy of timers[wi]: gives some speedup vs. global array
   int w;                     // warp number for this process
   int wi;                    // flattened (1-d) index into 2-d array [timer][warp]
+  int idx;                   // index into shared array for timer
   uint smid;                 // SM id
   static const char *thisfunc = "GPTLstop_gpu";
 
@@ -378,10 +422,15 @@ __device__ int GPTLstop_gpu (const int handle)
   asm ("mov.u32 %0, %smid;" : "=r"(smid));
 
   wi = FLATTEN_TIMERS (w, handle);
-  timer = timers[wi];
+  idx = get_shared_idx (w, smid);  // grab shared mem slot
+  if (idx < shared_locs_per_sm) {
+    timer[idx] = timers[wi];
+  } else {
+    return GPTLerror_1s1d ("%s: warp %d no spots available\n", thisfunc, w);
+  }
 
 #ifdef ENABLE_GPUCHECKS
-  if ( ! timer.onflg )
+  if ( ! timer[idx].onflg )
     return GPTLerror_2s ("%s: timer %s was already off.\n", thisfunc, timernames[handle].name);
 #endif
   /* 
@@ -390,10 +439,11 @@ __device__ int GPTLstop_gpu (const int handle)
   ** the timer to reflect the outermost layer of recursion.
   */
 #ifdef ENABLE_GPURECURSION
-  if (timer.recurselvl > 0) {
-    --timer.recurselvl;
-    ++timer.count;
-    timers[wi] = timer;
+  if (timer[idx].recurselvl > 0) {
+    --timer[idx].recurselvl;
+    ++timer[idx].count;
+    timers[wi] = timer[idx];
+    reset_shmem (idx);
     return SUCCESS;
   }
 #endif
@@ -401,12 +451,13 @@ __device__ int GPTLstop_gpu (const int handle)
 #ifdef TIME_GPTL
   long long start = clock64 ();
 #endif
-  if (update_stats_gpu (handle, &timer, tp1, w, smid) != 0)
+  if (update_stats_gpu (handle, &timer[idx], tp1, w, smid) != 0)
     return GPTLerror_1s ("%s: error from update_stats_gpu\n", thisfunc);
 #ifdef DEBUG_PRINT
   printf ("%s: handle=%d count=%d\n", thisfunc, handle, (int) timer.count);
 #endif
-  timers[wi] = timer;
+  timers[wi] = timer[idx];
+  reset_shmem (idx);        // done with our shared memory use. Mark it free
   
 #ifdef TIME_GPTL
   long long stop = clock64 ();
@@ -431,7 +482,7 @@ __device__ int GPTLstop_gpu (const int handle)
 */
 
 __device__ static inline int update_stats_gpu (const int handle,
-					       Timer *ptr, 
+					       volatile Timer *ptr, 
 					       const long long tp1, 
 					       const int w,
 					       const uint smid)
@@ -456,25 +507,16 @@ __device__ static inline int update_stats_gpu (const int handle,
 #endif
   if (delta < 0) {
 #ifdef PRINTNEG
-    bool isSet; 
-    // Use critical section so printf from multiple SMs don't get scrambled
-    do {
-      // If mutex is 0, grab by setting = 1
-      // If mutex is 1, it stays 1 and isSet will be false
-      isSet = atomicCAS ((int *) &mutex, 0, 1) == 0; 
-      if (isSet) {  // critical section starts here
-	printf ("GPTL: %s name=%s w=%d WARNING NEGATIVE DELTA ENCOUNTERED: %lld-%lld=%lld=%g seconds: IGNORING\n", 
-		thisfunc, timernames[handle].name, w, tp1, ptr->wall.last, delta, delta / (-gpu_hz));
-	printf ("Bit pattern old:");
-	prbits8 ((uint64_t) ptr->wall.last);
+    get_mutex (&mutex_print);
+    printf ("GPTL: %s name=%s w=%d WARNING NEGATIVE DELTA ENCOUNTERED: %lld-%lld=%lld=%g seconds: IGNORING\n", 
+	    thisfunc, timernames[handle].name, w, tp1, ptr->wall.last, delta, delta / (-gpu_hz));
+    printf ("Bit pattern old:");
+    prbits8 ((uint64_t) ptr->wall.last);
 
-	printf ("Bit pattern new:");
-	prbits8 ((uint64_t) tp1);
-	mutex = 0;     // end critical section by releasing the mutex
-      }
-    } while ( !isSet); // exit the loop after critical section executed
+    printf ("Bit pattern new:");
+    prbits8 ((uint64_t) tp1);
+    free_mutex (&mutex_print);
 #endif
-    
     ++ptr->negdelta_count;
 
   } else {
@@ -947,7 +989,7 @@ __device__ static void start_misc (int w, const int handle)
 __device__ static void stop_misc (int w, const int handle)
 {
   int wi;
-  Timer timer;
+  int idx;
   static const char *thisfunc = "stopmisc";
 
 #ifdef ENABLE_GPUCHECKS
@@ -961,25 +1003,28 @@ __device__ static void stop_misc (int w, const int handle)
 #endif
 
   wi = FLATTEN_TIMERS (w, handle);
-  timer = timers[wi];
+  idx = get_shared_idx (w, 0);  // grab shared mem slot. Use 0 for smid
+  timer[idx] = timers[wi];
 
 #ifdef ENABLE_GPUCHECKS
-  if ( timer.onflg )
+  if ( timer[idx].onflg )
     printf ("%s: onflg was on\n", thisfunc); // Invert logic for better OHD est.
 #endif
 
 #ifdef ENABLE_GPURECURSION
-  if (timer.recurselvl > 0) {
-    --timer.recurselvl;
-    ++timer.count;
-    timers[wi] = timer;
+  if (timer[idx].recurselvl > 0) {
+    --timer[idx].recurselvl;
+    ++timer[idx].count;
+    timers[wi] = timer[idx];
+    reset_shmem (idx);
   }
 #endif
 
   // Last 3 args are timestamp, w, smid
-  if (update_stats_gpu (handle, &timer, timer.wall.last, 0, 0U) != 0)
+  if (update_stats_gpu (handle, &timer[idx], timer[idx].wall.last, 0, 0U) != 0)
     printf ("%s: problem with update_stats_gpu\n", thisfunc);
-  timers[wi] = timer;
+  timers[wi] = timer[idx];
+  reset_shmem(idx);
 }
 
 __global__ void GPTLget_memstats_gpu (float *regionmem, float *timernamemem)
@@ -1103,4 +1148,54 @@ __device__ int GPTLcuProfilerStop ()
   //JR fails (void) cuProfilerStop ();
   return 0;
 }
+
+__device__ static void get_mutex (volatile int *mutex)
+{
+ bool isSet;
+
+ do {
+   // If mutex is 0, grab by setting = 1
+   // If mutex is 1, it stays 1 and isSet will be false
+   isSet = atomicCAS ((int *) mutex, 0, 1) == 0;
+ } while ( !isSet);   // exit the loop after critical section executed
+}
+ 
+__device__ static void free_mutex (volatile int *mutex)
+{
+  *mutex = 0;
+}
+
+// This routine will be called at start of GPTLstart_gpu
+__device__ static int get_shared_idx (int mywarp, uint smid)
+{
+  int idx;
+
+  // Use critical section to get index into shared array
+  get_mutex (&mutex_share[smid]);
+  for (idx = 0; idx < shared_locs_per_sm; ++idx) {
+    if ( ! map[idx].inuse) {
+      map[idx].inuse = true;
+      map[idx].warp = mywarp;
+      if (idx > maxidx)
+	maxidx = idx;  // diagnostic: max index used
+      break;
+    }
+  }
+  if (idx == shared_locs_per_sm) {
+    printf ("mywarp %d no spots available!\n", mywarp);
+    free_mutex (&mutex_share[smid]);
+    return idx;
+  }
+  free_mutex (&mutex_share[smid]);
+  return idx;
+}
+
+__device__ static void reset_shmem (int idx)
+{
+  // Reset shared memory to zero. Otherwise get random hangs due to shared memory cannot be
+  // guaranteed initialized to zero.
+  map[idx].inuse = false;
+  map[idx].warp = 0;
+}
+
 }
