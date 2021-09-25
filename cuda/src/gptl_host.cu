@@ -11,7 +11,6 @@ __host__ int GPTLget_gpu_props (int *khz, int *warpsize, int *devnum, int *SMcou
 				int *cores_per_sm, int *cores_per_gpu)
 {
   cudaDeviceProp prop;
-  size_t size;
   cudaError_t err;
   static const char *thisfunc = "GPTLget_gpu_props";
 
@@ -69,7 +68,6 @@ __host__ int GPTLget_gpu_props (int *khz, int *warpsize, int *devnum, int *SMcou
   *cores_per_gpu = *cores_per_sm * (*SMcount);
   
   err = cudaGetDevice (devnum);  // device number
-  err = cudaDeviceGetLimit (&size, cudaLimitMallocHeapSize);
   return 0;
 }
 

@@ -407,9 +407,9 @@ if test "x$NVCC" != xno; then
   CUFLAGS="$CUFLAGS -gencode arch=compute_$CCAB,code=compute_$CCAB"
 
   if test "x$use_debug" = xyes; then
-    CUFLAGS="$CUFLAGS -g -G -keep -src-in-ptx -ftz=true -rdc=true"
+    CUFLAGS="$CUFLAGS -g -G -keep -lineinfo -src-in-ptx -ftz=true -rdc=true"
   else
-    CUFLAGS="$CUFLAGS -keep -src-in-ptx --ptxas-options=-v -ftz=true -rdc=true"
+    CUFLAGS="$CUFLAGS -keep -src-in-ptx -lineinfo --ptxas-options=-v -ftz=true -rdc=true"
   fi
   
 # For Makefiles which do testing

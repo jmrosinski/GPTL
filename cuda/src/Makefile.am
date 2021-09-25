@@ -38,4 +38,4 @@ print_gpustats.o: print_gpustats.cu ../include/device.h
 util_device.o: util_device.cu ../include/device.h
 gptl_acc.o: gptl_acc.F90
 
-CLEANFILES = *.ptx
+CLEANFILES = *.ptx *.ii *.module_id *.cudafe1.* *.fatbin*
