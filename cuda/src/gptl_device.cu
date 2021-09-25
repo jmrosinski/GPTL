@@ -29,7 +29,7 @@ __device__ static bool initialized = false;     // GPTLinitialize has been calle
 __device__ static bool verbose = false;         // output verbosity
 __device__ static double gpu_hz = 0.;           // clock freq
 __device__ int warpsize = 0;                    // warp size
-__device__ static volatile int mutex = 0;       // critical section unscrambles printf output
+__device__ static volatile int mutex_print = 0; // critical section unscrambles printf output
 
 #ifdef TIME_GPTL
 __device__ long long *globcount = 0;            // for timing GPTL itself
@@ -57,6 +57,8 @@ __device__ static void start_misc (int, const int);
 __device__ static void stop_misc (int w, const int handle);
 __device__ static void init_gpustats (Gpustats *, int);
 __device__ static void fill_gpustats (Gpustats *, int, int);
+__device__ static void get_mutex (volatile int *);
+__device__ static void free_mutex (volatile int *);
 // Defining PRINTNEG will print to stdout whenever a negative interval (stop minus start) is
 // encountered. Only useful when non-zero negative intervals are reported in timing output
 // Should be turned OFF normally--very expensive even when no negatives found.
@@ -456,23 +458,15 @@ __device__ static inline int update_stats_gpu (const int handle,
 #endif
   if (delta < 0) {
 #ifdef PRINTNEG
-    bool isSet; 
-    // Use critical section so printf from multiple SMs don't get scrambled
-    do {
-      // If mutex is 0, grab by setting = 1
-      // If mutex is 1, it stays 1 and isSet will be false
-      isSet = atomicCAS ((int *) &mutex, 0, 1) == 0; 
-      if (isSet) {  // critical section starts here
-	printf ("GPTL: %s name=%s w=%d WARNING NEGATIVE DELTA ENCOUNTERED: %lld-%lld=%lld=%g seconds: IGNORING\n", 
-		thisfunc, timernames[handle].name, w, tp1, ptr->wall.last, delta, delta / (-gpu_hz));
-	printf ("Bit pattern old:");
-	prbits8 ((uint64_t) ptr->wall.last);
+    get_mutex (&mutex_print);
+    printf ("GPTL: %s name=%s w=%d WARNING NEGATIVE DELTA ENCOUNTERED: %lld-%lld=%lld=%g seconds: IGNORING\n", 
+	    thisfunc, timernames[handle].name, w, tp1, ptr->wall.last, delta, delta / (-gpu_hz));
+    printf ("Bit pattern old:");
+    prbits8 ((uint64_t) ptr->wall.last);
 
-	printf ("Bit pattern new:");
-	prbits8 ((uint64_t) tp1);
-	mutex = 0;     // end critical section by releasing the mutex
-      }
-    } while ( !isSet); // exit the loop after critical section executed
+    printf ("Bit pattern new:");
+    prbits8 ((uint64_t) tp1);
+    free_mutex (&mutex_print);
 #endif
     
     ++ptr->negdelta_count;
@@ -1103,4 +1097,21 @@ __device__ int GPTLcuProfilerStop ()
   //JR fails (void) cuProfilerStop ();
   return 0;
 }
+
+__device__ static void get_mutex (volatile int *mutex)
+{
+ bool isSet;
+
+ do {
+   // If mutex is 0, grab by setting = 1
+   // If mutex is 1, it stays 1 and isSet will be false
+   isSet = atomicCAS ((int *) mutex, 0, 1) == 0;
+ } while ( !isSet);   // exit the loop after critical section executed
+}
+ 
+__device__ static void free_mutex (volatile int *mutex)
+{
+  *mutex = 0;
+}
+
 }

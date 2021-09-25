@@ -14,7 +14,7 @@ __device__ void free_mutex (volatile int *);
 #define WARPS_PER_SM 4
 #define MAX_OVERSUB 1
 #define SHARED_LOCS_PER_SM (WARPS_PER_SM * MAX_OVERSUB)
-__shared__ volatile int timer[SHARED_LOCS_PER_SM];
+__shared__ int timer[SHARED_LOCS_PER_SM];
 __device__ volatile int mutex1[5] = {0,0,0,0,0};
 __device__ volatile int mutex2[5] = {0,0,0,0,0};
 
