@@ -16,6 +16,7 @@ __device__ void free_mutex (volatile int *);
 #define SHARED_LOCS_PER_SM (WARPS_PER_SM * MAX_OVERSUB)
 __shared__ volatile int timer[SHARED_LOCS_PER_SM];
 __device__ volatile int mutex1[5] = {0,0,0,0,0};
+__device__ volatile int mutex2[5] = {0,0,0,0,0};
 
 typedef struct {
   int warp;
@@ -199,9 +200,10 @@ __global__ void runit (int *global_timer, int shared_locs_per_sm, int warpsize, 
     }
 
     // Serialize the work should force use of all available idx values
-    //    get_mutex (&mutex2);
-    sleeptime = 0.01 * mywarp;
+    //get_mutex (&mutex2[smid]);
     sleeptime = 0.1;
+    sleeptime = 0.0001 * mywarp;
+    sleeptime = 0.01;
     GPTLmy_sleep (sleeptime);
     ++timer[idx];
     global_timer[mywarp] = timer[idx];
@@ -212,7 +214,7 @@ __global__ void runit (int *global_timer, int shared_locs_per_sm, int warpsize, 
     map[idx].warp = 0;
     if (false)
       printf ("mywarp %d released idx %d\n", mywarp, idx);
-    //    free_mutex (&mutex2);
+    //free_mutex (&mutex2[smid]);
   }
   return;
 }
