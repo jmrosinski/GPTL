@@ -31,7 +31,7 @@ __device__ static double gpu_hz = 0.;           // clock freq
 __device__ int warpsize = 0;                    // warp size
 
 #define WARPS_PER_SM 4                          // WILL VARY DEPENDING ON GPU
-#define MAX_OVERSUB 1                           // Allowed oversubscription factor (1 seems to work)
+#define MAX_OVERSUB 10                          // Allowed oversubscription factor
 #define SHARED_LOCS_PER_SM (WARPS_PER_SM * MAX_OVERSUB)
 __device__ static int shared_locs_per_sm = -1;  // Determined at runtime
 __shared__ static Timer timer[SHARED_LOCS_PER_SM]; // shared mem copy of a timer
@@ -62,6 +62,7 @@ extern "C" {
 // Local function prototypes
 __global__ static void initialize_gpu (const int, const int, const double, Timer *,
 				       Timername *, const int, long long *, const int, int *);
+__global__ static void initialize_shmem (void);
 __device__ static inline int get_warp_num (void);         // get 0-based 1d warp number
 __device__ static inline int update_stats_gpu (const int, volatile Timer *, const long long, 
 					       const int, const uint);
@@ -130,6 +131,9 @@ __host__ int GPTLinitialize_gpu (const int verbose_in,
 			    globcount_cpu,
 			    warps_per_sm_in,
 			    mutex_share_cpu);
+  cudaDeviceSynchronize ();
+
+  initialize_shmem <<<5,128>>> ();
 
   // This should flush any existing print buffers
   cudaDeviceSynchronize ();
@@ -214,6 +218,14 @@ __global__ static void initialize_gpu (const int verbose_in,
   }
 
   initialized = true;
+}
+
+__global__ static void initialize_shmem (void)
+{
+  for (int i = 0; i < SHARED_LOCS_PER_SM; ++i) {
+    map[i].warp = -1;
+    map[i].inuse = false;
+  }
 }
 
 /*
@@ -1176,16 +1188,19 @@ __device__ static int get_shared_idx (int mywarp, uint smid)
     if ( ! map[idx].inuse) {
       map[idx].inuse = true;
       map[idx].warp = mywarp;
+      __threadfence ();
       if (idx > maxidx)
 	maxidx = idx;  // diagnostic: max index used
       break;
     }
   }
   if (idx == shared_locs_per_sm) {
-    printf ("mywarp %d no spots available!\n", mywarp);
+    printf ("mywarp %d smid %d no spots available!\n", mywarp, smid);
     free_mutex (&mutex_share[smid]);
     return idx;
   }
+  if (idx > 3)
+    printf ("mywarp %d smid %d got position %d shmem\n", mywarp, smid, idx);
   free_mutex (&mutex_share[smid]);
   return idx;
 }
@@ -1194,8 +1209,11 @@ __device__ static void reset_shmem (int idx)
 {
   // Reset shared memory to zero. Otherwise get random hangs due to shared memory cannot be
   // guaranteed initialized to zero.
+  if (idx > 3)
+    printf ("mywarp %d relenquished position %d in shmem\n", map[idx].warp, idx);
   map[idx].inuse = false;
   map[idx].warp = 0;
+  __threadfence ();
 }
 
 }

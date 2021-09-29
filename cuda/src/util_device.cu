@@ -9,7 +9,7 @@
 
 #include "device.h"
 
-__device__ static const int max_errors = 100;     // max number of error print msgs
+__device__ static const int max_errors = 10;      // max number of error print msgs
 __device__ static volatile int num_errors = 0;    // number of times GPTLerror was called
 __device__ static volatile int mutex = 0;         // critical section unscrambles printf output
 
