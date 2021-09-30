@@ -651,7 +651,7 @@ __global__ void GPTLfill_gpustats (Gpustats *gpustats,
   int w_minsave;
   for (n = 0; n < NUM_INTERNAL_TIMERS; ++n) {
     maxval = 0;
-    minval = 99999999;
+    minval = LLONG_MAX;
     w_maxsave = -1;
     w_minsave = -1;
     float maxsec, minsec;
