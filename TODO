@@ -1,6 +1,5 @@
 o Enable MPI to work for CPU codes even though GPTL's CUDA implementation doesn't handle it.
 o Enable CUDA implementation to summarize MPI results
-o --enable-debug fails due to multiple "-O0" settings
 o Build all the codes in facctests
 o Compile Fortran lib routines into libgptl.a, as is now done for GPU
 o Why is "scalefac" such a big number when disabling GPU checks?

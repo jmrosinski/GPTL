@@ -19,7 +19,7 @@
 #define NOT_ROOT_OF_WARP -2
 #define WARPID_GT_MAXWARPS -3
 #ifdef TIME_GPTL
-#define NUM_INTERNAL_TIMERS 3
+#define NUM_INTERNAL_TIMERS 4
 #endif
 
 #define STRMATCH(X,Y) (my_strcmp((X),(Y)) == 0)

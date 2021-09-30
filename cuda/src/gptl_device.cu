@@ -52,9 +52,11 @@ __device__ long long *globcount = 0;            // for timing GPTL itself
 __device__ static const int istart = 0;
 __device__ static const int istop = 1;
 __device__ static const int update_stats = 2;
+__device__ static const int gsi = 3;
 __device__ static const char *internal_name[NUM_INTERNAL_TIMERS] = {"GPTLstart_gpu",
 								    "GPTLstop_gpu",
-								    "update_stats"};
+								    "update_stats",
+								    "get_shared_idx"};
 #endif
 
 extern "C" {
@@ -434,7 +436,14 @@ __device__ int GPTLstop_gpu (const int handle)
   asm ("mov.u32 %0, %smid;" : "=r"(smid));
 
   wi = FLATTEN_TIMERS (w, handle);
+#ifdef TIME_GPTL
+  long long gsi1 = clock64 ();
+#endif
   idx = get_shared_idx (w, smid);  // grab shared mem slot
+#ifdef TIME_GPTL
+  long long gsi2 = clock64 ();
+  globcount[gsi*maxwarps + w] += gsi2 - gsi1;
+#endif
   if (idx < shared_locs_per_sm) {
     timer[idx] = timers[wi];
   } else {
@@ -711,7 +720,7 @@ __global__ void GPTLfill_gpustats (Gpustats *gpustats,
   int w_minsave;
   for (n = 0; n < NUM_INTERNAL_TIMERS; ++n) {
     maxval = 0;
-    minval = 99999999;
+    minval = LLONG_MAX;
     w_maxsave = -1;
     w_minsave = -1;
     float maxsec, minsec;
