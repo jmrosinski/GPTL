@@ -52,9 +52,9 @@ int main ()
   if (ret == 0) {
     printf ("Success getting wallclock for t=%d when it should fail\n", t);
     return 1;
-  return 0;
   }
 #endif
+  return 0;
 }
 
 void sub (const int m, const int n, const int msize)
