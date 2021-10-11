@@ -47,8 +47,8 @@ if HAVE_LIBUNWIND
 endif
 
 if HAVE_OPENMP
-check_PROGRAMS += omptest
-TESTS += omptest
+check_PROGRAMS += omptest nestedomp
+TESTS += omptest nestedomp
 endif
 
 # Build these tests if PAPI is present.
@@ -74,12 +74,6 @@ check_PROGRAMS += pmpi
 noinst_PROGRAMS += pmpi
 TESTS += run_par_pmpi_test.sh
 endif
-endif
-
-# Build these if the user selected --enable-nestedomp during configure.
-if ENABLE_NESTEDOMP
-check_PROGRAMS += nestedomp
-TESTS += nestedomp
 endif
 
 # Test output to be deleted: include ALL possible executables

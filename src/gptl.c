@@ -2249,8 +2249,8 @@ int GPTLget_wallclock (const char *timername, int t, double *value)
   indx = genhashidx (timername);
   ptr = getentry (hashtable[t], timername, indx);
   if ( ! ptr)
-    return GPTLerror ("%s: requested timer %s does not exist (or auto-instrumented?)\n",
-		      thisfunc, timername);
+    return GPTLerror ("%s: requested timer %s does not exist for thread %d\n",
+		      thisfunc, timername, t);
   *value = ptr->wall.accum;
   return 0;
 }
@@ -2819,7 +2819,6 @@ void __cyg_profile_func_enter (void *this_fn, void *call_site)
     unw_cursor_t cursor;
     unw_context_t context;
     unw_word_t offset, pc;
-    int n;
     // Initialize cursor to current frame for local unwinding.
     unw_getcontext (&context);
     unw_init_local (&cursor, &context);
