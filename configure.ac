@@ -114,24 +114,36 @@ AM_CONDITIONAL([HAVE_OPENMP], [test "x$useomp" = xyes])
 # even in regions which are not nested. Currently with --enable-nestedomp, GPTL allows
 # at most doubly-nested OpenMP regions.
 # Default disabled
-supportnesting=no
-AC_MSG_CHECKING([whether nested OMP is to be enabled])
+requestnesting=no
+AC_MSG_CHECKING([whether nested OMP is to be enabled with available OMP])
 AC_ARG_ENABLE([nestedomp], [AS_HELP_STRING([--enable-nestedomp],
               [Build with nested OMP capability])])
-AS_IF([test "x$enable_nestedomp" = "xyes"], [
-  AC_DEFINE([ENABLE_NESTEDOMP], [1], [nested omp capability enabled])
-  supportnesting=yes
+AS_IF([test "x$enable_nestedomp" = xyes], [
+  requestnesting=yes
 ])
 
 # If nestedomp requested, verify basic OpenMP capability was there
-if test "x$supportnesting" = xyes; then
-  if test "x$useomp" != xyes; then
+if test "x$useomp" = xyes; then
+  if test "x$requestnesting" = xyes; then
+    AC_DEFINE([ENABLE_NESTEDOMP], [1], [nested omp capability enabled])
+# Thus far haven't found an OMP implementation that supports at least version 5.2
+# Hard-wire that 5.2 or greater not yet supported
+#TODO: implement a configure test code for nesting. Currently tests/nestedomp suffices
+    AC_DEFINE([LESSTHAN_OMP52], [1], [omp_get_team_num FAILS])
+    AC_MSG_NOTICE([Assume OpenMP 5.2 not yet supported. Thus only one level of OMP nesting])
+  fi
+else
+  if test "x$requestnesting" = xyes; then
     AC_MSG_ERROR([Nested OMP capability requested but OpenMP disabled or not available])
   fi
-  AC_DEFINE([ENABLE_NESTEDOMP], [1], [nested omp capability enabled])
 fi
-AC_MSG_RESULT([$supportnesting])
-AM_CONDITIONAL(ENABLE_NESTEDOMP, [test "x$supportnesting" = xyes])
+
+bothyes=no
+if test "x$requestnesting" = xyes && test "x$useomp" = xyes; then
+  bothyes=yes
+fi
+AC_MSG_RESULT([$bothyes])
+AM_CONDITIONAL(ENABLE_NESTEDOMP, [test "x$bothyes" = xyes])
 
 # Whether to use pthread library instead of OMP as underlying thread utility.
 # Default disabled due to experimental nature.
@@ -189,7 +201,7 @@ AS_IF([test "x$enable_debug" = xyes], [
 # Default disabled.
 AC_ARG_ENABLE([papi], [AS_HELP_STRING([--enable-papi],
   [Enable built-in support for papi library. Requires that PAPI is already installed])])
-AS_IF([test x$enable_papi = xyes], [
+AS_IF([test "x$enable_papi" = xyes], [
 # Check for papi library.
   AC_CHECK_LIB([papi], [PAPI_library_init])
   have_papi=no

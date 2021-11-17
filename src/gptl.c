@@ -108,6 +108,9 @@ static int is_descendant (const Timer *, const Timer *);
 static int is_onlist (const Timer *, const Timer *);
 static char *methodstr (GPTLMethod);
 static void print_callstack (int, const char *);
+#ifdef ENABLE_NESTEDOMP
+void GPTLget_nested_thread_nums (int *, int *);
+#endif
 
 // These are the (possibly) supported underlying wallclock timers
 #ifdef HAVE_NANOTIME
@@ -423,6 +426,10 @@ int GPTLinitialize (void)
     // Make a timer "GPTL_ROOT" to ensure no orphans, and to simplify printing
     timers[t] = (Timer *) GPTLallocate (sizeof (Timer), thisfunc);
     memset (timers[t], 0, sizeof (Timer));
+#ifdef ENABLE_NESTEDOMP
+    timers[t]->major = -1;
+    timers[t]->minor = -1;
+#endif
     strcpy (timers[t]->name, "GPTL_ROOT");
     timers[t]->onflg = true;
     last[t] = timers[t];
@@ -590,7 +597,6 @@ int GPTLstart (const char *name)
   if ( ! ptr) {   // Add a new entry and initialize. longname only needed for auto-profiling
     ptr = (Timer *) GPTLallocate (sizeof (Timer), thisfunc);
     memset (ptr, 0, sizeof (Timer));
-
     numchars = MIN (strlen (name), MAX_CHARS);
     strncpy (ptr->name, name, numchars);
     ptr->name[numchars] = '\0';
@@ -604,6 +610,10 @@ int GPTLstart (const char *name)
 
   if (update_ptr (ptr, t) != 0)
     return GPTLerror ("%s: update_ptr error\n", thisfunc);
+
+#ifdef ENABLE_NESTEDOMP
+  GPTLget_nested_thread_nums (&ptr->major, &ptr->minor);
+#endif
 
   if (dopr_memusage && t == 0)
     check_memusage ("Begin", ptr->name);
@@ -737,6 +747,10 @@ int GPTLstart_handle (const char *name, int *handle)
 
   if (update_ptr (ptr, t) != 0)
     return GPTLerror ("%s: update_ptr error\n", thisfunc);
+
+#ifdef ENABLE_NESTEDOMP
+  GPTLget_nested_thread_nums (&timers[t]->major, &timers[t]->minor);
+#endif
 
   if (dopr_memusage && t == 0)
     check_memusage ("Begin", ptr->name);
@@ -1089,8 +1103,8 @@ static inline int update_stats (Timer *ptr, const double tp1, const long usr, co
       
       // Print to stderr as well due to debugging importance, and warn/error have limits on the
       // number of calls that can be made
-      fprintf (stderr, "%s: Imperfect nest detected: Got timer %s\n", thisfunc, name);      
-      GPTLwarn ("%s: Imperfect nest detected: Got timer %s\n", thisfunc, name);
+      fprintf (stderr, "%s thread %d: Imperfect nest detected: Got timer %s\n", thisfunc, t, name);      
+      GPTLwarn ("%s thread %d: Imperfect nest detected: Got timer %s\n", thisfunc, t, name);
       if (bptr) {
 	if (bptr->longname)
 	  bname = bptr->longname;
@@ -1178,6 +1192,10 @@ int GPTLreset (void)
 #ifdef HAVE_PAPI
       memset (&ptr->aux, 0, sizeof (ptr->aux));
 #endif
+#ifdef ENABLE_NESTEDOMP
+      ptr->major = -1;
+      ptr->minor = -1;
+#endif
     }
   }
 
@@ -1212,6 +1230,10 @@ int GPTLreset_timer (const char *name)
       memset (&ptr->cpu, 0, sizeof (ptr->cpu));
 #ifdef HAVE_PAPI
       memset (&ptr->aux, 0, sizeof (ptr->aux));
+#endif
+#ifdef ENABLE_NESTEDOMP
+      ptr->major = -1;
+      ptr->minor = -1;
 #endif
     }
   }
@@ -1472,6 +1494,9 @@ int GPTLpr_file (const char *outfile)
     fprintf (fp, "  Collide");
 #endif
 
+#ifdef ENABLE_NESTEDOMP
+    fprintf (fp, "  maj min");
+#endif
     fprintf (fp, "\n");
     // Start at next to skip GPTL_ROOT
     for (ptr = timers[0]->next; ptr; ptr = ptr->next) {      
@@ -1682,8 +1707,8 @@ static void print_titles (int t, FILE *fp, Outputfmt *outputfmt)
     // full tree. -1 is initial call tree depth
     ret = get_outputfmt (timers[t], -1, indent_chars, outputfmt);  // -1 is initial call tree depth
 #ifdef DEBUG
-    printf ("%s t=%d got outputfmt=%d %d %d\n",
-	    thisfunc, t, outputfmt->max_depth, outputfmt->max_namelen, outputfmt->max_chars2pr);
+    //    printf ("%s t=%d got outputfmt=%d %d %d\n",
+    //	    thisfunc, t, outputfmt->max_depth, outputfmt->max_namelen, outputfmt->max_chars2pr);
 #endif
     nblankchars = indent_chars + outputfmt->max_chars2pr + 1;
   }
@@ -1719,6 +1744,9 @@ static void print_titles (int t, FILE *fp, Outputfmt *outputfmt)
     fprintf (fp, "  Collide");
 #endif
 
+#ifdef ENABLE_NESTEDOMP
+    fprintf (fp, "  maj min");
+#endif
   fprintf (fp, "\n");
   return;
 }
@@ -2079,6 +2107,10 @@ static void printstats (const Timer *timer, FILE *fp, int t, int depth, bool doi
     fprintf (fp, " %8lu", timer->collide);
 #endif
   
+#ifdef ENABLE_NESTEDOMP
+  if (timer->major > -1 || timer->minor > -1)
+    fprintf (fp, "  %3d %3d", timer->major, timer->minor);
+#endif
   fprintf (fp, "\n");
 }
 
@@ -2852,6 +2884,10 @@ void __cyg_profile_func_enter (void *this_fn, void *call_site)
     symsize = strlen (symnam);
     ptr = (Timer *) GPTLallocate (sizeof (Timer), thisfunc);
     memset (ptr, 0, sizeof (Timer));
+#ifdef ENABLE_NESTEDOMP
+    ptr->major = -1;
+    ptr->minor = -1;
+#endif
 
     // For names longer than MAX_CHARS, need the full name to avoid misrepresenting
     // names with stripped off characters as duplicates

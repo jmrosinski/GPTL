@@ -47,8 +47,13 @@ if HAVE_LIBUNWIND
 endif
 
 if HAVE_OPENMP
-check_PROGRAMS += omptest nestedomp
-TESTS += omptest nestedomp
+check_PROGRAMS += omptest
+TESTS += omptest
+endif
+
+if ENABLE_NESTEDOMP
+check_PROGRAMS += nestedomp
+TESTS += nestedomp
 endif
 
 # Build these tests if PAPI is present.

@@ -44,7 +44,8 @@ int GPTLthreadinit (void)
 		      "Maybe mistakenly called by multiple threads?\n", thisfunc);
 
   // GPTLmax_threads may have been set by the user, in which case use that. But if as 
-  // yet uninitialized, set to the current value of OMP_NUM_THREADS. 
+  // yet uninitialized, set to the current value of OMP_NUM_THREADS or a user call to
+  // omp_set_num_threads ()
   if (GPTLmax_threads == -1)
     GPTLmax_threads = MAX ((1), (omp_get_max_threads ()));
 
@@ -91,35 +92,46 @@ inline
 #endif
 int GPTLget_thread_num (void)
 {
-  int t;
+  int t = omp_get_thread_num ();     // linearized thread id to be returned
   static const char *thisfunc = "GPTLget_thread_num";
 
-#ifdef ENABLE_NESTEDOMP
-  int myid;            // my thread id
-  int lvl;             // nest level: Currently only 2 nesting levels supported
-  int parentid;        // thread number of parent team
-  int my_nthreads;     // number of threads in the parent team
-
-  myid = omp_get_thread_num ();
-  if (omp_get_nested ()) {         // nesting is "enabled", though not necessarily active
-    lvl = omp_get_active_level (); // lvl=2 => inside 2 #pragma omp regions
-    if (lvl < 2) {
-      // 0 or 1-level deep: simply use thread id as index
-      t = myid;
-    } else if (lvl == 2) {
-      // Create a unique id "t" for indexing into singly-dimensioned thread array
-      parentid    = omp_get_ancestor_thread_num (lvl-1);
-      my_nthreads = omp_get_team_size (lvl);
-      t           = parentid*my_nthreads + myid;
-    } else {
+#if ( defined ENABLE_NESTEDOMP )
+  const int myid = t;              // omp_get_thread_num ();
+  if (omp_get_max_active_levels () > 1) { // nesting is "enabled", though not necessarily active
+    const int lvl = omp_get_active_level (); // lvl=2 => inside 2 #pragma omp regions
+    // Support for OpenMP 5.2 standard required for more than 2 nested OMP levels
+#ifdef LESSTHAN_OMP52
+    if (lvl == 2) {
+      if (myid == 0) {
+	t = omp_get_ancestor_thread_num (1);   // thread 0 gets parent id
+	// First -1 is to increment from omp_get_team_size(1)-1
+	// Second -1 is because thread 0 of the team took parent's id
+      } else {
+	t = omp_get_team_size (1) - 1 +
+	    omp_get_ancestor_thread_num (1)*(omp_get_team_size (2) - 1) + myid;
+      }
+    } else if (lvl > 2) {
       return GPTLerror ("OMP %s: GPTL supports only 2 nested OMP levels got %d\n", thisfunc, lvl);
     }
-  } else {
-    // un-nested case: thread id is index
-    t = myid;
-  }
 #else
-  t = omp_get_thread_num ();
+    // THIS BLOCK OF CODE NEEDS TESTING ONCE OMP_GET_TEAM_NUM() SUCCEEDS
+    if (lvl > 1) {
+      // Create a unique id "t" for indexing into singly-dimensioned thread array
+      int team_size   = omp_get_team_size (1);    // 1
+      int num_teams   = 1;
+      int tot_threads = team_size;
+      for (int d = 2; d < lvl; ++d) {
+	team_size    = omp_get_team_size (d);  // curr
+	num_teams   *= team_size;             // curr
+	tot_threads += num_teams*team_size; // curr sum
+      }
+      t = tot_threads + omp_get_team_num ()*omp_get_team_size (lvl) + myid;
+      printf ("lvl %d tt %d team_num %d team_size %d myid %d t %d\n", lvl, tot_threads,
+	      omp_get_team_num(), omp_get_team_size(lvl), myid, t);
+      printf ("lvl %d num_teams %d\n", lvl, omp_get_num_teams());
+    }
+#endif
+  }
 #endif
   if (t >= GPTLmax_threads)
     return GPTLerror ("OMP %s: returned id=%d exceeds GPTLmax_threads=%d\n",
@@ -161,7 +173,25 @@ int GPTLget_thread_num (void)
   return t;
 }
 
-void GPTLprint_threadmapping (FILE *fp)
+#ifdef ENABLE_NESTEDOMP
+#ifdef INLINE_THREADING
+inline
+#endif
+void GPTLget_nested_thread_nums (int *major, int *minor)
+{
+  if (omp_get_max_active_levels () > 1) { // nesting is "enabled", though not necessarily active
+    volatile const int lvl = omp_get_active_level (); // lvl=2 => inside 2 #pragma omp regions
+    if (lvl == 1) {
+      *major = omp_get_thread_num ();
+    } else if (lvl == 2) {
+      *major = omp_get_ancestor_thread_num (1);
+      *minor = omp_get_thread_num ();
+    }
+  }
+}
+#endif
+
+  void GPTLprint_threadmapping (FILE *fp)
 {
   int t;
   fprintf (fp, "\n");
