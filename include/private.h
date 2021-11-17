@@ -81,6 +81,10 @@ typedef struct TIMER {
   struct TIMER **parent;    // array of parents
   struct TIMER **children;  // array of children
   int *parent_count;        // array of call counts, one for each parent
+#ifdef ENABLE_NESTEDOMP
+  int major;                // outer thread id in nest
+  int minor;                // inner thread id in nest
+#endif
   unsigned int recurselvl;  // recursion level
   unsigned int nchildren;   // number of children
   unsigned int nparent;     // number of parents
