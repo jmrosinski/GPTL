@@ -2885,8 +2885,7 @@ void __cyg_profile_func_enter (void *this_fn, void *call_site)
     ptr = (Timer *) GPTLallocate (sizeof (Timer), thisfunc);
     memset (ptr, 0, sizeof (Timer));
 #ifdef ENABLE_NESTEDOMP
-    ptr->major = -1;
-    ptr->minor = -1;
+    GPTLget_nested_thread_nums (&ptr->major, &ptr->minor);
 #endif
 
     // For names longer than MAX_CHARS, need the full name to avoid misrepresenting

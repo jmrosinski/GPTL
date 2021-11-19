@@ -29,6 +29,7 @@
 #define MAX_STACK 128
 
 // longest timer name allowed (probably safe to just change)
+// Must be at least 16 to hold auto-profiled name, and 9 to hold "GPTL_ROOT"
 #define MAX_CHARS 63
 
 // Longest allowed symbol name for libunwind
@@ -40,7 +41,9 @@
 // max allowable number of PAPI counters, or derived events.
 #define MAX_AUX 3
 
+#ifndef __cplusplus
 typedef enum {false = 0, true = 1} bool;  // mimic C++
+#endif
 
 typedef struct {
   int val;                  // depth in calling tree
@@ -105,6 +108,10 @@ typedef struct {
 } Hashentry;
 
 // Function prototypes
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern int GPTLerror (const char *, ...);                  // print error msg and return
 extern void GPTLwarn (const char *, ...);                  // print warning msg and return
 extern void GPTLnote (const char *, ...);                  // print warning msg and return
@@ -142,6 +149,10 @@ extern bool GPTLonlypr_rank0;     // flag says ignore all stdout/stderr print fr
 #ifdef ENABLE_PMPI
 extern Timer *GPTLgetentry (const char *);
 extern int GPTLpmpi_setoption (const int, const int);
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif // _GPTL_PRIVATE_
