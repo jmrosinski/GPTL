@@ -29,6 +29,7 @@
 #define MAX_STACK 128
 
 // longest timer name allowed (probably safe to just change)
+// Must be at least 16 to hold auto-profiled name, and 9 to hold "GPTL_ROOT"
 #define MAX_CHARS 63
 
 // Longest allowed symbol name for libunwind
@@ -40,7 +41,9 @@
 // max allowable number of PAPI counters, or derived events.
 #define MAX_AUX 3
 
+#ifndef __cplusplus
 typedef enum {false = 0, true = 1} bool;  // mimic C++
+#endif
 
 typedef struct {
   int val;                  // depth in calling tree
@@ -94,6 +97,7 @@ typedef struct TIMER {
   unsigned int nchildren;   // number of children
   unsigned int nparent;     // number of parents
   unsigned int norphan;     // number of times this timer was an orphan
+  int numchars;             // length of name
   bool onflg;               // timer currently on or off
   char name[MAX_CHARS+1];   // timer name (user input)
   char *longname;           // For autoprofiled names, full name for diagnostic printing
@@ -105,7 +109,11 @@ typedef struct {
 } Hashentry;
 
 // Function prototypes
-extern int GPTLerror (const char *, ...);                  // print error msg and return
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+  extern int GPTLerror (const char *, ...);                  // print error msg and return
 extern void GPTLwarn (const char *, ...);                  // print warning msg and return
 extern void GPTLnote (const char *, ...);                  // print warning msg and return
 extern void GPTLset_abort_on_error (bool val);             // set flag to abort on error
@@ -117,8 +125,8 @@ extern int GPTLstop_instr (void *);                        // auto-instrumented 
 extern int GPTLis_initialized (void);                      // needed by MPI_Init wrapper
 extern int GPTLget_overhead (FILE *,                       // file descriptor
 			     double (*)(),                 // UTR()
-			     Timer *(const Hashentry *, const char *, unsigned int), // getentry()
-			     unsigned int (const char *),  // genhashidx()
+			     Timer *(const Hashentry *, const char *, unsigned int, const int), // getentry()
+			     unsigned int (const char *, const int),  // genhashidx()
 			     int (void),                   // GPTLget_thread_num()
 			     Nofalse *,                    // stackidx
 			     Timer ***,                    // callstack
@@ -144,4 +152,8 @@ extern Timer *GPTLgetentry (const char *);
 extern int GPTLpmpi_setoption (const int, const int);
 #endif
 
+#ifdef __cplusplus
+}
+#endif
+  
 #endif // _GPTL_PRIVATE_

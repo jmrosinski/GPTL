@@ -139,18 +139,19 @@ static inline double utr_gettimeofday (void);
 static int init_placebo (void);
 static inline double utr_placebo (void);
 
-static inline unsigned int genhashidx (const char *);
+static inline unsigned int genhashidx (const char *, const int);
 static inline Timer *getentry_instr (const Hashentry *, void *, unsigned int *);
-static inline Timer *getentry (const Hashentry *, const char *, unsigned int);
+static inline Timer *getentry (const Hashentry *, const char *, unsigned int, const int);
 static void printself_andchildren (const Timer *, FILE *, int, int, double, double, Outputfmt);
 static inline int update_parent_info (Timer *, Timer **, int);
 static inline int update_stats (Timer *, const double, const long, const long, const int);
-static int update_ll_hash (Timer *, int, unsigned int);
+static int update_ll_hash (Timer *, int, unsigned int, const char *, const int);
 static inline int update_ptr (Timer *, const int);
 static int construct_tree (Timer *, GPTLMethod);
 static inline void set_fp_procsiz (void);
 static void check_memusage (const char *, const char *);
 static void translate_truncated_names (int, FILE *);
+static int get_numchars (int, const char *, const char *);
 
 bool GPTLonlypr_rank0 = false;    // flag says only print from MPI rank 0 (default false)
 
@@ -565,6 +566,7 @@ int GPTLstart (const char *name)
   Timer *ptr;
   int t;
   int ret;
+  int namelen = -1;
   int numchars;
   unsigned int indx; // index into hash table
   static const char *thisfunc = "GPTLstart";
@@ -574,10 +576,18 @@ int GPTLstart (const char *name)
     return 0;
   else if (ret != 0)
     return ret;
-  
+
+  // Hand-inline get_numchars() because some compilers don't inline it
+  // numchars = get_numchars (namelen, thisfunc, name);
+  if (namelen < 0)
+    namelen = strlen (name);
+  numchars = MIN (namelen, MAX_CHARS);
+  //if ((numchars = MIN (namelen, MAX_CHARS)) < namelen)
+  //GPTLwarn ("%s: %s is too long. Truncated to %d characters\n", thisfunc, name, MAX_CHARS);
+
   // ptr will point to the requested timer in the current list, or NULL if this is a new entry
-  indx = genhashidx (name);
-  ptr = getentry (hashtable[t], name, indx);
+  indx = genhashidx (name, numchars);
+  ptr = getentry (hashtable[t], name, indx, numchars);
 
   /* 
   ** Recursion => increment depth in recursion and return.  We need to return 
@@ -597,11 +607,7 @@ int GPTLstart (const char *name)
   if ( ! ptr) {   // Add a new entry and initialize. longname only needed for auto-profiling
     ptr = (Timer *) GPTLallocate (sizeof (Timer), thisfunc);
     memset (ptr, 0, sizeof (Timer));
-    numchars = MIN (strlen (name), MAX_CHARS);
-    strncpy (ptr->name, name, numchars);
-    ptr->name[numchars] = '\0';
-
-    if (update_ll_hash (ptr, t, indx) != 0)
+    if (update_ll_hash (ptr, t, indx, name, numchars) != 0)
       return GPTLerror ("%s: update_ll_hash error\n", thisfunc);
   }
 
@@ -619,6 +625,17 @@ int GPTLstart (const char *name)
     check_memusage ("Begin", ptr->name);
 
   return 0;
+}
+
+static int get_numchars (int namelen, const char *funcnam, const char *name)
+{
+  int numchars;
+  
+  if (namelen < 0)
+    namelen = strlen (name);
+  if ((numchars = MIN (namelen, MAX_CHARS)) < namelen)
+    GPTLwarn ("%s: %s is too long. Truncated to %d characters\n", funcnam, name, MAX_CHARS);
+  return numchars;
 }
 
 // preamble_start: Do the things common to GPTLstart* routines
@@ -658,10 +675,15 @@ static inline int preamble_start (int *t, const char *name)
 */
 int GPTLinit_handle (const char *name, int *handle)
 {
+  int namelen = -1;
+  int numchars;
+  static const char *thisfunc = "GPTLinit_handle";
+
   if (disabled)
     return 0;
 
-  *handle = (int) genhashidx (name);
+  numchars = get_numchars (namelen, thisfunc, name);
+  *handle = (int) genhashidx (name, numchars);
   return 0;
 }
 
@@ -681,6 +703,7 @@ int GPTLstart_handle (const char *name, int *handle)
   Timer *ptr;
   int t;
   int ret;
+  int namelen = -1;
   int numchars;
   static const char *thisfunc = "GPTLstart_handle";
 
@@ -690,6 +713,11 @@ int GPTLstart_handle (const char *name, int *handle)
   else if (ret != 0)
     return ret;
 
+  // Hand-inline get_numchars() because some compilers don't inline it
+  // numchars = get_numchars (namelen, thisfunc, name);
+  if (namelen < 0)
+    namelen = strlen (name);
+  numchars = MIN (namelen, MAX_CHARS);
   /*
   ** If handle is zero on input, generate the hash entry and return it to the user.
   ** Otherwise assume it's a previously generated hash index passed in by the user.
@@ -697,7 +725,7 @@ int GPTLstart_handle (const char *name, int *handle)
   ** same handle and store to the same memory location, and this will only happen once.
   */
   if (*handle == 0) {
-    *handle = (int) genhashidx (name);
+    *handle = (int) genhashidx (name, numchars);
 #ifdef VERBOSE
     printf ("%s: name=%s thread %d generated handle=%d\n", thisfunc, name, t, *handle);
 #endif
@@ -706,7 +734,7 @@ int GPTLstart_handle (const char *name, int *handle)
 		      thisfunc, (unsigned int) *handle, tablesizem1);
   }
 
-  ptr = getentry (hashtable[t], name, (unsigned int) *handle);
+  ptr = getentry (hashtable[t], name, (unsigned int) *handle, numchars);
   
   /* 
   ** Recursion => increment depth in recursion and return.  We need to return 
@@ -725,7 +753,7 @@ int GPTLstart_handle (const char *name, int *handle)
 
   if ( ! ptr) { // Add a new entry and initialize
     // Verify *handle matches what genhashidx says (only useful when GPTLinit_handle called)
-    int testidx = (int) genhashidx (name);
+    int testidx = (int) genhashidx (name, numchars);
     if (testidx != *handle)
       return GPTLerror ("%s: expected vs. input handles for name=%s don't match.",
 			" Possible user error passing wrong handle for name\n",
@@ -733,12 +761,7 @@ int GPTLstart_handle (const char *name, int *handle)
 	
     ptr = (Timer *) GPTLallocate (sizeof (Timer), thisfunc);
     memset (ptr, 0, sizeof (Timer));
-
-    numchars = MIN (strlen (name), MAX_CHARS);
-    strncpy (ptr->name, name, numchars);
-    ptr->name[numchars] = '\0';
-
-    if (update_ll_hash (ptr, t, (unsigned int) *handle) != 0)
+    if (update_ll_hash (ptr, t, (unsigned int) *handle, name, numchars) != 0)
       return GPTLerror ("%s: update_ll_hash error\n", thisfunc);
   }
 
@@ -766,13 +789,20 @@ int GPTLstart_handle (const char *name, int *handle)
 **   ptr:  pointer to timer
 **   t:    thread index
 **   indx: hash index
+**   name:     timer name
+**   numchars: length of timer name
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-static int update_ll_hash (Timer *ptr, int t, unsigned int indx)
+static int update_ll_hash (Timer *ptr, int t, unsigned int indx, const char *name,
+			   const int numchars)
 {
   int nument;      // number of entries (> 0 means collision)
   Timer **eptr;    // for realloc
+
+  strncpy (ptr->name, name, numchars);
+  ptr->name[numchars] = '\0';
+  ptr->numchars = numchars;
 
   last[t]->next = ptr;
   last[t] = ptr;
@@ -900,6 +930,8 @@ int GPTLstop (const char *name)
   unsigned int indx;         // hash indexx
   long usr = 0;              // user time (returned from get_cpustamp)
   long sys = 0;              // system time (returned from get_cpustamp)
+  int namelen = -1;
+  int numchars;
   static const char *thisfunc = "GPTLstop";
 
   ret = preamble_stop (&t, &tp1, &usr, &sys, name);
@@ -907,9 +939,16 @@ int GPTLstop (const char *name)
     return 0;
   else if (ret != 0)
     return ret;
-       
-  indx = genhashidx (name);
-  if (! (ptr = getentry (hashtable[t], name, indx)))
+
+  // Hand-inline get_numchars() because some compilers don't inline it
+  // numchars = get_numchars (namelen, thisfunc, name);
+  if (namelen < 0)
+    namelen = strlen (name);
+  numchars = MIN (namelen, MAX_CHARS);  
+  //if ((numchars = MIN (namelen, MAX_CHARS)) < namelen)
+  //GPTLwarn ("%s: %s is too long. Truncated to %d characters\n", thisfunc, name, MAX_CHARS);
+  indx = genhashidx (name, numchars);
+  if (! (ptr = getentry (hashtable[t], name, indx, numchars)))
     return GPTLerror ("%s thread %d: timer for %s had not been started.\n", thisfunc, t, name);
 
   if ( ! ptr->onflg )
@@ -984,6 +1023,8 @@ int GPTLstop_handle (const char *name, int *handle)
   long usr = 0;              // user time (returned from get_cpustamp)
   long sys = 0;              // system time (returned from get_cpustamp)
   unsigned int indx;         // index into hash table
+  int namelen = -1;
+  int numchars;
   static const char *thisfunc = "GPTLstop_handle";
 
   ret = preamble_stop (&t, &tp1, &usr, &sys, thisfunc);
@@ -995,8 +1036,13 @@ int GPTLstop_handle (const char *name, int *handle)
   indx = (unsigned int) *handle;
   if (indx == 0 || indx > tablesizem1) 
     return GPTLerror ("%s: bad input handle=%u for timer %s.\n", thisfunc, indx, name);
-  
-  if ( ! (ptr = getentry (hashtable[t], name, indx)))
+
+  // Hand-inline get_numchars() because some compilers don't inline it
+  // numchars = get_numchars (namelen, thisfunc, name);
+  if (namelen < 0)
+    namelen = strlen (name);
+  numchars = MIN (namelen, MAX_CHARS);
+  if ( ! (ptr = getentry (hashtable[t], name, indx, numchars)))
     return GPTLerror ("%s: handle=%u has not been set for timer %s.\n", 
 		      thisfunc, indx, name);
 
@@ -1007,7 +1053,7 @@ int GPTLstop_handle (const char *name, int *handle)
 
   // On first call, verify *handle matches what genhashidx says
   if (ptr->count == 1) {
-    int testidx = (int) genhashidx (name);
+    int testidx = (int) genhashidx (name, numchars);
     if (testidx != *handle)
       return GPTLerror ("%s: expected vs. input handles for name=%s don't match.",
 			" Possible user error passing wrong handle for name\n",
@@ -1212,6 +1258,8 @@ int GPTLreset_timer (const char *name)
   int t;
   Timer *ptr;
   unsigned int indx; // hash index
+  int namelen = -1;
+  int numchars;
   static const char *thisfunc = "GPTLreset_timer";
 
   if ( ! initialized)
@@ -1220,9 +1268,10 @@ int GPTLreset_timer (const char *name)
   if (GPTLget_thread_num () != 0)
     return GPTLerror ("%s: Must be called by the master thread\n", thisfunc);
 
-  indx = genhashidx (name);
+  numchars = get_numchars (namelen, thisfunc, name);
+  indx = genhashidx (name, numchars);
   for (t = 0; t < GPTLnthreads; ++t) {
-    ptr = getentry (hashtable[t], name, indx);
+    ptr = getentry (hashtable[t], name, indx, numchars);
     if (ptr) {
       ptr->onflg = false;
       ptr->count = 0;
@@ -1301,7 +1350,7 @@ int GPTLpr_file (const char *outfile)
     return GPTLerror ("%s: GPTLinitialize() has not been called\n", thisfunc);
 
   // Not great hack to force output to stderr: "output" is the string "stderr"
-  if (STRMATCH (outfile, "stderr") || ! (fp = fopen (outfile, "w")))
+  if ((strcmp (outfile, "stderr") == 0) || ! (fp = fopen (outfile, "w")))
     fp = stderr;
 
   // Print version info from configure to output file
@@ -1508,7 +1557,7 @@ int GPTLpr_file (const char *outfile)
       for (t = 1; t < GPTLnthreads; ++t) {
         found = false;
         for (tptr = timers[t]->next; tptr && ! found; tptr = tptr->next) {
-          if (STRMATCH (ptr->name, tptr->name)) {
+	  if (STRMATCH (ptr->name, tptr->name)) {
             // Only print thread 0 when this timer found for other threads
             if (first) {
               first = false;
@@ -2217,6 +2266,8 @@ int GPTLquery (const char *name, int t, int *count, int *onflg, double *wallcloc
 {
   Timer *ptr;
   unsigned int indx;
+  int namelen = -1;
+  int numchars;
   static const char *thisfunc = "GPTLquery";
   
   if ( ! initialized)
@@ -2231,8 +2282,9 @@ int GPTLquery (const char *name, int t, int *count, int *onflg, double *wallcloc
       return GPTLerror ("%s: requested thread %d is too big\n", thisfunc, t);
   }
 
-  indx = genhashidx (name);
-  ptr = getentry (hashtable[t], name, indx);
+  numchars = get_numchars (namelen, thisfunc, name);
+  indx = genhashidx (name, numchars);
+  ptr = getentry (hashtable[t], name, indx, numchars);
   if ( !ptr)
     return GPTLerror ("%s: requested timer %s does not have a name hash\n", thisfunc, name);
 
@@ -2261,6 +2313,8 @@ int GPTLget_wallclock (const char *timername, int t, double *value)
 {
   Timer *ptr;
   unsigned int indx;   // hash index returned from getentry (unused)
+  int namelen = -1;
+  int numchars;
   static const char *thisfunc = "GPTLget_wallclock";
   
   if ( ! initialized)
@@ -2278,8 +2332,9 @@ int GPTLget_wallclock (const char *timername, int t, double *value)
       return GPTLerror ("%s: requested thread %d is too big\n", thisfunc, t);
   }
   
-  indx = genhashidx (timername);
-  ptr = getentry (hashtable[t], timername, indx);
+  numchars = get_numchars (namelen, thisfunc, timername);
+  indx = genhashidx (timername, numchars);
+  ptr = getentry (hashtable[t], timername, indx, numchars);
   if ( ! ptr)
     return GPTLerror ("%s: requested timer %s does not exist for thread %d\n",
 		      thisfunc, timername, t);
@@ -2301,6 +2356,8 @@ int GPTLget_wallclock_latest (const char *timername, int t, double *value)
 {
   Timer *ptr;
   unsigned int indx;   // hash index returned from getentry (unused)
+  int namelen = -1;
+  int numchars;
   static const char *thisfunc = "GPTLget_wallclock_latest";
   
   if ( ! initialized)
@@ -2318,8 +2375,9 @@ int GPTLget_wallclock_latest (const char *timername, int t, double *value)
       return GPTLerror ("%s: requested thread %d is too big\n", thisfunc, t);
   }
   
-  indx = genhashidx (timername);
-  ptr = getentry (hashtable[t], timername, indx);
+  numchars = get_numchars (namelen, thisfunc, timername);
+  indx = genhashidx (timername, numchars);
+  ptr = getentry (hashtable[t], timername, indx, numchars);
   if ( !ptr)
     return GPTLerror ("%s: requested timer %s does not exist\n", thisfunc, timername);
   *value = ptr->wall.latest;
@@ -2347,6 +2405,8 @@ int GPTLget_threadwork (const char *name, double *maxwork, double *imbal)
   double innermax = 0.;        // maximum work across threads
   double totalwork = 0.;       // total work done by all threads
   double balancedwork;         // time if work were perfectly load balanced
+  int namelen = -1;
+  int numchars;
   static const char *thisfunc = "GPTLget_threadwork";
 
   if (disabled)
@@ -2361,9 +2421,10 @@ int GPTLget_threadwork (const char *name, double *maxwork, double *imbal)
   if (GPTLget_thread_num () != 0)
     return GPTLerror ("%s: Must be called by the master thread\n", thisfunc);
 
-  indx = genhashidx (name);
+  numchars = get_numchars (namelen, thisfunc, name);
+  indx = genhashidx (name, numchars);
   for (t = 0; t < GPTLnthreads; ++t) {
-    ptr = getentry (hashtable[t], name, indx);
+    ptr = getentry (hashtable[t], name, indx, numchars);
     if (ptr) {
       ++nfound;
       innermax = MAX (innermax, ptr->wall.accum);
@@ -2398,6 +2459,8 @@ int GPTLstartstop_val (const char *name, double value)
   Timer *ptr;
   int t;
   unsigned int indx;         // index into hash table
+  int namelen = -1;
+  int numchars;
   static const char *thisfunc = "GPTLstartstop_val";
 
   if (disabled)
@@ -2416,8 +2479,9 @@ int GPTLstartstop_val (const char *name, double value)
     return GPTLerror ("%s: bad return from GPTLget_thread_num\n", thisfunc);
 
   // Find out if the timer already exists
-  indx = genhashidx (name);
-  ptr = getentry (hashtable[t], name, indx);
+  numchars = get_numchars (namelen, thisfunc, name);
+  indx = genhashidx (name, numchars);
+  ptr = getentry (hashtable[t], name, indx, numchars);
 
   if (ptr) {
     // The timer already exists. Bump the count manually, update the time stamp,
@@ -2434,7 +2498,7 @@ int GPTLstartstop_val (const char *name, double value)
       return GPTLerror ("%s: Error from GPTLstop\n", thisfunc);
 
     // start/stop pair just called should guarantee ptr will be found
-    if ( ! (ptr = getentry (hashtable[t], name, indx)))
+    if ( ! (ptr = getentry (hashtable[t], name, indx, numchars)))
       return GPTLerror ("%s: Unexpected error from getentry\n", thisfunc);
 
     ptr->wall.min = value; // Since this is the first call, set min to user input
@@ -2470,6 +2534,8 @@ int GPTLget_count (const char *timername, int t, int *count)
 {
   Timer *ptr;
   unsigned int indx;   // hash index returned from getentry (unused)
+  int namelen = -1;
+  int numchars;
   static const char *thisfunc = "GPTLget_count";
   
   if ( ! initialized)
@@ -2484,8 +2550,9 @@ int GPTLget_count (const char *timername, int t, int *count)
       return GPTLerror ("%s: requested thread %d is too big\n", thisfunc, t);
   }
   
-  indx = genhashidx (timername);
-  ptr = getentry (hashtable[t], timername, indx);
+  numchars = get_numchars (namelen, thisfunc, timername);
+  indx = genhashidx (timername, numchars);
+  ptr = getentry (hashtable[t], timername, indx, numchars);
   if ( ! ptr)
     return GPTLerror ("%s: requested timer %s does not exist (or auto-instrumented?)\n",
 		      thisfunc, timername);
@@ -2509,6 +2576,8 @@ int GPTLget_eventvalue (const char *timername, const char *eventname, int t, dou
 {
   Timer *ptr;
   unsigned int indx;   // hash index returned from getentry (unused)
+  int namelen = -1;
+  int numchars;
   static const char *thisfunc = "GPTLget_eventvalue";
   
   if ( ! initialized)
@@ -2523,8 +2592,9 @@ int GPTLget_eventvalue (const char *timername, const char *eventname, int t, dou
       return GPTLerror ("%s: requested thread %d is too big\n", thisfunc, t);
   }
   
-  indx = genhashidx (timername);
-  ptr = getentry (hashtable[t], timername, indx);
+  numchars = get_numchars (namelen, thisfunc, timername);
+  indx = genhashidx (timername, numchars);
+  ptr = getentry (hashtable[t], timername, indx, numchars);
   if ( ! ptr)
     return GPTLerror ("%s: requested timer %s does not exist (or auto-instrumented?)\n",
 		      thisfunc, timername);
@@ -2607,7 +2677,7 @@ int GPTLget_regionname (int t, int region, char *name, int nc)
   }
 
   if (ptr) {
-    ncpy = MIN (nc, strlen (ptr->name));
+    ncpy = MIN (nc, ptr->numchars);
     strncpy (name, ptr->name, ncpy);
     
     // Adding the \0 is only important when called from C
@@ -2679,35 +2749,18 @@ static inline Timer *getentry_instr (const Hashentry *hashtable, void *self, uns
 **
 ** Return value: hash value
 */
-#define NEWWAY
-static inline unsigned int genhashidx (const char *name)
+static inline unsigned int genhashidx (const char *name, const int numchars)
 {
   const unsigned char *c;       // pointer to elements of "name"
   unsigned int indx;            // return value of function
-#ifdef NEWWAY
   unsigned int mididx, lastidx; // mid and final index of name
 
-  lastidx = strlen (name) - 1;
+  lastidx = numchars - 1;
   mididx = lastidx / 2;
-#else
-  int i;                        // iterator (OLDWAY only)
-#endif
   // Disallow a hash index of zero (by adding 1 at the end) since user input of an 
   // uninitialized value, though an error, has a likelihood to be zero.
-#ifdef NEWWAY
   c = (unsigned char *) name;
   indx = (MAX_CHARS*c[0] + (MAX_CHARS-mididx)*c[mididx] + (MAX_CHARS-lastidx)*c[lastidx]) % tablesizem1 + 1;
-#else
-  indx = 0;
-  i = MAX_CHARS;
-#pragma unroll(2)
-  for (c = (unsigned char *) name; *c && i > 0; ++c) {
-    indx += i*(*c);
-    --i;
-  }
-  indx = indx % tablesizem1 + 1;
-#endif
-
   return indx;
 }
 
@@ -2720,7 +2773,7 @@ static inline unsigned int genhashidx (const char *name)
 **
 ** Return value: pointer to the entry, or NULL if not found
 */
-static inline Timer *getentry (const Hashentry *hashtable, const char *name, unsigned int indx)
+static inline Timer *getentry (const Hashentry *hashtable, const char *name, unsigned int indx, const int numchars)
 {
   int i;
   Timer *ptr = 0;             // return value when entry not found
@@ -2728,7 +2781,8 @@ static inline Timer *getentry (const Hashentry *hashtable, const char *name, uns
   // If nument exceeds 1 there was one or more hash collisions and we must search
   // linearly through the array of names with the same hash for a match
   for (i = 0; i < hashtable[indx].nument; i++) {
-    if (STRMATCH (name, hashtable[indx].entries[i]->name)) {
+    if (numchars == hashtable[indx].entries[i]->numchars &&
+	STRMATCH (name, hashtable[indx].entries[i]->name)) {
       ptr = hashtable[indx].entries[i];
 #ifdef COLLIDE
       if (i > 0)
@@ -2792,6 +2846,7 @@ void __cyg_profile_func_enter (void *this_fn, void *call_site)
   int numchars;         // number of characters in function name
   unsigned int indx;    // hash table index
   Timer *ptr;           // pointer to entry if it already exists
+  int ret;              // return code
   static const char *thisfunc = "__cyg_profile_func_enter";
 
   // In debug mode, get symbol name up front to diagnose function name
@@ -2851,6 +2906,7 @@ void __cyg_profile_func_enter (void *this_fn, void *call_site)
     unw_cursor_t cursor;
     unw_context_t context;
     unw_word_t offset, pc;
+
     // Initialize cursor to current frame for local unwinding.
     unw_getcontext (&context);
     unw_init_local (&cursor, &context);
@@ -2885,10 +2941,10 @@ void __cyg_profile_func_enter (void *this_fn, void *call_site)
     ptr = (Timer *) GPTLallocate (sizeof (Timer), thisfunc);
     memset (ptr, 0, sizeof (Timer));
 #ifdef ENABLE_NESTEDOMP
-    ptr->major = -1;
-    ptr->minor = -1;
+    GPTLget_nested_thread_nums (&ptr->major, &ptr->minor);
 #endif
 
+    // Do the things specific to auto-profiled functions, then call update_ll_hash()
     // For names longer than MAX_CHARS, need the full name to avoid misrepresenting
     // names with stripped off characters as duplicates
     if (symsize > MAX_CHARS) {
@@ -2896,12 +2952,10 @@ void __cyg_profile_func_enter (void *this_fn, void *call_site)
       strcpy (ptr->longname, symnam);
     }
     numchars = MIN (symsize, MAX_CHARS);
-    strncpy (ptr->name, symnam, numchars);
-    ptr->name[numchars] = '\0';
     ptr->address = this_fn;
+    ret = update_ll_hash (ptr, t, indx, symnam, numchars);
     free (symnam);
-
-    if (update_ll_hash (ptr, t, indx) != 0) {
+    if (ret != 0) {
       GPTLwarn ("%s: update_ll_hash error\n", thisfunc);
       return;
     }
@@ -3275,6 +3329,8 @@ Timer *GPTLgetentry (const char *name)
 {
   int t;
   unsigned int indx;    // returned from getentry (unused)
+  int namelen = -1;
+  int numchars;
   static const char *thisfunc = "GPTLgetentry";
 
   if ( ! initialized) {
@@ -3287,8 +3343,9 @@ Timer *GPTLgetentry (const char *name)
     return 0;
   }
 
-  indx = genhashidx (name);
-  return (getentry (hashtable[t], name, indx));
+  numchars = get_numchars (namelen, thisfunc, name);
+  indx = genhashidx (name, numchars);
+  return (getentry (hashtable[t], name, indx, numchars));
 }
 #endif
 

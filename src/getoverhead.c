@@ -53,8 +53,8 @@ static void misc_sim (Nofalse *, Timer ***, int);
 */
 int GPTLget_overhead (FILE *fp,
 		      double (*ptr2wtimefunc)(void), 
-		      Timer *getentry (const Hashentry *, const char *, unsigned int),
-		      unsigned int genhashidx (const char *),
+		      Timer *getentry (const Hashentry *, const char *, unsigned int, const int),
+		      unsigned int genhashidx (const char *, const int),
 		      int GPTLget_thread_num(void),
 		      Nofalse *stackidx,
 		      Timer ***callstack,
@@ -104,7 +104,8 @@ int GPTLget_overhead (FILE *fp,
   // genhashidx overhead
   t1 = (*ptr2wtimefunc)();
   for (i = 0; i < 1000; ++i) {
-    hashidx = genhashidx ("timername");
+    int numchars = strlen ("timername");
+    hashidx = genhashidx ("timername", numchars);
   }
   t2 = (*ptr2wtimefunc)();
   genhashidx_ohd = 0.001 * (t2 - t1);
@@ -113,10 +114,12 @@ int GPTLget_overhead (FILE *fp,
   // Find the first hashtable entry with a valid name. Start at 1 because 0 is not a valid hash
   for (n = 1; n < tablesize; ++n) {
     if (hashtable[n].nument > 0 && strlen (hashtable[n].entries[0]->name) > 0) {
-      hashidx = genhashidx (hashtable[n].entries[0]->name);
+      int numchars = hashtable[n].entries[0]->numchars;
+      hashidx = genhashidx (hashtable[n].entries[0]->name, numchars);
       t1 = (*ptr2wtimefunc)();
-      for (i = 0; i < 1000; ++i)
-	entry = getentry (hashtable, hashtable[n].entries[0]->name, hashidx);
+      for (i = 0; i < 1000; ++i) {
+	entry = getentry (hashtable, hashtable[n].entries[0]->name, hashidx, numchars);
+      }
       t2 = (*ptr2wtimefunc)();
       fprintf (fp, "%s: using hash entry %d=%s for getentry estimate\n", 
 	       thisfunc, n, hashtable[n].entries[0]->name);
@@ -126,8 +129,10 @@ int GPTLget_overhead (FILE *fp,
   if (n == tablesize) {
     fprintf (fp, "%s: hash table empty: Using alternate means to find getentry time\n", thisfunc);
     t1 = (*ptr2wtimefunc)();
-    for (i = 0; i < 1000; ++i)
-      entry = getentry (hashtable, "timername", hashidx);
+    for (i = 0; i < 1000; ++i) {
+      int numchars = strlen ("timername");
+      entry = getentry (hashtable, "timername", hashidx, numchars);
+    }
     t2 = (*ptr2wtimefunc)();
   }
   getentry_ohd = 0.001 * (t2 - t1);
