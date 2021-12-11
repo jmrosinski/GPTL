@@ -2865,10 +2865,10 @@ void __cyg_profile_func_enter (void *this_fn, void *call_site)
       int nchars = strlen (symbol);;
 #ifdef APPEND_ADDRESS
       char addrname[16+2];
-      *symnam = (char *) malloc (nchars+16+2);  // 16 is nchars, +2 is for '#' and '\0'
-      strncpy (*symnam, symbol, nchars+1);
+      symnam = (char *) malloc (nchars+16+2);  // 16 is nchars, +2 is for '#' and '\0'
+      strncpy (symnam, symbol, nchars+1);
       snprintf (addrname, 16+2, "#%-16p", this_fn);
-      strcat (*symnam, addrname);
+      strcat (symnam, addrname);
 #else
       symnam = (char *) malloc (nchars + 1);
       strncpy (symnam, symbol, nchars+1);
