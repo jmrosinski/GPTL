@@ -29,19 +29,20 @@ MODFILE = ${top_builddir}/fortran/src/gptl.$(FC_MODEXT)
 noinst_PROGRAMS = overhead handle utrtest
 
 # Test programs that will be built for all configurations.
-check_PROGRAMS = testbasics errtest nlreader outoforder legacy
-TESTS          = testbasics errtest nlreader outoforder legacy
+check_PROGRAMS = testbasics errtest nlreader outoforder legacy toomanychars
+TESTS          = testbasics errtest nlreader outoforder legacy toomanychars
 
 # Test dependencies needed.
-testbasics_SOURCES = testbasics.F90 ${MODFILE}
-errtest_SOURCES    = errtest.F90    ${MODFILE}
-nlreader_SOURCES   = nlreader.F90   ${MODFILE}
-outoforder_SOURCES = outoforder.F90 ${MODFILE}
-summary_SOURCES    = summary.F90    ${MODFILE}
+testbasics_SOURCES   = testbasics.F90 ${MODFILE}
+errtest_SOURCES      = errtest.F90    ${MODFILE}
+nlreader_SOURCES     = nlreader.F90   ${MODFILE}
+outoforder_SOURCES   = outoforder.F90 ${MODFILE}
+toomanychars_SOURCES = toomanychars.F90 ${MODFILE}
+summary_SOURCES      = summary.F90    ${MODFILE}
 
-handle_SOURCES     = handle.F90     ${MODFILE}
-overhead_SOURCES   = overhead.F90   ${MODFILE}
-legacy_SOURCES     = legacy.F
+handle_SOURCES       = handle.F90     ${MODFILE}
+overhead_SOURCES     = overhead.F90   ${MODFILE}
+legacy_SOURCES       = legacy.F
 
 # Hack found online to compile input files differently: Use a lib
 noinst_LIBRARIES      = libprofsubs.a
@@ -92,7 +93,7 @@ endif
 
 # Test output to be deleted: include ALL possible executables
 ALLEXES = overhead handle utrtest testbasics errtest nlreader outoforder legacy omptest \
-          threadohd testbacktrace testinit testpapi summary print_mpistatus_size pmpi
+          threadohd testbacktrace testinit testpapi summary print_mpistatus_size pmpi toomanychars
 CLEANFILES = *.$(FC_MODEXT) timing.?????? timing.summary* *_ohd *.mod *.trs *.log *.o $(ALLEXES)
 
 # This file is required for the nlreader test.

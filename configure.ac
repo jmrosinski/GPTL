@@ -22,6 +22,9 @@ AC_LANG(C)
 
 # Find the C compiler.
 AC_PROG_CC()
+if test "x$CC" = xnvc; then
+  AC_MSG_NOTICE([NOTE nvc sometimes does not like shared builds. If trouble suggest --disable-shared ])
+fi
 
 # Keep libtool macros in an m4 directory.
 AC_CONFIG_MACRO_DIR([m4])
@@ -194,6 +197,12 @@ AS_IF([test "x$enable_debug" = xyes], [
  AC_DEFINE([DEBUG], [1], [set debug ifdef])
  CFLAGS="$CFLAGS -g -O0"
  FCFLAGS="$FCFLAGS -g -O0"
+  if test "x$CC" = xnvc; then
+    AC_MSG_NOTICE([NOTE when CC=nvc and debug is enabled, suggest nullifying CC to avoid confusing nvc])
+  fi
+  if test "x$FC" = xnvfortran; then
+    AC_MSG_NOTICE([NOTE when FC=nvfortran and debug is enabled, suggest nullifying FC to avoid confusing nvfortran])
+  fi
 ])
 
 # Whether to enable GPTL hooks into the PAPI performance counter library. PAPI must already
@@ -398,6 +407,9 @@ AS_IF([test "x$enable_fortran" != "xno"], [
 if test "x$fortran_support" = xyes; then
   AC_LANG_PUSH(Fortran)
   AC_PROG_FC()
+  if test "x$FC" = xnvfortran; then
+    AC_MSG_NOTICE([NOTE nvfortran sometimes does not like shared builds. If trouble suggest --disable-shared])
+  fi
 
 # Make sure this file is copied to build directories for tests to work.
   AC_CONFIG_LINKS([fortran/tests/gptlnl:fortran/tests/gptlnl])

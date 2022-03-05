@@ -595,9 +595,12 @@ int GPTLstart (const char *name)
     return GPTLerror ("%s: stack too big: NOT starting timer for %s\n", thisfunc, name);
 
   if ( ! ptr) {   // Add a new entry and initialize. longname only needed for auto-profiling
+    numchars = strlen (name);
+    if (numchars > MAX_CHARS)
+      return GPTLerror ("%s: region name %s is too long\nRename to be %d chars or fewer\n",
+			thisfunc, name, MAX_CHARS);
     ptr = (Timer *) GPTLallocate (sizeof (Timer), thisfunc);
     memset (ptr, 0, sizeof (Timer));
-    numchars = MIN (strlen (name), MAX_CHARS);
     strncpy (ptr->name, name, numchars);
     ptr->name[numchars] = '\0';
 
@@ -724,6 +727,10 @@ int GPTLstart_handle (const char *name, int *handle)
     return GPTLerror ("%s: stack too big: NOT starting timer for %s\n", thisfunc, name);
 
   if ( ! ptr) { // Add a new entry and initialize
+    numchars = strlen (name);
+    if (numchars > MAX_CHARS)
+      return GPTLerror ("%s: region name %s is too long\nRename to be %d chars or fewer\n",
+			thisfunc, name, MAX_CHARS);
     // Verify *handle matches what genhashidx says (only useful when GPTLinit_handle called)
     int testidx = (int) genhashidx (name);
     if (testidx != *handle)
@@ -733,8 +740,6 @@ int GPTLstart_handle (const char *name, int *handle)
 	
     ptr = (Timer *) GPTLallocate (sizeof (Timer), thisfunc);
     memset (ptr, 0, sizeof (Timer));
-
-    numchars = MIN (strlen (name), MAX_CHARS);
     strncpy (ptr->name, name, numchars);
     ptr->name[numchars] = '\0';
 
@@ -910,7 +915,8 @@ int GPTLstop (const char *name)
        
   indx = genhashidx (name);
   if (! (ptr = getentry (hashtable[t], name, indx)))
-    return GPTLerror ("%s thread %d: timer for %s had not been started.\n", thisfunc, t, name);
+    return GPTLerror ("%s thread %d: timer %s had not been started.\n"
+  		      "Perhaps length exceeds %d chars?\n", thisfunc, t, name, MAX_CHARS);
 
   if ( ! ptr->onflg )
     return GPTLerror ("%s: timer %s was already off.\n", thisfunc, ptr->name);
@@ -997,9 +1003,8 @@ int GPTLstop_handle (const char *name, int *handle)
     return GPTLerror ("%s: bad input handle=%u for timer %s.\n", thisfunc, indx, name);
   
   if ( ! (ptr = getentry (hashtable[t], name, indx)))
-    return GPTLerror ("%s: handle=%u has not been set for timer %s.\n", 
-		      thisfunc, indx, name);
-
+    return GPTLerror ("%s: handle=%u has not been set for timer %s.\n"
+  		      "Perhaps length exceeds %d chars?\n", thisfunc, indx, name, MAX_CHARS);
   if ( ! ptr->onflg )
     return GPTLerror ("%s: timer %s was already off.\n", thisfunc, ptr->name);
 
