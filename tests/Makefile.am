@@ -85,4 +85,4 @@ endif
 ALLEXES = printwhileon imperfect_nest gran_overhead tst_simple global cygprofile omptest \
           testpapi gptl_avail knownflopcount papiomptest summary pmpi nestedomp badhandle \
           memusage toomanychars
-CLEANFILES = timing.?????? timing.summary* *.trs *.log *.o out.memusage $(ALLEXES)
+CLEANFILES = timing.?????? timing.summary* *.trs *.log *.o out.memusage $(ALLEXES) *.sh

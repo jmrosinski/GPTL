@@ -6,7 +6,7 @@
 AC_PREREQ([2.59])
 
 # Initialize autoconf.
-AC_INIT([GPTL], [8.0.3], [jmrosinski@gmail.com])
+AC_INIT([GPTL], [8.1.0], [jmrosinski@gmail.com])
 
 # Find out about the host we're building on.
 AC_CANONICAL_HOST
@@ -451,6 +451,7 @@ if test "x$fortran_support" = xyes; then
 	  	 ])
   AC_CONFIG_FILES([fortran/tests/run_par_pmpi_test.sh], [chmod ugo+x fortran/tests/run_par_pmpi_test.sh])
   AC_CONFIG_FILES([fortran/tests/run_par_summary_test.sh], [chmod ugo+x fortran/tests/run_par_summary_test.sh])
+  AC_CONFIG_FILES([fortran/tests/run_par_inplace_test.sh], [chmod ugo+x fortran/tests/run_par_inplace_test.sh])
   AC_LANG_POP()
 fi
 AM_CONDITIONAL([HAVE_FORTRAN], [test x$fortran_support = "xyes"])

@@ -85,16 +85,19 @@ print_mpistatus_size_SOURCES = print_mpistatus_size.F90
 TESTS += run_par_summary_test.sh
 # Test the PMPI interface (if installed)
 if ENABLE_PMPI
-check_PROGRAMS += pmpi
-TESTS          += run_par_pmpi_test.sh
+check_PROGRAMS += pmpi inplace
+TESTS          += run_par_pmpi_test.sh run_par_inplace_test.sh
 pmpi_SOURCES = pmpi.F90 ${MODFILE}
+inplace_SOURCES = inplace_subs.F90 inplace.F90 inplace_subs.mod ${MODFILE}
 endif
 endif
 
 # Test output to be deleted: include ALL possible executables
 ALLEXES = overhead handle utrtest testbasics errtest nlreader outoforder legacy omptest \
-          threadohd testbacktrace testinit testpapi summary print_mpistatus_size pmpi toomanychars
-CLEANFILES = *.$(FC_MODEXT) timing.?????? timing.summary* *_ohd *.mod *.trs *.log *.o $(ALLEXES)
+          threadohd testbacktrace testinit testpapi summary print_mpistatus_size pmpi toomanychars \
+          inplace
+CLEANFILES = *.$(FC_MODEXT) timing.?????? timing.summary* *_ohd *.mod *.trs *.log *.o $(ALLEXES) \
+             *.sh
 
 # This file is required for the nlreader test.
 EXTRA_DIST = gptlnl

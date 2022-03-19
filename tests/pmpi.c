@@ -5,48 +5,44 @@
 #include "gptl.h"
 #include "gptlmpi.h"
 
-static const MPI_Comm comm = MPI_COMM_WORLD;
-static int iam;
+const MPI_Comm comm = MPI_COMM_WORLD;
+const int tag = 98;
+
+int send_recv (int, int);
+int ssend_recv (int, int);
+int sendrecv (int, int);
+int irecv_isend_wait (int, int);
+int irecv_isend_waitall (int, int);
+int issend_recv (int, int);
+int bcast (int, int);
+int reduce (int, int);
+int allreduce (int, int);
+int alltoall (int, int);
+int alltoallv (int, int);
+int gather (int, int);
+int scatter (int, int);
+int chkbuf (int, const int, const char *, const int, const int);
 
 int main (int argc, char **argv)
 {
+  int iam;
   int i, ret;
   int commsize;
-  int val;
-  const int count = 1024;
-  const int tag = 98;
-  int sendbuf[count];
-  int recvbuf[count];
-  int *gsbuf;
-  int *atoabufsend, *atoabufrecv;
-  int sum;
-  MPI_Status status;
-  MPI_Request sendreq, recvreq;
-  int dest;
-  int source;
   int resultlen;                      /* returned length of string from MPI routine */
   int provided;                       /* level of threading support in this MPI lib */
   char string[MPI_MAX_ERROR_STRING];  /* character string returned from MPI routine */
   const char *mpiroutine[] = {"MPI_Ssend", "MPI_Send", "MPI_Recv", "MPI_Sendrecv", "MPI_Irecv",
-			      "MPI_Isend", "MPI_Waitall", "MPI_Barrier", "MPI_Bcast", "MPI_Allreduce",
-			      "MPI_Gather", "MPI_Scatter", "MPI_Alltoall", "MPI_Reduce", "MPI_Issend"};
+			      "MPI_Isend", "MPI_Waitall", "MPI_Barrier", "MPI_Bcast",
+			      "MPI_Allreduce", "MPI_Gather", "MPI_Scatter", "MPI_Alltoall",
+			      "MPI_Reduce", "MPI_Issend", "MPI_Alltoallv"};
   const int nroutines = sizeof (mpiroutine) / sizeof (char *);
   double wallclock;
-
-  void chkbuf (const char *, int *, const int, const int);
 
   /*
   int DebugWait = 1;
   while (DebugWait) {
   }
   */
-
-  ret = GPTLsetoption (GPTLoverhead, 0);       /* Don't print overhead stats */
-  ret = GPTLsetoption (GPTLpercent, 0);        /* Don't print percentage stats */
-  ret = GPTLsetoption (GPTLabort_on_error, 1); /* Abort on any GPTL error */
-
-  ret = GPTLinitialize ();                     /* Initialize GPTL */
-  ret = GPTLstart ("total");                   /* Time the whole program */
 
   /* Initialize MPI by using MPI_Init_thread: report back level of MPI support */
   if ((ret = MPI_Init_thread (&argc, &argv, MPI_THREAD_SINGLE, &provided)) != 0) {
@@ -57,9 +53,21 @@ int main (int argc, char **argv)
   
   ret = MPI_Comm_rank (comm, &iam);            /* Get my rank */
   ret = MPI_Comm_size (comm, &commsize);       /* Get communicator size */
+  if (commsize % 2 != 0) {
+    printf ("%s requires number of procs to be EVEN\n", argv[0]);
+    MPI_Abort (comm, -1);
+  }
+
+  ret = GPTLsetoption (GPTLoverhead, 0);       /* Don't print overhead stats */
+  ret = GPTLsetoption (GPTLpercent, 0);        /* Don't print percentage stats */
+  ret = GPTLsetoption (GPTLabort_on_error, 1); /* Abort on any GPTL error */
+
+  ret = GPTLinitialize ();                     /* Initialize GPTL */
+  ret = GPTLstart ("total");                   /* Time the whole program */
 
   if (iam == 0) {
-    printf ("%s: testing suite of MPI routines for auto-instrumentation via GPTL PMPI layer\n", argv[0]);
+    printf ("%s: testing suite of MPI routines for auto-instrumentation via GPTL PMPI layer\n",
+	    argv[0]);
     switch (provided) {
     case MPI_THREAD_SINGLE:
       printf ("MPI support level is MPI_THREAD_SINGLE\n");
@@ -75,133 +83,49 @@ int main (int argc, char **argv)
       MPI_Abort (comm, -1);
     }
   }
-       
-  for (i = 0; i < count; ++i)
-    sendbuf[i] = iam;
 
-  dest = (iam + 1)%commsize;
-  source = iam - 1;
-  if (source < 0)
-    source = commsize - 1;
+  if ((ret = MPI_Barrier (comm)) != 0)
+    MPI_Abort (comm, -1);
+  if ((ret = send_recv (iam, commsize)) != 0)
+    MPI_Abort (comm, -1);
+  if ((ret = ssend_recv (iam, commsize)) != 0)
+    MPI_Abort (comm, -1);
+  if ((ret = sendrecv (iam, commsize)) != 0)
+    MPI_Abort (comm, -1);
+  if ((ret = irecv_isend_wait (iam, commsize)) != 0)
+    MPI_Abort (comm, -1);
+  if ((ret = irecv_isend_waitall (iam, commsize)) != 0)
+    MPI_Abort (comm, -1);
+  if ((ret = bcast (iam, commsize)) != 0)
+    MPI_Abort (comm, -1);
+  if ((ret = allreduce (iam, commsize)) != 0)
+    MPI_Abort (comm, -1);
+  if ((ret = issend_recv (iam, commsize)) != 0)
+    MPI_Abort (comm, -1);
+  if ((ret = alltoall (iam, commsize)) != 0)
+    MPI_Abort (comm, -1);
+  if ((ret = alltoallv (iam, commsize)) != 0)
+    MPI_Abort (comm, -1);
+  if ((ret = reduce (iam, commsize)) != 0)
+    MPI_Abort (comm, -1);
+  if ((ret = gather (iam, commsize)) != 0)
+    MPI_Abort (comm, -1);
+  if ((ret = scatter (iam, commsize)) != 0)
+    MPI_Abort (comm, -1);
 
-  /* Send, Ssend */
-  if (commsize % 2 == 0) {
-    if (iam % 2 == 0) {
-      ret = MPI_Send (sendbuf, count, MPI_INT, dest, tag, comm);
-      ret = MPI_Recv (recvbuf, count, MPI_INT, source, tag, comm, &status);
-    } else {
-      ret = MPI_Recv (recvbuf, count, MPI_INT, source, tag, comm, &status);
-      ret = MPI_Send (sendbuf, count, MPI_INT, dest, tag, comm);
-    }
-    chkbuf ("MPI_Send + MPI_Recv", recvbuf, count, source);
-
-    if (iam % 2 == 0) {
-      ret = MPI_Ssend (sendbuf, count, MPI_INT, dest, tag, comm);
-      ret = MPI_Recv (recvbuf, count, MPI_INT, source, tag, comm, &status);
-    } else {
-      ret = MPI_Recv (recvbuf, count, MPI_INT, source, tag, comm, &status);
-      ret = MPI_Ssend (sendbuf, count, MPI_INT, dest, tag, comm);
-    }
-    chkbuf ("MPI_Ssend + MPI_Recv", recvbuf, count, source);
-
-    if (iam % 2 == 0) {
-      ret = MPI_Issend (sendbuf, count, MPI_INT, dest, tag, comm, &sendreq);
-      ret = MPI_Recv (recvbuf, count, MPI_INT, source, tag, comm, &status);
-    } else {
-      ret = MPI_Recv (recvbuf, count, MPI_INT, source, tag, comm, &status);
-      ret = MPI_Issend (sendbuf, count, MPI_INT, dest, tag, comm, &sendreq);
-    }
-    chkbuf ("MPI_Issend + MPI_Recv", recvbuf, count, source);
-  }
-
-  ret = MPI_Sendrecv (sendbuf, count, MPI_INT, dest, tag, 
-		      recvbuf, count, MPI_INT, source, tag, 
-		      comm, &status);
-  chkbuf ("MPI_Sendrecv", recvbuf, count, source);
-
-  ret = MPI_Irecv (recvbuf, count, MPI_INT, source, tag, 
-		   comm, &recvreq);
-  ret = MPI_Isend (sendbuf, count, MPI_INT, dest, tag, 
-		   comm, &sendreq);
-  ret = MPI_Wait (&recvreq, &status);
-  ret = MPI_Wait (&sendreq, &status);
-  chkbuf ("MPI_Isend + MPI_Irecv + MPI_Wait", recvbuf, count, source);
-
-  ret = MPI_Irecv (recvbuf, count, MPI_INT, source, tag, 
-		   comm, &recvreq);
-  ret = MPI_Isend (sendbuf, count, MPI_INT, dest, tag, 
-		   comm, &sendreq);
-  ret = MPI_Waitall (1, &recvreq, &status);
-  ret = MPI_Waitall (1, &sendreq, &status);
-  chkbuf ("MPI_Waitall", recvbuf, count, source);
-
-  ret = MPI_Barrier (comm);
-
-  ret = MPI_Bcast (sendbuf, count, MPI_INT, 0, comm);
-  chkbuf ("MPI_Bcast", sendbuf, count, 0);
-
-  for (i = 0; i < count; ++i)
-    sendbuf[i] = iam;
-
-  ret = MPI_Allreduce (sendbuf, recvbuf, count, MPI_INT, MPI_SUM, comm);
-  sum = 0.;
-  for (i = 0; i < commsize; ++i) 
-    sum += i;
-  chkbuf ("MPI_Allreduce", recvbuf, count, sum);
-
-  gsbuf = (int *) malloc (commsize * count * sizeof (int));
-  ret = MPI_Gather (sendbuf, count, MPI_INT,
-		    gsbuf, count, MPI_INT,
-		    0, comm);
-  if (iam == 0) {
-    val = 0;
-    for (i = 0; i < commsize*count; ++i) {
-      if (gsbuf[i] != val) {
-	printf ("iam=%d MPI_Gather: bad gsbuf[%d]=%d != %d\n", iam, i, gsbuf[i], val);
-	MPI_Abort (comm, -1);
-      }
-      if ((i+1) % count == 0)
-	++val;
-    }
-  }
-
-  ret = MPI_Scatter (gsbuf, count, MPI_INT,
-		     recvbuf, count, MPI_INT,
-		     0, comm);
-  chkbuf ("MPI_Scatter", recvbuf, count, iam);
-
-  atoabufsend = (int *) malloc (commsize * sizeof (int));
-  atoabufrecv = (int *) malloc (commsize * sizeof (int));
-  for (i = 0; i < commsize; ++i)
-    atoabufsend[i] = i;
-
-  ret = MPI_Alltoall (atoabufsend, 1, MPI_INT,
-		      atoabufrecv, 1, MPI_INT,
-		      comm);
-
-  for (i = 0; i < commsize; ++i)
-    if (atoabufrecv[i] != iam) {
-      printf ("iam=%d MPI_Alltoall: bad atoabufrecv[%d]=%d != %d\n", 
-	      iam, i, atoabufrecv[i], i);
-      MPI_Abort (comm, -1);
-    }
-
-  ret = MPI_Reduce (sendbuf, recvbuf, count, MPI_INT, MPI_SUM, 0, comm);
-  if (iam == 0) {
-    sum = 0.;
-    for (i = 0; i < commsize; ++i) 
-      sum += i;
-    chkbuf ("MPI_Reduce", recvbuf, count, sum);
-  }
-
+  // Change 0 to 1 to verify test script fails correctly
+  if (0)
+    MPI_Abort (comm, -1);
+  
   ret = GPTLstop ("total");
-  ret = GPTLpr (iam);             /* Print the results */
-  ret = GPTLpr_summary (comm);
-
+  ret = GPTLpr (iam);             /* Print the results for my rank */
+  ret = GPTLpr_summary (comm);    /* Print the results summary across ranks */
+  
   /* Check that PMPI entries were generated for all expected routines */
   if (iam == 0) {
     for (i = 0; i < nroutines; ++i) {
-      printf ("%s: checking that there is a GPTL entry for MPI routine %s...\n", argv[0], mpiroutine[i]);
+      printf ("%s: checking that there is a GPTL entry for MPI routine %s...\n",
+	      argv[0], mpiroutine[i]);
       ret = GPTLget_wallclock (mpiroutine[i], 0, &wallclock);
       if (ret < 0) {
 	printf ("Failure\n");
@@ -210,16 +134,268 @@ int main (int argc, char **argv)
       printf("Success\n");
     }
   }
-  ret = MPI_Finalize ();          /* Clean up MPI */
+  ret = MPI_Finalize ();
   return 0;
 }
 
-void chkbuf (const char *msg, int *recvbuf, const int count, const int source)
+int send_recv (int myid, int numprocs)
 {
-  int i;
-  for (i = 0; i < count; ++i)
-    if (recvbuf[i] != source) {
-      printf ("iam=%d %s:bad recvbuf[%d]=%d != %d\n", iam, msg, i, recvbuf[i], source);
-      MPI_Abort (comm, -1);
+  int ret;
+  int recvbuf[1] = {-1};
+  int dest       = (myid+1) % numprocs;
+  int sendbuf[1] = {dest};
+  int source     = myid == 0 ? numprocs-1: myid-1;
+  MPI_Status status;
+  static const char *thisfunc = "send_recv";
+  
+  if (myid % 2 == 0) {
+    ret = MPI_Send (sendbuf, 1, MPI_INT, dest, tag, comm);
+    ret = MPI_Recv (recvbuf, 1, MPI_INT, source, tag, comm, &status);
+  } else {
+    ret = MPI_Recv (recvbuf, 1, MPI_INT, source, tag, comm, &status);
+    ret = MPI_Send (sendbuf, 1, MPI_INT, dest, tag, comm);
+  }
+  return chkbuf (ret, myid, thisfunc, recvbuf[0], myid);
+}
+ 
+int ssend_recv (int myid, int numprocs)
+{
+  int ret;
+  int recvbuf[1] = {-1};
+  int dest       = (myid+1) % numprocs;
+  int sendbuf[1] = {dest};
+  int source     = myid == 0 ? numprocs-1: myid-1;
+  MPI_Status status;
+  static const char *thisfunc = "ssend_recv";
+  
+  if (myid % 2 == 0) {
+    ret = MPI_Ssend (sendbuf, 1, MPI_INT, dest, tag, comm);
+    ret = MPI_Recv  (recvbuf, 1, MPI_INT, source, tag, comm, &status);
+  } else {
+    ret = MPI_Recv (recvbuf, 1, MPI_INT, source, tag, comm, &status);
+    ret = MPI_Ssend (sendbuf, 1, MPI_INT, dest, tag, comm);
+  }
+  return chkbuf (ret, myid, thisfunc, recvbuf[0], myid);
+}
+
+int sendrecv (int myid, int numprocs)
+{
+  int ret = 0;
+  int source     = myid == 0 ? numprocs-1: myid-1;
+  int dest       = (myid+1) % numprocs;
+  int sendbuf[1] = {dest};
+  int recvbuf[1] = {-1};
+  MPI_Status status;
+  static const char *thisfunc = "sendrecv";
+
+  ret = MPI_Sendrecv (sendbuf, 1, MPI_INT, dest, tag, 
+		      recvbuf, 1, MPI_INT, source, tag, 
+		      comm, &status);
+  return chkbuf (ret, myid, thisfunc, recvbuf[0], myid);
+}
+
+int irecv_isend_wait (int myid, int numprocs)
+{
+  int ret;
+  int source     = myid == 0 ? numprocs-1: myid-1;
+  int dest       = (myid+1) % numprocs;
+  int sendbuf[1] = {dest};
+  int recvbuf[1] = {-1};
+  MPI_Request sendreq, recvreq;
+  MPI_Status status;
+  static const char *thisfunc = "isend_irecv_wait";
+
+  ret = MPI_Irecv (recvbuf, 1, MPI_INT, source, tag, comm, &recvreq);
+  ret = MPI_Isend (sendbuf, 1, MPI_INT, dest, tag, comm, &sendreq);
+  ret = MPI_Wait (&recvreq, &status);
+  ret = MPI_Wait (&sendreq, &status);
+  return chkbuf (ret, myid, thisfunc, recvbuf[0], myid);
+}
+  
+int irecv_isend_waitall (int myid, int numprocs)
+{
+  int ret;
+  int source     = myid == 0 ? numprocs-1: myid-1;
+  int dest       = (myid+1) % numprocs;
+  int sendbuf[1] = {dest};
+  int recvbuf[1] = {-1};
+  MPI_Request sendreq, recvreq;
+  MPI_Status status;
+  static const char *thisfunc = "irecv_isend_waitall";
+
+  ret = MPI_Irecv (recvbuf, 1, MPI_INT, source, tag, comm, &recvreq);
+  ret = MPI_Isend (sendbuf, 1, MPI_INT, dest, tag, comm, &sendreq);
+  ret = MPI_Waitall (1, &recvreq, &status);
+  ret = MPI_Waitall (1, &sendreq, &status);
+  return chkbuf (ret, myid, thisfunc, recvbuf[0], myid);
+}
+
+int issend_recv (int myid, int numprocs)
+{
+  int ret;
+  int recvbuf[1] = {-1};
+  int source     = myid == 0 ? numprocs-1: myid-1;
+  int dest       = (myid+1) % numprocs;
+  int sendbuf[1] = {dest};
+  MPI_Request sendreq;
+  MPI_Status status;
+  static const char *thisfunc = "issend_recv";
+  
+  if (myid % 2 == 0) {
+    ret = MPI_Issend (sendbuf, 1, MPI_INT, dest, tag, comm, &sendreq);
+    ret = MPI_Recv  (recvbuf, 1, MPI_INT, source, tag, comm, &status);
+  } else {
+    ret = MPI_Recv (recvbuf, 1, MPI_INT, source, tag, comm, &status);
+    ret = MPI_Issend (sendbuf, 1, MPI_INT, dest, tag, comm, &sendreq);
+  }
+  return chkbuf (ret, myid, thisfunc, recvbuf[0], myid);
+}
+
+int bcast (int myid, int numprocs)
+{
+  int ret;
+  const int val = 7;
+  int buf[1]    = {-1};
+  static const char *thisfunc = "bcast";
+
+  if (myid == 0)
+    buf[0] = val;
+  ret = MPI_Bcast (buf, 1, MPI_INT, 0, comm);
+  return chkbuf (ret, myid, thisfunc, buf[0], val);
+}
+
+int reduce (int myid, int numprocs)
+{
+  int ret;
+  int sendbuf[1] = {myid};
+  int recvbuf[1] = {-1};
+  static const char *thisfunc = "reduce";
+
+  ret = MPI_Reduce (sendbuf, recvbuf, 1, MPI_INT, MPI_MAX, 0, MPI_COMM_WORLD);
+  if (myid == 0)
+    return chkbuf (ret, myid, thisfunc, recvbuf[0], numprocs-1);
+  else
+    return ret;
+}
+  
+int allreduce (int myid, int numprocs)
+{
+  int ret;
+  int sendbuf[1] = {myid};
+  int recvbuf[1] = {-1};
+  static const char *thisfunc = "allreduce";
+
+  if (myid == 0)
+    recvbuf[0] = myid;
+  else
+    sendbuf[0] = myid;
+  
+  ret = MPI_Allreduce (sendbuf, recvbuf, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+  return chkbuf (ret, myid, thisfunc, recvbuf[0], numprocs-1);
+}
+  
+int gather (int myid, int numprocs)
+{
+  int n;
+  int ret = 0;
+  int sendbuf[1];
+  int recvbuf[numprocs];
+  static const char *thisfunc = "gather";
+
+  for (n = 0; n < numprocs; ++n)
+    recvbuf[n] = -1;
+
+  sendbuf[0] = myid;
+  ret = MPI_Gather (sendbuf, 1, MPI_INT,
+		    recvbuf, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  if (myid == 0) {
+    for (n = 0; n < numprocs; ++n) {
+      if (chkbuf (ret, myid, thisfunc, recvbuf[n], n) != 0)
+	ret = -1;
     }
+  }
+  return ret;
+}
+
+int scatter (int myid, int numprocs)
+{
+  int n;
+  int ret;
+  int sendbuf[numprocs];
+  int recvbuf[1] = {-1};
+  static const char *thisfunc = "scatter";
+
+  if (myid == 0) {
+    for (n = 0; n < numprocs; ++n)
+      sendbuf[n] = n;
+  }
+  ret = MPI_Scatter (sendbuf, 1, MPI_INT,
+		     recvbuf, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  return chkbuf (ret, myid, thisfunc, recvbuf[0], myid);
+}
+
+int alltoall (int myid, int numprocs)
+{
+  int n;
+  int ret = 0;
+  int sbuf[numprocs];
+  int rbuf[numprocs];
+  static const char *thisfunc = "alltoall";
+
+  for (n = 0; n < numprocs; ++n) {
+    rbuf[n] = -1;
+    sbuf[n] = n;
+  }
+  ret = MPI_Alltoall (sbuf, 1, MPI_INT,
+		      rbuf, 1, MPI_INT, MPI_COMM_WORLD);
+  for (n = 0; n < numprocs; ++n) {
+    if (chkbuf (ret, myid, thisfunc, rbuf[n], myid) != 0)
+      ret = -1;
+  }
+  return ret;
+}
+
+int alltoallv (int myid, int numprocs)
+{
+  int n;
+  int ret = 0;
+  int sbuf[numprocs];
+  int scounts[numprocs];
+  int sdispls[numprocs];
+  int rbuf[numprocs];
+  int rcounts[numprocs];
+  int rdispls[numprocs];
+  static const char *thisfunc = "alltoallv";
+
+  for (n = 0; n < numprocs; ++n) {
+    sbuf[n] = n;
+    scounts[n] = 1;
+    sdispls[n] = n;
+    rbuf[n] = -1;
+    rcounts[n] = 1;
+    rdispls[n] = n;
+  }
+  
+  ret = MPI_Alltoallv (sbuf, scounts, sdispls, MPI_INT,
+		       rbuf, rcounts, rdispls, MPI_INT, MPI_COMM_WORLD);
+  for (n = 0; n < numprocs; ++n) {
+    if (chkbuf (ret, myid, thisfunc, rbuf[n], myid) != 0)
+      ret = -1;
+  }
+  return ret;
+}
+
+int chkbuf (int ret, const int rank, const char *func, const int got, const int shouldbe)
+{
+  if (ret != 0) {
+    printf ("%s rank %d: failure\n", func, rank);
+    return ret;
+  }
+  if (got == shouldbe) {
+    printf ("%s rank %d success\n", func, rank);
+  } else {
+    ret = -1;
+    printf ("%s rank %d failure got %d should have got %d\n", func, rank, got, shouldbe);
+  }
+  return ret;
 }
