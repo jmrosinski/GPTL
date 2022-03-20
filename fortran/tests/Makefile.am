@@ -25,6 +25,9 @@ endif
 
 MODFILE = ${top_builddir}/fortran/src/gptl.$(FC_MODEXT)
 
+# Enforce serial build here or bad things happen due to .mod file issues
+.NOTPARALLEL:
+
 # These programs will be built but not installed.
 noinst_PROGRAMS = overhead handle utrtest
 
@@ -88,7 +91,7 @@ if ENABLE_PMPI
 check_PROGRAMS += pmpi inplace
 TESTS          += run_par_pmpi_test.sh run_par_inplace_test.sh
 pmpi_SOURCES = pmpi.F90 ${MODFILE}
-inplace_SOURCES = inplace_subs.F90 inplace.F90 inplace_subs.mod ${MODFILE}
+inplace_SOURCES = inplace_subs.F90 inplace.F90 ${MODFILE}
 endif
 endif
 

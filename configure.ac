@@ -6,7 +6,7 @@
 AC_PREREQ([2.59])
 
 # Initialize autoconf.
-AC_INIT([GPTL], [8.1.0], [jmrosinski@gmail.com])
+AC_INIT([GPTL], [8.1.1], [jmrosinski@gmail.com])
 
 # Find out about the host we're building on.
 AC_CANONICAL_HOST
