@@ -6,7 +6,7 @@
 AC_PREREQ([2.59])
 
 # Initialize autoconf.
-AC_INIT([GPTL], [8.0.3], [jmrosinski@gmail.com])
+AC_INIT([GPTL], [8.1.1], [jmrosinski@gmail.com])
 
 # Find out about the host we're building on.
 AC_CANONICAL_HOST
@@ -22,6 +22,9 @@ AC_LANG(C)
 
 # Find the C compiler.
 AC_PROG_CC()
+if test "x$CC" = xnvc; then
+  AC_MSG_NOTICE([NOTE nvc sometimes does not like shared builds. If trouble suggest --disable-shared ])
+fi
 
 # Keep libtool macros in an m4 directory.
 AC_CONFIG_MACRO_DIR([m4])
@@ -196,6 +199,12 @@ AS_IF([test "x$enable_debug" = xyes], [
   AC_DEFINE([DEBUG], [1], [set debug ifdef])
   CFLAGS="$CFLAGS -g -O0"
   FCFLAGS="$FCFLAGS -g -O0"
+  if test "x$CC" = xnvc; then
+    AC_MSG_NOTICE([NOTE when CC=nvc and debug is enabled, suggest nullifying CC to avoid confusing nvc])
+  fi
+  if test "x$FC" = xnvfortran; then
+    AC_MSG_NOTICE([NOTE when FC=nvfortran and debug is enabled, suggest nullifying FC to avoid confusing nvfortran])
+  fi
 ])
 AM_CONDITIONAL([DEBUG], [test "x$use_debug" = xyes])
 
@@ -546,6 +555,9 @@ AS_IF([test "x$enable_fortran" != "xno"], [
 if test "x$fortran_support" = xyes; then
   AC_LANG_PUSH(Fortran)
   AC_PROG_FC()
+  if test "x$FC" = xnvfortran; then
+    AC_MSG_NOTICE([NOTE nvfortran sometimes does not like shared builds. If trouble suggest --disable-shared])
+  fi
 
 # Make sure this file is copied to build directories for tests to work.
   AC_CONFIG_LINKS([fortran/tests/gptlnl:fortran/tests/gptlnl])
@@ -593,6 +605,7 @@ if test "x$fortran_support" = xyes; then
 	  	 ])
   AC_CONFIG_FILES([fortran/tests/run_par_pmpi_test.sh], [chmod ugo+x fortran/tests/run_par_pmpi_test.sh])
   AC_CONFIG_FILES([fortran/tests/run_par_summary_test.sh], [chmod ugo+x fortran/tests/run_par_summary_test.sh])
+  AC_CONFIG_FILES([fortran/tests/run_par_inplace_test.sh], [chmod ugo+x fortran/tests/run_par_inplace_test.sh])
   AC_LANG_POP()
 fi
 AM_CONDITIONAL([HAVE_FORTRAN], [test x$fortran_support = "xyes"])

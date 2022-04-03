@@ -44,6 +44,8 @@ program pmpi
   logical :: flag
   integer :: debugflag = 1
 
+  call mpi_init (ret)
+
   ret = gptlsetoption (gptloverhead, 0)
   ret = gptlsetoption (gptlpercent, 0)
   ret = gptlsetoption (gptlabort_on_error, 1)
@@ -51,8 +53,6 @@ program pmpi
 
   ret = gptlinitialize ()
   ret = gptlstart ("total")
-
-  call mpi_init (ret)
 
 ! For debugging, go into infinite loop so debugger can attach and reset
 #ifdef DEBUG

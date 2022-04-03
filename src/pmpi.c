@@ -4,6 +4,9 @@
 ** Author: Jim Rosinski
 **
 ** Intercept MPI routines utilizing the PMPI interface provided by the underlying MPI library
+** This list is nowhere near exhaustive. It contains many commonly used routines.
+** Contributors are welcome to add entries and propose for addition. Tests for new entries should
+** be added to tests/pmpi.c
 */
  
 #include "config.h"  // Must be first include

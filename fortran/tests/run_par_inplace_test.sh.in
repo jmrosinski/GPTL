@@ -1,0 +1,17 @@
+#!/bin/sh
+# This is a test script for the GPTL package. It tests MPI_IN_PLACE
+#
+# Jim Rosinski
+
+set -e
+echo
+echo "Testing MPI_IN_PLACE functionality..."
+env OMP_NUM_THREADS=1 @MPIEXEC@ -n 2 ./inplace
+if test $? = 0; then
+  echo "SUCCESS!"
+  exit 0
+else 
+  echo "FAILURE!"
+  exit 1
+fi
+

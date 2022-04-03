@@ -11,8 +11,8 @@
 int main ()
 {
   int ret;
-  const char *yes = "Yes";
-  const char *no  = "No ";
+  char *yes = "Yes";
+  char *no  = "No ";
   char *av;                  // Whether derived event is available
 
   if ((ret = GPTL_PAPIlibraryinit ()) != 0) {
