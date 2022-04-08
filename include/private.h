@@ -9,6 +9,7 @@
 #ifndef _GPTL_PRIVATE_
 #define _GPTL_PRIVATE_
 
+#include "gptl.h"      // GPTLoption
 #include <stdio.h>
 #include <sys/time.h>
 
@@ -65,7 +66,7 @@ typedef struct {
   long long last[MAX_AUX];  // array of saved counters from "start"
   long long accum[MAX_AUX]; // accumulator for counters
 } Papistats;
-  
+
 typedef struct TIMER {
 #ifdef ENABLE_PMPI
   double nbytes;            // number of bytes for MPI call
@@ -97,25 +98,31 @@ typedef struct TIMER {
   char name[MAX_CHARS+1];   // timer name (user input)
   char *longname;           // For autoprofiled names, full name for diagnostic printing
 } Timer;
-
+  
 typedef struct {
   Timer **entries;          // array of timers hashed to the same value
   unsigned int nument;      // number of entries hashed to the same value
 } Hashentry;
 
+typedef struct {
+  GPTLoption option;  // wall, cpu, etc.
+  char *str;          // descriptive string for printing
+  bool enabled;             // flag
+} Settings;
+
 // Function prototypes
 extern "C" {
-  extern int GPTLerror (const char *, ...);                  // print error msg and return
-  extern void GPTLwarn (const char *, ...);                  // print warning msg and return
-  extern void GPTLnote (const char *, ...);                  // print warning msg and return
-  extern void GPTLset_abort_on_error (bool val);             // set flag to abort on error
-  extern void GPTLreset_errors (void);                       // num_errors to zero
-  extern void *GPTLallocate (const int, const char *);       // malloc wrapper
+  int GPTLerror (const char *, ...);                  // print error msg and return
+  void GPTLwarn (const char *, ...);                  // print warning msg and return
+  void GPTLnote (const char *, ...);                  // print warning msg and return
+  void GPTLset_abort_on_error (bool val);             // set flag to abort on error
+  void GPTLreset_errors (void);                       // num_errors to zero
+  void *GPTLallocate (const int, const char *);       // malloc wrapper
 
-  extern int GPTLstart_instr (void *);                       // auto-instrumented start
-  extern int GPTLstop_instr (void *);                        // auto-instrumented stop
-  extern int GPTLis_initialized (void);                      // needed by MPI_Init wrapper
-  extern int GPTLget_overhead (FILE *,                       // file descriptor
+  int GPTLstart_instr (void *);                       // auto-instrumented start
+  int GPTLstop_instr (void *);                        // auto-instrumented stop
+  int GPTLis_initialized (void);                      // needed by MPI_Init wrapper
+  int GPTLget_overhead (FILE *,                       // file descriptor
 			       double (*)(),                 // UTR()
 			       Timer *(const Hashentry *, const char *, unsigned int), // getentry()
 			       unsigned int (const char *),  // genhashidx()
@@ -128,21 +135,21 @@ extern "C" {
 			       int,                          // imperfect_nest
 			       double *,                     // self_ohd
 			       double *);                    // parent_ohd
-  extern void GPTLprint_hashstats (FILE *, int, Hashentry **, int);
-  extern void GPTLprint_memstats (FILE *, Timer **, int);
-  extern Timer **GPTLget_timersaddr (void);
+  void GPTLprint_hashstats (FILE *, int, Hashentry **, int);
+  void GPTLprint_memstats (FILE *, Timer **, int);
+  Timer **GPTLget_timersaddr (void);
   // For now this one is local to gptl.c but that may change if needs calling from pr_summary
-  extern int GPTLrename_duplicate_addresses (void);
+  int GPTLrename_duplicate_addresses (void);
 
   // Don't need these with C++
-  // extern void __cyg_profile_func_enter (void *, void *);
-  // extern void __cyg_profile_func_exit (void *, void *);
+  // void __cyg_profile_func_enter (void *, void *);
+  // void __cyg_profile_func_exit (void *, void *);
 
-  extern bool GPTLonlypr_rank0;     // flag says ignore all stdout/stderr print from non-zero ranks
+  bool GPTLonlypr_rank0;     // flag says ignore all stdout/stderr print from non-zero ranks
 
 #ifdef ENABLE_PMPI
-  extern Timer *GPTLgetentry (const char *);
-  extern int GPTLpmpi_setoption (const int, const int);
+  Timer *GPTLgetentry (const char *);
+  int GPTLpmpi_setoption (const int, const int);
 #endif
 }
 #endif // _GPTL_PRIVATE_

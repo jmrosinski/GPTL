@@ -15,11 +15,7 @@ namespace thread {
   extern "C" {
     int threadinit (void);
     void threadfinalize (void);
-#ifdef INLINE_THREADING
-    inline int get_thread_num (void);
-#else
     int get_thread_num (void);
-#endif
     void print_threadmapping (FILE *fp);
   }
 }

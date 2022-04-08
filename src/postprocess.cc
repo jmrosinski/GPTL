@@ -1,3 +1,38 @@
+#include "private.h"
+
+namespace postprocess {
+  // Options, print strings, and default enable flags
+  Settings overheadstats = {GPTLoverhead, "   selfOH parentOH"         , true };
+  GPTLMethod method = GPTLmost_frequent;  // default parent/child printing mechanism
+  bool percent = false;
+  bool dopr_preamble = true;
+  bool dopr_threadsort = true;
+  bool dopr_multparent = true;
+  bool dopr_collision = false;
+
+  // methodstr: Return a pointer to a string which represents the print method
+  extern "C" {
+    char *methodstr (GPTLMethod method)
+    {
+      static char first_parent[]  = "first_parent";
+      static char last_parent[]   = "last_parent";
+      static char most_frequent[] = "most_frequent";
+      static char full_tree[]     = "full_tree";
+      
+      if (method == GPTLfirst_parent)
+	return first_parent;
+      else if (method == GPTLlast_parent)
+	return last_parent;
+      else if (method == GPTLmost_frequent)
+	return most_frequent;
+      else if (method == GPTLfull_tree)
+	return full_tree;
+      else
+	return unknown;
+    }
+  }
+}
+
 typedef struct {
   int max_depth;
   int max_namelen;
@@ -592,26 +627,6 @@ int construct_tree (Timer *timerst, GPTLMethod method)
     }
   }
   return 0;
-}
-
-// methodstr: Return a pointer to a string which represents the print method
-static char *methodstr (GPTLMethod method)
-{
-  static char first_parent[]  = "first_parent";
-  static char last_parent[]   = "last_parent";
-  static char most_frequent[] = "most_frequent";
-  static char full_tree[]     = "full_tree";
-
-  if (method == GPTLfirst_parent)
-    return first_parent;
-  else if (method == GPTLlast_parent)
-    return last_parent;
-  else if (method == GPTLmost_frequent)
-    return most_frequent;
-  else if (method == GPTLfull_tree)
-    return full_tree;
-  else
-    return unknown;
 }
 
 /* 

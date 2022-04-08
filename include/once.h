@@ -1,17 +1,23 @@
 #include "gptl.h"
 
-namespace gptl_once {
+namespace once {
   extern int depthlimit;
-  extern bool percent;
-  extern bool dopr_preamble;
-  extern bool dopr_threadsort;
-  extern bool dopr_multparent;
-  extern bool dopr_collision;
-  typedef struct {    
-    const GPTLFuncoption option;
-    double (*func)(void);
-    int (*funcinit)(void);
-    const char *name;
-  } Funcentry;
-  extern Funcentry funclist[];
+  extern long ticks_per_sec;      // clock ticks per second
+#ifdef HAVE_NANOTIME
+  extern float cpumhz;
+  extern char *clock_source;
+#endif
+  extern int funcidx;
+  extern bool verbose;
+  
+  // Wrap in extern "C" due to functions. Not sure if this is necessary
+  extern "C" {
+    typedef struct {    
+      const GPTLFuncoption option;
+      double (*func)(void);
+      int (*funcinit)(void);
+      const char *name;
+    } Funcentry;
+    extern Funcentry funclist[];
+  }
 }

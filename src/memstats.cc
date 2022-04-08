@@ -22,9 +22,9 @@ void GPTLprint_memstats (FILE *fp, Timer **timers, int tablesize)
   int numtimers;            // number of timers
   int t;
 
-  hashmem = (float) sizeof (Hashentry) * tablesize * GPTLmax_threads;  // fixed size of table
-  callstackmem = (float) sizeof (Timer *) * MAX_STACK * GPTLmax_threads;
-  for (t = 0; t < GPTLnthreads; t++) {
+  hashmem = (float) sizeof (Hashentry) * tablesize * thread::max_threads;  // fixed size of table
+  callstackmem = (float) sizeof (Timer *) * MAX_STACK * thread::max_threads;
+  for (t = 0; t < thread::nthreads; t++) {
     numtimers = 0;
     for (ptr = timers[t]->next; ptr; ptr = ptr->next) {
       ++numtimers;
@@ -47,5 +47,5 @@ void GPTLprint_memstats (FILE *fp, Timer **timers, int tablesize)
                "Callstackmem            = %g KB\n",
            hashmem*.001, regionmem*.001, papimem*.001, pchmem*.001, callstackmem*.001);
 
-  GPTLprint_threadmapping (fp);
+  thread::print_threadmapping (fp);
 }

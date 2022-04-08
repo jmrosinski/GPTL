@@ -86,7 +86,6 @@ namespace gptl_overhead {
     using gptlmain :: getentry;
     using gptlmain :: tablesize;
     using gptlmain :: imperfect_nest;
-    using thread :: get_thread_num;
     
     double t1, t2;             // Initial, final timer values
     double get_thread_num_ohd; // Getting my thread index
@@ -112,7 +111,7 @@ namespace gptl_overhead {
     // get_thread_num() overhead
     t1 = (*ptr2wtimefunc)();
     for (i = 0; i < 1000; ++i) {
-      mythread = get_thread_num ();
+      mythread = thread::get_thread_num ();
     }
     t2 = (*ptr2wtimefunc)();
     get_thread_num_ohd = 0.001 * (t2 - t1);
