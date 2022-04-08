@@ -1,4 +1,5 @@
       program legacy
+      implicit none
       include 'gptl.inc'
 #ifdef HAVE_LIBMPI
       include 'mpif.h'

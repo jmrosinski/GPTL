@@ -77,11 +77,11 @@ extern "C" {
 
 extern int GPTLsetoption (const int, const int);
 extern int GPTLinitialize (void);
-extern int GPTLstart (const char *);
-extern int GPTLinit_handle (const char *, int *);
-extern int GPTLstart_handle (const char *, int *);
-extern int GPTLstop (const char *);
-extern int GPTLstop_handle (const char *, int *);
+extern int GPTLstart (const char *, int namelen=-1);
+extern int GPTLinit_handle (const char *, int *, int namelen=-1);
+  extern int GPTLstart_handle (const char *, int *, int namelen=-1);
+extern int GPTLstop (const char *, int namelen=-1);
+extern int GPTLstop_handle (const char *, int *, int namelen=-1);
 extern int GPTLstamp (double *, double *, double *);
 extern int GPTLpr (const int);
 extern int GPTLpr_file (const char *);

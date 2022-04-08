@@ -4,6 +4,9 @@
 ** Author: Jim Rosinski
 **
 ** Intercept MPI routines utilizing the PMPI interface provided by the underlying MPI library
+** This list is nowhere near exhaustive. It contains many commonly used routines.
+** Contributors are welcome to add entries and propose for addition. Tests for new entries should
+** be added to tests/pmpi.c
 */
  
 #include "config.h"  // Must be first include
@@ -13,9 +16,7 @@
 
 static bool sync_mpi = false;
 
-#ifdef __cplusplus
 extern "C" {
-#endif
 
 int GPTLpmpi_setoption (const int option, const int val)
 {
@@ -595,7 +596,4 @@ int MPI_Test (MPI_Request *request, int *flag, MPI_Status *status)
   ignoreret = GPTLstop ("MPI_Test");
   return ret;
 }
-
-#ifdef __cplusplus
 }
-#endif

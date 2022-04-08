@@ -69,7 +69,6 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
   int n, nn;           // region index
   int i;               // index
   Timer *ptr;          // linked list pointer
-  Timer **timers;      // array of timers
   int incr;            // increment for tree sum
   int twoincr;         // 2*incr
   int dosend;          // logical indicating whether to send this iteration
@@ -109,7 +108,6 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
   // Examine only thread 0 regions that have not been renamed due to long name (only applies
   // to auto-profiled routines). The "longname" caveat is important because the naming truncation
   // algorithm may have named the SAME region differently for different ranks
-  timers = GPTLget_timersaddr ();
   nregions = 0;
   for (ptr = timers[0]->next; ptr; ptr = ptr->next)
     if ( ! ptr->longname)

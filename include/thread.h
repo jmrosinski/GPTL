@@ -7,16 +7,20 @@
 #define MAX_THREADS 64
 #endif
 
-extern volatile int GPTLmax_threads;
-extern volatile int GPTLnthreads;
-extern int GPTLthreadinit (void);
-extern void GPTLthreadfinalize (void);
+namespace thread {
+  extern volatile int max_threads;
+  extern volatile int nthreads;
+  extern volatile int *threadid;
+
+  extern "C" {
+    int threadinit (void);
+    void threadfinalize (void);
 #ifdef INLINE_THREADING
-extern inline int GPTLget_thread_num (void);
+    inline int get_thread_num (void);
 #else
-extern int GPTLget_thread_num (void);
+    int get_thread_num (void);
 #endif
-
-extern void GPTLprint_threadmapping (FILE *fp);
-
+    void print_threadmapping (FILE *fp);
+  }
+}
 #endif

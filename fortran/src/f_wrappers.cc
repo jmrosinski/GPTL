@@ -99,9 +99,7 @@
 #endif
 
 // Local function prototypes: Everything callable by Fortran requires C linkage
-#ifdef __cplusplus
 extern "C" {
-#endif
 int gptlinitialize (void);
 int gptlfinalize (void);
 int gptlpr (int *procid);
@@ -147,21 +145,9 @@ int gptlevent_code_to_name (int *code, char *str, int nc);
 #endif
 
 // Fortran wrapper functions start here
-int gptlinitialize (void)
-{
-  return GPTLinitialize ();
-}
-
-int gptlfinalize (void)
-{
-  return GPTLfinalize ();
-}
-
-int gptlpr (int *procid)
-{
-  return GPTLpr (*procid);
-}
-
+int gptlinitialize (void) {return GPTLinitialize ();}
+int gptlfinalize (void) {return GPTLfinalize ();}
+int gptlpr (int *procid) {return GPTLpr (*procid);}
 int gptlpr_file (char *file, int nc)
 {
   char locfile[nc+1];
@@ -216,11 +202,11 @@ int gptlstart (char *name, int nc)
   char cname[nc+1];
   // Check for name already null-terminated for efficiency
   if (name[nc-1] == '\0') {
-    return GPTLstart (name);
+    return GPTLstart (name, nc);
   } else {
     strncpy (cname, name, nc);
     cname[nc] = '\0';
-    return GPTLstart (cname);
+    return GPTLstart (cname, nc);
   }
 }
 
@@ -229,11 +215,11 @@ int gptlinit_handle (char *name, int *handle, int nc)
   char cname[nc+1];
   // Check for name already null-terminated for efficiency
   if (name[nc-1] == '\0') {
-    return GPTLinit_handle (name, handle);
+    return GPTLinit_handle (name, handle, nc);
   } else {
     strncpy (cname, name, nc);
     cname[nc] = '\0';
-    return GPTLinit_handle (cname, handle);
+    return GPTLinit_handle (cname, handle, nc);
   }
 }
 
@@ -242,11 +228,11 @@ int gptlstart_handle (char *name, int *handle, int nc)
   char cname[nc+1];
   // Check for name already null-terminated for efficiency
   if (name[nc-1] == '\0') {
-    return GPTLstart_handle (name, handle);
+    return GPTLstart_handle (name, handle, nc);
   } else {
     strncpy (cname, name, nc);
     cname[nc] = '\0';
-    return GPTLstart_handle (cname, handle);
+    return GPTLstart_handle (cname, handle, nc);
   }
 }
 
@@ -255,11 +241,11 @@ int gptlstop (char *name, int nc)
   char cname[nc+1];
   // Check for name already null-terminated for efficiency
   if (name[nc-1] == '\0') {
-    return GPTLstop (name);
+    return GPTLstop (name, nc);
   } else {
     strncpy (cname, name, nc);
     cname[nc] = '\0';
-    return GPTLstop (cname);
+    return GPTLstop (cname, nc);
   }
 }
 
@@ -268,11 +254,11 @@ int gptlstop_handle (char *name, int *handle, int nc)
   char cname[nc+1];
   // Check for name already null-terminated for efficiency
   if (name[nc-1] == '\0') {
-    return GPTLstop_handle (name, handle);
+    return GPTLstop_handle (name, handle, nc);
   } else {
     strncpy (cname, name, nc);
     cname[nc] = '\0';
-    return GPTLstop_handle (cname, handle);
+    return GPTLstop_handle (cname, handle, nc);
   }
 }
 
@@ -325,7 +311,7 @@ int gptlstartstop_val (const char *name, double *value, int nc)
   char cname[nc+1];
   strncpy (cname, name, nc);
   cname[nc] = '\0';
-  return GPTLstartstop_val (cname, *value);
+  return GPTLstartstop_val (cname, *value, nc);
 }
 
 int gptlget_eventvalue (const char *timername, const char *eventname, int *t, double *value, 
@@ -403,7 +389,4 @@ int gptlevent_code_to_name (int *code, char *str, int nc)
   return 0;
 }
 #endif
-
-#ifdef __cplusplus
 }
-#endif

@@ -10,13 +10,19 @@
 #include "config.h"       // Must be first include
 #include "gptl.h"         // function prototypes
 #include "private.h"
+#include "memusage.h"
+
 #include <sys/time.h>     // getrusage
 #include <sys/resource.h> // getrusage
 #include <unistd.h>       // sysconf
 
-#ifdef __cplusplus
-extern "C" {
+#ifdef __APPLE__
+#include <stdint.h>
+#include <sys/types.h>
+#include <sys/sysctl.h>
 #endif
+
+extern "C" {
 
 /*
 ** get_memusage: 
@@ -127,6 +133,52 @@ int GPTLget_procsiz (float *procsiz_out, float *rss_out)
   return 0;
 }
 
-#ifdef __cplusplus
+// End of user-callable functions  
+  
+namespace memusage {
+  void check_memusage (const char *str, const char *funcnam)
+  {
+    float rss;
+
+    (void) GPTLget_memusage (&rss);
+    // Notify user when rss has grown by more than some percentage (default 0%)
+    if (rss > rssmax*(1.0 + 0.01*growth_pct)) {
+      rssmax = rss;
+      // Once MPI is initialized, change file pointer for process size to rank-specific file      
+      set_fp_procsiz ();
+      if (fp_procsiz) {
+	fprintf (fp_procsiz, "%s %s RSS grew to %8.2f MB\n", str, funcnam, rss);
+	fflush (fp_procsiz);  // Not clear when this file needs to be closed, so flush
+      } else {
+	fprintf (stderr, "%s %s RSS grew to %8.2f MB\n", str, funcnam, rss);
+      }
+    }
+  }
 }
+  
+// set_fp_procsiz: Change file pointer from stderr to point to "procsiz.<rank>" once
+// MPI has been initialized
+static inline void set_fp_procsiz ()
+{
+#ifdef HAVE_LIBMPI
+  int ret;
+  int flag;
+  static bool check_mpi_init = true; // whether to check if MPI has been init (init to true)
+  char outfile[15];
+
+  // Must only open the file once. Also more efficient to only make MPI lib inquiries once
+  if (check_mpi_init) {
+    ret = MPI_Initialized (&flag);
+    if (flag) {
+      int world_iam;
+      check_mpi_init = false;
+      ret = MPI_Comm_rank (MPI_COMM_WORLD, &world_iam);
+      sprintf (outfile, "procsiz.%6.6d", world_iam);
+      fp_procsiz = fopen (outfile, "w");
+    }
+  }
 #endif
+}
+
+  
+}

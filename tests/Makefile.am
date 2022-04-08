@@ -18,8 +18,8 @@ bin_PROGRAMS = gran_overhead
 
 # Test programs that will be built for all configurations.
 # memusage test requires a script because the output needs to be examined
-check_PROGRAMS = tst_simple global badhandle memusage
-TESTS = tst_simple badhandle run_memusage.sh
+check_PROGRAMS = tst_simple global badhandle memusage toomanychars
+TESTS = tst_simple badhandle run_memusage.sh toomanychars
 noinst_PROGRAMS += memusage
 
 if HAVE_INSTRFLAG
@@ -84,5 +84,5 @@ endif
 # Test output to be deleted: include ALL possible executables
 ALLEXES = printwhileon imperfect_nest gran_overhead tst_simple global cygprofile omptest \
           testpapi gptl_avail knownflopcount papiomptest summary pmpi nestedomp badhandle \
-          memusage
-CLEANFILES = timing.?????? timing.summary* *.trs *.log *.o out.memusage $(ALLEXES)
+          memusage toomanychars
+CLEANFILES = timing.?????? timing.summary* *.trs *.log *.o out.memusage $(ALLEXES) *.sh

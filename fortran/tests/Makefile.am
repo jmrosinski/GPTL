@@ -25,23 +25,27 @@ endif
 
 MODFILE = ${top_builddir}/fortran/src/gptl.$(FC_MODEXT)
 
+# Enforce serial build here or bad things happen due to .mod file issues
+.NOTPARALLEL:
+
 # These programs will be built but not installed.
 noinst_PROGRAMS = overhead handle utrtest
 
 # Test programs that will be built for all configurations.
-check_PROGRAMS = testbasics errtest nlreader outoforder legacy
-TESTS          = testbasics errtest nlreader outoforder legacy
+check_PROGRAMS = testbasics errtest nlreader outoforder legacy toomanychars
+TESTS          = testbasics errtest nlreader outoforder legacy toomanychars
 
 # Test dependencies needed.
-testbasics_SOURCES = testbasics.F90 ${MODFILE}
-errtest_SOURCES    = errtest.F90    ${MODFILE}
-nlreader_SOURCES   = nlreader.F90   ${MODFILE}
-outoforder_SOURCES = outoforder.F90 ${MODFILE}
-summary_SOURCES    = summary.F90    ${MODFILE}
+testbasics_SOURCES   = testbasics.F90 ${MODFILE}
+errtest_SOURCES      = errtest.F90    ${MODFILE}
+nlreader_SOURCES     = nlreader.F90   ${MODFILE}
+outoforder_SOURCES   = outoforder.F90 ${MODFILE}
+toomanychars_SOURCES = toomanychars.F90 ${MODFILE}
+summary_SOURCES      = summary.F90    ${MODFILE}
 
-handle_SOURCES     = handle.F90     ${MODFILE}
-overhead_SOURCES   = overhead.F90   ${MODFILE}
-legacy_SOURCES     = legacy.F
+handle_SOURCES       = handle.F90     ${MODFILE}
+overhead_SOURCES     = overhead.F90   ${MODFILE}
+legacy_SOURCES       = legacy.F
 
 # Hack found online to compile input files differently: Use a lib
 noinst_LIBRARIES      = libprofsubs.a
@@ -84,16 +88,19 @@ print_mpistatus_size_SOURCES = print_mpistatus_size.F90
 TESTS += run_par_summary_test.sh
 # Test the PMPI interface (if installed)
 if ENABLE_PMPI
-check_PROGRAMS += pmpi
-TESTS          += run_par_pmpi_test.sh
+check_PROGRAMS += pmpi inplace
+TESTS          += run_par_pmpi_test.sh run_par_inplace_test.sh
 pmpi_SOURCES = pmpi.F90 ${MODFILE}
+inplace_SOURCES = inplace_subs.F90 inplace.F90 ${MODFILE}
 endif
 endif
 
 # Test output to be deleted: include ALL possible executables
 ALLEXES = overhead handle utrtest testbasics errtest nlreader outoforder legacy omptest \
-          threadohd testbacktrace testinit testpapi summary print_mpistatus_size pmpi
-CLEANFILES = *.$(FC_MODEXT) timing.?????? timing.summary* *_ohd *.mod *.trs *.log *.o $(ALLEXES)
+          threadohd testbacktrace testinit testpapi summary print_mpistatus_size pmpi toomanychars \
+          inplace
+CLEANFILES = *.$(FC_MODEXT) timing.?????? timing.summary* *_ohd *.mod *.trs *.log *.o $(ALLEXES) \
+             *.sh
 
 # This file is required for the nlreader test.
 EXTRA_DIST = gptlnl
