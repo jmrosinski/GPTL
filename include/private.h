@@ -94,6 +94,7 @@ typedef struct TIMER {
   unsigned int nchildren;   // number of children
   unsigned int nparent;     // number of parents
   unsigned int norphan;     // number of times this timer was an orphan
+  int numchars;             // length of name
   bool onflg;               // timer currently on or off
   char name[MAX_CHARS+1];   // timer name (user input)
   char *longname;           // For autoprofiled names, full name for diagnostic printing
