@@ -1,13 +1,13 @@
 #include "private.h"
 
 namespace postprocess {
-  Settings overheadstats;
-  GPTLMethod method;
-  bool percent;
-  bool dopr_preamble;
-  bool dopr_threadsort;
-  bool dopr_multparent;
-  bool dopr_collision;
+  extern Settings overheadstats;
+  extern GPTLMethod method;
+  extern bool percent;
+  extern bool dopr_preamble;
+  extern bool dopr_threadsort;
+  extern bool dopr_multparent;
+  extern bool dopr_collision;
 
   extern "C" {
     char *methodstr (GPTLMethod);

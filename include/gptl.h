@@ -71,17 +71,33 @@ typedef enum {
 } GPTLMethod;
 
 // User-callable function prototypes: all require C linkage
+
+#ifdef __cplusplus
+extern "C" {
+  // Final arg is optional (defaults to -1 if unset)
+  int GPTLstart (const char *, int);
+  int GPTLinit_handle (const char *, int *, int);
+  int GPTLstart_handle (const char *, int *, int);
+  int GPTLstop (const char *, int);
+  int GPTLstop_handle (const char *, int *, int);
+  int GPTLstartstop_val (const char *, double, int);
+}
+#else
+// C doesn't allow optional arguments
+extern int GPTLstart (const char *);
+extern int GPTLinit_handle (const char *, int *);
+extern int GPTLstart_handle (const char *, int *);
+extern int GPTLstop (const char *);
+extern int GPTLstop_handle (const char *, int *);
+extern int GPTLstartstop_val (const char *, double);
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 extern int GPTLsetoption (const int, const int);
 extern int GPTLinitialize (void);
-extern int GPTLstart (const char *, int namelen=-1);
-extern int GPTLinit_handle (const char *, int *, int namelen=-1);
-  extern int GPTLstart_handle (const char *, int *, int namelen=-1);
-extern int GPTLstop (const char *, int namelen=-1);
-extern int GPTLstop_handle (const char *, int *, int namelen=-1);
 extern int GPTLstamp (double *, double *, double *);
 extern int GPTLpr (const int);
 extern int GPTLpr_file (const char *);
@@ -100,7 +116,6 @@ extern int GPTLquery (const char *, int, int *, int *, double *, double *, doubl
 extern int GPTLget_wallclock (const char *, int, double *);
 extern int GPTLget_wallclock_latest (const char *, int, double *);
 extern int GPTLget_threadwork (const char *, double *, double *);
-extern int GPTLstartstop_val (const char *, double);
 extern int GPTLget_nregions (int, int *);
 extern int GPTLget_regionname (int, int, char *, int);
 extern int GPTL_PAPIlibraryinit (void);

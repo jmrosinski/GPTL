@@ -30,15 +30,42 @@
 #include <sys/systemcfg.h>
 #endif
 
-// Local function prototypes
-static inline int get_cpustamp (long *, long *);
-static void print_callstack (int, const char *);
-#ifdef ENABLE_NESTEDOMP
-void get_nested_thread_nums (int *, int *);
+// Local functions: Protect with "static"
+    
+/*
+** get_cpustamp: Invoke the proper system timer and return stats.
+**
+** Output arguments:
+**   usr: user time
+**   sys: system time
+**
+** Return value: 0 (success)
+*/
+static inline int get_cpustamp (long *usr, long *sys)
+{
+#ifdef HAVE_TIMES
+  struct tms buf;
+  
+  (void) times (&buf);
+  *usr = buf.tms_utime;
+  *sys = buf.tms_stime;
+  return 0;
+#else
+  return GPTLerror ("GPTL: get_cpustamp: times() not available\n");
 #endif
+}
 
-static char unknown[] = "unknown";
+static void print_callstack (int t, const char *caller)
+{
+  int idx;
 
+  printf ("Current callstack from %s:\n", caller);
+  for (idx = gptlmain::stackidx[t].val; idx > 0; --idx) {
+    printf ("%s\n", gptlmain::callstack[t][idx]->name);
+  }
+}
+
+// Start of namespace contents: most are used by other GPTL files
 namespace gptlmain {
   volatile bool initialized = false;   // GPTLinitialize has been called
   volatile bool disabled = false;      // Timers disabled?
@@ -69,7 +96,74 @@ namespace gptlmain {
 #endif
 
   extern "C" {
+    /*
+    ** genhashidx: generate hash index
+    **
+    ** Input args:
+    **   name: string to be hashed on
+    **
+    ** Return value: hash value
+    */
+    unsigned int genhashidx (const char *name, const int namelen)
+    {
+      const unsigned char *c;       // pointer to elements of "name"
+      unsigned int indx;            // return value of function
+      unsigned int mididx, lastidx; // mid and final index of name
+
+      lastidx = namelen - 1;
+      mididx = lastidx / 2;
+      // Disallow a hash index of zero (by adding 1 at the end) since user input of an 
+      // uninitialized value, though an error, has a likelihood to be zero.
+      c = (unsigned char *) name;
+      indx = (MAX_CHARS*c[0] + (MAX_CHARS-mididx)*c[mididx] + (MAX_CHARS-lastidx)*c[lastidx])
+	% gptlmain::tablesizem1 + 1;
+      return indx;
+    }
+
     double (*ptr2wtimefunc)() = 0;
+
+    /*
+    ** getentry: find the entry in the hash table and return a pointer to it.
+    **
+    ** Input args:
+    **   hashtable: the hashtable (array)
+    **   indx:      hashtable index
+    **
+    ** Return value: pointer to the entry, or NULL if not found
+    */
+    Timer *getentry (const Hashentry *hashtable, const char *name, unsigned int indx)
+    {
+      int i;
+      Timer *ptr = 0;             // return value when entry not found
+
+      // If nument exceeds 1 there was one or more hash collisions and we must search
+      // linearly through the array of names with the same hash for a match
+      for (i = 0; i < hashtable[indx].nument; i++) {
+	if (STRMATCH (name, hashtable[indx].entries[i]->name)) {
+	  ptr = hashtable[indx].entries[i];
+#ifdef COLLIDE
+	  if (i > 0)
+	    hashtable[indx].entries[i]->collide += i;
+#endif
+#define SWAP_ON_COUNT
+#ifdef SWAP_ON_COUNT
+	  // Swap hashtable position with neighbor to the left (i.e. earlier position in the search
+	  // array) if we've been called more frequently
+	  // This should minimize the number of tests for "name" in the linear search.
+	  if (i > 0) {
+	    unsigned long neigh_count = hashtable[indx].entries[i-1]->count;
+	    if (hashtable[indx].entries[i]->count > neigh_count) {
+	      Timer *tmp                   = hashtable[indx].entries[i];
+	      hashtable[indx].entries[i]   = hashtable[indx].entries[i-1];
+	      hashtable[indx].entries[i-1] = tmp;
+	    }
+	  }
+#endif
+	  break;
+	}
+      }
+      return ptr;
+    }
 
     // preamble_start: Do the things common to GPTLstart* routines
     int preamble_start (int *t, const char *name)
@@ -124,6 +218,294 @@ namespace gptlmain {
       }
       return 0;
     }
+
+    /*
+    ** update_ll_hash: Update linked list and hash table.
+    **                 Called by all GPTLstart* routines when there is a new entry
+    **
+    ** Input arguments:
+    **   ptr:  pointer to timer
+    **   t:    thread index
+    **   indx: hash index
+    **
+    ** Return value: 0 (success) or GPTLerror (failure)
+    */
+    int update_ll_hash (Timer *ptr, int t, unsigned int indx)
+    {
+      int nument;      // number of entries (> 0 means collision)
+      Timer **eptr;    // for realloc
+
+      gptlmain::last[t]->next = ptr;
+      gptlmain::last[t] = ptr;
+      ++gptlmain::hashtable[t][indx].nument;
+      nument = gptlmain::hashtable[t][indx].nument;
+  
+      eptr = (Timer **) realloc (gptlmain::hashtable[t][indx].entries, nument * sizeof (Timer *));
+      if ( ! eptr)
+	return GPTLerror ("update_ll_hash: realloc error\n");
+      
+      gptlmain::hashtable[t][indx].entries           = eptr;
+      gptlmain::hashtable[t][indx].entries[nument-1] = ptr;
+      return 0;
+    }
+
+    /*
+    ** update_parent_info: update info about parent, and in the parent about this child
+    **                     Called by all GPTLstart* routines
+    **
+    ** Arguments:
+    **   ptr:  pointer to timer
+    **   callstackt: callstack for this thread
+    **   stackidxt:  stack index for this thread
+    **
+    ** Return value: 0 (success) or GPTLerror (failure)
+    */
+    int update_parent_info (Timer *ptr, Timer **callstackt, int stackidxt)
+    {
+      int n;             // loop index through known parents
+      Timer *pptr;       // pointer to parent in callstack
+      Timer **pptrtmp;   // for realloc parent pointer array
+      int nparent;       // number of parents
+      int *parent_count; // number of times parent invoked this child
+      static const char *thisfunc = "update_parent_info";
+
+      if ( ! ptr )
+	return -1;
+
+      if (stackidxt < 0)
+	return GPTLerror ("%s: called with negative stackidx\n", thisfunc);
+
+      callstackt[stackidxt] = ptr;
+
+      // Bump orphan count if the region has no parent (should never happen since "GPTL_ROOT" added)
+      if (stackidxt == 0) {
+	++ptr->norphan;
+	return 0;
+      }
+
+      pptr = callstackt[stackidxt-1];
+      
+      // If this parent occurred before, bump its count
+      for (n = 0; n < ptr->nparent; ++n) {
+	if (ptr->parent[n] == pptr) {
+	  ++ptr->parent_count[n];
+	  break;
+	}
+      }
+
+      // If this is a new parent, update info
+      if (n == ptr->nparent) {
+	++ptr->nparent;
+	nparent = ptr->nparent;
+	pptrtmp = (Timer **) realloc (ptr->parent, nparent * sizeof (Timer *));
+	if ( ! pptrtmp)
+	  return GPTLerror ("%s: realloc error pptrtmp nparent=%d\n", thisfunc, nparent);
+
+	ptr->parent = pptrtmp;
+	ptr->parent[nparent-1] = pptr;
+	parent_count = (int *) realloc (ptr->parent_count, nparent * sizeof (int));
+	if ( ! parent_count)
+	  return GPTLerror ("%s: realloc error parent_count nparent=%d\n", thisfunc, nparent);
+
+	ptr->parent_count = parent_count;
+	ptr->parent_count[nparent-1] = 1;
+      }
+      return 0;
+    }
+
+    /*
+    ** update_stats: update stats inside ptr. Called by GPTLstop, GPTLstop_handle
+    **
+    ** Input arguments:
+    **   ptr: pointer to timer
+    **   tp1: input time stamp
+    **   usr: user time
+    **   sys: system time
+    **   t: thread index
+    **
+    ** Return value: 0 (success) or GPTLerror (failure)
+    */
+    int update_stats (Timer *ptr, const double tp1, const long usr, const long sys,
+		      const int t)
+    {
+      double delta;      // wallclock time difference
+      int bidx;          // bottom of call stack
+      Timer *bptr;       // pointer to last entry in call stack
+      static const char *thisfunc = "update_stats";
+
+      ptr->onflg = false;
+
+#ifdef HAVE_PAPI
+      if (gptlmain::dousepapi && GPTL_PAPIstop (t, &ptr->aux) < 0)
+	return GPTLerror ("%s: error from GPTL_PAPIstop\n", thisfunc);
+#endif
+
+      if (gptlmain::wallstats.enabled) {
+	delta = tp1 - ptr->wall.last;
+	ptr->wall.accum += delta;
+	ptr->wall.latest = delta;
+
+	if (delta < 0.)
+	  fprintf (stderr, "GPTL: %s: negative delta=%g\n", thisfunc, delta);
+
+	if (ptr->count == 1) {
+	  ptr->wall.max = delta;
+	  ptr->wall.min = delta;
+	} else {
+	  if (delta > ptr->wall.max)
+	    ptr->wall.max = delta;
+	  if (delta < ptr->wall.min)
+	    ptr->wall.min = delta;
+	}
+      }
+
+      if (gptlmain::cpustats.enabled) {
+	ptr->cpu.accum_utime += usr - ptr->cpu.last_utime;
+	ptr->cpu.accum_stime += sys - ptr->cpu.last_stime;
+	ptr->cpu.last_utime   = usr;
+	ptr->cpu.last_stime   = sys;
+      }
+
+      // Verify that the timer being stopped is at the bottom of the call stack
+      if ( ! gptlmain::imperfect_nest) {
+	char *name;        //  found name
+	char *bname;       //  expected name
+
+	bidx = gptlmain::stackidx[t].val;
+	bptr = gptlmain::callstack[t][bidx];
+	if (ptr != bptr) {
+	  gptlmain::imperfect_nest = true;
+	  if (ptr->longname)
+	    name = ptr->longname;
+	  else
+	    name = ptr->name;
+	  
+	  // Print to stderr as well due to debugging importance, and warn/error have limits on the
+	  // number of calls that can be made
+	  fprintf (stderr, "%s thread %d: Imperfect nest detected: Got timer %s\n",
+		   thisfunc, t, name);      
+	  GPTLwarn ("%s thread %d: Imperfect nest detected: Got timer %s\n", thisfunc, t, name);
+	  if (bptr) {
+	    if (bptr->longname)
+	      bname = bptr->longname;
+	    else
+	      bname = bptr->name;
+	    fprintf (stderr, "Expected btm of call stack %s\n", bname);
+	  } else {
+	    // Sometimes imperfect_nest can cause bptr to be NULL
+	    fprintf (stderr, "Expected btm of call stack but bptr is NULL\n");
+	  }
+	  //      print_callstack (t, thisfunc);
+	}
+      }
+      
+      --gptlmain::stackidx[t].val;           // Pop the callstack
+      if (gptlmain::stackidx[t].val < -1) {
+	gptlmain::stackidx[t].val = -1;
+	return GPTLerror ("%s: tree depth has become negative.\n", thisfunc);
+      }
+      return 0;
+    }
+
+    /*
+    ** update_ptr: Update timer contents. Called by GPTLstart, GPTLstart_handle, and
+    **             __cyg_profile_func_enter
+    **
+    ** Input arguments:
+    **   ptr:  pointer to timer
+    **   t:    thread index
+    **
+    ** Return value: 0 (success) or GPTLerror (failure)
+    */
+    int update_ptr (Timer *ptr, const int t)
+    {
+      ptr->onflg = true;
+      
+      if (gptlmain::cpustats.enabled &&
+	  get_cpustamp (&ptr->cpu.last_utime, &ptr->cpu.last_stime) < 0)
+	return GPTLerror ("update_ptr: get_cpustamp error");
+      
+      if (gptlmain::wallstats.enabled) {
+	double tp2 = (*gptlmain::ptr2wtimefunc) ();
+	ptr->wall.last = tp2;
+      }
+      
+#ifdef HAVE_PAPI
+      if (gptlmain::dousepapi && GPTL_PAPIstart (t, &ptr->aux) < 0)
+	return GPTLerror ("update_ptr: error from GPTL_PAPIstart\n");
+#endif
+      return 0;
+    }
+
+    // Underlying timing routines & wrappers start here
+#ifdef HAVE_NANOTIME
+    // Copied from PAPI library
+    double utr_nanotime ()
+    {
+      long long val = 0;
+#ifdef BIT64
+      do {
+	unsigned int a, d;
+	asm volatile ("rdtsc":"=a" (a), "=d" (d));
+	(val) = ((long long) a) | (((long long) d) << 32);
+      } while (0);
+#else
+      __asm__ __volatile__("rdtsc":"=A" (val): );
+#endif
+      return val * gptlmain::cyc2sec;
+    }
+#endif
+
+    // MPI_Wtime requires MPI lib.
+#ifdef HAVE_LIBMPI
+    double utr_mpiwtime () {return MPI_Wtime ();}
+#endif
+
+#ifdef _AIX
+    double utr_read_real_time ()
+    {
+      timebasestruct_t ibmtime;
+      (void) read_real_time (&ibmtime, TIMEBASE_SZ);
+      (void) time_base_to_time (&ibmtime, TIMEBASE_SZ);
+      return (ibmtime.tb_high - gptlmain::ref_read_real_time) + 1.e-9*ibmtime.tb_low;
+    }
+#endif
+
+#ifdef HAVE_LIBRT
+    double utr_clock_gettime ()
+    {
+      struct timespec tp;
+      (void) clock_gettime (CLOCK_REALTIME, &tp);
+      return (tp.tv_sec - gptlmain::ref_clock_gettime) + 1.e-9*tp.tv_nsec;
+    }
+#endif
+
+#ifdef HAVE_GETTIMEOFDAY
+    double utr_gettimeofday ()
+    {
+      struct timeval tp;
+      (void) gettimeofday (&tp, 0);
+      return (tp.tv_sec - gptlmain::ref_gettimeofday) + 1.e-6*tp.tv_usec;
+    }
+#endif
+
+    // placebo: does nothing and returns zero always. Useful for estimating overhead costs
+    double utr_placebo () {return (double) 0.;}
+    
+#ifdef ENABLE_NESTEDOMP
+    inline void get_nested_thread_nums (int *major, int *minor)
+    {
+      if (omp_get_max_active_levels () > 1) { // nesting is "enabled", though not necessarily active
+	volatile const int lvl = omp_get_active_level (); // lvl=2 => inside 2 #pragma omp regions
+	if (lvl == 1) {
+	  *major = omp_get_thread_num ();
+	} else if (lvl == 2) {
+	  *major = omp_get_ancestor_thread_num (1);
+	  *minor = omp_get_thread_num ();
+	}
+      }
+    }
+#endif
   }
 }
 
@@ -132,6 +514,7 @@ namespace gptlmain {
 // APPEND_ADDRESS is an autoprofiling debugging ifdef that will append function address to name
 #undef APPEND_ADDRESS
 
+// Start of user-callable functions
 /*
 ** GPTLstart: start a timer
 **
@@ -325,129 +708,6 @@ extern "C" int GPTLstart_handle (const char *name, int *handle, int namelen=-1)
 }
 
 /*
-** update_ll_hash: Update linked list and hash table.
-**                 Called by all GPTLstart* routines when there is a new entry
-**
-** Input arguments:
-**   ptr:  pointer to timer
-**   t:    thread index
-**   indx: hash index
-**
-** Return value: 0 (success) or GPTLerror (failure)
-*/
-extern "C" int update_ll_hash (Timer *ptr, int t, unsigned int indx)
-{
-  int nument;      // number of entries (> 0 means collision)
-  Timer **eptr;    // for realloc
-
-  gptlmain::last[t]->next = ptr;
-  gptlmain::last[t] = ptr;
-  ++gptlmain::hashtable[t][indx].nument;
-  nument = gptlmain::hashtable[t][indx].nument;
-  
-  eptr = (Timer **) realloc (gptlmain::hashtable[t][indx].entries, nument * sizeof (Timer *));
-  if ( ! eptr)
-    return GPTLerror ("update_ll_hash: realloc error\n");
-
-  gptlmain::hashtable[t][indx].entries           = eptr;
-  gptlmain::hashtable[t][indx].entries[nument-1] = ptr;
-  return 0;
-}
-
-/*
-** update_ptr: Update timer contents. Called by GPTLstart, GPTLstart_handle, and
-**             __cyg_profile_func_enter
-**
-** Input arguments:
-**   ptr:  pointer to timer
-**   t:    thread index
-**
-** Return value: 0 (success) or GPTLerror (failure)
-*/
-extern "C" int update_ptr (Timer *ptr, const int t)
-{
-  ptr->onflg = true;
-
-  if (gptlmain::cpustats.enabled && get_cpustamp (&ptr->cpu.last_utime, &ptr->cpu.last_stime) < 0)
-    return GPTLerror ("update_ptr: get_cpustamp error");
-  
-  if (gptlmain::wallstats.enabled) {
-    double tp2 = (*gptlmain::ptr2wtimefunc) ();
-    ptr->wall.last = tp2;
-  }
-
-#ifdef HAVE_PAPI
-  if (gptlmain::dousepapi && GPTL_PAPIstart (t, &ptr->aux) < 0)
-    return GPTLerror ("update_ptr: error from GPTL_PAPIstart\n");
-#endif
-  return 0;
-}
-
-/*
-** update_parent_info: update info about parent, and in the parent about this child
-**                     Called by all GPTLstart* routines
-**
-** Arguments:
-**   ptr:  pointer to timer
-**   callstackt: callstack for this thread
-**   stackidxt:  stack index for this thread
-**
-** Return value: 0 (success) or GPTLerror (failure)
-*/
-extern "C" int update_parent_info (Timer *ptr, Timer **callstackt, int stackidxt)
-{
-  int n;             // loop index through known parents
-  Timer *pptr;       // pointer to parent in callstack
-  Timer **pptrtmp;   // for realloc parent pointer array
-  int nparent;       // number of parents
-  int *parent_count; // number of times parent invoked this child
-  static const char *thisfunc = "update_parent_info";
-
-  if ( ! ptr )
-    return -1;
-
-  if (stackidxt < 0)
-    return GPTLerror ("%s: called with negative stackidx\n", thisfunc);
-
-  callstackt[stackidxt] = ptr;
-
-  // Bump orphan count if the region has no parent (should never happen since "GPTL_ROOT" added)
-  if (stackidxt == 0) {
-    ++ptr->norphan;
-    return 0;
-  }
-
-  pptr = callstackt[stackidxt-1];
-
-  // If this parent occurred before, bump its count
-  for (n = 0; n < ptr->nparent; ++n) {
-    if (ptr->parent[n] == pptr) {
-      ++ptr->parent_count[n];
-      break;
-    }
-  }
-
-  // If this is a new parent, update info
-  if (n == ptr->nparent) {
-    ++ptr->nparent;
-    nparent = ptr->nparent;
-    pptrtmp = (Timer **) realloc (ptr->parent, nparent * sizeof (Timer *));
-    if ( ! pptrtmp)
-      return GPTLerror ("%s: realloc error pptrtmp nparent=%d\n", thisfunc, nparent);
-
-    ptr->parent = pptrtmp;
-    ptr->parent[nparent-1] = pptr;
-    parent_count = (int *) realloc (ptr->parent_count, nparent * sizeof (int));
-    if ( ! parent_count)
-      return GPTLerror ("%s: realloc error parent_count nparent=%d\n", thisfunc, nparent);
-
-    ptr->parent_count = parent_count;
-    ptr->parent_count[nparent-1] = 1;
-  }
-  return 0;
-}
-
-/*
 ** GPTLstop: stop a timer
 **
 ** Input arguments:
@@ -576,122 +836,6 @@ extern "C" int GPTLstop_handle (const char *name, int *handle, int namelen=-1)
 }
 
 /*
-** update_stats: update stats inside ptr. Called by GPTLstop, GPTLstop_handle
-**
-** Input arguments:
-**   ptr: pointer to timer
-**   tp1: input time stamp
-**   usr: user time
-**   sys: system time
-**   t: thread index
-**
-** Return value: 0 (success) or GPTLerror (failure)
-*/
-extern "C" int update_stats (Timer *ptr, const double tp1, const long usr, const long sys,
-                                const int t)
-{
-  double delta;      // wallclock time difference
-  int bidx;          // bottom of call stack
-  Timer *bptr;       // pointer to last entry in call stack
-  static const char *thisfunc = "update_stats";
-
-  ptr->onflg = false;
-
-#ifdef HAVE_PAPI
-  if (gptlmain::dousepapi && GPTL_PAPIstop (t, &ptr->aux) < 0)
-    return GPTLerror ("%s: error from GPTL_PAPIstop\n", thisfunc);
-#endif
-
-  if (gptlmain::wallstats.enabled) {
-    delta = tp1 - ptr->wall.last;
-    ptr->wall.accum += delta;
-    ptr->wall.latest = delta;
-
-    if (delta < 0.)
-      fprintf (stderr, "GPTL: %s: negative delta=%g\n", thisfunc, delta);
-
-    if (ptr->count == 1) {
-      ptr->wall.max = delta;
-      ptr->wall.min = delta;
-    } else {
-      if (delta > ptr->wall.max)
-        ptr->wall.max = delta;
-      if (delta < ptr->wall.min)
-        ptr->wall.min = delta;
-    }
-  }
-
-  if (gptlmain::cpustats.enabled) {
-    ptr->cpu.accum_utime += usr - ptr->cpu.last_utime;
-    ptr->cpu.accum_stime += sys - ptr->cpu.last_stime;
-    ptr->cpu.last_utime   = usr;
-    ptr->cpu.last_stime   = sys;
-  }
-
-  // Verify that the timer being stopped is at the bottom of the call stack
-  if ( ! gptlmain::imperfect_nest) {
-    char *name;        //  found name
-    char *bname;       //  expected name
-
-    bidx = gptlmain::stackidx[t].val;
-    bptr = gptlmain::callstack[t][bidx];
-    if (ptr != bptr) {
-      gptlmain::imperfect_nest = true;
-      if (ptr->longname)
-	name = ptr->longname;
-      else
-	name = ptr->name;
-      
-      // Print to stderr as well due to debugging importance, and warn/error have limits on the
-      // number of calls that can be made
-      fprintf (stderr, "%s thread %d: Imperfect nest detected: Got timer %s\n", thisfunc, t, name);      
-      GPTLwarn ("%s thread %d: Imperfect nest detected: Got timer %s\n", thisfunc, t, name);
-      if (bptr) {
-	if (bptr->longname)
-	  bname = bptr->longname;
-	else
-	  bname = bptr->name;
-	fprintf (stderr, "Expected btm of call stack %s\n", bname);
-      } else {
-	// Sometimes imperfect_nest can cause bptr to be NULL
-	fprintf (stderr, "Expected btm of call stack but bptr is NULL\n");
-      }
-      //      print_callstack (t, thisfunc);
-    }
-  }
-
-  --gptlmain::stackidx[t].val;           // Pop the callstack
-  if (gptlmain::stackidx[t].val < -1) {
-    gptlmain::stackidx[t].val = -1;
-    return GPTLerror ("%s: tree depth has become negative.\n", thisfunc);
-  }
-  return 0;
-}
-
-/*
-** get_cpustamp: Invoke the proper system timer and return stats.
-**
-** Output arguments:
-**   usr: user time
-**   sys: system time
-**
-** Return value: 0 (success)
-*/
-static inline int get_cpustamp (long *usr, long *sys)
-{
-#ifdef HAVE_TIMES
-  struct tms buf;
-
-  (void) times (&buf);
-  *usr = buf.tms_utime;
-  *sys = buf.tms_stime;
-  return 0;
-#else
-  return GPTLerror ("GPTL: get_cpustamp: times() not available\n");
-#endif
-}
-
-/*
 ** GPTLstartstop_val: Take user input to treat as the result of calling start/stop
 **
 ** Input arguments:
@@ -765,153 +909,6 @@ extern "C" int GPTLstartstop_val (const char *name, double value, int namelen=-1
 
   return 0;
 }
-
-/*
-** genhashidx: generate hash index
-**
-** Input args:
-**   name: string to be hashed on
-**
-** Return value: hash value
-*/
-extern "C" unsigned int genhashidx (const char *name, const int namelen)
-{
-  const unsigned char *c;       // pointer to elements of "name"
-  unsigned int indx;            // return value of function
-  unsigned int mididx, lastidx; // mid and final index of name
-
-  lastidx = namelen - 1;
-  mididx = lastidx / 2;
-  // Disallow a hash index of zero (by adding 1 at the end) since user input of an 
-  // uninitialized value, though an error, has a likelihood to be zero.
-  c = (unsigned char *) name;
-  indx = (MAX_CHARS*c[0] + (MAX_CHARS-mididx)*c[mididx] + (MAX_CHARS-lastidx)*c[lastidx])
-    % gptlmain::tablesizem1 + 1;
-  return indx;
-}
-
-/*
-** getentry: find the entry in the hash table and return a pointer to it.
-**
-** Input args:
-**   hashtable: the hashtable (array)
-**   indx:      hashtable index
-**
-** Return value: pointer to the entry, or NULL if not found
-*/
-extern "C" Timer *getentry (const Hashentry *hashtable, const char *name, unsigned int indx)
-{
-  int i;
-  Timer *ptr = 0;             // return value when entry not found
-
-  // If nument exceeds 1 there was one or more hash collisions and we must search
-  // linearly through the array of names with the same hash for a match
-  for (i = 0; i < hashtable[indx].nument; i++) {
-    if (STRMATCH (name, hashtable[indx].entries[i]->name)) {
-      ptr = hashtable[indx].entries[i];
-#ifdef COLLIDE
-      if (i > 0)
-	hashtable[indx].entries[i]->collide += i;
-#endif
-#define SWAP_ON_COUNT
-#ifdef SWAP_ON_COUNT
-      // Swap hashtable position with neighbor to the left (i.e. earlier position in the search
-      // array) if we've been called more frequently
-      // This should minimize the number of tests for "name" in the linear search.
-      if (i > 0) {
-	unsigned long neigh_count = hashtable[indx].entries[i-1]->count;
-	if (hashtable[indx].entries[i]->count > neigh_count) {
-	  Timer *tmp                   = hashtable[indx].entries[i];
-	  hashtable[indx].entries[i]   = hashtable[indx].entries[i-1];
-	  hashtable[indx].entries[i-1] = tmp;
-	}
-      }
-#endif
-      break;
-    }
-  }
-  return ptr;
-}
-
-#ifdef HAVE_NANOTIME
-// Copied from PAPI library
-extern "C"  double utr_nanotime ()
-{
-  long long val = 0;
-#ifdef BIT64
-  do {
-    unsigned int a, d;
-    asm volatile ("rdtsc":"=a" (a), "=d" (d));
-    (val) = ((long long) a) | (((long long) d) << 32);
-  } while (0);
-#else
-  __asm__ __volatile__("rdtsc":"=A" (val): );
-#endif
-  return val * gptlmain::cyc2sec;
-}
-#endif
-
-// MPI_Wtime requires MPI lib.
-#ifdef HAVE_LIBMPI
-extern "C"  double utr_mpiwtime () {return MPI_Wtime ();}
-#endif
-
-#ifdef HAVE_LIBRT
-
-extern "C" double utr_clock_gettime ()
-{
-  struct timespec tp;
-  (void) clock_gettime (CLOCK_REALTIME, &tp);
-  return (tp.tv_sec - gptlmain::ref_clock_gettime) + 1.e-9*tp.tv_nsec;
-}
-#endif
-
-#ifdef _AIX
-extern "C" double utr_read_real_time ()
-{
-  timebasestruct_t ibmtime;
-  (void) read_real_time (&ibmtime, TIMEBASE_SZ);
-  (void) time_base_to_time (&ibmtime, TIMEBASE_SZ);
-  return (ibmtime.tb_high - gptlmain::ref_read_real_time) + 1.e-9*ibmtime.tb_low;
-}
-#endif
-
-#ifdef HAVE_GETTIMEOFDAY
-extern "C" double utr_gettimeofday ()
-{
-  struct timeval tp;
-  (void) gettimeofday (&tp, 0);
-  return (tp.tv_sec - gptlmain::ref_gettimeofday) + 1.e-6*tp.tv_usec;
-}
-#endif
-
-// placebo: does nothing and returns zero always. Useful for estimating overhead costs
-extern "C" double utr_placebo () {return (double) 0.;}
-
-static void print_callstack (int t, const char *caller)
-{
-  int idx;
-
-  printf ("Current callstack from %s:\n", caller);
-  for (idx = gptlmain::stackidx[t].val; idx > 0; --idx) {
-    printf ("%s\n", gptlmain::callstack[t][idx]->name);
-  }
-}
-
-#ifdef ENABLE_NESTEDOMP
-static inline void get_nested_thread_nums (int *major, int *minor)
-{
-  if (omp_get_max_active_levels () > 1) { // nesting is "enabled", though not necessarily active
-    volatile const int lvl = omp_get_active_level (); // lvl=2 => inside 2 #pragma omp regions
-    if (lvl == 1) {
-      *major = omp_get_thread_num ();
-    } else if (lvl == 2) {
-      *major = omp_get_ancestor_thread_num (1);
-      *minor = omp_get_thread_num ();
-    }
-  }
-}
-#endif
 
 // If specified at configure time, insert appropriate threading file instead of compiling
 // separately so that GPTLget_thread_num may be inlined.

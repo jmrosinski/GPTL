@@ -42,6 +42,10 @@
 // max allowable number of PAPI counters, or derived events.
 #define MAX_AUX 3
 
+// Size of table containing entries. Too small means many collisions which impedes performance
+// Too big means less chance for the table to remain cache-resident.
+#define DEFAULT_TABLE_SIZE 1023
+
 typedef struct {
   int val;                  // depth in calling tree
   int padding[31];          // padding is to mitigate false cache sharing
@@ -120,23 +124,6 @@ extern "C" {
   void GPTLreset_errors (void);                       // num_errors to zero
   void *GPTLallocate (const int, const char *);       // malloc wrapper
 
-  int GPTLstart_instr (void *);                       // auto-instrumented start
-  int GPTLstop_instr (void *);                        // auto-instrumented stop
-  int GPTLis_initialized (void);                      // needed by MPI_Init wrapper
-  int GPTLget_overhead (FILE *,                       // file descriptor
-			       double (*)(),                 // UTR()
-			       Timer *(const Hashentry *, const char *, unsigned int), // getentry()
-			       unsigned int (const char *),  // genhashidx()
-			       int (void),                   // GPTLget_thread_num()
-			       Nofalse *,                    // stackidx
-			       Timer ***,                    // callstack
-			       const Hashentry *,            // hashtable
-			       const int,                    // tablesize
-			       bool,                         // dousepapi
-			       int,                          // imperfect_nest
-			       double *,                     // self_ohd
-			       double *);                    // parent_ohd
-  void GPTLprint_hashstats (FILE *, int, Hashentry **, int);
   void GPTLprint_memstats (FILE *, Timer **, int);
   Timer **GPTLget_timersaddr (void);
   // For now this one is local to gptl.c but that may change if needs calling from pr_summary
@@ -145,8 +132,6 @@ extern "C" {
   // Don't need these with C++
   // void __cyg_profile_func_enter (void *, void *);
   // void __cyg_profile_func_exit (void *, void *);
-
-  bool GPTLonlypr_rank0;     // flag says ignore all stdout/stderr print from non-zero ranks
 
 #ifdef ENABLE_PMPI
   Timer *GPTLgetentry (const char *);

@@ -9,6 +9,7 @@ namespace once {
 #endif
   extern int funcidx;
   extern bool verbose;
+  extern bool onlyprint_rank0;
   
   // Wrap in extern "C" due to functions. Not sure if this is necessary
   extern "C" {

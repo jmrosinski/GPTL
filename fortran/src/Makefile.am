@@ -16,7 +16,7 @@ lib_LTLIBRARIES = libgptlf.la
 libgptlf_la_LDFLAGS = -version-info 0:0:0
 
 # These are the source files.
-libgptlf_la_SOURCES = gptlf.F90 process_namelist.F90 f_wrappers.c
+libgptlf_la_SOURCES = gptlf.F90 process_namelist.F90 f_wrappers.cc
 
 if HAVE_PAPI
 libgptlf_la_FCFLAGS += -DHAVE_PAPI
@@ -25,7 +25,7 @@ endif
 if HAVE_LIBMPI
 libgptlf_la_FCFLAGS += -DHAVE_LIBMPI
 if ENABLE_PMPI
-libgptlf_la_SOURCES += f_wrappers_pmpi.c get_f_mpi_in_place.F90
+libgptlf_la_SOURCES += f_wrappers_pmpi.cc get_f_mpi_in_place.F90
 endif
 endif
 

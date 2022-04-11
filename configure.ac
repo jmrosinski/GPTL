@@ -107,7 +107,9 @@ AS_IF([test "x$enable_openmp" != xno], [
   else
     useomp=yes;
     AC_DEFINE([THREADED_OMP], [1], [openmp support is present])
-    CFLAGS="$CFLAGS $OPENMP_CFLAGS"
+    CXXFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"
+# HACK ASSUME openmp cflags match openmp cxxflags
+    CFLAGS="$CFLAGS $OPENMP_CXXFLAGS"
   fi
 ])
 AM_CONDITIONAL([HAVE_OPENMP], [test "x$useomp" = xyes])
@@ -196,6 +198,7 @@ AC_ARG_ENABLE([debug], [AS_HELP_STRING([--enable-debug], [Enable DEBUG ifdef and
 AS_IF([test "x$enable_debug" = xyes], [
  AC_DEFINE([DEBUG], [1], [set debug ifdef])
  CFLAGS="$CFLAGS -g -O0"
+ CXXFLAGS="$CXXFLAGS -g -O0"
  FCFLAGS="$FCFLAGS -g -O0"
   if test "x$CC" = xnvc; then
     AC_MSG_NOTICE([NOTE when CC=nvc and debug is enabled, suggest nullifying CC to avoid confusing nvc])
