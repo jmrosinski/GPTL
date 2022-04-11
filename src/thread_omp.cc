@@ -86,9 +86,6 @@ namespace thread {
   **   5/8/16: Modified to enable 2-level OMP nesting: Fold combination of current and parent
   **   thread info into a single index
   */
-#ifdef INLINE_THREADING
-  inline
-#endif
   int get_thread_num (void)
   {
     int t = omp_get_thread_num ();     // linearized thread id to be returned

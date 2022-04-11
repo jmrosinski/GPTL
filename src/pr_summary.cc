@@ -8,18 +8,19 @@
 */
  
 #include "config.h"      // Must be first include.
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>        // sqrt
+
 #include "private.h"
 #include "gptl.h"
+#include "main.h"
 #include "gptlmpi.h"
 #include "thread.h"
 #ifdef HAVE_PAPI
 #include "gptl_papi.h"   // GPTLnevents, GPTLeventlist
 #endif
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>        // sqrt
 
 // MPI summary stats
 typedef struct {
@@ -96,7 +97,7 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
   static const char *gptlversion = GPTL_VERSIONINFO;
   static const char *thisfunc = "GPTLpr_summary_file";  // this function
 
-  if ( ! GPTLis_initialized ())
+  if ( ! gptlmain::initialized)
     return GPTLerror ("%s: GPTLinitialize() has not been called\n", thisfunc);
 
   if ((ret = MPI_Comm_rank (comm, &iam)) != MPI_SUCCESS)

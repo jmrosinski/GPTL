@@ -20,7 +20,6 @@
 int GPTLstamp (double *wall, double *usr, double *sys)
 {
   struct tms buf;            // returned from times()
-  using gptlmain::ptr2wtimefunc;
 
   if ( ! gptlmain::initialized)
     return GPTLerror ("GPTLstamp: GPTLinitialize has not been called\n");
@@ -35,7 +34,7 @@ int GPTLstamp (double *wall, double *usr, double *sys)
   *usr = buf.tms_utime / (double) once::ticks_per_sec;
   *sys = buf.tms_stime / (double) once::ticks_per_sec;
 #endif
-  *wall = (*ptr2wtimefunc) ();
+  *wall = (*gptlmain::ptr2wtimefunc) ();
   return 0;
 }
 
@@ -402,7 +401,3 @@ int GPTLget_regionname (int t, int region, char *name, int nc)
   }
   return 0;
 }
-
-// Whether GPTL has been initialized
-int GPTLis_initialized (void) {return (int) gptlmain::initialized;}
-

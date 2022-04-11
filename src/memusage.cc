@@ -135,6 +135,7 @@ int GPTLget_procsiz (float *procsiz_out, float *rss_out)
 
 // End of user-callable functions  
   
+static inline void set_fp_procsiz (void);
 namespace memusage {
   float growth_pct = 0.;               // threshhold % for memory growth print
   void check_memusage (const char *str, const char *funcnam)
@@ -142,7 +143,6 @@ namespace memusage {
     float rss;
     static float rssmax = 0;           // max rss of the process (init to zero). Require thread=0?
     static FILE *fp_procsiz = 0;       // process size file pointer: init to 0 to use stderr
-    extern void set_fp_procsiz (void);
 
     (void) GPTLget_memusage (&rss);
     // Notify user when rss has grown by more than some percentage (default 0%)
@@ -183,6 +183,4 @@ static inline void set_fp_procsiz ()
   }
 #endif
 }
-
-  
 }

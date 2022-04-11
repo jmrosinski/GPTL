@@ -164,6 +164,7 @@ namespace once {
 #endif
   int funcidx = 0;                // default timer is gettimeofday
   bool verbose = false;           // output verbosity
+  bool onlyprint_rank0 = false;   // flag says only print from rank 0
 
   extern "C" {
     Funcentry funclist[] = {
@@ -305,6 +306,11 @@ int GPTLsetoption (const int option, const int val)
     fprintf (stderr, "%s: option GPTLsync_mpi requires configure --enable-pmpi\n", thisfunc);
 #endif
     return 0;
+  case GPTLonlyprint_rank0:
+    once::onlyprint_rank0 = (bool) val; 
+    if (once::verbose)
+      printf ("%s: onlyprint_rank0 = %d\n", thisfunc, val);
+    return 0;
   case GPTLmaxthreads:
     if (val < 1)
       return GPTLerror ("%s: GPTLmaxthreads must be positive. %d is invalid\n", thisfunc, val);
@@ -319,7 +325,7 @@ int GPTLsetoption (const int option, const int val)
 #ifdef HAVE_PAPI
   if (GPTL_PAPIsetoption (option, val) == 0) {
     if (val)
-      dousepapi = true;
+      gptlmain::dousepapi = true;
     return 0;
   }
 #endif
@@ -507,7 +513,7 @@ int GPTLfinalize (void)
   depthlimit = 99999;
   disabled = false;
   initialized = false;
-  dousepapi = false;
+  gptlmain::dousepapi = false;
   once::verbose = false;
   postprocess::percent = false;
   postprocess::dopr_preamble = true;
@@ -519,9 +525,9 @@ int GPTLfinalize (void)
 #ifdef _AIX
   ref_read_real_time = -1;
 #endif
-  funcidx = 0;
+  once::funcidx = 0;
 #ifdef HAVE_NANOTIME
-  cpumhz= 0;
+  once::cpumhz= 0;
   cyc2sec = -1;
 #endif
   tablesize = DEFAULT_TABLE_SIZE;

@@ -11,6 +11,7 @@
 #include "main.h"
 #include "thread.h"
 #include "autoinst.h"
+#include "overhead.h"
 #ifdef HAVE_PAPI
 #include "gptl_papi.h"
 #endif
@@ -27,9 +28,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>  // for free()
-
-// Local prototypes
-static void misc_sim (int);
 
 // misc_sim: Simulate the cost of miscellaneous computations in start/stop
 static void misc_sim (int t)
@@ -65,7 +63,7 @@ static void misc_sim (int t)
 }
 
 // Use namespace for functions needed by GPTL
-namespace gptl_overhead {
+namespace overhead {
   // prototypes for functions in anonymous namespace
   /*
   ** get_overhead: return current status info about a timer. If certain stats are not enabled, 
@@ -78,7 +76,7 @@ namespace gptl_overhead {
   **   self_ohd:    Estimate of GPTL-induced overhead in the timer itself (included in "Wallclock")
   **   parent_ohd:  Estimate of GPTL-induced overhead for the timer which appears in its parents
   */
-  int get_overhead (FILE *fp, double *self_ohd, double *parent_ohd)
+  int getoverhead (FILE *fp, double *self_ohd, double *parent_ohd)
   {
     using gptlmain :: ptr2wtimefunc;
     using gptlmain :: hashtable;
@@ -105,7 +103,7 @@ namespace gptl_overhead {
     char *timername = (char *) "timername";
 
     Timer *entry;              // placeholder for return from "getentry()"
-    static const char *thisfunc = "GPTLget_overhead";
+    static const char *thisfunc = "get_overhead";
 
     // Gather timings by running kernels 1000 times each. First: Fortran wrapper overhead
     // get_thread_num() overhead
@@ -129,8 +127,8 @@ namespace gptl_overhead {
     // getentry overhead
     // Find the first hashtable entry with a valid name. Start at 1 because 0 is not a valid hash
     for (n = 1; n < tablesize; ++n) {
-      int namelen = strlen (hashtable[0][n].entries[0]->name);
-      if (hashtable[0][n].nument > 0 && namelen > 0) {
+      if (hashtable[0][n].nument > 0) {
+	int namelen = strlen (hashtable[0][n].entries[0]->name);
 	hashidx = genhashidx (hashtable[0][n].entries[0]->name, namelen);
 	t1 = (*ptr2wtimefunc)();
 	for (i = 0; i < 1000; ++i)
@@ -159,7 +157,7 @@ namespace gptl_overhead {
 
     // PAPI overhead
 #ifdef HAVE_PAPI
-    if (gptl_private::dousepapi) {
+    if (gptlmain::dousepapi) {
       t1 = (*ptr2wtimefunc)();
       gptl_papi::read_counters1000 ();
       t2 = (*ptr2wtimefunc)();
@@ -211,7 +209,7 @@ namespace gptl_overhead {
     // getentry_instr overhead
     t1 = (*ptr2wtimefunc)();
     for (i = 0; i < 1000; ++i) {
-      entry = autoinst::getentry_instr (0, &randomvar, &hashidx);
+      entry = autoinst::getentry_instr (gptlmain::hashtable[0], &randomvar, &hashidx);
     }
     t2 = (*ptr2wtimefunc)();
     getentry_instr_ohd = 0.001 * (t2 - t1);
@@ -244,7 +242,7 @@ namespace gptl_overhead {
     fprintf (fp, "Misc start/stop functions: %7.1e = %5.1f%% of total\n", 
 	     misc_ohd, misc_ohd / total_ohd * 100.);
 #ifdef HAVE_PAPI
-    if (dousepapi) {
+    if (gptlmain::dousepapi) {
       fprintf (fp, "Read PAPI counters:        %7.1e = %5.1f%% of total\n", 
 	       papi_ohd, papi_ohd / total_ohd * 100.);
     }

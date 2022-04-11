@@ -7,8 +7,6 @@
 */
 
 #include "config.h"   // Must be first include
-#include "private.h"
-#include "gptl.h"
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -20,6 +18,10 @@
 #ifdef HAVE_LIBMPI
 #include <mpi.h>
 #endif
+
+#include "private.h"
+#include "gptl.h"
+#include "once.h"
 
 static bool abort_on_error = false;            // flag says to abort on any error
 static unsigned long max_errors = 10;          // max number of error print msgs
@@ -128,7 +130,7 @@ static inline bool doprint()
 
   // Only need to change GPTLworld_iam from 0 in MPI jobs, when flag set to only print 
   // from rank 0, and when MPI_Initialize hasn't already been invoked
-  if (GPTLonlypr_rank0 && check_mpi_init) {
+  if (onlyprint_rank0 && check_mpi_init) {
     ret = MPI_Initialized (&flag);
     if (flag) {
       check_mpi_init = false;

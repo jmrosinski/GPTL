@@ -1,8 +1,19 @@
+#include "config.h"
 #include "private.h"
+#include "main.h"
+#include "once.h"
+#include "overhead.h"
+#include "thread.h"
+#include "hashstats.h"
+
+#include <string.h>
+#include <stdlib.h>     // free
+
+static const int indent_chars = 2;       // Number of chars to indent
 
 namespace postprocess {
   // Options, print strings, and default enable flags
-  Settings overheadstats = {GPTLoverhead, "   selfOH parentOH"         , true };
+  Settings overheadstats = {GPTLoverhead, (char *)"   selfOH parentOH", true};
   GPTLMethod method = GPTLmost_frequent;  // default parent/child printing mechanism
   bool percent = false;
   bool dopr_preamble = true;
@@ -28,7 +39,7 @@ namespace postprocess {
       else if (method == GPTLfull_tree)
 	return full_tree;
       else
-	return unknown;
+	return (char *) "unknown";
     }
   }
 }
@@ -112,7 +123,9 @@ int GPTLpr_file (const char *outfile)
   static const char *gptlversion = GPTL_VERSIONINFO;
   static const char *thisfunc = "GPTLpr_file";
 
-  if ( ! initialized)
+  using namespace gptlmain;
+
+  if ( ! gptlmain::initialized)
     return GPTLerror ("%s: GPTLinitialize() has not been called\n", thisfunc);
 
   // Not great hack to force output to stderr: "output" is the string "stderr"
@@ -147,10 +160,10 @@ int GPTLpr_file (const char *outfile)
 
   // A set of nasty ifdefs to tell important aspects of how GPTL was built
 #ifdef HAVE_NANOTIME
-  if (funclist[funcidx].option == GPTLnanotime) {
-    fprintf (fp, "Clock rate = %f MHz\n", cpumhz);
-    fprintf (fp, "Source of clock rate was %s\n", clock_source);
-    if (strcmp (clock_source, "/proc/cpuinfo") == 0) {
+  if (once::funclist[once::funcidx].option == GPTLnanotime) {
+    fprintf (fp, "Clock rate = %f MHz\n", once::cpumhz);
+    fprintf (fp, "Source of clock rate was %s\n", once::clock_source);
+    if (strcmp (once::clock_source, "/proc/cpuinfo") == 0) {
       fprintf (fp, "WARNING: The contents of /proc/cpuinfo can change in variable frequency CPUs");
       fprintf (fp, "Therefore the use of nanotime (register read) is not recommended on machines so equipped");
     }
@@ -185,7 +198,7 @@ int GPTLpr_file (const char *outfile)
 
 #ifdef HAVE_PAPI
   fprintf (fp, "HAVE_PAPI was true\n");
-  if (dousepapi) {
+  if (gptlmain::dousepapi) {
     if (GPTL_PAPIis_multiplexed ())
       fprintf (fp, "  PAPI event multiplexing was ON\n");
     else
@@ -208,19 +221,17 @@ int GPTLpr_file (const char *outfile)
   fprintf (fp, "Autoprofiling capability was enabled with backtrace\n");
 #else
   fprintf (fp, "Autoprofiling capability was NOT enabled\n");
-#endif	   
+#endif
 
-  fprintf (fp, "Underlying timing routine was %s.\n", funclist[funcidx].name);
-  (void) GPTLget_overhead (fp, ptr2wtimefunc, getentry, genhashidx, GPTLget_thread_num,
-			   stackidx, callstack, hashtable[0], tablesize, dousepapi, imperfect_nest, 
-			   &self_ohd, &parent_ohd);
-  if (dopr_preamble) {
+  fprintf (fp, "Underlying timing routine was %s.\n", once::funclist[once::funcidx].name);
+  (void) overhead::getoverhead (fp, &self_ohd, &parent_ohd);
+  if (postprocess::dopr_preamble) {
     fprintf (fp, "\nIf overhead stats are printed, they are the columns labeled self_OH and parent_OH\n"
 	     "self_OH is estimated as 2X the Fortran layer cost (start+stop) plust the cost of \n"
 	     "a single call to the underlying timing routine.\n"
 	     "parent_OH is the overhead for the named timer which is subsumed into its parent.\n"
 	     "It is estimated as the cost of a single GPTLstart()/GPTLstop() pair.\n"
-             "Print method was %s.\n", methodstr (method));
+             "Print method was %s.\n", postprocess::methodstr (postprocess::method));
 #ifdef ENABLE_PMPI
     fprintf (fp, "\nIf a AVG_MPI_BYTES field is present, it is an estimate of the per-call\n"
              "average number of bytes handled by that process.\n"
@@ -241,9 +252,9 @@ int GPTLpr_file (const char *outfile)
   (void) GPTLget_procsiz (&procsiz, &rss);
   fprintf (fp, "Process size=%f MB rss=%f MB\n\n", procsiz, rss);
 
-  sum = (float *) GPTLallocate (GPTLnthreads * sizeof (float), thisfunc);
+  sum = (float *) GPTLallocate (thread::nthreads * sizeof (float), thisfunc);
   
-  for (t = 0; t < GPTLnthreads; ++t) {
+  for (t = 0; t < thread::nthreads; ++t) {
     print_titles (t, fp, &outputfmt);
     /*
     ** Print timing stats. If imperfect nesting was detected, print stats by going through
@@ -266,7 +277,7 @@ int GPTLpr_file (const char *outfile)
       sum[t]   += ptr->count * (parent_ohd + self_ohd);
       totcount += ptr->count;
     }
-    if (wallstats.enabled && overheadstats.enabled)
+    if (wallstats.enabled && postprocess::overheadstats.enabled)
       fprintf (fp, "\n");
     fprintf (fp, "Overhead sum = %9.3g wallclock seconds\n", sum[t]);
     if (totcount < PRTHRESH)
@@ -276,7 +287,7 @@ int GPTLpr_file (const char *outfile)
   }
 
   // Print per-name stats for all threads
-  if (dopr_threadsort && GPTLnthreads > 1) {
+  if (postprocess::dopr_threadsort && thread::nthreads > 1) {
     int nblankchars;
     fprintf (fp, "\nSame stats sorted by timer for threaded regions:\n");
     fprintf (fp, "Thd ");
@@ -295,10 +306,10 @@ int GPTLpr_file (const char *outfile)
       fprintf (fp, "%9s", cpustats.str);
     if (wallstats.enabled) {
       fprintf (fp, "%9s", wallstats.str);
-      if (percent && timers[0]->next)
+      if (postprocess::percent && timers[0]->next)
         fprintf (fp, " %%_of_%4.4s ", timers[0]->next->name);
-      if (overheadstats.enabled)
-        fprintf (fp, "%9s", overheadstats.str);
+      if (postprocess::overheadstats.enabled)
+        fprintf (fp, "%9s", postprocess::overheadstats.str);
     }
 
 #ifdef HAVE_PAPI
@@ -320,7 +331,7 @@ int GPTLpr_file (const char *outfile)
       foundany = false;
       first = true;
       sumstats = *ptr;
-      for (t = 1; t < GPTLnthreads; ++t) {
+      for (t = 1; t < thread::nthreads; ++t) {
         found = false;
         for (tptr = timers[t]->next; tptr && ! found; tptr = tptr->next) {
           if (STRMATCH (ptr->name, tptr->name)) {
@@ -348,9 +359,9 @@ int GPTLpr_file (const char *outfile)
     }
 
     // Repeat overhead print in loop over threads
-    if (wallstats.enabled && overheadstats.enabled) {
+    if (wallstats.enabled && postprocess::overheadstats.enabled) {
       osum = 0.;
-      for (t = 0; t < GPTLnthreads; ++t) {
+      for (t = 0; t < thread::nthreads; ++t) {
         fprintf (fp, "OVERHEAD.%3.3d (wallclock seconds) = %9.3g\n", t, sum[t]);
         osum += sum[t];
       }
@@ -359,12 +370,12 @@ int GPTLpr_file (const char *outfile)
   }
 
   // For auto-instrumented apps, translate names which have been truncated for output formatting
-  for (t = 0; t < GPTLnthreads; ++t)
+  for (t = 0; t < thread::nthreads; ++t)
     translate_truncated_names (t, fp);
   
   // Print info about timers with multiple parents ONLY if imperfect nesting was not discovered
-  if (dopr_multparent && ! imperfect_nest) {
-    for (t = 0; t < GPTLnthreads; ++t) {
+  if (postprocess::dopr_multparent && ! imperfect_nest) {
+    for (t = 0; t < thread::nthreads; ++t) {
       bool some_multparents = false;   // thread has entries with multiple parents?
       for (ptr = timers[t]->next; ptr; ptr = ptr->next) {
         if (ptr->nparent > 1) {
@@ -375,7 +386,7 @@ int GPTLpr_file (const char *outfile)
 
       if (some_multparents) {
         fprintf (fp, "\nMultiple parent info for thread %d:\n", t);
-        if (dopr_preamble && t == 0) {
+        if (postprocess::dopr_preamble && t == 0) {
           fprintf (fp, "Columns are count and name for the listed child\n"
                    "Rows are each parent, with their common child being the last entry, "
                    "which is indented.\n"
@@ -392,8 +403,8 @@ int GPTLpr_file (const char *outfile)
   }
 
   // Print hash table stats
-  if (dopr_collision)
-    GPTLprint_hashstats (fp, GPTLnthreads, hashtable, tablesize);
+  if (postprocess::dopr_collision)
+    hashstats::print_hashstats (fp, thread::nthreads, hashtable, tablesize);
 
   // Print stats on GPTL memory usage
   GPTLprint_memstats (fp, timers, tablesize);
@@ -419,8 +430,8 @@ int GPTLrename_duplicate_addresses ()
   int nfound = 0;   // number of duplicates found
   int t;            // thread index
 
-  for (t = 0; t < GPTLnthreads; ++t) {
-    for (ptr = timers[t]; ptr; ptr = ptr->next) {
+  for (t = 0; t < thread::nthreads; ++t) {
+    for (ptr = gptlmain::timers[t]; ptr; ptr = ptr->next) {
       unsigned int idx = 0;
       // Check only entries with a longname and don't have '@' in their name
       // The former means auto-instrumented
@@ -452,7 +463,7 @@ static void translate_truncated_names (int t, FILE *fp)
   Timer *ptr;
 
   fprintf (fp, "thread %d long name translations (empty when no auto-instrumentation):\n", t);
-  for (ptr = timers[t]->next; ptr; ptr = ptr->next) {
+  for (ptr = gptlmain::timers[t]->next; ptr; ptr = ptr->next) {
     if (ptr->longname)
       fprintf (fp, "%s = %s\n", ptr->name, ptr->longname);
   }
@@ -467,10 +478,10 @@ static int get_longest_omp_namelen (void)
   int t;
   int longest = 0;
 
-  for (ptr = timers[0]->next; ptr; ptr = ptr->next) {
-    for (t = 1; t < GPTLnthreads; ++t) {
+  for (ptr = gptlmain::timers[0]->next; ptr; ptr = ptr->next) {
+    for (t = 1; t < thread::nthreads; ++t) {
       found = false;
-      for (tptr = timers[t]->next; tptr && ! found; tptr = tptr->next) {
+      for (tptr = gptlmain::timers[t]->next; tptr && ! found; tptr = tptr->next) {
 	if (STRMATCH (tptr->name, ptr->name)) {
 	  found = true;
 	  longest = MAX (longest, strlen (ptr->name));
@@ -510,17 +521,18 @@ static void print_titles (int t, FILE *fp, Outputfmt *outputfmt)
   outputfmt->max_namelen  = 0;
   outputfmt->max_chars2pr = 0;
 
-  if (imperfect_nest) {
-    outputfmt->max_namelen  = get_max_namelen (timers[t]);
+  if (gptlmain::imperfect_nest) {
+    outputfmt->max_namelen  = get_max_namelen (gptlmain::timers[t]);
     outputfmt->max_chars2pr = outputfmt->max_namelen;
     nblankchars             = outputfmt->max_namelen + 1;
   } else {
-    if (construct_tree (timers[t], method) != 0)
+    if (construct_tree (gptlmain::timers[t], postprocess::method) != 0)
       printf ("GPTL: %s: failure from construct_tree: output will be incomplete\n", thisfunc);
 
     // Start at GPTL_ROOT because that is the parent of all timers => guarantee traverse
     // full tree. -1 is initial call tree depth
-    ret = get_outputfmt (timers[t], -1, indent_chars, outputfmt);  // -1 is initial call tree depth
+    // -1 is initial call tree depth
+    ret = get_outputfmt (gptlmain::timers[t], -1, indent_chars, outputfmt);  
 #ifdef DEBUG
     //    printf ("%s t=%d got outputfmt=%d %d %d\n",
     //	    thisfunc, t, outputfmt->max_depth, outputfmt->max_namelen, outputfmt->max_chars2pr);
@@ -538,14 +550,14 @@ static void print_titles (int t, FILE *fp, Outputfmt *outputfmt)
   fprintf (fp, "  Called  Recurse");
 
   // Print strings for enabled timer types
-  if (cpustats.enabled)
-    fprintf (fp, "%9s", cpustats.str);
-  if (wallstats.enabled) {
-    fprintf (fp, "%9s", wallstats.str);
-    if (percent && timers[0]->next)
-      fprintf (fp, " %%_of_%4.4s", timers[0]->next->name);
-    if (overheadstats.enabled)
-      fprintf (fp, "%9s", overheadstats.str);
+  if (gptlmain::cpustats.enabled)
+    fprintf (fp, "%9s", gptlmain::cpustats.str);
+  if (gptlmain::wallstats.enabled) {
+    fprintf (fp, "%9s", gptlmain::wallstats.str);
+    if (postprocess::percent && gptlmain::timers[0]->next)
+      fprintf (fp, " %%_of_%4.4s", gptlmain::timers[0]->next->name);
+    if (postprocess::overheadstats.enabled)
+      fprintf (fp, "%9s", postprocess::overheadstats.str);
   }
 #ifdef ENABLE_PMPI
   fprintf (fp, " AVG_MPI_BYTES");
@@ -808,7 +820,7 @@ static void printstats (const Timer *timer, FILE *fp, int t, int depth, bool doi
   float ratio;         // percentage calc
   static const char *thisfunc = "printstats";
 
-  if (timer->onflg && verbose)
+  if (timer->onflg && once::verbose)
     fprintf (stderr, "GPTL: %s: timer %s had not been turned off\n", thisfunc, timer->name);
 
   // Flag regions having multiple parents with a "*" in column 1
@@ -845,14 +857,14 @@ static void printstats (const Timer *timer, FILE *fp, int t, int depth, bool doi
       fprintf (fp, " %8.1e     -   ", (float) timer->count);
   }
 
-  if (cpustats.enabled) {
-    fusr = timer->cpu.accum_utime / (float) ticks_per_sec;
-    fsys = timer->cpu.accum_stime / (float) ticks_per_sec;
+  if (gptlmain::cpustats.enabled) {
+    fusr = timer->cpu.accum_utime / (float) once::ticks_per_sec;
+    fsys = timer->cpu.accum_stime / (float) once::ticks_per_sec;
     usrsys = fusr + fsys;
     fprintf (fp, " %8.1e %8.1e %8.1e", fusr, fsys, usrsys);
   }
 
-  if (wallstats.enabled) {
+  if (gptlmain::wallstats.enabled) {
     elapse = timer->wall.accum;
     wallmax = timer->wall.max;
     wallmin = timer->wall.min;
@@ -872,14 +884,14 @@ static void printstats (const Timer *timer, FILE *fp, int t, int depth, bool doi
     else
       fprintf (fp, " %8.3f", wallmin);
 
-    if (percent && timers[0]->next) {
+    if (postprocess::percent && gptlmain::timers[0]->next) {
       ratio = 0.;
-      if (timers[0]->next->wall.accum > 0.)
-        ratio = (timer->wall.accum * 100.) / timers[0]->next->wall.accum;
+      if (gptlmain::timers[0]->next->wall.accum > 0.)
+        ratio = (timer->wall.accum * 100.) / gptlmain::timers[0]->next->wall.accum;
       fprintf (fp, " %8.2f", ratio);
     }
 
-    if (overheadstats.enabled) {
+    if (postprocess::overheadstats.enabled) {
       fprintf (fp, " %8.3f %8.3f", timer->count*self_ohd, timer->count*parent_ohd);
     }
   }
@@ -951,13 +963,13 @@ static void add (Timer *tout, const Timer *tin)
 {
   tout->count += tin->count;
 
-  if (wallstats.enabled) {
+  if (gptlmain::wallstats.enabled) {
     tout->wall.accum += tin->wall.accum;
     tout->wall.max = MAX (tout->wall.max, tin->wall.max);
     tout->wall.min = MIN (tout->wall.min, tin->wall.min);
   }
 
-  if (cpustats.enabled) {
+  if (gptlmain::cpustats.enabled) {
     tout->cpu.accum_utime += tin->cpu.accum_utime;
     tout->cpu.accum_stime += tin->cpu.accum_stime;
   }
@@ -970,12 +982,9 @@ static void add (Timer *tout, const Timer *tin)
 static void printself_andchildren (const Timer *ptr, FILE *fp, int t, int depth, 
 				   double self_ohd, double parent_ohd, Outputfmt outputfmt)
 {
-  int n;
-
   if (depth > -1)     // -1 flag is to avoid printing stats for dummy outer timer
     printstats (ptr, fp, t, depth, true, self_ohd, parent_ohd, outputfmt);
 
-  for (n = 0; n < ptr->nchildren; n++)
+  for (int n = 0; n < ptr->nchildren; n++)
     printself_andchildren (ptr->children[n], fp, t, depth+1, self_ohd, parent_ohd, outputfmt);
 }
-

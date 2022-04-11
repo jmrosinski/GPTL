@@ -65,7 +65,7 @@ void __cyg_profile_func_enter (void *this_fn, void *call_site)
   // In debug mode, get symbol name up front to diagnose function name
   // Otherwise live with "unknown" because getting the symbol name is very expensive
 
-  // Call preamble_start rather than just GPTLget_thread_num because preamble_stop is needed for
+  // Call preamble_start rather than just get_thread_num because preamble_stop is needed for
   // other reasons in __cyg_profile_func_exit, and the preamble* functions need to mirror each
   // other.
   

@@ -6,6 +6,7 @@
 #include "config.h" // Must be first include.
 #include "private.h"
 #include "gptl.h"
+#include "main.h"
 #include "gptl_papi.h"
 #include "thread.h"
 #include "memusage.h"
@@ -29,10 +30,6 @@
 #include <sys/systemcfg.h>
 #endif
 
-
-static bool dousepapi = false;         // saves a function call if stays false
-
-
 // Local function prototypes
 static inline int get_cpustamp (long *, long *);
 static void print_callstack (int, const char *);
@@ -42,7 +39,6 @@ void get_nested_thread_nums (int *, int *);
 
 static char unknown[] = "unknown";
 
-#define DEFAULT_TABLE_SIZE 1023
 namespace gptlmain {
   volatile bool initialized = false;   // GPTLinitialize has been called
   volatile bool disabled = false;      // Timers disabled?
@@ -53,14 +49,15 @@ namespace gptlmain {
 #endif
   Hashentry **hashtable;               // table of entries
   Nofalse *stackidx;                   // index into callstack:
+  Timer **timers = 0;                  // linked list of timers
   Timer ***callstack;                  // call stack
+  Timer **last = 0;                    // last element in timers list
   bool imperfect_nest;                 // e.g. start(A),start(B),stop(A)
   bool dopr_memusage = false;          // whether to include memusage print on growth
-  Settings cpustats =      {GPTLcpu,      "     usr       sys  usr+sys", false};
-  Settings wallstats =     {GPTLwall,     "     Wall      max      min", true };
-  Timer **timers = 0;                  // linked list of timers
-  Timer **last = 0;                    // last element in timers list
+  Settings cpustats =      {GPTLcpu,  (char *) "     usr       sys  usr+sys", false};
+  Settings wallstats =     {GPTLwall, (char *) "     Wall      max      min", true };
   int depthlimit = 99999;              // max depth for timers (99999 is effectively infinite
+  bool dousepapi = false;              // saves a function call if stays false
 #ifdef HAVE_GETTIMEOFDAY
   time_t ref_gettimeofday = -1;        // ref start point for gettimeofday
 #endif
@@ -72,34 +69,63 @@ namespace gptlmain {
 #endif
 
   extern "C" {
-    double (*ptr2wtimefunc)() = 0;       // (runtime) ptr to wallclock timer. init to invalid
-    unsigned int genhashidx (const char *, const int);
-    Timer *getentry (const Hashentry *, const char *, unsigned int);
-    int preamble_start (int *, const char *);
-    int preamble_stop (int *, double *, long *, long *, const char *);
-    int update_ll_hash (Timer *, int, unsigned int);
-    int update_parent_info (Timer *, Timer **, int);
-    int update_stats (Timer *, const double, const long, const long, const int);
-    int update_ptr (Timer *, const int);
-    // These are the (possibly) supported underlying wallclock timers
-#ifdef HAVE_NANOTIME
-    double utr_nanotime (void);
-#endif
-#ifdef HAVE_LIBMPI
-    double utr_mpiwtime (void);
-#endif
-#ifdef _AIX
-    double utr_read_real_time (void);
-#endif
-#ifdef HAVE_LIBRT
-    double utr_clock_gettime (void);
-#endif
-    double utr_gettimeofday (void);
-    double utr_placebo (void);
+    double (*ptr2wtimefunc)() = 0;
+
+    // preamble_start: Do the things common to GPTLstart* routines
+    int preamble_start (int *t, const char *name)
+    {
+      static const char *thisfunc = "preamble_start";
+
+      if (gptlmain::disabled)
+	return DONE;
+
+      // Only print error message for manual instrumentation: too hard to ensure
+      // GPTLinitialize() has been called for auto-instrumented code
+      if ( ! gptlmain::initialized)
+	return GPTLerror ("%s timername=%s: GPTLinitialize has not been called\n", thisfunc, name);
+  
+      if ((*t = thread::get_thread_num ()) < 0)
+	return GPTLerror ("%s: bad return from GPTLget_thread_num\n", thisfunc);
+
+      // If current depth exceeds a user-specified limit for print, just
+      // increment and tell caller to return immediately (DONTSTART)
+      if (gptlmain::stackidx[*t].val >= gptlmain::depthlimit) {
+	++gptlmain::stackidx[*t].val;
+	return DONE;
+      }
+      return 0;
+    }
+
+    int preamble_stop (int *t, double *tp1, long *usr, long *sys, const char *name)
+    {
+      static const char *thisfunc = "preamble_stop";
+
+      if (gptlmain::disabled)
+	return DONE;
+
+      if ( ! gptlmain::initialized)
+	return GPTLerror ("%s timername=%s: GPTLinitialize has not been called\n", thisfunc, name);
+
+      // Get the wallclock timestamp
+      if (gptlmain::wallstats.enabled) {
+	*tp1 = (*gptlmain::ptr2wtimefunc) ();
+      }
+
+      if (gptlmain::cpustats.enabled && get_cpustamp (usr, sys) < 0)
+	return GPTLerror ("%s: get_cpustamp error", name);
+
+      if ((*t = thread::get_thread_num ()) < 0)
+	return GPTLerror ("%s: bad return from GPTLget_thread_num\n", name);
+
+      // If current depth exceeds a user-specified limit for print, just decrement and return
+      if (gptlmain::stackidx[*t].val > gptlmain::depthlimit) {
+	--gptlmain::stackidx[*t].val;
+	return DONE;
+      }
+      return 0;
+    }
   }
 }
-
-static const int indent_chars = 2;       // Number of chars to indent
 
 // VERBOSE is a debugging ifdef local to the rest of this file
 #undef VERBOSE
@@ -114,7 +140,7 @@ static const int indent_chars = 2;       // Number of chars to indent
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-int GPTLstart (const char *name, int namelen)
+extern "C" int GPTLstart (const char *name, int namelen=-1)
 {
   Timer *ptr;
   int t;
@@ -128,12 +154,11 @@ int GPTLstart (const char *name, int namelen)
   else if (ret != 0)
     return ret;
   
-  if (namelen < 0) {
+  if (namelen < 0)
     namelen = strlen (name);
-    if (namelen > MAX_CHARS)
-      return GPTLerror ("%s: region name %s is too long\nRename to be %d chars or fewer\n",
-			thisfunc, name, MAX_CHARS);
-  }
+  if (namelen > MAX_CHARS)
+    return GPTLerror ("%s: region name %s is too long\nRename to be %d chars or fewer\n",
+		      thisfunc, name, MAX_CHARS);
   
   // ptr will point to the requested timer in the current list, or NULL if this is a new entry
   indx = gptlmain::genhashidx (name, namelen);
@@ -180,31 +205,6 @@ int GPTLstart (const char *name, int namelen)
   return 0;
 }
 
-// preamble_start: Do the things common to GPTLstart* routines
-static inline int preamble_start (int *t, const char *name)
-{
-  static const char *thisfunc = "preamble_start";
-
-  if (gptlmain::disabled)
-    return DONE;
-
-  // Only print error message for manual instrumentation: too hard to ensure
-  // GPTLinitialize() has been called for auto-instrumented code
-  if ( ! gptlmain::initialized)
-    return GPTLerror ("%s timername=%s: GPTLinitialize has not been called\n", thisfunc, name);
-  
-  if ((*t = thread::get_thread_num ()) < 0)
-    return GPTLerror ("%s: bad return from GPTLget_thread_num\n", thisfunc);
-
-  // If current depth exceeds a user-specified limit for print, just
-  // increment and tell caller to return immediately (DONTSTART)
-  if (gptlmain::stackidx[*t].val >= gptlmain::depthlimit) {
-    ++gptlmain::stackidx[*t].val;
-    return DONE;
-  }
-  return 0;
-}
-
 /*
 ** GPTLinit_handle: Initialize a handle for further use by GPTLstart_handle() and GPTLstop_handle()
 **
@@ -216,7 +216,7 @@ static inline int preamble_start (int *t, const char *name)
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-int GPTLinit_handle (const char *name, int *handle, int namelen)
+extern "C" int GPTLinit_handle (const char *name, int *handle, int namelen=-1)
 {
   if (gptlmain::disabled)
     return 0;
@@ -239,25 +239,24 @@ int GPTLinit_handle (const char *name, int *handle, int namelen)
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-int GPTLstart_handle (const char *name, int *handle, int namelen)
+extern "C" int GPTLstart_handle (const char *name, int *handle, int namelen=-1)
 {
   Timer *ptr;
   int t;
   int ret;
   static const char *thisfunc = "GPTLstart_handle";
 
-  ret = preamble_start (&t, name);
+  ret = gptlmain::preamble_start (&t, name);
   if (ret == DONE)
     return 0;
   else if (ret != 0)
     return ret;
 
-  if (namelen < 0) {
+  if (namelen < 0)
     namelen = strlen (name);
-    if (namelen > MAX_CHARS)
-      return GPTLerror ("%s: region name %s is too long\nRename to be %d chars or fewer\n",
-			thisfunc, name, MAX_CHARS);
-  }
+  if (namelen > MAX_CHARS)
+    return GPTLerror ("%s: region name %s is too long\nRename to be %d chars or fewer\n",
+		      thisfunc, name, MAX_CHARS);
   
   /*
   ** If handle is zero on input, generate the hash entry and return it to the user.
@@ -336,7 +335,7 @@ int GPTLstart_handle (const char *name, int *handle, int namelen)
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-static int update_ll_hash (Timer *ptr, int t, unsigned int indx)
+extern "C" int update_ll_hash (Timer *ptr, int t, unsigned int indx)
 {
   int nument;      // number of entries (> 0 means collision)
   Timer **eptr;    // for realloc
@@ -352,7 +351,6 @@ static int update_ll_hash (Timer *ptr, int t, unsigned int indx)
 
   gptlmain::hashtable[t][indx].entries           = eptr;
   gptlmain::hashtable[t][indx].entries[nument-1] = ptr;
-
   return 0;
 }
 
@@ -366,7 +364,7 @@ static int update_ll_hash (Timer *ptr, int t, unsigned int indx)
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-static inline int update_ptr (Timer *ptr, const int t)
+extern "C" int update_ptr (Timer *ptr, const int t)
 {
   ptr->onflg = true;
 
@@ -379,7 +377,7 @@ static inline int update_ptr (Timer *ptr, const int t)
   }
 
 #ifdef HAVE_PAPI
-  if (dousepapi && GPTL_PAPIstart (t, &ptr->aux) < 0)
+  if (gptlmain::dousepapi && GPTL_PAPIstart (t, &ptr->aux) < 0)
     return GPTLerror ("update_ptr: error from GPTL_PAPIstart\n");
 #endif
   return 0;
@@ -396,7 +394,7 @@ static inline int update_ptr (Timer *ptr, const int t)
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-static inline int update_parent_info (Timer *ptr, Timer **callstackt, int stackidxt)
+extern "C" int update_parent_info (Timer *ptr, Timer **callstackt, int stackidxt)
 {
   int n;             // loop index through known parents
   Timer *pptr;       // pointer to parent in callstack
@@ -446,7 +444,6 @@ static inline int update_parent_info (Timer *ptr, Timer **callstackt, int stacki
     ptr->parent_count = parent_count;
     ptr->parent_count[nparent-1] = 1;
   }
-
   return 0;
 }
 
@@ -458,7 +455,7 @@ static inline int update_parent_info (Timer *ptr, Timer **callstackt, int stacki
 **
 ** Return value: 0 (success) or -1 (failure)
 */
-int GPTLstop (const char *name, int namelen)
+extern "C" int GPTLstop (const char *name, int namelen=-1)
 {
   double tp1 = 0.0;          // wallclock time stamp
   Timer *ptr;
@@ -508,35 +505,6 @@ int GPTLstop (const char *name, int namelen)
   return 0;
 }
 
-static inline int preamble_stop (int *t, double *tp1, long *usr, long *sys, const char *name)
-{
-  static const char *thisfunc = "preamble_stop";
-
-  if (gptlmain::disabled)
-    return DONE;
-
-  if ( ! gptlmain::initialized)
-    return GPTLerror ("%s timername=%s: GPTLinitialize has not been called\n", thisfunc, name);
-
-  // Get the wallclock timestamp
-  if (gptlmain::wallstats.enabled) {
-    *tp1 = (*gptlmain::ptr2wtimefunc) ();
-  }
-
-  if (gptlmain::cpustats.enabled && get_cpustamp (usr, sys) < 0)
-    return GPTLerror ("%s: get_cpustamp error", name);
-
-  if ((*t = thread::get_thread_num ()) < 0)
-    return GPTLerror ("%s: bad return from GPTLget_thread_num\n", name);
-
-  // If current depth exceeds a user-specified limit for print, just decrement and return
-  if (gptlmain::stackidx[*t].val > gptlmain::depthlimit) {
-    --gptlmain::stackidx[*t].val;
-    return DONE;
-  }
-  return 0;
-}
-
 /*
 ** GPTLstop_handle: stop a timer based on a handle
 **
@@ -546,7 +514,7 @@ static inline int preamble_stop (int *t, double *tp1, long *usr, long *sys, cons
 **
 ** Return value: 0 (success) or -1 (failure)
 */
-int GPTLstop_handle (const char *name, int *handle, int namelen)
+extern "C" int GPTLstop_handle (const char *name, int *handle, int namelen=-1)
 {
   double tp1 = 0.0;          // wallclock time stamp
   Timer *ptr;
@@ -557,7 +525,7 @@ int GPTLstop_handle (const char *name, int *handle, int namelen)
   unsigned int indx;         // index into hash table
   static const char *thisfunc = "GPTLstop_handle";
 
-  ret = preamble_stop (&t, &tp1, &usr, &sys, thisfunc);
+  ret = gptlmain::preamble_stop (&t, &tp1, &usr, &sys, thisfunc);
   if (ret == DONE)
     return 0;
   else if (ret != 0)
@@ -619,7 +587,7 @@ int GPTLstop_handle (const char *name, int *handle, int namelen)
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-static inline int update_stats (Timer *ptr, const double tp1, const long usr, const long sys,
+extern "C" int update_stats (Timer *ptr, const double tp1, const long usr, const long sys,
                                 const int t)
 {
   double delta;      // wallclock time difference
@@ -630,7 +598,7 @@ static inline int update_stats (Timer *ptr, const double tp1, const long usr, co
   ptr->onflg = false;
 
 #ifdef HAVE_PAPI
-  if (dousepapi && GPTL_PAPIstop (t, &ptr->aux) < 0)
+  if (gptlmain::dousepapi && GPTL_PAPIstop (t, &ptr->aux) < 0)
     return GPTLerror ("%s: error from GPTL_PAPIstop\n", thisfunc);
 #endif
 
@@ -732,7 +700,7 @@ static inline int get_cpustamp (long *usr, long *sys)
 **
 ** Return value: 0 (success) or -1 (failure)
 */
-int GPTLstartstop_val (const char *name, double value, int namelen)
+extern "C" int GPTLstartstop_val (const char *name, double value, int namelen=-1)
 {
   Timer *ptr;
   int t;
@@ -806,7 +774,7 @@ int GPTLstartstop_val (const char *name, double value, int namelen)
 **
 ** Return value: hash value
 */
-static inline unsigned int genhashidx (const char *name, const int namelen)
+extern "C" unsigned int genhashidx (const char *name, const int namelen)
 {
   const unsigned char *c;       // pointer to elements of "name"
   unsigned int indx;            // return value of function
@@ -831,7 +799,7 @@ static inline unsigned int genhashidx (const char *name, const int namelen)
 **
 ** Return value: pointer to the entry, or NULL if not found
 */
-static inline Timer *getentry (const Hashentry *hashtable, const char *name, unsigned int indx)
+extern "C" Timer *getentry (const Hashentry *hashtable, const char *name, unsigned int indx)
 {
   int i;
   Timer *ptr = 0;             // return value when entry not found
@@ -867,7 +835,7 @@ static inline Timer *getentry (const Hashentry *hashtable, const char *name, uns
 
 #ifdef HAVE_NANOTIME
 // Copied from PAPI library
-static inline double utr_nanotime ()
+extern "C"  double utr_nanotime ()
 {
   long long val = 0;
 #ifdef BIT64
@@ -885,12 +853,12 @@ static inline double utr_nanotime ()
 
 // MPI_Wtime requires MPI lib.
 #ifdef HAVE_LIBMPI
-static inline double utr_mpiwtime () {return MPI_Wtime ();}
+extern "C"  double utr_mpiwtime () {return MPI_Wtime ();}
 #endif
 
 #ifdef HAVE_LIBRT
 
-static inline double utr_clock_gettime ()
+extern "C" double utr_clock_gettime ()
 {
   struct timespec tp;
   (void) clock_gettime (CLOCK_REALTIME, &tp);
@@ -899,7 +867,7 @@ static inline double utr_clock_gettime ()
 #endif
 
 #ifdef _AIX
-static inline double utr_read_real_time ()
+extern "C" double utr_read_real_time ()
 {
   timebasestruct_t ibmtime;
   (void) read_real_time (&ibmtime, TIMEBASE_SZ);
@@ -909,7 +877,7 @@ static inline double utr_read_real_time ()
 #endif
 
 #ifdef HAVE_GETTIMEOFDAY
-static inline double utr_gettimeofday ()
+extern "C" double utr_gettimeofday ()
 {
   struct timeval tp;
   (void) gettimeofday (&tp, 0);
@@ -918,7 +886,7 @@ static inline double utr_gettimeofday ()
 #endif
 
 // placebo: does nothing and returns zero always. Useful for estimating overhead costs
-static inline double utr_placebo () {return (double) 0.;}
+extern "C" double utr_placebo () {return (double) 0.;}
 
 static void print_callstack (int t, const char *caller)
 {
