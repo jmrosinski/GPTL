@@ -299,7 +299,7 @@ int GPTLget_eventvalue (const char *timername, const char *eventname, int t, dou
   // If t is < 0, assume the request is for the current thread
   if (t < 0) {
     if ((t = thread::get_thread_num ()) < 0)
-      return GPTLerror ("%s: GPTLget_thread_num failure\n", thisfunc);
+      return GPTLerror ("%s: get_thread_num failure\n", thisfunc);
   } else {
     if (t >= thread::max_threads)
       return GPTLerror ("%s: requested thread %d is too big\n", thisfunc, t);
@@ -339,7 +339,7 @@ int GPTLget_nregions (int t, int *nregions)
   // If t is < 0, assume the request is for the current thread
   if (t < 0) {
     if ((t = thread::get_thread_num ()) < 0)
-      return GPTLerror ("%s: GPTLget_thread_num failure\n", thisfunc);
+      return GPTLerror ("%s: get_thread_num failure\n", thisfunc);
   } else {
     if (t >= thread::max_threads)
       return GPTLerror ("%s: requested thread %d is too big\n", thisfunc, t);
@@ -376,7 +376,7 @@ int GPTLget_regionname (int t, int region, char *name, int nc)
   // If t is < 0, assume the request is for the current thread
   if (t < 0) {
     if ((t = thread::get_thread_num ()) < 0)
-      return GPTLerror ("%s: GPTLget_thread_num failure\n", thisfunc);
+      return GPTLerror ("%s: get_thread_num failure\n", thisfunc);
   } else {
     if (t >= thread::max_threads)
       return GPTLerror ("%s: requested thread %d is too big\n", thisfunc, t);

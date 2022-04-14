@@ -96,6 +96,7 @@ namespace gptlmain {
 #endif
 
   extern "C" {
+    double (*ptr2wtimefunc)() = 0;
     /*
     ** genhashidx: generate hash index
     **
@@ -119,8 +120,6 @@ namespace gptlmain {
 	% gptlmain::tablesizem1 + 1;
       return indx;
     }
-
-    double (*ptr2wtimefunc)() = 0;
 
     /*
     ** getentry: find the entry in the hash table and return a pointer to it.
@@ -523,10 +522,11 @@ namespace gptlmain {
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-extern "C" int GPTLstart (const char *name, int namelen=-1)
+extern "C" int GPTLstart (const char *name)
 {
   Timer *ptr;
   int t;
+  int namelen;
   int ret;
   unsigned int indx; // index into hash table
   static const char *thisfunc = "GPTLstart";
@@ -537,8 +537,7 @@ extern "C" int GPTLstart (const char *name, int namelen=-1)
   else if (ret != 0)
     return ret;
   
-  if (namelen < 0)
-    namelen = strlen (name);
+  namelen = strlen (name);
   if (namelen > MAX_CHARS)
     return GPTLerror ("%s: region name %s is too long\nRename to be %d chars or fewer\n",
 		      thisfunc, name, MAX_CHARS);
@@ -599,14 +598,14 @@ extern "C" int GPTLstart (const char *name, int namelen=-1)
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-extern "C" int GPTLinit_handle (const char *name, int *handle, int namelen=-1)
+extern "C" int GPTLinit_handle (const char *name, int *handle)
 {
+  int namelen;
+  
   if (gptlmain::disabled)
     return 0;
 
-  if (namelen < 0)
-    namelen = strlen (name);
-
+  namelen = strlen (name);
   *handle = (int) gptlmain::genhashidx (name, namelen);
   return 0;
 }
@@ -622,10 +621,11 @@ extern "C" int GPTLinit_handle (const char *name, int *handle, int namelen=-1)
 **
 ** Return value: 0 (success) or GPTLerror (failure)
 */
-extern "C" int GPTLstart_handle (const char *name, int *handle, int namelen=-1)
+extern "C" int GPTLstart_handle (const char *name, int *handle)
 {
   Timer *ptr;
   int t;
+  int namelen;
   int ret;
   static const char *thisfunc = "GPTLstart_handle";
 
@@ -635,8 +635,7 @@ extern "C" int GPTLstart_handle (const char *name, int *handle, int namelen=-1)
   else if (ret != 0)
     return ret;
 
-  if (namelen < 0)
-    namelen = strlen (name);
+  namelen = strlen (name);
   if (namelen > MAX_CHARS)
     return GPTLerror ("%s: region name %s is too long\nRename to be %d chars or fewer\n",
 		      thisfunc, name, MAX_CHARS);
@@ -715,11 +714,12 @@ extern "C" int GPTLstart_handle (const char *name, int *handle, int namelen=-1)
 **
 ** Return value: 0 (success) or -1 (failure)
 */
-extern "C" int GPTLstop (const char *name, int namelen=-1)
+extern "C" int GPTLstop (const char *name)
 {
   double tp1 = 0.0;          // wallclock time stamp
   Timer *ptr;
   int t;
+  int namelen;
   int ret;
   unsigned int indx;         // hash indexx
   long usr = 0;              // user time (returned from get_cpustamp)
@@ -732,9 +732,7 @@ extern "C" int GPTLstop (const char *name, int namelen=-1)
   else if (ret != 0)
     return ret;
        
-  if (namelen < 0)
-    namelen = strlen (name);
-    
+  namelen = strlen (name);  
   indx = gptlmain::genhashidx (name, namelen);
   if (! (ptr = gptlmain::getentry (gptlmain::hashtable[t], name, indx)))
     return GPTLerror ("%s thread %d: timer %s had not been started.\n"
@@ -774,7 +772,7 @@ extern "C" int GPTLstop (const char *name, int namelen=-1)
 **
 ** Return value: 0 (success) or -1 (failure)
 */
-extern "C" int GPTLstop_handle (const char *name, int *handle, int namelen=-1)
+extern "C" int GPTLstop_handle (const char *name, int *handle)
 {
   double tp1 = 0.0;          // wallclock time stamp
   Timer *ptr;
@@ -805,9 +803,7 @@ extern "C" int GPTLstop_handle (const char *name, int *handle, int namelen=-1)
 
   // On first call, verify *handle matches what genhashidx says
   if (ptr->count == 1) {
-    if (namelen < 0)
-      namelen = strlen (name);
-    
+    int namelen = strlen (name);
     int testidx = (int) gptlmain::genhashidx (name, namelen);
     if (testidx != *handle)
       return GPTLerror ("%s: expected vs. input handles for name=%s don't match.",
@@ -844,10 +840,11 @@ extern "C" int GPTLstop_handle (const char *name, int *handle, int namelen=-1)
 **
 ** Return value: 0 (success) or -1 (failure)
 */
-extern "C" int GPTLstartstop_val (const char *name, double value, int namelen=-1)
+extern "C" int GPTLstartstop_val (const char *name, double value)
 {
   Timer *ptr;
   int t;
+  int namelen;
   unsigned int indx;         // index into hash table
   static const char *thisfunc = "GPTLstartstop_val";
 
@@ -866,9 +863,7 @@ extern "C" int GPTLstartstop_val (const char *name, double value, int namelen=-1
   if ((t = thread::get_thread_num ()) < 0)
     return GPTLerror ("%s: bad return from GPTLget_thread_num\n", thisfunc);
 
-  if (namelen < 0)
-    namelen = strlen (name);
-    
+  namelen = strlen (name);  
   // Find out if the timer already exists
   indx = gptlmain::genhashidx (name, namelen);
   ptr = gptlmain::getentry (gptlmain::hashtable[t], name, indx);
@@ -881,10 +876,10 @@ extern "C" int GPTLstartstop_val (const char *name, double value, int namelen=-1
   } else {
     // Need to call start/stop to set up linked list and hash table.
     // "count" and "last" will also be set properly by the call to this pair.
-    if (GPTLstart (name, namelen) != 0)
+    if (GPTLstart (name) != 0)
       return GPTLerror ("%s: Error from GPTLstart\n", thisfunc);
 
-    if (GPTLstop (name, namelen) != 0)
+    if (GPTLstop (name) != 0)
       return GPTLerror ("%s: Error from GPTLstop\n", thisfunc);
 
     // start/stop pair just called should guarantee ptr will be found

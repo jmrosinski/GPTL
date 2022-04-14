@@ -35,7 +35,7 @@ static void extract_name (char *, char **, void *, const int);
 void __func_trace_enter (const char *function_name, const char *file_name, int line_number,
                          void **const user_data)
 {
-  if (dopr_memusage && GPTLget_thread_num() == 0)
+  if (dopr_memusage && thread::get_thread_num() == 0)
     check_memusage ("Begin", function_name);
   (void) GPTLstart (function_name);
 }
@@ -44,7 +44,7 @@ void __func_trace_exit (const char *function_name, const char *file_name, int li
                         void **const user_data)
 {
   (void) GPTLstop (function_name);
-  if (dopr_memusage && GPTLget_thread_num() == 0)
+  if (dopr_memusage && thread::get_thread_num() == 0)
     check_memusage ("End", function_name);
 }
   

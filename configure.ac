@@ -74,6 +74,14 @@ if test "x$ac_cv_sizeof_void_p" = x8; then
    AC_DEFINE([BIT64], [1], [void pointer is 8 bytes])
 fi
 
+# Check for static walltime specifier
+# Default disabled
+AC_ARG_ENABLE([staticwtime],
+  AS_HELP_STRING([--enable-staticwtime], [hardwire use of gettimeofday as underlying timer]))
+AS_IF([test "x$enable_staticwtime" = xyes], [
+  AC_DEFINE([STATICWTIME], [1], [hardwire use of gettimeofday as underlying timer])
+])
+
 # Check for enabling gather/print stats on extra comparisons due to collisions
 # Default disabled due to extra runtime cost
 AC_ARG_ENABLE([collide],

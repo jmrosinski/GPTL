@@ -74,27 +74,14 @@ typedef enum {
 
 #ifdef __cplusplus
 extern "C" {
-  // Final arg is optional (defaults to -1 if unset)
-  int GPTLstart (const char *, int);
-  int GPTLinit_handle (const char *, int *, int);
-  int GPTLstart_handle (const char *, int *, int);
-  int GPTLstop (const char *, int);
-  int GPTLstop_handle (const char *, int *, int);
-  int GPTLstartstop_val (const char *, double, int);
-}
-#else
-// C doesn't allow optional arguments
+#endif
+
 extern int GPTLstart (const char *);
 extern int GPTLinit_handle (const char *, int *);
 extern int GPTLstart_handle (const char *, int *);
 extern int GPTLstop (const char *);
 extern int GPTLstop_handle (const char *, int *);
 extern int GPTLstartstop_val (const char *, double);
-#endif
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 extern int GPTLsetoption (const int, const int);
 extern int GPTLinitialize (void);

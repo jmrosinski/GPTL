@@ -202,11 +202,11 @@ int gptlstart (char *name, int nc)
   char cname[nc+1];
   // Check for name already null-terminated for efficiency
   if (name[nc-1] == '\0') {
-    return GPTLstart (name, nc);
+    return GPTLstart (name);
   } else {
     strncpy (cname, name, nc);
     cname[nc] = '\0';
-    return GPTLstart (cname, nc);
+    return GPTLstart (cname);
   }
 }
 
@@ -215,11 +215,11 @@ int gptlinit_handle (char *name, int *handle, int nc)
   char cname[nc+1];
   // Check for name already null-terminated for efficiency
   if (name[nc-1] == '\0') {
-    return GPTLinit_handle (name, handle, nc);
+    return GPTLinit_handle (name, handle);
   } else {
     strncpy (cname, name, nc);
     cname[nc] = '\0';
-    return GPTLinit_handle (cname, handle, nc);
+    return GPTLinit_handle (cname, handle);
   }
 }
 
@@ -228,11 +228,11 @@ int gptlstart_handle (char *name, int *handle, int nc)
   char cname[nc+1];
   // Check for name already null-terminated for efficiency
   if (name[nc-1] == '\0') {
-    return GPTLstart_handle (name, handle, nc);
+    return GPTLstart_handle (name, handle);
   } else {
     strncpy (cname, name, nc);
     cname[nc] = '\0';
-    return GPTLstart_handle (cname, handle, nc);
+    return GPTLstart_handle (cname, handle);
   }
 }
 
@@ -241,11 +241,11 @@ int gptlstop (char *name, int nc)
   char cname[nc+1];
   // Check for name already null-terminated for efficiency
   if (name[nc-1] == '\0') {
-    return GPTLstop (name, nc);
+    return GPTLstop (name);
   } else {
     strncpy (cname, name, nc);
     cname[nc] = '\0';
-    return GPTLstop (cname, nc);
+    return GPTLstop (cname);
   }
 }
 
@@ -254,11 +254,11 @@ int gptlstop_handle (char *name, int *handle, int nc)
   char cname[nc+1];
   // Check for name already null-terminated for efficiency
   if (name[nc-1] == '\0') {
-    return GPTLstop_handle (name, handle, nc);
+    return GPTLstop_handle (name, handle);
   } else {
     strncpy (cname, name, nc);
     cname[nc] = '\0';
-    return GPTLstop_handle (cname, handle, nc);
+    return GPTLstop_handle (cname, handle);
   }
 }
 
@@ -311,7 +311,7 @@ int gptlstartstop_val (const char *name, double *value, int nc)
   char cname[nc+1];
   strncpy (cname, name, nc);
   cname[nc] = '\0';
-  return GPTLstartstop_val (cname, *value, nc);
+  return GPTLstartstop_val (cname, *value);
 }
 
 int gptlget_eventvalue (const char *timername, const char *eventname, int *t, double *value, 
