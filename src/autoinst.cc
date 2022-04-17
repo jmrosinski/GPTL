@@ -3,6 +3,8 @@
 #include "main.h"
 #include "autoinst.h"
 #include "memusage.h"
+#include "thread.h"
+#include "util.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -87,7 +89,7 @@ void __cyg_profile_func_enter (void *this_fn, void *call_site)
   // Increment stackidx[t] unconditionally. This is necessary to ensure the correct
   // behavior when GPTLstop_instr decrements stackidx[t] unconditionally.
   if (++gptlmain::stackidx[t].val > MAX_STACK-1) {
-    GPTLwarn ("%s: stack too big\n", thisfunc);
+    util::warn ("%s: stack too big\n", thisfunc);
     return;
   }
 
@@ -101,12 +103,12 @@ void __cyg_profile_func_enter (void *this_fn, void *call_site)
     
     nptrs = backtrace (buffer, 2);
     if (nptrs != 2) {
-      GPTLwarn ("%s backtrace failed nptrs should be 2 but is %d\n", thisfunc, nptrs);
+      util::warn ("%s backtrace failed nptrs should be 2 but is %d\n", thisfunc, nptrs);
       return;
     }
 
     if ( ! (strings = backtrace_symbols (buffer, nptrs))) {
-      GPTLwarn ("%s backtrace_symbols failed strings is null\n", thisfunc);
+      util::warn ("%s backtrace_symbols failed strings is null\n", thisfunc);
       return;
     }
     // extract_name will malloc space for symnam, and it will be freed below
@@ -124,7 +126,7 @@ void __cyg_profile_func_enter (void *this_fn, void *call_site)
     unw_init_local (&cursor, &context);
 
     if (unw_step (&cursor) <= 0) { // unw_step failed: give up
-      GPTLwarn ("%s: unw_step failed\n", thisfunc);
+      util::warn ("%s: unw_step failed\n", thisfunc);
       return;
     }
 
@@ -150,10 +152,10 @@ void __cyg_profile_func_enter (void *this_fn, void *call_site)
 
     // Whether backtrace or libunwind, symnam has now been defined
     symsize = strlen (symnam);
-    ptr = (Timer *) GPTLallocate (sizeof (Timer), thisfunc);
+    ptr = (Timer *) util::allocate (sizeof (Timer), thisfunc);
     memset (ptr, 0, sizeof (Timer));
 #ifdef ENABLE_NESTEDOMP
-    GPTLget_nested_thread_nums (&ptr->major, &ptr->minor);
+    thread::get_nested_thread_nums (&ptr->major, &ptr->minor);
 #endif
 
     // Do the things specific to auto-profiled functions, then call update_ll_hash()
@@ -170,18 +172,18 @@ void __cyg_profile_func_enter (void *this_fn, void *call_site)
     free (symnam);
 
     if (gptlmain::update_ll_hash (ptr, t, indx) != 0) {
-      GPTLwarn ("%s: update_ll_hash error\n", thisfunc);
+      util::warn ("%s: update_ll_hash error\n", thisfunc);
       return;
     }
   }
 
   if (gptlmain::update_parent_info (ptr, gptlmain::callstack[t], gptlmain::stackidx[t].val) != 0) {
-    GPTLwarn ("%s: update_parent_info error\n", thisfunc);
+    util::warn ("%s: update_parent_info error\n", thisfunc);
     return;
   }
 
   if (gptlmain::update_ptr (ptr, t) != 0) {
-    GPTLwarn ("%s: update_ptr error\n", thisfunc);
+    util::warn ("%s: update_ptr error\n", thisfunc);
     return;
   }
 
@@ -197,7 +199,7 @@ static void extract_name (char *str, char **symnam, void *this_fn, const int t)
 {
   int nchars;
   char *savetoken;
-  char *saveptr[GPTLnthreads];
+  char *saveptr[thread::nthreads];
   char *token;
 
 #ifdef __APPLE__
@@ -247,12 +249,12 @@ void __cyg_profile_func_exit (void *this_fn, void *call_site)
   ptr = autoinst::getentry_instr (gptlmain::hashtable[t], this_fn, &indx);
 
   if ( ! ptr) {
-    GPTLwarn ("%s: timer for %p had not been started.\n", thisfunc, this_fn);
+    util::warn ("%s: timer for %p had not been started.\n", thisfunc, this_fn);
     return;
   }
 
   if ( ! ptr->onflg ) {
-    GPTLwarn ("%s: timer %s was already off.\n", thisfunc, ptr->name);
+    util::warn ("%s: timer %s was already off.\n", thisfunc, ptr->name);
     return;
   }
 
@@ -270,7 +272,7 @@ void __cyg_profile_func_exit (void *this_fn, void *call_site)
   }
 
   if (gptlmain::update_stats (ptr, tp1, usr, sys, t) != 0) {
-    GPTLwarn ("%s: error from update_stats\n", thisfunc);
+    util::warn ("%s: error from update_stats\n", thisfunc);
     return;
   }
 

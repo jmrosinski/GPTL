@@ -1,10 +1,11 @@
 #include "config.h" // Must be first include.
-#include <string.h>
-
 #include "private.h"
 #include "main.h"
 #include "thread.h"
 #include "once.h"
+#include "util.h"
+
+#include <string.h>
 
 // GPTLenable: enable timers 
 int GPTLenable (void)
@@ -29,7 +30,7 @@ int GPTLreset (void)
   static const char *thisfunc = "GPTLreset";
 
   if ( ! gptlmain::initialized)
-    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
+    return util::error ("%s: GPTLinitialize has not been called\n", thisfunc);
 
   for (t = 0; t < thread::nthreads; t++) {
     for (ptr = gptlmain::timers[t]; ptr; ptr = ptr->next) {
@@ -64,10 +65,10 @@ int GPTLreset_timer (const char *name)
   static const char *thisfunc = "GPTLreset_timer";
 
   if ( ! gptlmain::initialized)
-    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
+    return util::error ("%s: GPTLinitialize has not been called\n", thisfunc);
 
   if (thread::get_thread_num () != 0)
-    return GPTLerror ("%s: Must be called by the master thread\n", thisfunc);
+    return util::error ("%s: Must be called by the master thread\n", thisfunc);
 
   namelen = strlen (name);
   indx = gptlmain::genhashidx (name, namelen);

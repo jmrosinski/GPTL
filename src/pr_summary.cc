@@ -8,19 +8,20 @@
 */
  
 #include "config.h"      // Must be first include.
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>        // sqrt
-
 #include "private.h"
 #include "gptl.h"
 #include "main.h"
 #include "gptlmpi.h"
 #include "thread.h"
+#include "util.h"
 #ifdef HAVE_PAPI
 #include "gptl_papi.h"   // GPTLnevents, GPTLeventlist
 #endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>        // sqrt
 
 // MPI summary stats
 typedef struct {
@@ -98,10 +99,10 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
   static const char *thisfunc = "GPTLpr_summary_file";  // this function
 
   if ( ! gptlmain::initialized)
-    return GPTLerror ("%s: GPTLinitialize() has not been called\n", thisfunc);
+    return util::error ("%s: GPTLinitialize() has not been called\n", thisfunc);
 
   if ((ret = MPI_Comm_rank (comm, &iam)) != MPI_SUCCESS)
-    return GPTLerror ("%s: Bad return from MPI_Comm_rank=%d\n", thisfunc, ret);
+    return util::error ("%s: Bad return from MPI_Comm_rank=%d\n", thisfunc, ret);
 
   if ((ret = MPI_Comm_size (comm, &nranks)) != MPI_SUCCESS)
     return GPTLerror ("%s rank %d: Bad return from MPI_Comm_size=%d\n", thisfunc, iam, ret);
@@ -115,9 +116,9 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
       ++nregions;
 
   if (nregions < 1)
-    GPTLwarn ("%s rank %d: nregions = 0\n", thisfunc, iam);
+    util::warn ("%s rank %d: nregions = 0\n", thisfunc, iam);
   else
-    global = (Global *) GPTLallocate (nregions * sizeof (Global), thisfunc);
+    global = (Global *) util::allocate (nregions * sizeof (Global), thisfunc);
 
   // Gather per-thread stats based on thread 0 list.
   // Also discover length of longest region name for formatting
@@ -163,14 +164,14 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
         printf ("%s: WARNING: iam=%d: dosend and dorecv both true: possible hang?\n", thisfunc, iam);
 
       if ((ret = MPI_Send (&nregions, 1, MPI_INT, sendto, tag, comm)) != MPI_SUCCESS)
-        return GPTLerror ("%s rank %d: Bad return from MPI_Send=%d\n", thisfunc, iam, ret);
+        return util::error ("%s rank %d: Bad return from MPI_Send=%d\n", thisfunc, iam, ret);
       // if nregions=0, don't send other info because "global" wasn't even allocated
       // Same logic MUST also be applied on the receiving end
       if (nregions > 0) {
 	if ((ret = MPI_Send (&multithread, 1, MPI_INT, sendto, tag, comm)) != MPI_SUCCESS)
-	  return GPTLerror ("%s rank %d: Bad return from MPI_Send=%d\n", thisfunc, iam, ret);
+	  return util::error ("%s rank %d: Bad return from MPI_Send=%d\n", thisfunc, iam, ret);
 	if ((ret = MPI_Send (global, nbytes*nregions, MPI_BYTE, sendto, tag, comm)) != MPI_SUCCESS)
-	  return GPTLerror ("%s rank %d: Bad return from MPI_Send=%d\n", thisfunc, iam, ret);
+	  return util::error ("%s rank %d: Bad return from MPI_Send=%d\n", thisfunc, iam, ret);
       }
     }
 
@@ -179,17 +180,17 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
         printf ("%s: WARNING: iam=%d: dosend and dorecv both true: possible hang?\n", thisfunc, iam);
 
       if ((ret = MPI_Recv (&nregions_p, 1, MPI_INT, p, tag, comm, &status)) != MPI_SUCCESS)
-        return GPTLerror ("%s rank %d: Bad return from MPI_Recv=%d\n", thisfunc, iam, ret);
+        return util::error ("%s rank %d: Bad return from MPI_Recv=%d\n", thisfunc, iam, ret);
       if (nregions_p > 0) {
 	if ((ret = MPI_Recv (&multithread_p, 1, MPI_INT, p, tag, comm, &status)) != MPI_SUCCESS)
-	  return GPTLerror ("%s rank %d: Bad return from MPI_Recv=%d\n", thisfunc, iam, ret);
+	  return util::error ("%s rank %d: Bad return from MPI_Recv=%d\n", thisfunc, iam, ret);
 	if (multithread_p)
 	  multithread = true;
 
-	global_p = (Global *) GPTLallocate (nregions_p * sizeof (Global), thisfunc);
+	global_p = (Global *) util::allocate (nregions_p * sizeof (Global), thisfunc);
 	ret = MPI_Recv (global_p, nbytes*nregions_p, MPI_BYTE, p, tag, comm, &status);
 	if (ret != MPI_SUCCESS)
-	  return GPTLerror ("%s rank %d: Bad return from MPI_Recv=%d\n", thisfunc, iam, ret);
+	  return util::error ("%s rank %d: Bad return from MPI_Recv=%d\n", thisfunc, iam, ret);
       }
       
       // Merge stats for task p with our current stats. Note nregions_p and/or nregions may be 0
@@ -208,7 +209,7 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
           ++nregions;
           sptr = (Global *) realloc (global, nregions * sizeof (Global));
           if ( ! sptr)
-            return GPTLerror ("%s: realloc error", thisfunc);
+            return util::error ("%s: realloc error", thisfunc);
           global = sptr;
 	  // IMPORTANT: structure copy only works because it contains NO pointers (only arrays)
           global[nn] = global_p[n];
@@ -271,7 +272,7 @@ int GPTLpr_summary_file (MPI_Comm comm, const char *outfile)
     fprintf (fp, "GPTL version info: %s\n", gptlversion);
 
     // Print a warning if error() was ever called
-    if (GPTLnum_errors () > 0) {
+    if (util::num_errors () > 0) {
       fprintf (fp, "WARNING: GPTLerror was called at least once during the run.\n");
       fprintf (fp, "Please examine your output for error messages beginning with GPTL...\n");
     }

@@ -117,13 +117,6 @@ typedef struct {
 
 // Function prototypes
 extern "C" {
-  int GPTLerror (const char *, ...);                  // print error msg and return
-  void GPTLwarn (const char *, ...);                  // print warning msg and return
-  void GPTLnote (const char *, ...);                  // print warning msg and return
-  void GPTLset_abort_on_error (bool val);             // set flag to abort on error
-  void GPTLreset_errors (void);                       // num_errors to zero
-  void *GPTLallocate (const int, const char *);       // malloc wrapper
-
   void GPTLprint_memstats (FILE *, Timer **, int);
   Timer **GPTLget_timersaddr (void);
   // For now this one is local to gptl.c but that may change if needs calling from pr_summary

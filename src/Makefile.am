@@ -14,9 +14,8 @@ lib_LTLIBRARIES = libgptl.la
 libgptl_la_LDFLAGS = -version-info 0:0:0
 
 # These are the source files.
-libgptl_la_SOURCES = autoinst.cc overhead.cc getter.cc gptl.cc hashstats.cc memstats.cc \
+libgptl_la_SOURCES = autoinst.cc overhead.cc getter.cc gptl.cc hashstats.cc \
                      memusage.cc once.cc postprocess.cc setter.cc util.cc
-
 if HAVE_PAPI
 libgptl_la_SOURCES += gptl_papi.cc
 endif

@@ -9,59 +9,67 @@
 #include "thread.h"
 #include "private.h"
 #include "gptl_papi.h"
+#include "util.h"
+
 #include <stdio.h>
 
-volatile int GPTLnthreads = -1;        // num threads: init to bad value
-volatile int GPTLmax_threads = -1;     // max num threads
-// make threadid non-static due to this file possibly being inlined
-int GPTLthreadid = -1;
+namespace thread {
+  volatile int max_threads = -1;     // max num threads
+  volatile int nthreads = -1;        // num threads: init to bad value
+  volatile int *threadid = NULL;
 
-int GPTLthreadinit (void)
-{
-  static const char *thisfunc = "threadinit";
+  extern "C" int threadinit (void)
+  {
+    static const char *thisfunc = "threadinit";
 
-  if (GPTLnthreads != -1)
-    return GPTLerror ("GPTL: Unthreaded %s: MUST only be called once", thisfunc);
+    if (threadid) 
+      return util::error ("unthreaded %s: has already been called.\n", thisfunc);
 
-  GPTLnthreads = 0;
-  GPTLmax_threads = 1;
-  return 0;
-}
+    max_threads = 1;
+    
+    if (nthreads != -1)
+      return util::error ("GPTL: Unthreaded %s: MUST only be called once", thisfunc);
 
-// GPTLthreadfinalize: clean up by resetting GPTLthreadid to "uninitialized" value
-void GPTLthreadfinalize () {GPTLthreadid = -1;}
+    if ( ! (threadid = (int *) util::allocate (max_threads * sizeof (int), thisfunc)))
+      return util::error ("Unthreaded %s: malloc failure for %d elements of threadid\n",
+			  thisfunc, max_threads);
 
-/*
-** GPTLget_thread_num: Determine thread number of the calling thread
-**                     Start PAPI counters if enabled and first call for this thread.
-**
-** Output results:
-**   GPTLnthreads:     Number of threads (always 1)
-**   GPTLthreadid:         Our thread id (always 0)
-*/
-#ifdef INLINE_THREADING
-inline
-#endif
-int GPTLget_thread_num ()
-{
+    nthreads = 1;
+    return 0;
+  }
+
+  // GPTLthreadfinalize: clean up by resetting GPTLthreadid to "uninitialized" value
+  extern "C" void threadfinalize () {*threadid = -1;}
+
+  /*
+  ** get_thread_num: Determine thread number of the calling thread
+  **                 Start PAPI counters if enabled and first call for this thread.
+  **
+  ** Output results:
+  **   nthreads:     Number of threads (always 1)
+  **   threadid:         Our thread id (always 0)
+  */
+  extern "C" int get_thread_num ()
+  {
 #ifdef HAVE_PAPI
-  static const char *thisfunc = "GPTLget_thread_num";
-  // When HAVE_PAPI is true, if 1 or more PAPI events are enabled,
-  // create and start an event set for the new thread.
-  if (GPTLthreadid == -1 && GPTLget_npapievents () > 0) {
-    if (GPTLcreate_and_start_events (0) < 0)
-      return GPTLerror ("GPTL: Unthreaded %s: error from GPTLcreate_and_start_events for thread %0\n",
-                        thisfunc);
+    static const char *thisfunc = "GPTLget_thread_num";
+    // When HAVE_PAPI is true, if 1 or more PAPI events are enabled,
+    // create and start an event set for the new thread.
+    if (*threadid == -1 && GPTLget_npapievents () > 0) {
+      if (create_and_start_events (0) < 0)
+	return util::error ("GPTL: Unthreaded %s: error from create_and_start_events for thread %0\n",
+			    thisfunc);
   }
 #endif
 
-  GPTLnthreads = 1;
-  GPTLthreadid = 0;
-  return GPTLthreadid;
-}
+    nthreads = 1;
+    *threadid = 0;
+    return *threadid;
+  }
 
-void GPTLprint_threadmapping (FILE *fp)
-{
-  fprintf (fp, "\n");
-  fprintf (fp, "GPTLthreadid[0] = 0\n");
+  extern "C" void print_threadmapping (FILE *fp)
+  {
+    fprintf (fp, "\n");
+    fprintf (fp, "threadid[0] = 0\n");
+  }
 }

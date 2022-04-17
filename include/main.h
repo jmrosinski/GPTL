@@ -40,6 +40,9 @@ namespace gptlmain {
     int update_parent_info (Timer *, Timer **, int);
     int update_stats (Timer *, const double, const long, const long, const int);
     int update_ptr (Timer *, const int);
+#ifdef ENABLE_NESTEDOMP
+    void get_nested_thread_nums (int *, int *);
+#endif
     // These are the (possibly) supported underlying wallclock timers
 #ifdef HAVE_NANOTIME
     double utr_nanotime (void);

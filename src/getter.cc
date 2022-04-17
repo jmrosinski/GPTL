@@ -3,6 +3,7 @@
 #include "private.h"
 #include "once.h"
 #include "thread.h"
+#include "util.h"
 
 #include <sys/times.h>
 #include <string.h>
@@ -22,14 +23,14 @@ int GPTLstamp (double *wall, double *usr, double *sys)
   struct tms buf;            // returned from times()
 
   if ( ! gptlmain::initialized)
-    return GPTLerror ("GPTLstamp: GPTLinitialize has not been called\n");
+    return util::error ("GPTLstamp: GPTLinitialize has not been called\n");
 
 #ifdef HAVE_TIMES
   *usr = 0;
   *sys = 0;
 
   if (times (&buf) == -1)
-    return GPTLerror ("GPTLstamp: times() failed. Results bogus\n");
+    return util::error ("GPTLstamp: times() failed. Results bogus\n");
 
   *usr = buf.tms_utime / (double) once::ticks_per_sec;
   *sys = buf.tms_stime / (double) once::ticks_per_sec;
@@ -65,22 +66,22 @@ int GPTLquery (const char *name, int t, int *count, int *onflg, double *wallcloc
   static const char *thisfunc = "GPTLquery";
   
   if ( ! gptlmain::initialized)
-    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
+    return util::error ("%s: GPTLinitialize has not been called\n", thisfunc);
   
   // If t is < 0, assume the request is for the current thread
   if (t < 0) {
     if ((t = thread::get_thread_num ()) < 0)
-      return GPTLerror ("%s: GPTLget_thread_num failure\n", thisfunc);
+      return util::error ("%s: GPTLget_thread_num failure\n", thisfunc);
   } else {
     if (t >= thread::max_threads)
-      return GPTLerror ("%s: requested thread %d is too big\n", thisfunc, t);
+      return util::error ("%s: requested thread %d is too big\n", thisfunc, t);
   }
 
   namelen = strlen (name);
   indx = gptlmain::genhashidx (name, namelen);
   ptr = gptlmain::getentry (gptlmain::hashtable[t], name, indx);
   if ( !ptr)
-    return GPTLerror ("%s: requested timer %s does not have a name hash\n", thisfunc, name);
+    return util::error ("%s: requested timer %s does not have a name hash\n", thisfunc, name);
 
   *onflg     = ptr->onflg;
   *count     = ptr->count;
@@ -111,25 +112,25 @@ int GPTLget_wallclock (const char *timername, int t, double *value)
   static const char *thisfunc = "GPTLget_wallclock";
   
   if ( ! gptlmain::initialized)
-    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
+    return util::error ("%s: GPTLinitialize has not been called\n", thisfunc);
 
   if ( ! gptlmain::wallstats.enabled)
-    return GPTLerror ("%s: wallstats not enabled\n", thisfunc);
+    return util::error ("%s: wallstats not enabled\n", thisfunc);
   
   // If t is < 0, assume the request is for the current thread
   if (t < 0) {
     if ((t = thread::get_thread_num ()) < 0)
-      return GPTLerror ("%s: bad return from GPTLget_thread_num\n", thisfunc);
+      return util::error ("%s: bad return from GPTLget_thread_num\n", thisfunc);
   } else {
     if (t >= thread::max_threads)
-      return GPTLerror ("%s: requested thread %d is too big\n", thisfunc, t);
+      return util::error ("%s: requested thread %d is too big\n", thisfunc, t);
   }
 
   namelen = strlen (timername);
   indx = gptlmain::genhashidx (timername, namelen);
   ptr = gptlmain::getentry (gptlmain::hashtable[t], timername, indx);
   if ( ! ptr)
-    return GPTLerror ("%s: requested timer %s does not exist for thread %d\n",
+    return util::error ("%s: requested timer %s does not exist for thread %d\n",
 		      thisfunc, timername, t);
   *value = ptr->wall.accum;
   return 0;
@@ -153,25 +154,25 @@ int GPTLget_wallclock_latest (const char *timername, int t, double *value)
   static const char *thisfunc = "GPTLget_wallclock_latest";
   
   if ( ! gptlmain::initialized)
-    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
+    return util::error ("%s: GPTLinitialize has not been called\n", thisfunc);
 
   if ( ! gptlmain::wallstats.enabled)
-    return GPTLerror ("%s: wallstats not enabled\n", thisfunc);
+    return util::error ("%s: wallstats not enabled\n", thisfunc);
   
   // If t is < 0, assume the request is for the current thread
   if (t < 0) {
     if ((t = thread::get_thread_num ()) < 0)
-      return GPTLerror ("%s: bad return from GPTLget_thread_num\n", thisfunc);
+      return util::error ("%s: bad return from GPTLget_thread_num\n", thisfunc);
   } else {
     if (t >= thread::max_threads)
-      return GPTLerror ("%s: requested thread %d is too big\n", thisfunc, t);
+      return util::error ("%s: requested thread %d is too big\n", thisfunc, t);
   }
 
   namelen = strlen (timername);
   indx = gptlmain::genhashidx (timername, namelen);
   ptr = gptlmain::getentry (gptlmain::hashtable[t], timername, indx);
   if ( !ptr)
-    return GPTLerror ("%s: requested timer %s does not exist\n", thisfunc, timername);
+    return util::error ("%s: requested timer %s does not exist\n", thisfunc, timername);
   *value = ptr->wall.latest;
   return 0;
 }
@@ -204,13 +205,13 @@ int GPTLget_threadwork (const char *name, double *maxwork, double *imbal)
     return 0;
 
   if ( ! gptlmain::initialized)
-    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
+    return util::error ("%s: GPTLinitialize has not been called\n", thisfunc);
 
   if ( ! gptlmain::wallstats.enabled)
-    return GPTLerror ("%s: wallstats must be enabled to call this function\n", thisfunc);
+    return util::error ("%s: wallstats must be enabled to call this function\n", thisfunc);
 
   if (thread::get_thread_num () != 0)
-    return GPTLerror ("%s: Must be called by the master thread\n", thisfunc);
+    return util::error ("%s: Must be called by the master thread\n", thisfunc);
 
   namelen = strlen (name);
   indx = gptlmain::genhashidx (name, namelen);
@@ -225,7 +226,7 @@ int GPTLget_threadwork (const char *name, double *maxwork, double *imbal)
 
   // It's an error to call this routine for a region that does not exist
   if (nfound == 0)
-    return GPTLerror ("%s: No entries exist for name=%s\n", thisfunc, name);
+    return util::error ("%s: No entries exist for name=%s\n", thisfunc, name);
 
   // A perfectly load-balanced calculation would take time=totalwork/GPTLnthreads
   // Therefore imbalance is slowest thread time minus this number
@@ -253,22 +254,22 @@ int GPTLget_count (const char *timername, int t, int *count)
   static const char *thisfunc = "GPTLget_count";
   
   if ( ! gptlmain::initialized)
-    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
+    return util::error ("%s: GPTLinitialize has not been called\n", thisfunc);
 
   // If t is < 0, assume the request is for the current thread
   if (t < 0) {
     if ((t = thread::get_thread_num ()) < 0)
-      return GPTLerror ("%s: bad return from GPTLget_thread_num\n", thisfunc);
+      return util::error ("%s: bad return from GPTLget_thread_num\n", thisfunc);
   } else {
     if (t >= thread::max_threads)
-      return GPTLerror ("%s: requested thread %d is too big\n", thisfunc, t);
+      return util::error ("%s: requested thread %d is too big\n", thisfunc, t);
   }
 
   namelen = strlen (timername);
   indx = gptlmain::genhashidx (timername, namelen);
   ptr = gptlmain::getentry (gptlmain::hashtable[t], timername, indx);
   if ( ! ptr)
-    return GPTLerror ("%s: requested timer %s does not exist (or auto-instrumented?)\n",
+    return util::error ("%s: requested timer %s does not exist (or auto-instrumented?)\n",
 		      thisfunc, timername);
   *count = ptr->count;
   return 0;
@@ -294,28 +295,28 @@ int GPTLget_eventvalue (const char *timername, const char *eventname, int t, dou
   static const char *thisfunc = "GPTLget_eventvalue";
   
   if ( ! gptlmain::initialized)
-    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
+    return util::error ("%s: GPTLinitialize has not been called\n", thisfunc);
   
   // If t is < 0, assume the request is for the current thread
   if (t < 0) {
     if ((t = thread::get_thread_num ()) < 0)
-      return GPTLerror ("%s: get_thread_num failure\n", thisfunc);
+      return util::error ("%s: get_thread_num failure\n", thisfunc);
   } else {
     if (t >= thread::max_threads)
-      return GPTLerror ("%s: requested thread %d is too big\n", thisfunc, t);
+      return util::error ("%s: requested thread %d is too big\n", thisfunc, t);
   }
 
   namelen = strlen (timername);
   indx = gptlmain::genhashidx (timername, namelen);
   ptr = gptlmain::getentry (gptlmain::hashtable[t], timername, indx);
   if ( ! ptr)
-    return GPTLerror ("%s: requested timer %s does not exist (or auto-instrumented?)\n",
+    return util::error ("%s: requested timer %s does not exist (or auto-instrumented?)\n",
 		      thisfunc, timername);
 
 #ifdef HAVE_PAPI
   return GPTL_PAPIget_eventvalue (eventname, &ptr->aux, value);
 #else
-  return GPTLerror ("%s: PAPI not enabled\n", thisfunc); 
+  return util::error ("%s: PAPI not enabled\n", thisfunc); 
 #endif
 }
 
@@ -334,15 +335,15 @@ int GPTLget_nregions (int t, int *nregions)
   static const char *thisfunc = "GPTLget_nregions";
 
   if ( ! gptlmain::initialized)
-    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
+    return util::error ("%s: GPTLinitialize has not been called\n", thisfunc);
   
   // If t is < 0, assume the request is for the current thread
   if (t < 0) {
     if ((t = thread::get_thread_num ()) < 0)
-      return GPTLerror ("%s: get_thread_num failure\n", thisfunc);
+      return util::error ("%s: get_thread_num failure\n", thisfunc);
   } else {
     if (t >= thread::max_threads)
-      return GPTLerror ("%s: requested thread %d is too big\n", thisfunc, t);
+      return util::error ("%s: requested thread %d is too big\n", thisfunc, t);
   }
   
   *nregions = 0;
@@ -371,21 +372,21 @@ int GPTLget_regionname (int t, int region, char *name, int nc)
   static const char *thisfunc = "GPTLget_regionname";
 
   if ( ! gptlmain::initialized)
-    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
+    return util::error ("%s: GPTLinitialize has not been called\n", thisfunc);
   
   // If t is < 0, assume the request is for the current thread
   if (t < 0) {
     if ((t = thread::get_thread_num ()) < 0)
-      return GPTLerror ("%s: get_thread_num failure\n", thisfunc);
+      return util::error ("%s: get_thread_num failure\n", thisfunc);
   } else {
     if (t >= thread::max_threads)
-      return GPTLerror ("%s: requested thread %d is too big\n", thisfunc, t);
+      return util::error ("%s: requested thread %d is too big\n", thisfunc, t);
   }
   
   ptr = gptlmain::timers[t]->next;
   for (i = 0; i < region; i++) {
     if ( ! ptr)
-      return GPTLerror ("%s: timer number %d does not exist in thread %d\n", thisfunc, region, t);
+      return util::error ("%s: timer number %d does not exist in thread %d\n", thisfunc, region, t);
     ptr = ptr->next;
   }
 
@@ -397,7 +398,7 @@ int GPTLget_regionname (int t, int region, char *name, int nc)
     if (ncpy < nc)
       name[ncpy] = '\0';
   } else {
-    return GPTLerror ("%s: timer number %d does not exist in thread %d\n", thisfunc, region, t);
+    return util::error ("%s: timer number %d does not exist in thread %d\n", thisfunc, region, t);
   }
   return 0;
 }

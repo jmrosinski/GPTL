@@ -5,6 +5,8 @@
 #include "overhead.h"
 #include "thread.h"
 #include "hashstats.h"
+#include "memusage.h"
+#include "util.h"
 
 #include <string.h>
 #include <stdlib.h>     // free
@@ -81,14 +83,14 @@ int GPTLpr (const int id) // output file will be named "timing.<id>" or stderr i
 
   // Not great hack to force output to stderr: input a negative or huge number
   if (id < 0 || id > 999999) {
-    GPTLnote ("%s id=%d means output will be written to stderr\n", thisfunc, id);
+    util::note ("%s id=%d means output will be written to stderr\n", thisfunc, id);
     sprintf (outfile, "stderr");
   } else {
     sprintf (outfile, "timing.%6.6d", id);
   }
 
   if (GPTLpr_file (outfile) != 0)
-    return GPTLerror ("%s: Error in GPTLpr_file\n", thisfunc);
+    return util::error ("%s: Error in GPTLpr_file\n", thisfunc);
 
   return 0;
 }
@@ -126,7 +128,7 @@ int GPTLpr_file (const char *outfile)
   using namespace gptlmain;
 
   if ( ! gptlmain::initialized)
-    return GPTLerror ("%s: GPTLinitialize() has not been called\n", thisfunc);
+    return util::error ("%s: GPTLinitialize() has not been called\n", thisfunc);
 
   // Not great hack to force output to stderr: "output" is the string "stderr"
   if (STRMATCH (outfile, "stderr") || ! (fp = fopen (outfile, "w")))
@@ -145,7 +147,7 @@ int GPTLpr_file (const char *outfile)
     }
   }
   // Print a warning if GPTLerror() was ever called
-  if (GPTLnum_errors () > 0) {
+  if (util::num_errors > 0) {
     fprintf (fp, "WARNING: GPTLerror was called at least once during the run.\n");
     fprintf (fp, "Please examine your output for error messages beginning with GPTL...\n");
   }
@@ -252,7 +254,7 @@ int GPTLpr_file (const char *outfile)
   (void) GPTLget_procsiz (&procsiz, &rss);
   fprintf (fp, "Process size=%f MB rss=%f MB\n\n", procsiz, rss);
 
-  sum = (float *) GPTLallocate (thread::nthreads * sizeof (float), thisfunc);
+  sum = (float *) util::allocate (thread::nthreads * sizeof (float), thisfunc);
   
   for (t = 0; t < thread::nthreads; ++t) {
     print_titles (t, fp, &outputfmt);
@@ -407,7 +409,7 @@ int GPTLpr_file (const char *outfile)
     hashstats::print_hashstats (fp, thread::nthreads, hashtable, tablesize);
 
   // Print stats on GPTL memory usage
-  GPTLprint_memstats (fp, timers, tablesize);
+  memusage::print_memstats (fp, timers, tablesize);
 
   free (sum);
 
@@ -635,7 +637,7 @@ int construct_tree (Timer *timerst, GPTLMethod method)
       }
       break;
     default:
-      return GPTLerror ("GPTL: %s: method %d is not known\n", thisfunc, method);
+      return util::error ("GPTL: %s: method %d is not known\n", thisfunc, method);
     }
   }
   return 0;
@@ -660,12 +662,12 @@ static int newchild (Timer *parent, Timer *child)
   static const char *thisfunc = "newchild";
 
   if (parent == child)
-    return GPTLerror ("%s: child %s can't be a parent of itself\n", thisfunc, child->name);
+    return util::error ("%s: child %s can't be a parent of itself\n", thisfunc, child->name);
 
   // To guarantee no loops, ensure that proposed parent isn't already a descendant of 
   // proposed child
   if (is_descendant (child, parent)) {
-    return GPTLerror ("GPTL: %s: loop detected: NOT adding %s to descendant list of %s. "
+    return util::error ("GPTL: %s: loop detected: NOT adding %s to descendant list of %s. "
                       "Proposed parent is in child's descendant path.\n",
                       thisfunc, child->name, parent->name);
   }
@@ -677,7 +679,7 @@ static int newchild (Timer *parent, Timer *child)
     nchildren = parent->nchildren;
     chptr = (Timer **) realloc (parent->children, nchildren * sizeof (Timer *));
     if ( ! chptr)
-      return GPTLerror ("%s: realloc error\n", thisfunc);
+      return util::error ("%s: realloc error\n", thisfunc);
     parent->children = chptr;
     parent->children[nchildren-1] = child;
   }
