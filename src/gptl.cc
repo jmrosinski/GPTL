@@ -117,7 +117,7 @@ namespace gptlmain {
     // uninitialized value, though an error, has a likelihood to be zero.
     c = (unsigned char *) name;
     indx = (MAX_CHARS*c[0] + (MAX_CHARS-mididx)*c[mididx] + (MAX_CHARS-lastidx)*c[lastidx])
-      % gptlmain::tablesizem1 + 1;
+      % tablesizem1 + 1;
     return indx;
   }
 
@@ -169,12 +169,12 @@ namespace gptlmain {
   {
     static const char *thisfunc = "preamble_start";
 
-    if (gptlmain::disabled)
+    if (disabled)
       return DONE;
 
     // Only print error message for manual instrumentation: too hard to ensure
     // GPTLinitialize() has been called for auto-instrumented code
-    if ( ! gptlmain::initialized)
+    if ( ! initialized)
       return util::error ("%s timername=%s: GPTLinitialize has not been called\n", thisfunc, name);
   
     if ((*t = thread::get_thread_num ()) < 0)
@@ -182,8 +182,8 @@ namespace gptlmain {
 
     // If current depth exceeds a user-specified limit for print, just
     // increment and tell caller to return immediately (DONTSTART)
-    if (gptlmain::stackidx[*t].val >= gptlmain::depthlimit) {
-      ++gptlmain::stackidx[*t].val;
+    if (stackidx[*t].val >= depthlimit) {
+      ++stackidx[*t].val;
       return DONE;
     }
     return 0;
@@ -193,30 +193,30 @@ namespace gptlmain {
   {
     static const char *thisfunc = "preamble_stop";
     
-    if (gptlmain::disabled)
+    if (disabled)
       return DONE;
 
-    if ( ! gptlmain::initialized)
+    if ( ! initialized)
       return util::error ("%s timername=%s: GPTLinitialize has not been called\n", thisfunc, name);
 
     // Get the wallclock timestamp
-    if (gptlmain::wallstats.enabled) {
+    if (wallstats.enabled) {
 #ifdef STATICWTIME
-      *tp1 = (*gptlmain::utr_nanotime) ();
+      *tp1 = (*utr_nanotime) ();
 #else
-      *tp1 = (*gptlmain::ptr2wtimefunc) ();
+      *tp1 = (*ptr2wtimefunc) ();
 #endif
     }
 
-    if (gptlmain::cpustats.enabled && get_cpustamp (usr, sys) < 0)
+    if (cpustats.enabled && get_cpustamp (usr, sys) < 0)
       return util::error ("%s: get_cpustamp error", name);
     
     if ((*t = thread::get_thread_num ()) < 0)
       return util::error ("%s: bad return from GPTLget_thread_num\n", name);
     
     // If current depth exceeds a user-specified limit for print, just decrement and return
-    if (gptlmain::stackidx[*t].val > gptlmain::depthlimit) {
-      --gptlmain::stackidx[*t].val;
+    if (stackidx[*t].val > depthlimit) {
+      --stackidx[*t].val;
       return DONE;
     }
     return 0;
@@ -238,17 +238,17 @@ namespace gptlmain {
     int nument;      // number of entries (> 0 means collision)
     Timer **eptr;    // for realloc
 
-    gptlmain::last[t]->next = ptr;
-    gptlmain::last[t] = ptr;
-    ++gptlmain::hashtable[t][indx].nument;
-    nument = gptlmain::hashtable[t][indx].nument;
+    last[t]->next = ptr;
+    last[t] = ptr;
+    ++hashtable[t][indx].nument;
+    nument = hashtable[t][indx].nument;
     
-    eptr = (Timer **) realloc (gptlmain::hashtable[t][indx].entries, nument * sizeof (Timer *));
+    eptr = (Timer **) realloc (hashtable[t][indx].entries, nument * sizeof (Timer *));
     if ( ! eptr)
       return util::error ("update_ll_hash: realloc error\n");
     
-    gptlmain::hashtable[t][indx].entries           = eptr;
-    gptlmain::hashtable[t][indx].entries[nument-1] = ptr;
+    hashtable[t][indx].entries           = eptr;
+    hashtable[t][indx].entries[nument-1] = ptr;
     return 0;
   }
 
@@ -339,11 +339,11 @@ namespace gptlmain {
     ptr->onflg = false;
 
 #ifdef HAVE_PAPI
-    if (gptlmain::dousepapi && GPTL_PAPIstop (t, &ptr->aux) < 0)
+    if (dousepapi && GPTL_PAPIstop (t, &ptr->aux) < 0)
       return util::error ("%s: error from GPTL_PAPIstop\n", thisfunc);
 #endif
 
-    if (gptlmain::wallstats.enabled) {
+    if (wallstats.enabled) {
       delta = tp1 - ptr->wall.last;
       ptr->wall.accum += delta;
       ptr->wall.latest = delta;
@@ -362,7 +362,7 @@ namespace gptlmain {
       }
     }
     
-    if (gptlmain::cpustats.enabled) {
+    if (cpustats.enabled) {
       ptr->cpu.accum_utime += usr - ptr->cpu.last_utime;
       ptr->cpu.accum_stime += sys - ptr->cpu.last_stime;
       ptr->cpu.last_utime   = usr;
@@ -370,14 +370,14 @@ namespace gptlmain {
     }
 
     // Verify that the timer being stopped is at the bottom of the call stack
-    if ( ! gptlmain::imperfect_nest) {
+    if ( ! imperfect_nest) {
       char *name;        //  found name
       char *bname;       //  expected name
       
-      bidx = gptlmain::stackidx[t].val;
-      bptr = gptlmain::callstack[t][bidx];
+      bidx = stackidx[t].val;
+      bptr = callstack[t][bidx];
       if (ptr != bptr) {
-	gptlmain::imperfect_nest = true;
+	imperfect_nest = true;
 	if (ptr->longname)
 	  name = ptr->longname;
 	else
@@ -402,9 +402,9 @@ namespace gptlmain {
       }
     }
       
-    --gptlmain::stackidx[t].val;           // Pop the callstack
-    if (gptlmain::stackidx[t].val < -1) {
-      gptlmain::stackidx[t].val = -1;
+    --stackidx[t].val;           // Pop the callstack
+    if (stackidx[t].val < -1) {
+      stackidx[t].val = -1;
       return util::error ("%s: tree depth has become negative.\n", thisfunc);
     }
     return 0;
@@ -424,21 +424,21 @@ namespace gptlmain {
   {
     ptr->onflg = true;
       
-    if (gptlmain::cpustats.enabled &&
+    if (cpustats.enabled &&
 	get_cpustamp (&ptr->cpu.last_utime, &ptr->cpu.last_stime) < 0)
       return util::error ("update_ptr: get_cpustamp error");
     
-    if (gptlmain::wallstats.enabled) {
+    if (wallstats.enabled) {
 #ifdef STATICWTIME
-      double tp2 = (*gptlmain::utr_nanotime) ();
+      double tp2 = (*utr_nanotime) ();
 #else
-      double tp2 = (*gptlmain::ptr2wtimefunc) ();
+      double tp2 = (*ptr2wtimefunc) ();
 #endif
       ptr->wall.last = tp2;
     }
       
 #ifdef HAVE_PAPI
-    if (gptlmain::dousepapi && GPTL_PAPIstart (t, &ptr->aux) < 0)
+    if (dousepapi && GPTL_PAPIstart (t, &ptr->aux) < 0)
       return util::error ("update_ptr: error from GPTL_PAPIstart\n");
 #endif
     return 0;
@@ -474,7 +474,7 @@ namespace gptlmain {
 #else
     __asm__ __volatile__("rdtsc":"=A" (val): );
 #endif
-    return val * gptlmain::cyc2sec;
+    return val * cyc2sec;
   }
 #endif
 
@@ -489,7 +489,7 @@ namespace gptlmain {
     timebasestruct_t ibmtime;
     (void) read_real_time (&ibmtime, TIMEBASE_SZ);
     (void) time_base_to_time (&ibmtime, TIMEBASE_SZ);
-    return (ibmtime.tb_high - gptlmain::ref_read_real_time) + 1.e-9*ibmtime.tb_low;
+    return (ibmtime.tb_high - ref_read_real_time) + 1.e-9*ibmtime.tb_low;
   }
 #endif
 
@@ -498,7 +498,7 @@ namespace gptlmain {
   {
     struct timespec tp;
     (void) clock_gettime (CLOCK_REALTIME, &tp);
-    return (tp.tv_sec - gptlmain::ref_clock_gettime) + 1.e-9*tp.tv_nsec;
+    return (tp.tv_sec - ref_clock_gettime) + 1.e-9*tp.tv_nsec;
   }
 #endif
 
@@ -507,7 +507,7 @@ namespace gptlmain {
   {
     struct timeval tp;
     (void) gettimeofday (&tp, 0);
-    return (tp.tv_sec - gptlmain::ref_gettimeofday) + 1.e-6*tp.tv_usec;
+    return (tp.tv_sec - ref_gettimeofday) + 1.e-6*tp.tv_usec;
   }
 #endif
 

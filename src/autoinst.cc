@@ -9,9 +9,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-// Make everything in this file extern "C" since these are called from outside
-extern "C" {
-
 #ifdef HAVE_LIBUNWIND
 #define UNW_LOCAL_ONLY
 #include <libunwind.h>
@@ -22,7 +19,7 @@ extern "C" {
 static void extract_name (char *, char **, void *, const int);
 #endif
 
-  static const char unknown[] = "unknown";
+static const char unknown[] = "unknown";
 
 /*
 ** Add entry points for auto-instrumented codes
@@ -34,16 +31,16 @@ static void extract_name (char *, char **, void *, const int);
 */
 
 #ifdef _AIX
-void __func_trace_enter (const char *function_name, const char *file_name, int line_number,
-                         void **const user_data)
+extern "C" void __func_trace_enter (const char *function_name, const char *file_name, int line_number,
+				    void **const user_data)
 {
   if (dopr_memusage && thread::get_thread_num() == 0)
     check_memusage ("Begin", function_name);
   (void) GPTLstart (function_name);
 }
   
-void __func_trace_exit (const char *function_name, const char *file_name, int line_number,
-                        void **const user_data)
+extern "C" void __func_trace_exit (const char *function_name, const char *file_name, int line_number,
+				   void **const user_data)
 {
   (void) GPTLstop (function_name);
   if (dopr_memusage && thread::get_thread_num() == 0)
@@ -54,7 +51,7 @@ void __func_trace_exit (const char *function_name, const char *file_name, int li
 //_AIX not defined
 
 #if ( defined HAVE_LIBUNWIND || defined HAVE_BACKTRACE )
-void __cyg_profile_func_enter (void *this_fn, void *call_site)
+extern "C" void __cyg_profile_func_enter (void *this_fn, void *call_site)
 {
   int t;                // thread index
   int symsize;          // number of characters in symbol
@@ -233,7 +230,7 @@ static void extract_name (char *str, char **symnam, void *this_fn, const int t)
 }
 #endif   // HAVE_BACKTRACE
 
-void __cyg_profile_func_exit (void *this_fn, void *call_site)
+extern "C" void __cyg_profile_func_exit (void *this_fn, void *call_site)
 {
   int t;                     // thread index
   unsigned int indx;         // hash table index
@@ -282,22 +279,20 @@ void __cyg_profile_func_exit (void *this_fn, void *call_site)
 #endif // HAVE_LIBUNWIND || HAVE_BACKTRACE
 #endif // _AIX false branch
 
-/*
-** getentry_instr: find hash table entry and return a pointer to it
-**
-** Input args:
-**   hashtable: the hashtable (array)
-**   self:      input address (from -finstrument-functions)
-** Output args:
-**   indx:      hashtable index
-**
-** Return value: pointer to the entry, or NULL if not found
-*/
-
 namespace autoinst {
-  Timer *getentry_instr (const Hashentry *hashtable, void *self, unsigned int *indx)
+  /*
+  ** getentry_instr: find hash table entry and return a pointer to it
+  **
+  ** Input args:
+  **   hashtable: the hashtable (array)
+  **   self:      input address (from -finstrument-functions)
+  ** Output args:
+  **   indx:      hashtable index
+  **
+  ** Return value: pointer to the entry, or NULL if not found
+  */
+  extern "C" Timer *getentry_instr (const Hashentry *hashtable, void *self, unsigned int *indx)
   {
-    using namespace gptlmain;
     int i;
     Timer *ptr = NULL;  // init to return value when entry not found
 
@@ -333,5 +328,4 @@ namespace autoinst {
     }
     return ptr;
   }
-}
 }

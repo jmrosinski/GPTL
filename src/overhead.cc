@@ -29,8 +29,24 @@
 #include <string.h>
 #include <stdlib.h>  // for free()
 
+/*
+** start_sim: Simulate the cost of Fortran wrapper layer "gptlstart()"
+** 
+** Input args:
+**   name: timer name
+**   nc:  number of characters in "name"
+*/
+extern "C" int start_sim (const char *name, int nc)
+{
+  char cname[nc+1];
+
+  strncpy (cname, name, nc);
+  cname[nc] = '\0';
+  return 0;
+}
+
 // misc_sim: Simulate the cost of miscellaneous computations in start/stop
-static void misc_sim (int t)
+extern "C" void misc_sim (int t)
 {
   int bidx;
   Timer *bptr;
@@ -76,7 +92,7 @@ namespace overhead {
   **   self_ohd:    Estimate of GPTL-induced overhead in the timer itself (included in "Wallclock")
   **   parent_ohd:  Estimate of GPTL-induced overhead for the timer which appears in its parents
   */
-  int getoverhead (FILE *fp, double *self_ohd, double *parent_ohd)
+  extern "C" int getoverhead (FILE *fp, double *self_ohd, double *parent_ohd)
   {
     using gptlmain :: ptr2wtimefunc;
     using gptlmain :: hashtable;
@@ -86,6 +102,7 @@ namespace overhead {
     using gptlmain :: imperfect_nest;
     
     double t1, t2;             // Initial, final timer values
+    double ftn_ohd;            // Fortran-callable layer
     double get_thread_num_ohd; // Getting my thread index
     double genhashidx_ohd;     // Generating hash index
     double getentry_ohd;       // Finding entry in hash table
@@ -100,12 +117,20 @@ namespace overhead {
     int mythread;              // which thread are we
     unsigned int hashidx;      // Hash index
     int randomvar;             // placeholder for taking the address of a variable
-    char *timername = (char *) "timername";
+    static const char *timername = (char *) "timername";
 
     Timer *entry;              // placeholder for return from "getentry()"
     static const char *thisfunc = "get_overhead";
 
     // Gather timings by running kernels 1000 times each. First: Fortran wrapper overhead
+    t1 = (*ptr2wtimefunc)();
+    for (i = 0; i < 1000; ++i) {
+      // 9 is the number of characters in "timername"
+      ret = start_sim ("timername", 9);
+    }
+    t2 = (*ptr2wtimefunc)();
+    ftn_ohd = 0.001 * (t2 - t1);
+
     // get_thread_num() overhead
     t1 = (*ptr2wtimefunc)();
     for (i = 0; i < 1000; ++i) {
@@ -227,10 +252,12 @@ namespace overhead {
       misc_ohd = 0.001 * (t2 - t1);
     }
 
-    total_ohd = get_thread_num_ohd + genhashidx_ohd + getentry_ohd + 
+    total_ohd = ftn_ohd + get_thread_num_ohd + genhashidx_ohd + getentry_ohd + 
                 utr_ohd + misc_ohd + papi_ohd;
     fprintf (fp, "Total overhead of 1 GPTL start or GPTLstop call=%g seconds\n", total_ohd);
     fprintf (fp, "Components are as follows:\n");
+    fprintf (fp, "Fortran layer:             %7.1e = %5.1f%% of total\n", 
+	     ftn_ohd, ftn_ohd / total_ohd * 100.);
     fprintf (fp, "Get thread number:         %7.1e = %5.1f%% of total\n", 
 	     get_thread_num_ohd, get_thread_num_ohd / total_ohd * 100.);
     fprintf (fp, "Generate hash index:       %7.1e = %5.1f%% of total\n", 
@@ -259,8 +286,8 @@ namespace overhead {
 	     "      the hashtable entry is %7.1e not the %7.1e portion taken by GPTLstart\n", 
 	     getentry_instr_ohd, genhashidx_ohd + getentry_ohd);
     fprintf (fp, "NOTE: Each hash collision roughly doubles the 'Find hashtable entry' cost of that timer\n");
-    *self_ohd   = utr_ohd; // ftn overhead ignored since we're using C++ and can pass char lengths
-    *parent_ohd = utr_ohd + misc_ohd +
+    *self_ohd   = ftn_ohd + utr_ohd; // In GPTLstop() fortran wrapper is called before utr
+    *parent_ohd = ftn_ohd + utr_ohd + misc_ohd +
                   2.*(get_thread_num_ohd + genhashidx_ohd + getentry_ohd + papi_ohd);
     return 0;
   }
