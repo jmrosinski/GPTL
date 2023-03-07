@@ -90,7 +90,7 @@ static int32_t f_mpi_in_place = -1;
 #ifdef __cplusplus
 extern "C" {
 #endif
-void get_f_mpi_in_place (void *);
+int get_f_mpi_in_place (void *);
 void mpi_send (void *buf, MPI_Fint *count, MPI_Fint *datatype, MPI_Fint *dest,
 	       MPI_Fint *tag, MPI_Fint *comm, MPI_Fint *__ierr);
 void mpi_recv (void *buf, MPI_Fint *count, MPI_Fint *datatype, 
