@@ -117,6 +117,7 @@ int main (int argc, char **argv)
     start_timer <<<1,1>>> (*total_gputime);
     runit<<<nblocks,blocksize>>> (niter, nblocks, blocksize, *total_gputime, *sleep1, sleepsec,
 				  kernelkernel, accum);
+    cudaDeviceSynchronize ();
     stop_timer <<<1,1>>> (*total_gputime);
   }
 
@@ -191,9 +192,11 @@ __global__ void runit (int niter, int nblocks, int blocksize, int total_gputime,
   if (kernelkernel) {
     ret = GPTLsliced_up_how ("runit");
     ret = GPTLstart_gpu (total_gputime);
-    cudaDeviceSynchronize ();   // Ensure the dispatched kernel has finished before timer call
+    // Newer cuda revs no longer allow cudaDeviceSynchronize from __global__
+    // so use __syncthreads instead
+    __syncthreads ();   // Ensure the dispatched kernel has finished before timer call
     dosleep_glob<<<nblocks,blocksize>>> (niter, sleep1, sleepsec, accum);
-    cudaDeviceSynchronize ();   // Ensure the dispatched kernel has finished before timer call
+    __syncthreads ();   // Ensure the dispatched kernel has finished before timer call
     ret = GPTLstop_gpu (total_gputime);
   } else {
     dosleep_dev (niter, sleep1, sleepsec, accum);

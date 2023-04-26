@@ -18,7 +18,8 @@ endif
 # -cudalib and -ta args also required to avoid unsat externals
 AM_LDFLAGS = -L../src -lgptl
 if ENABLE_CUDA
-  AM_LDFLAGS += -L../cuda/src -lgptl_cuda -cudalib=nvshmem -ta=tesla,cc@CCAB@
+# Link step requires -acc flag when linking to gptl_cuda lib
+  AM_LDFLAGS += -acc -L../cuda/src -lgptl_cuda -Mcuda=cc@CCAB@
 endif
 AM_LDFLAGS += @INSTR_LINK@
 

@@ -88,8 +88,8 @@ AC_ARG_ENABLE([inline-threading],
   AS_HELP_STRING([--disable-inline-threading], [Do not inline threading routines]))
 AS_IF([test "x$enable_inline_threading" != xno], [
   enable_inline_threading=yes
-  AC_DEFINE([INLINE_THREADING], [1], [Use \#include to inline threading routines into gptl.c])
-  AC_MSG_NOTICE([Enabling inline threading for efficiency. Use --disable-inline-threading if \"make\" fails])
+  AC_DEFINE([INLINE_THREADING], [1], [Use cpp include to inline threading routines into gptl.c])
+  AC_MSG_NOTICE([Enabling inline threading for efficiency. Use --disable-inline-threading if make fails])
   AC_MSG_NOTICE([Compiler warnings re: inline function GPTLget_threadnum declared but never defined may occur. They can be safely ignored])
 ])
 AM_CONDITIONAL([INLINE_THREADING], [test "x$enable_inline_threading" = xyes])
@@ -103,7 +103,7 @@ AS_IF([test "x$enable_openmp" != xno], [
 # Enable OpenMP support if not told to skip, and compiler supports it
   AC_OPENMP()
   if test "x$ac_cv_prog_c_openmp" = xunsupported; then
-    AC_MSG_NOTICE([OpenMP support not found. If CC is Apple clang you could try CFLAGS=\"-Xpreprocessor -fopenmp\"])
+    AC_MSG_NOTICE([OpenMP support not found. If CC is Apple clang you could try CFLAGS=-Xpreprocessor -fopenmp])
   else
     useomp=yes;
     AC_DEFINE([THREADED_OMP], [1], [openmp support is present])
@@ -374,7 +374,7 @@ AC_ARG_WITH([mpiexec],
             [MPIEXEC=$with_mpiexec], [MPIEXEC=mpiexec])
 AC_MSG_RESULT([$MPIEXEC])
 if test "x$have_libmpi" = xyes; then
-  AC_MSG_NOTICE([If \"make check\" encounters MPI failures, try configuring with --with-mpiexec=mpirun or srun,...])
+  AC_MSG_NOTICE([If make check encounters MPI failures, try configuring with --with-mpiexec=mpirun or srun,...])
 fi
 AC_SUBST([MPIEXEC], [$MPIEXEC])
 
@@ -486,27 +486,31 @@ if test "x$NVCC" != xno; then
 # For OpenACC (currently only nvc and nvfortran), codes will need the following flags
 # Too complicated and fragile to enforce via env. vars. so just hardwire here.
 # Unfortunately AC_ARG_VAR doesn't expand variable names in description.
-  AC_ARG_VAR(CACCFLAGS, [C-OpenACC compiler flags--defaults to -acc gpu -Minfo=accel])
+  def="-m64 -acc -Minfo=accel -Mcuda=cc$CCAB"
+  AC_ARG_VAR(CACCFLAGS, [C-OpenACC compiler flags--defaults to $def])
   if test "x$CACCFLAGS" = x; then
-    CACCFLAGS="-acc gpu -Minfo=accel"
+    CACCFLAGS="$def"
   fi
   if test "x$use_debug" = xyes; then
     CACCFLAGS="-g $CACCFLAGS"
   fi
 
-  AC_ARG_VAR(CACCLDFLAGS, [C-OpenACC link flags--defaults to -cudalib=nvshmem -ta=tesla,cc$CCAB])
+  def="-m64 -acc -Mcuda=cc$CCAB"
+  AC_ARG_VAR(CACCLDFLAGS, [C-OpenACC link flags--defaults to $def])
   if test "x$CACCLDFLAGS" = x; then
-    CACCLDFLAGS="-cudalib=nvshmem -ta=tesla,cc$CCAB"
+    CACCLDFLAGS="$def"
   fi
   
-  AC_ARG_VAR(FACCFLAGS, [F-OpenACC compiler flags--defaults to -acc gpu -Minfo=accel -m64])
+  def="-m64 -acc -Minfo=accel -Mcuda=cc$CCAB"
+  AC_ARG_VAR(FACCFLAGS, [F-OpenACC compiler flags--defaults to $def])
   if test "x$FACCFLAGS" = x; then
-    FACCFLAGS="-acc gpu -Minfo=accel -m64"
+    FACCFLAGS="$def"
   fi
 
-  AC_ARG_VAR(FACCLDFLAGS, [F-OpenACC link flags--defaults to -acc -Mcuda=cc$CCAB -lstdc++])
+  def="-m64 -acc -Mcuda=cc$CCAB -lstdc++"
+  AC_ARG_VAR(FACCLDFLAGS, [F-OpenACC link flags--defaults to $def])
   if test "x$FACCLDFLAGS" = x; then
-    FACCLDFLAGS="-acc -Mcuda=cc$CCAB -lstdc++"
+    FACCLDFLAGS="$def"
   fi
   
   AC_SUBST([CACCFLAGS],   [$CACCFLAGS])
