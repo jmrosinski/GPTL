@@ -1,0 +1,22 @@
+From https://forums.developer.nvidia.com/t/calling-cuda-library-functions-in-openacc-parallel-region/135878
+
+
+
+    Is it possible to call functions of a CUDA library inside of a OpenACC parallelized loop?
+
+Yes, it is possible, but can be a bit tricky.
+
+First, the calling CUDA routine needs to be device callable, i.e. decorated with the “device” attribute.
+
+Next you need to get the symbol name for the device. Since nvcc is a C++ compiler, the symbol name will be mangled. You may need to use “nm” on the library and then search for the correct name. Of course, this assumes that the symbol names hasn’t been stripped.
+
+Next, you need to use the “bind” clause on the routine directive to have the correct mapping to the symbol name. Something like:
+
+#pragma acc routine bind("mangled_symbol_name")
+
+In cases like this where the symbol name may be difficult to determine, I’ve written CUDA interfaces that call the library routine. That way I can grab the symbol name out of my object rather than hunting for the symbol out of the library (especially if it’s stripped)
+
+Also, be sure to compile and link with “-Mcuda” (which you do) so the compiler knows you’re linking with CUDA code. We set-up the OpenACC slightly different when mixing in CUDA.
+
+Finally on occasion, you may need to fall back to using our CUDA code generator (-ta=telsa:nollvm), rather than using the default LLVM code generator.
+
