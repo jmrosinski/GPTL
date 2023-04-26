@@ -447,6 +447,18 @@ if test "x$NVCC" != xno; then
     CUFLAGS="$CUFLAGS --maxrregcount $regs"
   fi
   
+# Check whether to enable dummy do-nothing calls to GPTLstart_gpu and GPTLstop_gpu
+# Only enable to estimate overhead of these calls by comparing to when disabled
+# Default disabled
+  AC_MSG_CHECKING([whether to make GPTLstart_gpu and GPTLstop_gpu do nothing])
+  AC_ARG_ENABLE([dummygpustartstop],
+    AS_HELP_STRING([--enable-dummygpustartstop], [Disable GPTLstart_gpu and GPTLstop_gpu]))
+  AS_IF([test "x$enable_dummygpustartstop" = xyes], [
+    AC_DEFINE([DUMMYGPUSTARTSTOP], [1], [Enable dummy GPTLstart_gpu and GPTLstop_gpu])
+    dummygpustartstop=yes
+  ],dummygpustartstop=no)
+  AC_MSG_RESULT($dummygpustartstop)
+
 # Check whether to disable validity checks in GPU start/stop routines
 # Default enabled
   AC_MSG_CHECKING([whether to enable validity checking on GPU])

@@ -57,6 +57,15 @@ if [[ $debug == "y" ]]; then
   cmd="$newcmd"
 fi
 
+printf "dummygpustartstop turns GPTLstart_gpu and GPTLstop_gpu into dummy routines\n"
+printf "dummygpustartstop is useful for assessing GPTL overhead\n"
+setvar_chk "dummygpustartstop" ${defno[@]}
+printf "dummygpustartstop is $dummygpustartstop\n\n"
+if [[ $dummygpustartstop == "y" ]]; then
+  newcmd="$cmd --enable-dummygpustartstop"
+  cmd="$newcmd"
+fi
+
 printf "gpuchecks should be enabled first time, but adds overhead so disable if no problems\n"
 printf "gpuchecks enables testing for GPTL not initialized, bad handle, timer already on/off, bad smid\n"
 setvar_chk "gpuchecks" ${defyes[@]}

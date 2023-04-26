@@ -22,7 +22,13 @@ __device__ static Timer *timers = 0;            // array (also linked list) of t
 __device__ static Timername *timernames;        // array of timer names
 __device__ static int max_name_len;             // max length of timer name
 __device__ static int ntimers = 0;              // number of timers
+#define ENABLE_CONSTANTMEM
+#ifdef ENABLE_CONSTANTMEM
 __device__ __constant__ static int maxtimers;   // max number of timers
+#else
+__device__              static int maxtimers;   // max number of timers
+#endif
+           
 __device__ static int maxwarps = -1;            // max number of warps that will be examined
 __device__ static int maxwarpid_found = 0;      // number of warps found : init to 0
 __device__ static bool initialized = false;     // GPTLinitialize has been called
@@ -85,10 +91,16 @@ __host__ int GPTLinitialize_gpu (const int verbose_in,
   static long long *globcount_cpu = 0;   // for internally timing GPTL
 
   // Set constant memory values: First arg is pass by reference so no "&"
-  gpuErrchk (cudaMemcpyToSymbol (maxtimers,   &maxtimers_in,    sizeof (int)));
-
   nbytes = maxwarps_in * maxtimers_in * sizeof (Timer);
   gpuErrchk (cudaMalloc (&timers_cpu, nbytes));
+
+#ifdef ENABLE_CONSTANTMEM
+  gpuErrchk (cudaMemcpyToSymbol (maxtimers,   &maxtimers_in,    sizeof (int)));
+#else
+  int *dmaxtimers;
+  gpuErrchk (cudaGetSymbolAddress ((void **)&dmaxtimers, maxtimers));
+  gpuErrchk (cudaMemcpy (dmaxtimers, &maxtimers_in, sizeof(int), cudaMemcpyHostToDevice));
+#endif
 
   nbytes =               maxtimers_in * sizeof (Timername);
   gpuErrchk (cudaMalloc (&timernames_cpu, nbytes));
@@ -273,10 +285,15 @@ __device__ int GPTLstart_gpu (const int handle)
   Timer *ptr;        // linked list pointer
   int w;             // warp index (of this thread)
   int wi;            // flattened 2d index for warp number and timer name
+  long long start;   // starting timestamp
   static const char *thisfunc = "GPTLstart_gpu";
 
+#ifdef DUMMYGPUSTARTSTOP
+  return SUCCESS;
+#endif
+
 #ifdef TIME_GPTL
-  long long start = clock64 ();
+  start = clock64 ();
 #endif
 
 #ifdef ENABLE_GPUCHECKS
@@ -346,6 +363,10 @@ __device__ int GPTLstop_gpu (const int handle)
   int wi;                    // flattened (1-d) index into 2-d array [timer][warp]
   uint smid;                 // SM id
   static const char *thisfunc = "GPTLstop_gpu";
+
+#ifdef DUMMYGPUSTARTSTOP
+  return SUCCESS;
+#endif
 
 #ifdef TIME_GPTL
   tp1 = clock64 ();
