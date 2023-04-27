@@ -427,6 +427,9 @@ if test "x$NVCC" != xno; then
   fi
   CUFLAGS="$CUFLAGS -gencode arch=compute_$CCAB,code=compute_$CCAB"
 
+# Just for printing
+  AC_DEFINE_UNQUOTED([CCAB], [$CCAB], [GPU interface built with this compute capability])
+
   if test "x$use_debug" = xyes; then
     CUFLAGS="$CUFLAGS -g -G -keep -lineinfo -src-in-ptx -ftz=true -rdc=true"
   else

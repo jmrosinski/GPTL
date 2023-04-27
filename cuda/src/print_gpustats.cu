@@ -73,6 +73,36 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   gpuErrchk (cudaMallocManaged (&regionmem,           sizeof (float)));
   gpuErrchk (cudaMallocManaged (&timernamemem,        sizeof (float)));
 
+  fprintf (fp, "--------------------------------------------------------------------------------\n");
+  fprintf (fp, "\n\nGPU Results:\n");
+  fprintf (fp, "GPU-specific GPTL build info:\n");
+
+  fprintf (fp, "Compute capability was %d\n", CCAB);
+
+#ifdef ENABLE_GPUCHECKS
+  fprintf (fp, "ENABLE_GPUCHECKS was true\n");
+#else
+  fprintf (fp, "ENABLE_GPUCHECKS was false\n");
+#endif
+
+#ifdef ENABLE_GPURECURSION
+  fprintf (fp, "ENABLE_GPURECURSION was true\n");
+#else
+  fprintf (fp, "ENABLE_GPURECURSION was false\n");
+#endif
+
+#ifdef TIME_GPTL
+  fprintf (fp, "TIME_GPTL (on GPU) was true\n");
+#else
+  fprintf (fp, "TIME_GPTL (on GPU) was false\n");
+#endif
+
+#ifdef ENABLE_FOUND
+  fprintf (fp, "ENABLE_FOUND (print max warpid found on GPU) was true\n");
+#else
+  fprintf (fp, "ENABLE_FOUND (print max warpid found on GPU) was false\n");
+#endif
+
   GPTLfill_gpustats<<<1,1>>> (gpustats, max_name_len_gpu, ngputimers);
   if (cudaGetLastError() != cudaSuccess)
     printf( "%s: Error from GPTLfill_gpustats\n", thisfunc);
@@ -87,8 +117,6 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
 	    gpustats[n].count_max, gpustats[n].nwarps);
   }
 #endif
-
-  fprintf (fp, "\n\nGPU Results:\n");
 
 #ifdef HAVE_MPI
   ret = MPI_Initialized (&mpi_active);
@@ -139,9 +167,9 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
 
   fprintf (fp, "These 2 are called only by GPTLinit_handle_gpu, thus not part of overhead:\n");
   fprintf (fp, "my_strlen:                      %7.1e (name=GPTL_ROOT)\n",
-	   my_strlen_ohdgpu[0] / gpu_hz);
+	   (double) my_strlen_ohdgpu[0] / (double) gpu_hz);
   fprintf (fp, "STRMATCH:                       %7.1e (matched name=GPTL_ROOT)\n",
-	   STRMATCH_ohdgpu[0] / gpu_hz);
+	   (double) STRMATCH_ohdgpu[0] / (double) gpu_hz);
   fprintf (fp, "\n");
 
   fprintf (fp, "\nGPU timing stats\n");

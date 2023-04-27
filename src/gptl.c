@@ -1433,6 +1433,12 @@ int GPTLpr_file (const char *outfile)
   fprintf (fp, "ENABLE_NESTEDOMP was false\n");
 #endif
 
+#ifdef DEBUG
+  fprintf (fp, "DEBUG (for both CPU and GPU) was true\n");
+#else
+  fprintf (fp, "DEBUG (for both CPU and GPU) was false\n");
+#endif
+
 #ifdef HAVE_LIBUNWIND
   fprintf (fp, "Autoprofiling capability was enabled with libunwind\n");
 #elif defined HAVE_BACKTRACE	  
@@ -1442,6 +1448,13 @@ int GPTLpr_file (const char *outfile)
 #endif	   
 
   fprintf (fp, "Underlying timing routine was %s.\n", funclist[funcidx].name);
+
+#ifdef ENABLE_CUDA
+  fprintf (fp, "ENABLE_CUDA (GPU profiling) was true\n\n");
+#else
+  fprintf (fp, "ENABLE_CUDA (GPU profiling) was false\n\n");
+#endif
+
   (void) GPTLget_overhead (fp, ptr2wtimefunc, getentry, genhashidx, GPTLget_thread_num,
 			   stackidx, callstack, hashtable[0], tablesize, dousepapi, imperfect_nest, 
 			   &self_ohd, &parent_ohd);
