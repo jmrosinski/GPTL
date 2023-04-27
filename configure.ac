@@ -458,6 +458,9 @@ if test "x$NVCC" != xno; then
     dummygpustartstop=yes
   ],dummygpustartstop=no)
   AC_MSG_RESULT($dummygpustartstop)
+  if test "x$dummygpustartstop" = xyes; then
+    FCFLAGS="$FCFLAGS -DDUMMYGPUSTARTSTOP"
+  fi
 
 # Check whether to disable validity checks in GPU start/stop routines
 # Default enabled

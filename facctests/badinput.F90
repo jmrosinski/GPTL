@@ -23,6 +23,8 @@ program basic
     stop 1
   end if
 
+! When DUMMYGPUSTARTSTOP is set, gptlstart_gpu and gtlstop_gpu just returns 0
+#ifndef DUMMYGPUSTARTSTOP
   write(6,*) 'Testing gptlstart_gpu before gptlinitialize'
 !$acc parallel copyin(handle1) copyout(ret)
   ret = gptlstart_gpu (handle1)
@@ -42,7 +44,8 @@ program basic
     write (6,*) 'Expected not initialized from gptlstop_gpu got 0'
     stop 3
   end if
-    
+#endif
+  
   ! Initialize the GPTL library on CPU and GPU
   ret = gptlinitialize ()
 
@@ -58,6 +61,8 @@ program basic
     stop 4
   end if
 
+! When DUMMYGPUSTARTSTOP is set, gptlstart_gpu and gtlstop_gpu just returns 0
+#ifndef DUMMYGPUSTARTSTOP
   write(6,*) 'Testing gptlstart_gpu for bad handle'
 !$acc parallel copyin(handle3) copyout(ret)
   ret = gptlstart_gpu (handle3)
@@ -89,6 +94,8 @@ program basic
     write (6,*) 'Expected bad return from gptlstop_gpu (timer already off) got 0'
     stop 7
   end if
+#endif
+
 #else
   write (6,*) 'Doing nothing since ENABLE_GPUCHECKS is not defined'
 #endif
