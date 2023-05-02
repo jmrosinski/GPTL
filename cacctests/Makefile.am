@@ -16,11 +16,14 @@ endif
 noinst_PROGRAMS = basic ohdest warp2sm utrtest simplesum nogptl
 
 # Test programs that will be built for all configurations.
-check_PROGRAMS = basic
-TESTS          = basic
+check_PROGRAMS = basic toomanytimers
+TESTS          = basic toomanytimers
 
 basic_SOURCES = basic.c
 basic_OBJS    = basic.o
+
+toomanytimers_SOURCES = toomanytimers.c
+toomanytimers_OBJS    = toomanytimers.o
 
 ohdest_SOURCES = ohdest.c
 ohdest_OBJS    = ohdest.o
@@ -43,6 +46,9 @@ nogptl_OBJS    = nogptl.o
 basic$(EXEEXT): $(basic_OBJS)
 	$(CC) -o $@ $(basic_OBJS) $(AM_LDFLAGS)
 
+toomanytimers$(EXEEXT): $(toomanytimers_OBJS)
+	$(CC) -o $@ $(toomanytimers_OBJS) $(AM_LDFLAGS)
+
 ohdest$(EXEEXT): $(ohdest_OBJS)
 	$(CC) -o $@ $(ohdest_OBJS) $(AM_LDFLAGS)
 
@@ -59,6 +65,7 @@ nogptl$(EXEEXT): nogptl.o
 	$(CC) -o $@ nogptl.o $(AM_LDFLAGS)
 
 $(basic_OBJS): $(basic_SOURCES) ../include/gptl.h ../cuda/include/gptl_acc.h
+$(toomanytimers_OBJS): $(toomanytimers_SOURCES) ../include/gptl.h ../cuda/include/gptl_acc.h
 $(warp2sm_OBJS): $(warp2sm_SOURCES) ../include/gptl.h ../cuda/include/gptl_acc.h
 $(simplesum_OBJS): $(simplesum_SOURCES)
 $(nogptl_OBJS): $(nogptl_SOURCES)

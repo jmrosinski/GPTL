@@ -36,7 +36,7 @@ __device__ int GPTLerror_1s (const char *fmt, const char *str)
     (void) printf ("GPTL error:");
     (void) printf (fmt, str);
     ++num_errors;
-    if (num_errors == max_errors)
+    if (num_errors >= max_errors)
       (void) printf ("Truncating further error print now after %d msgs\n", num_errors);
     RELENQUISH_MUTEX;
   }
@@ -50,7 +50,7 @@ __device__ int GPTLerror_2s (const char *fmt, const char *str1, const char *str2
     (void) printf ("GPTL error:");
     (void) printf (fmt, str1, str2);
     ++num_errors;
-    if (num_errors == max_errors)
+    if (num_errors >= max_errors)
       (void) printf ("Truncating further error print now after %d msgs\n", num_errors);
     RELENQUISH_MUTEX;
   }
@@ -64,7 +64,7 @@ __device__ int GPTLerror_1s1d (const char *fmt, const char *str1, const int arg)
     (void) printf ("GPTL error:");
     (void) printf (fmt, str1, arg);
     ++num_errors;
-    if (num_errors == max_errors)
+    if (num_errors >= max_errors)
       (void) printf ("Truncating further error print now after %d msgs\n", num_errors);
     RELENQUISH_MUTEX;
   }
@@ -78,7 +78,22 @@ __device__ int GPTLerror_2s1d (const char *fmt, const char *str1, const char *st
     (void) printf ("GPTL error:");
     (void) printf (fmt, str1, str2, arg1);
     ++num_errors;
-    if (num_errors == max_errors)
+    if (num_errors >= max_errors)
+      (void) printf ("Truncating further error print now after %d msgs\n", num_errors);
+    RELENQUISH_MUTEX;
+  }
+  return -1;
+}
+
+__device__ int GPTLerror_2s3d (const char *fmt, const char *str1, const char *str2,
+			       const int arg1, const int arg2, const int arg3)
+{
+  if (num_errors < max_errors) {
+    grab_mutex ();
+    (void) printf ("GPTL error:");
+    (void) printf (fmt, str1, str2, arg1, arg2, arg3);
+    ++num_errors;
+    if (num_errors >= max_errors)
       (void) printf ("Truncating further error print now after %d msgs\n", num_errors);
     RELENQUISH_MUTEX;
   }
@@ -92,7 +107,7 @@ __device__ int GPTLerror_1s2d (const char *fmt, const char *str1, const int arg1
     (void) printf ("GPTL error:");
     (void) printf (fmt, str1, arg1, arg2);
     ++num_errors;
-    if (num_errors == max_errors)
+    if (num_errors >= max_errors)
       (void) printf ("Truncating further error print now after %d msgs\n", num_errors);
     RELENQUISH_MUTEX;
   }
@@ -100,7 +115,7 @@ __device__ int GPTLerror_1s2d (const char *fmt, const char *str1, const int arg1
 }
 
 /*
-** GPTLnote: print a note
+** GPTLnote_gpu: print a note
 **
 ** Input arguments:
 **   fmt: format string

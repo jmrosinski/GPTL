@@ -16,6 +16,7 @@
 #include "device.h"
 #include "gptl_cuda.h"
 
+// Flattening a 2d index into a 1d index gives good speedup 
 #define FLATTEN_TIMERS(SUB1,SUB2) (SUB1)*maxtimers + (SUB2)
 
 __device__ static Timer *timers = 0;            // array (also linked list) of timers
@@ -24,17 +25,20 @@ __device__ static int max_name_len;             // max length of timer name
 __device__ static int ntimers = 0;              // number of timers
 #define ENABLE_CONSTANTMEM
 #ifdef ENABLE_CONSTANTMEM
-__device__ __constant__ static int maxtimers;   // max number of timers
+__device__ __constant__ static int maxtimers;   // max number of timers allowed
+__device__ __constant__ static int warpsize;    // warp size
+__device__ __constant__ static int maxwarps;    // max number of warps that will be examined
 #else
-__device__              static int maxtimers;   // max number of timers
+__device__              static int maxtimers;   // max number of timers allowed
+__device__              static int warpsize;    // warp size
+__device__              static int maxwarps;    // max number of warps that will be examined
 #endif
            
-__device__ static int maxwarps = -1;            // max number of warps that will be examined
 __device__ static int maxwarpid_found = 0;      // number of warps found : init to 0
 __device__ static bool initialized = false;     // GPTLinitialize has been called
 __device__ static bool verbose = false;         // output verbosity
 __device__ static double gpu_hz = 0.;           // clock freq
-__device__ int warpsize = 0;                    // warp size
+__device__ static int warps_per_sm = 0;         // used for overhead calcs
 __device__ static volatile int mutex_print = 0; // critical section unscrambles printf output
 
 #ifdef TIME_GPTL
@@ -52,7 +56,7 @@ extern "C" {
 
 // Local function prototypes
 __global__ static void initialize_gpu (const int, const int, const double, Timer *,
-				       Timername *, const int, long long *);
+				       Timername *, const int, const int, long long *, int *);
 __device__ static inline int get_warp_num (void);         // get 0-based 1d warp number
 __device__ static inline int update_stats_gpu (const int, Timer *, const long long, const int,
 					       const uint);
@@ -65,6 +69,8 @@ __device__ static void init_gpustats (Gpustats *, int);
 __device__ static void fill_gpustats (Gpustats *, int, int);
 __device__ static void get_mutex (volatile int *);
 __device__ static void free_mutex (volatile int *);
+
+static int *global_retval;  // For saving "return" value from __global__ functions
 // Defining PRINTNEG will print to stdout whenever a negative interval (stop minus start) is
 // encountered. Only useful when non-zero negative intervals are reported in timing output
 // Should be turned OFF normally--very expensive even when no negatives found.
@@ -80,7 +86,8 @@ __host__ int GPTLinitialize_gpu (const int verbose_in,
 				 const int maxwarps_in,
 				 const int maxtimers_in,
 				 const double gpu_hz_in,
-				 const int warpsize_in)
+				 const int warpsize_in,
+				 const int cores_per_sm_in)
 {
   size_t nbytes;  // number of bytes to allocate
 
@@ -95,18 +102,30 @@ __host__ int GPTLinitialize_gpu (const int verbose_in,
   gpuErrchk (cudaMalloc (&timers_cpu, nbytes));
 
 #ifdef ENABLE_CONSTANTMEM
-  gpuErrchk (cudaMemcpyToSymbol (maxtimers,   &maxtimers_in,    sizeof (int)));
+  gpuErrchk (cudaMemcpyToSymbol (maxtimers, &maxtimers_in, sizeof (int)));
+  gpuErrchk (cudaMemcpyToSymbol (warpsize,  &warpsize_in,  sizeof (int)));
+  gpuErrchk (cudaMemcpyToSymbol (maxwarps,  &maxwarps_in,  sizeof (int)));
 #else
   int *dmaxtimers;
+  int *dwarpsize;
+  int *dmaxwarps;
   gpuErrchk (cudaGetSymbolAddress ((void **)&dmaxtimers, maxtimers));
+  gpuErrchk (cudaGetSymbolAddress ((void **)&dwarpsize, warpsize));
+  gpuErrchk (cudaGetSymbolAddress ((void **)&dmaxwarps, maxwarps));
+
   gpuErrchk (cudaMemcpy (dmaxtimers, &maxtimers_in, sizeof(int), cudaMemcpyHostToDevice));
+  gpuErrchk (cudaMemcpy (dwarpsize,  &warpsize_in,  sizeof(int), cudaMemcpyHostToDevice));
+  gpuErrchk (cudaMemcpy (dmaxwarps,  &maxwarps_in,  sizeof(int), cudaMemcpyHostToDevice));
 #endif
 
-  nbytes =               maxtimers_in * sizeof (Timername);
+  nbytes = maxtimers_in * sizeof (Timername);
   gpuErrchk (cudaMalloc (&timernames_cpu, nbytes));
 
+  // Create space for a "return" value for __global__functions to be checked on CPU
+  gpuErrchk (cudaMallocManaged (&global_retval, sizeof (int)));
+
 #ifdef TIME_GPTL
-  nbytes =               maxwarps_in * NUM_INTERNAL_TIMERS * sizeof (long long);
+  nbytes = maxwarps_in * NUM_INTERNAL_TIMERS * sizeof (long long);
   gpuErrchk (cudaMalloc (&globcount_cpu, nbytes));
 #endif
 
@@ -116,14 +135,16 @@ __host__ int GPTLinitialize_gpu (const int verbose_in,
 			    timers_cpu,
 			    timernames_cpu,
 			    warpsize_in,
-			    globcount_cpu);
+			    cores_per_sm_in,
+			    globcount_cpu,
+			    global_retval);
   // This should flush any existing print buffers
   cudaDeviceSynchronize ();
-  return 0;
+  return *global_retval;
 }
 
 /*
-** GPTLinitialize_gpu (): Initialization routine must be called from single-threaded
+** initialize_gpu (): Initialization routine must be called from single-threaded
 **   region before any other timing routines may be called.  The need for this
 **   routine could be eliminated if not targetting timing library for threaded
 **   capability. 
@@ -134,27 +155,30 @@ __global__ static void initialize_gpu (const int verbose_in,
 				       Timer *timers_cpu,
 				       Timername *timernames_cpu,
 				       const int warpsize_in,
-				       long long *globcount_cpu)
+				       const int cores_per_sm_in,
+				       long long *globcount_cpu,
+				       int *global_retval)
 {
   int w, wi;        // warp, flattened indices
   long long t1, t2; // returned from underlying timer
   static const char *thisfunc = "initialize_gpu";
 
+  *global_retval = 0;
 #ifdef VERBOSE
   printf ("Entered %s\n", thisfunc);
 #endif
   if (initialized) {
     (void) GPTLerror_1s ("%s: has already been called\n", thisfunc);
+    *global_retval = -1;
     return;
   }
 
   // Set global vars from input args
-  verbose    = verbose_in;
-  maxwarps   = maxwarps_in;
-  gpu_hz     = gpu_hz_in;
-  warpsize   = warpsize_in;
-  timers     = timers_cpu;
-  timernames = timernames_cpu;
+  verbose      = verbose_in;
+  gpu_hz       = gpu_hz_in;
+  warps_per_sm = cores_per_sm_in / warpsize;
+  timers       = timers_cpu;
+  timernames   = timernames_cpu;
 #ifdef TIME_GPTL
   globcount  = globcount_cpu;
   memset (globcount, 0, maxwarps * NUM_INTERNAL_TIMERS * sizeof (long long));
@@ -182,7 +206,6 @@ __global__ static void initialize_gpu (const int verbose_in,
     printf ("Per call overhead est. t2-t1=%g should be near zero\n", (float) (t2-t1));
     printf ("Underlying wallclock timing routine is clock64\n");
   }
-
   initialized = true;
 }
 
@@ -256,7 +279,7 @@ __device__ int GPTLinit_handle_gpu (const char *name,
     }
   }
   
-  if (ntimers >= maxtimers) {
+  if (ntimers >= maxtimers-1) {
     return GPTLerror_2s1d ("%s: Too many timers. name=%s maxtimers needs to be incremented from %d\n",
 			   thisfunc, name, maxtimers);
   }
@@ -285,7 +308,6 @@ __device__ int GPTLstart_gpu (const int handle)
   Timer *ptr;        // linked list pointer
   int w;             // warp index (of this thread)
   int wi;            // flattened 2d index for warp number and timer name
-  long long start;   // starting timestamp
   static const char *thisfunc = "GPTLstart_gpu";
 
 #ifdef DUMMYGPUSTARTSTOP
@@ -293,7 +315,7 @@ __device__ int GPTLstart_gpu (const int handle)
 #endif
 
 #ifdef TIME_GPTL
-  start = clock64 ();
+  long long start = clock64 ();  // starting timestamp
 #endif
 
 #ifdef ENABLE_GPUCHECKS
@@ -470,10 +492,11 @@ __device__ static inline int update_stats_gpu (const int handle,
   delta = tp1 - ptr->wall.last;
 #ifdef ENABLE_GPUCHECKS
   if (smid != ptr->smid) {
-    printf ("GPTL %s: name=%s w=%d sm changed from %d to %d: new kernel? \n"
-	    "TIMINGS WITH Bad_SM > 0 PROBABLY INACCURATE.\n"
-	    "NEGATIVE STOP MINUS START INCIDENTS WILL BE SKIPPED.\n", 
-	    thisfunc, timernames[handle].name, w, ptr->smid, smid);
+    (void) GPTLerror_2s3d ("%s: name=%s w=%d sm changed from %d to %d between GPTLstart_gpu and "
+			   "GPTL_stop_gpu\n"
+			   "TIMINGS WITH SM CHANGED BETWEEN START AND STOP PROBABLY INACCURATE.\n"
+			   "NEGATIVE STOP MINUS START INCIDENTS WILL BE SKIPPED.\n",
+			   thisfunc, timernames[handle].name, w, ptr->smid, smid);
     ++ptr->badsmid_count;
   }
 #endif
@@ -506,20 +529,61 @@ __device__ static inline int update_stats_gpu (const int handle,
 }
 
 /*
-** GPTLreset_gpu: reset all timers to 0
+** GPTLreset_gpu: reset a single timer to zero for all warps
+**   Should be invoked by a single thread
 **
-** Return value: 0 (success) or GPTLerror (failure)
+** Return argument: *global_retval 0 (success) -1 (failure)
 */
-__global__ void GPTLreset_gpu (void)
+__global__ void GPTLreset_gpu (const int handle, int *global_retval)
 {
-  int i;
   int w;
   int wi;
   int maxwarpid_timed;
   static const char *thisfunc = "GPTLreset_gpu";
 
+  *global_retval = 0;
   if ( ! initialized) {
     (void) GPTLerror_1s ("%s: GPTLinitialize_gpu has not been called\n", thisfunc);
+    *global_retval = -1;
+    return;
+  }
+
+  if (handle < 0 || handle > ntimers) {
+    (void) GPTLerror_1s1d ("%s: bad handle %d\n", thisfunc, handle);
+    *global_retval = -1;
+    return;
+  }
+
+  maxwarpid_timed = GPTLget_maxwarpid_timed ();
+
+  for (w = 0; w <= maxwarpid_timed; ++w) {
+    wi = FLATTEN_TIMERS(w,handle);
+    timers[wi].onflg = false;
+    timers[wi].count = 0;
+    memset (&timers[wi].wall, 0, sizeof (timers[wi].wall));
+    timers[wi].wall.min = LLONG_MAX;
+  }
+  return;
+}
+
+/*
+** GPTLreset_all_gpu: reset all timers to 0 for all warps
+**   Should be invoked by a single thread
+**
+** Return argument: *global_retval 0 (success) -1 (failure)
+*/
+__global__ void GPTLreset_all_gpu (int *global_retval)
+{
+  int i;
+  int w;
+  int wi;
+  int maxwarpid_timed;
+  static const char *thisfunc = "GPTLreset_all_gpu";
+
+  *global_retval = 0;
+  if ( ! initialized) {
+    (void) GPTLerror_1s ("%s: GPTLinitialize_gpu has not been called\n", thisfunc);
+    *global_retval = -1;
     return;
   }
 
@@ -533,13 +597,17 @@ __global__ void GPTLreset_gpu (void)
       memset (&timers[wi].wall, 0, sizeof (timers[wi].wall));
       timers[wi].wall.min = LLONG_MAX;
     }
+    return;
   }
 
   // Verify all timers have been zeroed
-  if (GPTLget_maxwarpid_timed () == 0)
-    printf ("%s: accumulators for all GPU timers reset to zero\n", thisfunc);
-  else
-    printf ("%s: Problem resetting GPU timers to 0\n", thisfunc);
+  if (GPTLget_maxwarpid_timed () == 0) {
+    (void) GPTLerror_1s ("%s: accumulators for all GPU timers reset to zero\n", thisfunc);
+  } else {
+    (void) GPTLerror_1s ("%s: Problem resetting GPU timers to 0\n", thisfunc);
+    *global_retval = -1;
+  }
+  return;
 }
 
 /*
@@ -550,9 +618,9 @@ __global__ void GPTLreset_gpu (void)
 */
 __device__ static inline int get_warp_num ()
 {
-  int threadId;
-  int warpId;
-  int retval;
+  register int threadId;
+  register int warpId;
+  register int retval;
 
   threadId = threadIdx.x
         +  blockDim.x  * threadIdx.y
@@ -563,11 +631,6 @@ __device__ static inline int get_warp_num ()
 
   warpId = threadId / warpsize;
 
-  if (warpId > maxwarps-1)
-    retval = WARPID_GT_MAXWARPS;
-  else
-    retval = warpId;
-
   // Setting maxwarpid_found is a race condition that is ignored due to efficiency considerations
   // It is only printed as an estimate when GPTLpr is called.
 #ifdef ENABLE_FOUND
@@ -575,10 +638,13 @@ __device__ static inline int get_warp_num ()
     maxwarpid_found = warpId;
 #endif
 
-  // Only thread 0 of the warp will be timed
+  retval = warpId;
   if (threadId % warpsize != 0)
     retval = NOT_ROOT_OF_WARP;
-
+  else if (warpId > maxwarps-1)
+    retval = WARPID_GT_MAXWARPS;
+  
+  // linearized warp number, or negative number which caller will handle appropriately
   return retval;
 }
 
@@ -658,7 +724,7 @@ __global__ void GPTLfill_gpustats (Gpustats *gpustats,
 
   // Step 1: process entries for all warps based on those in warp 0
   // gpustats starts at 0. timers start at 1
-  for (n = 0; n < ntimers; ++n) {
+  for (n = 0; n <= ntimers; ++n) {
     init_gpustats (&gpustats[n], n+1);
     for (w = 1; w <= maxwarpid_timed; ++w) {
       fill_gpustats (&gpustats[n], n+1, w);
@@ -820,6 +886,17 @@ __device__ static int my_strcmp (const char *str1, const char *str2)
 
 // Overhead estimate functions start here
 /*
+** GPTLget_maxwarpid_info: return maxwarpid info to CPU
+**   Should be invoked  <<<1,1>>>
+*/
+__global__ void GPTLget_maxwarpid_info (int *maxwarpid_timed_out,
+					int *maxwarpid_found_out)
+{
+  *maxwarpid_timed_out = GPTLget_maxwarpid_timed ();
+  *maxwarpid_found_out = maxwarpid_found;
+}
+
+/*
 ** GPTLget_overhead: return current status info about a timer. If certain stats are not enabled, 
 ** they should just have zeros in them.
 ** 
@@ -829,17 +906,16 @@ __device__ static int my_strcmp (const char *str1, const char *str2)
 **   self_ohd:           Estimate of GPTL-induced overhead in the timer itself (included in "Wallclock")
 **   parent_ohd:         Estimate of GPTL-induced overhead for the timer which appears in its parents
 */
-__global__ void GPTLget_overhead_gpu (int *maxwarpid_timed_out,
-				      int *maxwarpid_found_out,
-				      long long *get_warp_num_ohd,  // Getting my warp index
-				      long long *startstop_ohd,     // start/stop pair
-				      long long *utr_ohd,           // Underlying timing routine
-				      long long *start_misc_ohd,    // misc start code
-				      long long *stop_misc_ohd,     // misc stop code
-				      long long *self_ohd,          // OHD in timer itself
-				      long long *parent_ohd,        // OHD in parent
-				      long long *my_strlen_ohd,
-				      long long *STRMATCH_ohd)
+__global__ void GPTLget_overhead_gpu (float *get_warp_num_ohd,  // Getting my warp index
+				      float *startstop_ohd,     // start/stop pair
+				      float *utr_ohd,           // Underlying timing routine
+				      float *start_misc_ohd,    // misc start code
+				      float *stop_misc_ohd,     // misc stop code
+				      float *self_ohd,          // OHD in timer itself
+				      float *parent_ohd,        // OHD in parent
+				      float *my_strlen_ohd,     // strlen overhead
+				      float *STRMATCH_ohd,      // STRMATCH overhead
+				      int *retval)              // return value
 {
   volatile uint smid;         // SM id
   long long t1, t2;           // Initial, final timer values
@@ -848,83 +924,92 @@ __global__ void GPTLget_overhead_gpu (int *maxwarpid_timed_out,
   int mywarp;                 // our warp number
   char name[MAX_CHARS+1];     // Name to be used for various OHD tests
   char samename[MAX_CHARS+1]; // Copy of "name" for STRMATCH test
+  static const int iters = 1000;
+  static const char *thisfunc = "GPTLget_overhead_gpu";
 
-  *maxwarpid_timed_out = GPTLget_maxwarpid_timed ();
-  *maxwarpid_found_out = maxwarpid_found;
-  
   // Define name to be used in OHD estimates. Use GPTL_ROOT because it's always there
   my_strcpy (name, timernames[0].name); // GPTL_ROOT
   my_strcpy (samename, name);
 
-  /*
-  ** Gather timings by running each test 1000 times
-  ** First: start/stop overhead
-  ** FIrst 2 are warmups
-  */
+  // Gather timings by running each test "iters" times. We are running on a single SM, with all
+  // cores active. Mimic the use by GPTLstart_gpu and GPTLstop_gpu by only thread 0 does work
+
+  // Return if not thread 0 of the warp
+  if ((mywarp = get_warp_num ()) < 0)
+    return;
+  
+  if (mywarp > warps_per_sm - 1) {
+    *retval = -1;
+    printf ("%s: mywarp=%d must be < warps_per_sm=%d. No GPU overhead stats will be gathered\n",
+	    thisfunc, mywarp, warps_per_sm);
+    return;
+  }
+
+  // First: start/stop overhead. First 2 are warmups. "0" index is GPTL_ROOT
   ret = GPTLstart_gpu (0);
   ret = GPTLstop_gpu (0);
   t1 = clock64();
-  for (i = 0; i < 1000; ++i) {
+  for (i = 0; i < iters; ++i) {
     ret = GPTLstart_gpu (0);
     ret = GPTLstop_gpu (0);
   }
   t2 = clock64();
-  startstop_ohd[0] = (t2 - t1) / 1000;
+  startstop_ohd[mywarp] = (t2 - t1) / (float) iters;
 
   // get_warp_num overhead. Need a bogus computation or compiler may optimize out the code
   t1 = clock64();
-  for (i = 0; i < 1000; ++i) {
-    if ((mywarp = get_warp_num ()) < -999)
-      get_warp_num_ohd[0] = -999;
+  for (i = 0; i < iters; ++i) {
+    if ((get_warp_num ()) < -999)
+      get_warp_num_ohd[mywarp] = -999;  // Will actually NEVER get set
   }
   t2 = clock64();
-  get_warp_num_ohd[0] = (t2 - t1) / 1000;
+  get_warp_num_ohd[mywarp] = (t2 - t1) / (float) iters;
 
   // utr plus smid overhead
   t1 = clock64();
-  for (i = 0; i < 1000; ++i) {
+  for (i = 0; i < iters; ++i) {
     asm volatile ("mov.u32 %0, %smid;" : "=r"(smid));
     t2 = clock64();
   }
-  *utr_ohd = (t2 - t1) / 1000;
+  utr_ohd[mywarp] = (t2 - t1) / (float) iters;
 
   // start misc overhead
   t1 = clock64();
-  for (i = 0; i < 1000; ++i) {
-    start_misc (0, 0);  // w, handle (handle=0 is GPTL_ROOT)
+  for (i = 0; i < iters; ++i) {
+    start_misc (mywarp, 0);  // w, handle (handle=0 is GPTL_ROOT)
   }
   t2 = clock64();
-  start_misc_ohd[0] = (t2 - t1) / 1000;
+  start_misc_ohd[mywarp] = (t2 - t1) / (float) iters;
 
   // stop misc overhead
   t1 = clock64();
-  for (i = 0; i < 1000; ++i) {
-    stop_misc (0, 0);  // w, handle (handle=0 is GPTL_ROOT)
+  for (i = 0; i < iters; ++i) {
+    stop_misc (mywarp, 0);  // w, handle (handle=0 is GPTL_ROOT)
   }
   t2 = clock64();
-  stop_misc_ohd[0] = (t2 - t1) / 1000;
+  stop_misc_ohd[mywarp] = (t2 - t1) / (float) iters;
 
   // Self and parent OHD estimates: A few settings at the end of GPTLstart_gpu should instead be 
   // applied to parent. A few settings at the beginning of GPTLstop_gpu should instead be
   // applied to self. But those errors are likely minor.
-  self_ohd[0]   = utr_ohd[0] + start_misc_ohd[0];
-  parent_ohd[0] = utr_ohd[0] + 2*get_warp_num_ohd[0] + stop_misc_ohd[0];
+  self_ohd[mywarp]   = utr_ohd[mywarp] + start_misc_ohd[mywarp];
+  parent_ohd[mywarp] = utr_ohd[mywarp] + 2*get_warp_num_ohd[mywarp] + stop_misc_ohd[mywarp];
 
   // my_strlen overhead
   t1 = clock64();
-  for (i = 0; i < 1000; ++i) {
+  for (i = 0; i < iters; ++i) {
     ret = my_strlen (name);
   }
   t2 = clock64();
-  *my_strlen_ohd = (t2 - t1) / 1000;
+  my_strlen_ohd[mywarp] = (t2 - t1) / (float) iters;
 
   // STRMATCH overhead
   t1 = clock64();
-  for (i = 0; i < 1000; ++i) {
+  for (i = 0; i < iters; ++i) {
     ret = STRMATCH (samename, name);
   }
   t2 = clock64();
-  *STRMATCH_ohd = (t2 - t1) / 1000;
+  STRMATCH_ohd[mywarp] = (t2 - t1) / (float) iters;
   return;
 }
 

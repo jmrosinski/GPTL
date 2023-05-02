@@ -62,10 +62,12 @@ static bool dopr_memusage = false;     // whether to include memusage print on g
 static float growth_pct = 0.;          // threshhold % for memory growth print
 
 #ifdef ENABLE_CUDA
+static int warpsize = 0;
 static int devnum = -1;                // GPU device number (init to bad)
 static double gpu_hz = 0.;             // GPU frequency in cycles per second (init to bad)
 static int maxtimers_gpu = DEFAULT_MAXTIMERS_GPU;
 static int maxwarps_gpu = DEFAULT_MAXWARPS_GPU;
+static int warps_per_sm = 0;           // Needed for printing
 #endif
 
 static time_t ref_gettimeofday = -1;   // ref start point for gettimeofday
@@ -486,16 +488,23 @@ int GPTLinitialize (void)
 #ifdef ENABLE_CUDA
   int SMcount;        // SM count for each GPU
   int khz;
-  int warpsize;
   int cores_per_sm;
   int cores_per_gpu;
   int ret;            // return value
 
   ret = GPTLget_gpu_props (&khz, &warpsize, &devnum, &SMcount, &cores_per_sm, &cores_per_gpu);
+  if (ret != 0) {
+    printf ("%s: failure from GPTLget_gpu_props:\n If 'unknown device type' is indicated above "
+	    "edit gptl_host.cu to add cores_per_sm info for this device\n", thisfunc);
+    return -1;
+  }
   printf ("%s: device number=%d warpsize=%d khz=%d\n", thisfunc, devnum, warpsize, khz);
 
   gpu_hz = khz * 1000.;
-  ret = GPTLinitialize_gpu (verbose, maxwarps_gpu, maxtimers_gpu, gpu_hz, warpsize);
+  ret = GPTLinitialize_gpu (verbose, maxwarps_gpu, maxtimers_gpu, gpu_hz, warpsize, cores_per_sm);
+  warps_per_sm = cores_per_sm / warpsize;
+  if (ret != 0)
+    return GPTLerror ("%s: Failure from GPTLinitialize_gpu\n", thisfunc);
 #endif
   
   imperfect_nest = false;
@@ -1243,7 +1252,8 @@ int GPTLreset (void)
   }
 
 #ifdef ENABLE_CUDA
-  GPTLreset_gpu_fromhost ();
+  if (GPTLreset_all_gpu_fromhost () != 0)
+    printf ("%s: Failure from GPTLreset_all_gpu_fromhost\n", thisfunc);
 #endif
   if (verbose)
     printf ("%s: accumulators for all timers set to zero\n", thisfunc);
@@ -1339,6 +1349,9 @@ int GPTLpr_file (const char *outfile)
   double self_ohd;          // estimated library overhead in self timer
   double parent_ohd;        // estimated library overhead due to self in parent timer
   float procsiz, rss;       // returned from GPTLget_procsiz
+#ifdef ENABLE_CUDA
+  int ret;
+#endif  
 
   static const char *gptlversion = GPTL_VERSIONINFO;
   static const char *thisfunc = "GPTLpr_file";
@@ -1646,7 +1659,10 @@ int GPTLpr_file (const char *outfile)
 
 #ifdef ENABLE_CUDA
   // Retrieve  and print the GPU info
-  GPTLprint_gpustats (fp, maxwarps_gpu, maxtimers_gpu, gpu_hz, devnum);
+  ret = GPTLprint_gpustats (fp, warpsize, warps_per_sm, maxwarps_gpu,
+			    maxtimers_gpu, gpu_hz, devnum);
+  if (ret != 0)
+    printf ("%s: Failure from GPTLprint_gpustats\n", thisfunc);
 #endif
 
   if (fp != stderr && fclose (fp) != 0)

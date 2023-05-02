@@ -69,21 +69,22 @@ typedef struct {
 
 // Function prototypes
 extern "C" {
-__global__ void GPTLreset_gpu (void);
+__global__ void GPTLreset_gpu (const int, int *global_retval);
+__global__ void GPTLreset_all_gpu (int *global_retval);
 __global__ void GPTLfinalize_gpu (void);
 __global__ void GPTLfill_gpustats (Gpustats *, int *, int *);
 __global__ void GPTLget_memstats_gpu (float *, float *);
-__global__ void GPTLget_overhead_gpu (int *,                  // maxwarpid_timed
-				      int *,                  // maxwarpid_found
-				      long long *,            // Getting my warp index
-				      long long *,            // start/stop pair
-				      long long *,            // Underlying timing routine
-				      long long *,            // misc start code
-				      long long *,            // misc stop code
-				      long long *,            // self_ohd
-				      long long *,            // parent_ohd
-				      long long *,            // my_strlen ohd
-				      long long *);           // STRMATCH ohd
+__global__ void GPTLget_maxwarpid_info (int *, int *);
+__global__ void GPTLget_overhead_gpu (float *,            // Getting my warp index
+				      float *,            // start/stop pair
+				      float *,            // Underlying timing routine
+				      float *,            // misc start code
+				      float *,            // misc stop code
+				      float *,            // self_ohd
+				      float *,            // parent_ohd
+				      float *,            // my_strlen ohd
+				      float *,            // STRMATCH ohd
+				      int *);             // return code from __global__
 __device__ int GPTLget_maxwarpid_timed (void);
 __device__ int GPTLerror_1s (const char *, const char *);
 __device__ int GPTLerror_2s (const char *, const char *, const char *);
@@ -91,6 +92,8 @@ __device__ int GPTLerror_3s (const char *, const char *, const char *, const cha
 __device__ int GPTLerror_1s1d (const char *, const char *, const int);
 __device__ int GPTLerror_2s1d (const char *, const char *, const char *, const int);
 __device__ int GPTLerror_2s2d (const char *, const char *, const char *, const int, const int);
+__device__ int GPTLerror_2s3d (const char *, const char *, const char *, const int, const int,
+			       const int);
 __device__ int GPTLerror_1s2d (const char *, const char *, const int, const int);
 __device__ int GPTLerror_1s1d1s (const char *, const char *, const int, const char *);
 __device__ void GPTLreset_errors_gpu (void);                  /* num_errors to zero */

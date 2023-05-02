@@ -5,12 +5,11 @@
 #include <cuda.h>
 
 #include "device.h"
-__device__ extern int warpsize;
-// This def is for CPU
-#define WARPSIZE 32
 
 extern "C" {
-__host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double gpu_hz, int devnum)
+  __host__ static float getavg (float *, int);
+  __host__ int GPTLprint_gpustats (FILE *fp, int warpsize, int warps_per_sm, int maxwarps,
+				   int maxtimers, double gpu_hz, int devnum)
 {
   Gpustats *gpustats;
   int *max_name_len_gpu;
@@ -20,19 +19,20 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   int ret;
   int *maxwarpid_found;
   int *maxwarpid_timed;
-
+ 
   // Returned from GPTLget_overhead_gpu:
-  long long *get_warp_num_ohdgpu; // Getting my thread index
-  long long *startstop_ohdgpu;    // Cost est of start/stop pair
-  long long *utr_ohdgpu;          // Underlying timing routine
-  long long *start_misc_ohdgpu;   // misc code from GPTLstart_gpu
-  long long *stop_misc_ohdgpu;    // misc code from GPTLstop_gpu
-  long long *self_ohdgpu;         // Cost est. for timing this region
-  long long *parent_ohdgpu;       // Cost est. to parent of this region
-  long long *my_strlen_ohdgpu;    // my_strlen function
-  long long *STRMATCH_ohdgpu;     // my_strcmp function
+  float *get_warp_num_ohdgpu; // Getting my thread index
+  float *startstop_ohdgpu;    // Cost est of start/stop pair
+  float *utr_ohdgpu;          // Underlying timing routine
+  float *start_misc_ohdgpu;   // misc code from GPTLstart_gpu
+  float *stop_misc_ohdgpu;    // misc code from GPTLstop_gpu
+  float *self_ohdgpu;         // Cost est. for timing this region
+  float *parent_ohdgpu;       // Cost est. to parent of this region
+  float *my_strlen_ohdgpu;    // my_strlen function
+  float *STRMATCH_ohdgpu;     // my_strcmp function
   // Returned from GPTLget_memstats_gpu:
   float *regionmem, *timernamemem;
+  int *global_retval;         // return code from global functions
 
   int count_max, count_min;
   double wallmax, wallmin;
@@ -50,8 +50,15 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
 
 #define HOSTSIZE 32
   char hostname[HOSTSIZE];
+  static int already_called = 0; // Only call this routine once
   static const char *thisfunc = "GPTLprint_gpustats";
 
+  if (already_called) {
+    printf ("%s was already called. Cannot call again\n", thisfunc);
+    return -1;
+  } else {
+    already_called = 1;
+  }
   gpuErrchk (cudaMallocManaged (&ngputimers,                   sizeof (int)));
   gpuErrchk (cudaMallocManaged (&max_name_len_gpu,             sizeof (int)));
   gpuErrchk (cudaMallocManaged (&gpustats,         maxtimers * sizeof (Gpustats)));
@@ -59,19 +66,22 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   gpuErrchk (cudaMallocManaged (&maxwarpid_found,     sizeof (int)));
   gpuErrchk (cudaMallocManaged (&maxwarpid_timed,     sizeof (int)));
 
-  gpuErrchk (cudaMallocManaged (&get_warp_num_ohdgpu, sizeof (long long)));
-  gpuErrchk (cudaMallocManaged (&startstop_ohdgpu,    sizeof (long long)));
-  gpuErrchk (cudaMallocManaged (&utr_ohdgpu,          sizeof (long long)));
-  gpuErrchk (cudaMallocManaged (&start_misc_ohdgpu,   sizeof (long long)));
-  gpuErrchk (cudaMallocManaged (&stop_misc_ohdgpu,    sizeof (long long)));
-  gpuErrchk (cudaMallocManaged (&self_ohdgpu,         sizeof (long long)));
-  gpuErrchk (cudaMallocManaged (&parent_ohdgpu,       sizeof (long long)));
+  gpuErrchk (cudaMallocManaged (&get_warp_num_ohdgpu, warps_per_sm*sizeof (float)));
+  gpuErrchk (cudaMallocManaged (&startstop_ohdgpu,    warps_per_sm*sizeof (float)));
+  gpuErrchk (cudaMallocManaged (&utr_ohdgpu,          warps_per_sm*sizeof (float)));
+  gpuErrchk (cudaMallocManaged (&start_misc_ohdgpu,   warps_per_sm*sizeof (float)));
+  gpuErrchk (cudaMallocManaged (&stop_misc_ohdgpu,    warps_per_sm*sizeof (float)));
+  gpuErrchk (cudaMallocManaged (&self_ohdgpu,         warps_per_sm*sizeof (float)));
+  gpuErrchk (cudaMallocManaged (&parent_ohdgpu,       warps_per_sm*sizeof (float)));
 
-  gpuErrchk (cudaMallocManaged (&my_strlen_ohdgpu,    sizeof (long long)));
-  gpuErrchk (cudaMallocManaged (&STRMATCH_ohdgpu,     sizeof (long long)));
+  gpuErrchk (cudaMallocManaged (&my_strlen_ohdgpu,    warps_per_sm*sizeof (float)));
+  gpuErrchk (cudaMallocManaged (&STRMATCH_ohdgpu,     warps_per_sm*sizeof (float)));
 
   gpuErrchk (cudaMallocManaged (&regionmem,           sizeof (float)));
   gpuErrchk (cudaMallocManaged (&timernamemem,        sizeof (float)));
+
+  // Create space for a "return" value for __global__functions to be checked on CPU
+  gpuErrchk (cudaMallocManaged (&global_retval,       sizeof (int)));
 
   fprintf (fp, "--------------------------------------------------------------------------------\n");
   fprintf (fp, "\n\nGPU Results:\n");
@@ -129,26 +139,46 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   ret = gethostname (hostname, HOSTSIZE);
   fprintf (fp, "%s: hostname=%s\n", thisfunc, hostname);
 
-  GPTLget_overhead_gpu <<<1,1>>> (maxwarpid_timed,
-				  maxwarpid_found,
-				  get_warp_num_ohdgpu,
-				  startstop_ohdgpu,
-				  utr_ohdgpu,
-				  start_misc_ohdgpu,
-				  stop_misc_ohdgpu,
-				  self_ohdgpu,
-				  parent_ohdgpu,
-				  my_strlen_ohdgpu,
-				  STRMATCH_ohdgpu);
+  GPTLget_maxwarpid_info <<<1,1>>> (maxwarpid_timed, maxwarpid_found);
   cudaDeviceSynchronize();
 
-  gwn       = 2.*get_warp_num_ohdgpu[0] / gpu_hz;  // 2. is due to calls from both start and stop
-  utr       = 2.*utr_ohdgpu[0] / gpu_hz;           // 2. is due to calls from both start and stop
-  startmisc = start_misc_ohdgpu[0] / gpu_hz;
-  stopmisc  = stop_misc_ohdgpu[0] / gpu_hz;
+  // Reset timer GPTL_ROOT (index 0) so overhead tests succeed
+  GPTLreset_gpu <<<1,1>>> (0, global_retval);
+  cudaDeviceSynchronize();
+  if (*global_retval != 0) {
+    printf ("%s: Failure from GPTLreset_gpu(0). Cannot print GPU stats\n", thisfunc);
+    return *global_retval;
+  }
+
+  // Initialize global_retval to success. If any thread encounters a problem they will
+  // reset it to -1
+  *global_retval = 0;
+  // Can change to <<<1,1>>> if problems occur, but accuracy of overhead
+  // estimates will be compromised.
+  GPTLget_overhead_gpu <<<warps_per_sm,1>>> (get_warp_num_ohdgpu,
+					     startstop_ohdgpu,
+					     utr_ohdgpu,
+					     start_misc_ohdgpu,
+					     stop_misc_ohdgpu,
+					     self_ohdgpu,
+					     parent_ohdgpu,
+					     my_strlen_ohdgpu,
+					     STRMATCH_ohdgpu,
+					     global_retval);
+  cudaDeviceSynchronize();
+  if (*global_retval != 0) {
+    printf ("%s: Failure from GPTLget_overhead_gpu. Cannot print GPU stats\n", thisfunc);
+    return *global_retval;
+  }
+  
+  // 2. in next 2 computations is due to calls from both start and stop  
+  gwn       = 2.*getavg (get_warp_num_ohdgpu, warps_per_sm) / gpu_hz;  
+  utr       = 2.*getavg (utr_ohdgpu, warps_per_sm) / gpu_hz;
+  startmisc = getavg (start_misc_ohdgpu, warps_per_sm) / gpu_hz;
+  stopmisc  = getavg (stop_misc_ohdgpu, warps_per_sm) / gpu_hz;
   tot       = gwn + utr + startmisc + stopmisc;
 
-  startstop = startstop_ohdgpu[0] / gpu_hz;
+  startstop = getavg (startstop_ohdgpu, warps_per_sm) / gpu_hz;
   scalefac  = startstop / tot;
 
   fprintf (fp, "Underlying timing routine was clock64() assumed @ %f Ghz\n", gpu_hz * 1.e-9);
@@ -167,13 +197,14 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
 
   fprintf (fp, "These 2 are called only by GPTLinit_handle_gpu, thus not part of overhead:\n");
   fprintf (fp, "my_strlen:                      %7.1e (name=GPTL_ROOT)\n",
-	   (double) my_strlen_ohdgpu[0] / (double) gpu_hz);
+	   getavg (my_strlen_ohdgpu, warps_per_sm) / gpu_hz);
   fprintf (fp, "STRMATCH:                       %7.1e (matched name=GPTL_ROOT)\n",
-	   (double) STRMATCH_ohdgpu[0] / (double) gpu_hz);
+	   getavg (STRMATCH_ohdgpu, warps_per_sm) / gpu_hz);
   fprintf (fp, "\n");
 
   fprintf (fp, "\nGPU timing stats\n");
-  fprintf (fp, "GPTL could handle up to %d warps (%d threads)\n", maxwarps, maxwarps * WARPSIZE);
+  fprintf (fp, "GPTL could handle up to %d warps (%d threads)\n",
+	   maxwarps, maxwarps * warpsize);
   fprintf (fp, "This setting can be changed with: GPTLsetoption(GPTLmaxthreads_gpu,<number>)\n");
   fprintf (fp, "%d = max warpId examined\n", maxwarpid_timed[0]);
 #ifdef ENABLE_FOUND
@@ -182,13 +213,14 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
 #endif
   fprintf (fp, "Only warps which were timed are counted in the following stats\n");
   fprintf (fp, "Overhead estimates self_OH and parent_OH are for warp with \'maxcount\' calls\n");
-  fprintf (fp, "Assuming SMs are always busy computing, GPTL overhead can be vaguely estimated by this calculation:\n");
+  fprintf (fp, "Assuming SMs are always busy computing, GPTL overhead can be vaguely estimated"
+	   "by this calculation:\n");
   fprintf (fp, "(num warps allocated / num warps on device) * (self_OH + parent_OH)\n");
 
   fprintf (fp, "name            = region name\n");
   fprintf (fp, "calls           = number of invocations across all examined warps\n");
   fprintf (fp, "warps           = number of examined warps for which region was timed at least once\n");
-  fprintf (fp, "holes           = number of examined warps for which region was never executed (maxwarpid_timed + 1 - warps\n");
+  fprintf (fp, "holes           = number of examined warps for which region was never executed (maxwarpid_timed + 1 - num_warps_timed\n");
   fprintf (fp, "wallmax (warp)  = max wall time (sec) taken by any timed warp for this region, followed by the warp number\n");
   fprintf (fp, "wallmin (warp)  = min wall time (sec) taken by any timed warp for this region, followed by the warp number\n");
   fprintf (fp, "maxcount (warp) = max number of times region invoked by any timed warp, followed by the warp number\n");
@@ -259,14 +291,14 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
     else
       fprintf (fp, "|%6d |", gpustats[n].badsmid_count);      // number of times SM changed on "stop" call
 
-    self = (gpustats[n].count_max * self_ohdgpu[0]) / gpu_hz; // self ohd est
+    self = (gpustats[n].count_max * getavg (self_ohdgpu, warps_per_sm)) / gpu_hz; // self ohd est
     self *= scalefac;                                         // try to get a closer estimate
     if (self < 0.01)
       fprintf (fp, "%8.2e  ", self);
     else
       fprintf (fp, "%8.3f  ", self);	       
     
-    parent = (gpustats[n].count_max * parent_ohdgpu[0]) / gpu_hz; // parent ohd est
+    parent = (gpustats[n].count_max * getavg (parent_ohdgpu, warps_per_sm)) / gpu_hz; // parent ohd est
     parent *= scalefac;                                           // try to get a closer estimate
     if (self < 0.01)
       fprintf (fp, "%8.2e ", parent);
@@ -283,5 +315,15 @@ __host__ void GPTLprint_gpustats (FILE *fp, int maxwarps, int maxtimers, double 
   fprintf (fp, "GPTL GPU memory usage (Timer names) = %8g KB\n", timernamemem[0]*.001);
   fprintf (fp, "                                      --------\n");
   fprintf (fp, "GPTL GPU memory usage (Total)       = %8g KB\n", (regionmem[0] + timernamemem[0])*.001);
+  return 0;
+}
+
+__host__ float getavg (float *arr, int warps_per_sm)
+{
+  float avg = 0.;
+  for (int i = 0; i < warps_per_sm; ++i)
+    avg += arr[i];
+  avg /= warps_per_sm;
+  return avg;
 }
 }
