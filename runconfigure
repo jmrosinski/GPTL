@@ -41,13 +41,24 @@ function setvar_chk () {
 ########################## Begin main script ####################################
 
 # Base command for GPU build with all required settings plus OpenACC
-cmd="env CC=nvc FC=nvfortran ./configure --prefix=/home/rosinski/install/gptl_cuda --disable-shared --disable-openmp --with-nvcc=nvcc --enable-cacc --enable-facc"
+cmd="env CC=nvc FC=nvfortran ./configure --disable-shared --disable-openmp --with-nvcc=nvcc --enable-cacc --enable-facc"
 
 # Add options
 declare -a defyes=("y" "n")
 declare -a defno=("n" "y")
 declare -a defnonum=("n" 16 24 32 48 64 96 128)
 declare -a validccab=(35 37 50 52 53 60 61 62 70 72 75 80 86 87)
+
+printf "prefix is where the library will be installed\n"
+defans="${HOME}/install/gptl_cuda"
+ans=''
+echo -n "enter prefix [$defans]"
+read ans < /dev/stdin
+if [[ -z $ans ]]; then
+  ans=$defans
+fi
+newcmd="$cmd --prefix=$ans"
+cmd="$newcmd"
 
 printf "debug adds overhead to both CPU and GPU\n"
 setvar_chk "debug" ${defno[@]}
