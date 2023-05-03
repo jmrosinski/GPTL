@@ -24,6 +24,9 @@ __host__ int GPTLget_gpu_props (int *khz, int *warpsize, int *devnum, int *SMcou
   *SMcount  = prop.multiProcessorCount;
 
   // Begin code derived from stackoverflow to determine cores_per_sm
+  // If helper_cuda.h and cuda_runtime.h is available (it's not currently in PATH)
+  // could call _ConvertSMVer2Cores(prop.major, prop.minor) to get cores_per_sm
+  // probably also need cuda_runtime.h
   switch (prop.major){
   case 2: // Fermi
     if (prop.minor == 1)
