@@ -50,7 +50,7 @@ declare -a defnonum=("n" 16 24 32 48 64 96 128)
 declare -a validccab=(35 37 50 52 53 60 61 62 70 72 75 80 86 87)
 
 printf "prefix is where the library will be installed\n"
-defans="${HOME}/install/gptl_cuda"
+defans="${HOME}/install/gptl_cuda_placebo"
 ans=''
 echo -n "enter prefix [$defans]"
 read ans < /dev/stdin
@@ -68,48 +68,6 @@ if [[ $debug == "y" ]]; then
   cmd="$newcmd"
 fi
 
-printf "dummygpustartstop turns GPTLstart_gpu and GPTLstop_gpu into dummy routines\n"
-printf "dummygpustartstop is useful for assessing GPTL overhead\n"
-setvar_chk "dummygpustartstop" ${defno[@]}
-printf "dummygpustartstop is $dummygpustartstop\n\n"
-if [[ $dummygpustartstop == "y" ]]; then
-  newcmd="$cmd --enable-dummygpustartstop"
-  cmd="$newcmd"
-fi
-
-printf "gpuchecks should be enabled first time, but adds overhead so disable if no problems\n"
-printf "gpuchecks enables testing for GPTL not initialized, bad handle, timer already on/off, bad smid\n"
-setvar_chk "gpuchecks" ${defyes[@]}
-printf "gpuchecks is $gpuchecks\n\n"
-if [[ $gpuchecks == "n" ]]; then
-  newcmd="$cmd --disable-gpuchecks"
-  cmd="$newcmd"
-fi
-
-printf "gpurecursion enables testing for recursive GPU function calls: Disable if none exist\n"
-setvar_chk "gpurecursion" ${defno[@]}
-printf "gpurecursion is $gpurecursion\n\n"
-if [[ $gpurecursion == "y" ]]; then
-  newcmd="$cmd --enable-gpurecursion"
-  cmd="$newcmd"
-fi
-
-printf "timegptl enables assessment/printing of library overhead estimate: Disable unless expert\n"
-setvar_chk "timegptl" ${defno[@]}
-printf "timegptl is $timegptl\n\n"
-if [[ $timegptl == "y" ]]; then
-  newcmd="$cmd --enable-timegptl"
-  cmd="$newcmd"
-fi
-
-printf "maxwarpid_found can be useful for setting number of warps to examine but is imprecise\n"
-setvar_chk "maxwarpid_found" ${defno[@]}
-printf "maxwarpid_found is $maxwarpid_found\n\n"
-if [[ $maxwarpid_found == "y" ]]; then
-  newcmd="$cmd --enable-maxwarpid_found"
-  cmd="$newcmd"
-fi
-
 printf "Do you want to change compute capability from default value of 61?"
 setvar_chk "setccab" ${defno[@]}
 if [[ $setccab == "y" ]]; then
@@ -119,14 +77,6 @@ if [[ $setccab == "y" ]]; then
     newcmd="$cmd --with-ccab=$ccab"
     cmd="$newcmd"
   fi
-fi
-
-printf "maxrregcount can be useful for optimizing GPTL performance"
-setvar_chk "maxrregcount" ${defnonum[@]}
-printf "maxrregcount is $maxrregcount\n\n"
-if [[ $maxrregcount != "n" ]]; then
-  newcmd="$cmd --with-maxrregcount=$maxrregcount"
-  cmd="$newcmd"
 fi
 
 echo "Hit return to run:"

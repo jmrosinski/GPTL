@@ -62,12 +62,8 @@ static bool dopr_memusage = false;     // whether to include memusage print on g
 static float growth_pct = 0.;          // threshhold % for memory growth print
 
 #ifdef ENABLE_CUDA
-static int warpsize = 0;
-static int devnum = -1;                // GPU device number (init to bad)
-static double gpu_hz = 0.;             // GPU frequency in cycles per second (init to bad)
 static int maxtimers_gpu = DEFAULT_MAXTIMERS_GPU;
 static int maxwarps_gpu = DEFAULT_MAXWARPS_GPU;
-static int warps_per_sm = 0;           // Needed for printing
 #endif
 
 static time_t ref_gettimeofday = -1;   // ref start point for gettimeofday
@@ -343,7 +339,6 @@ int GPTLsetoption (const int option, const int val)
     if (verbose)
       printf ("%s: onlypr_rank0 = %d\n", thisfunc, val);
     return 0;
-
 #ifdef ENABLE_CUDA
   case GPTLmaxwarps_gpu:
     if (val < 1)
@@ -486,6 +481,8 @@ int GPTLinitialize (void)
   }
 
 #ifdef ENABLE_CUDA
+  int warpsize;
+  int devnum;         // GPU device number (init to bad)
   int SMcount;        // SM count for each GPU
   int khz;
   int cores_per_sm;
@@ -498,13 +495,8 @@ int GPTLinitialize (void)
 	    "edit gptl_host.cu to add cores_per_sm info for this device\n", thisfunc);
     return -1;
   }
-  printf ("%s: device number=%d warpsize=%d khz=%d\n", thisfunc, devnum, warpsize, khz);
-
-  gpu_hz = khz * 1000.;
-  ret = GPTLinitialize_gpu (verbose, maxwarps_gpu, maxtimers_gpu, gpu_hz, warpsize, cores_per_sm);
-  warps_per_sm = cores_per_sm / warpsize;
-  if (ret != 0)
-    return GPTLerror ("%s: Failure from GPTLinitialize_gpu\n", thisfunc);
+  printf ("%s: device number=%d warpsize=%d khz=%d SMcount=%d cores_per_sm=%d cores_per_gpu=%d\n",
+	  thisfunc, devnum, warpsize, khz, SMcount,cores_per_sm, cores_per_gpu);
 #endif
   
   imperfect_nest = false;
@@ -593,9 +585,6 @@ int GPTLfinalize (void)
   tablesize = DEFAULT_TABLE_SIZE;
   tablesizem1 = tablesize - 1;
 
-#ifdef ENABLE_CUDA  
-  GPTLfinalize_gpu_fromhost ();
-#endif
   return 0;
 }
 
@@ -1251,10 +1240,6 @@ int GPTLreset (void)
     }
   }
 
-#ifdef ENABLE_CUDA
-  if (GPTLreset_all_gpu_fromhost () != 0)
-    printf ("%s: Failure from GPTLreset_all_gpu_fromhost\n", thisfunc);
-#endif
   if (verbose)
     printf ("%s: accumulators for all timers set to zero\n", thisfunc);
 
@@ -1447,9 +1432,9 @@ int GPTLpr_file (const char *outfile)
 #endif
 
 #ifdef DEBUG
-  fprintf (fp, "DEBUG (for both CPU and GPU) was true\n");
+  fprintf (fp, "DEBUG was true\n");
 #else
-  fprintf (fp, "DEBUG (for both CPU and GPU) was false\n");
+  fprintf (fp, "DEBUG was false\n");
 #endif
 
 #ifdef HAVE_LIBUNWIND
@@ -1463,7 +1448,7 @@ int GPTLpr_file (const char *outfile)
   fprintf (fp, "Underlying timing routine was %s.\n", funclist[funcidx].name);
 
 #ifdef ENABLE_CUDA
-  fprintf (fp, "ENABLE_CUDA (GPU profiling) was true\n\n");
+  fprintf (fp, "ENABLE_CUDA (GPU profiling) was true but PLACEBO\n\n");
 #else
   fprintf (fp, "ENABLE_CUDA (GPU profiling) was false\n\n");
 #endif
@@ -1656,14 +1641,6 @@ int GPTLpr_file (const char *outfile)
   GPTLprint_memstats (fp, timers, tablesize);
 
   free (sum);
-
-#ifdef ENABLE_CUDA
-  // Retrieve  and print the GPU info
-  ret = GPTLprint_gpustats (fp, warpsize, warps_per_sm, maxwarps_gpu,
-			    maxtimers_gpu, gpu_hz, devnum);
-  if (ret != 0)
-    printf ("%s: Failure from GPTLprint_gpustats\n", thisfunc);
-#endif
 
   if (fp != stderr && fclose (fp) != 0)
     fprintf (stderr, "%s: Attempt to close %s failed\n", thisfunc, outfile);

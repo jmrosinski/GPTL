@@ -11,7 +11,7 @@ if HAVE_LIBUNWIND
 endif
 
 # These programs will be built but not installed.
-noinst_PROGRAMS = basic test1 driver_serial shared
+noinst_PROGRAMS = basic
 
 # Test programs that will be built for all configurations.
 check_PROGRAMS = basic
@@ -20,30 +20,11 @@ TESTS          = basic
 basic_SOURCES = basic.cu
 basic_OBJS    = basic.o
 
-test1_SOURCES = test1.cu
-test1_OBJS    = test1.o
-
-shared_SOURCES = shared.cu
-shared_OBJS    = shared.o
-
-driver_serial_SOURCES = driver_serial.cu getval.cu persist.cu sleep1.cu sleep.cu subs.cu
-driver_serial_OBJS    = driver_serial.o  getval.o  persist.o  sleep1.o  sleep.o  subs.o 
-
 .cu.o: $(AM_LDFLAGS)
 	$(NVCC) -c $< $(AM_CPPFLAGS) $(CUFLAGS)
 
 $(basic_OBJS): $(basic_SOURCES) ../../include/gptl.h ../include/gptl_cuda.h
-$(test1_OBJS): $(test1_SOURCES) ../../include/gptl.h ../include/gptl_cuda.h
-$(driver_serial_OBJS): $(driver_serial_SOURCES) ../../include/gptl.h ../include/gptl_cuda.h localproto.h
-$(shared_OBJS): $(shared_SOURCES) ../../include/gptl.h ../include/gptl_cuda.h
-
 basic$(EXEEXT): $(basic_OBJS) ../../include/gptl.h ../include/gptl_cuda.h
 	$(NVCC) -o $@ $(basic_OBJS) $(CUFLAGS) $(AM_LDFLAGS)
-test1$(EXEEXT): $(test1_OBJS) ../../include/gptl.h ../include/gptl_cuda.h
-	$(NVCC) -o $@ $(test1_OBJS) $(CUFLAGS) $(AM_LDFLAGS)
-driver_serial$(EXEEXT):  $(driver_serial_OBJS)
-	$(NVCC) -o $@ $(driver_serial_OBJS) $(CUFLAGS) $(AM_LDFLAGS)
-shared$(EXEEXT):  $(shared_OBJS)
-	$(NVCC) -o $@ $(shared_OBJS) $(CUFLAGS) $(AM_LDFLAGS)
 
 CLEANFILES = *.ptx *.ii *.module_id *.cudafe1.* *.fatbin*

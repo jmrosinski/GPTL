@@ -21,11 +21,6 @@ __device__ int GPTLstop_gpu (const int);
 __device__ void GPTLdummy_gpu (void);
 __device__ int GPTLmy_sleep (float);
 __device__ int GPTLget_wallclock_gpu (const int, double *, double *, double *);
-__device__ int GPTLget_warp_thread (int *, int *);
-__device__ int GPTLsliced_up_how (const char *);
-__device__ int GPTLget_sm_thiswarp (int []);
-__device__ int GPTLcuProfilerStart (void);
-__device__ int GPTLcuProfilerStop (void);
 #ifdef __cplusplus
 };
 #endif

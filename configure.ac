@@ -408,10 +408,6 @@ AC_MSG_RESULT([$NVCC])
 AC_SUBST([NVCC], [$NVCC])
 
 if test "x$NVCC" != xno; then
-  if test "x$useomp" = xyes; then
-    AC_MSG_ERROR([CUDA is currently incompatible with CPU OpenMP. Rerun configure with --disable-openmp])
-  fi
-
   use_cuda=yes
 
 # Compute capability. Default to 61
@@ -430,11 +426,7 @@ if test "x$NVCC" != xno; then
 # Just for printing
   AC_DEFINE_UNQUOTED([CCAB], [$CCAB], [GPU interface built with this compute capability])
 
-  if test "x$use_debug" = xyes; then
-    CUFLAGS="$CUFLAGS -g -G -keep -lineinfo -src-in-ptx -ftz=true -rdc=true"
-  else
-    CUFLAGS="$CUFLAGS -keep -src-in-ptx -lineinfo --ptxas-options=-v -ftz=true -rdc=true"
-  fi
+  CUFLAGS="$CUFLAGS -keep -src-in-ptx -lineinfo --ptxas-options=-v -ftz=true -rdc=true"
   
 # For Makefiles which do testing
   AC_SUBST([CCAB], [$CCAB])
@@ -450,57 +442,6 @@ if test "x$NVCC" != xno; then
     CUFLAGS="$CUFLAGS --maxrregcount $regs"
   fi
   
-# Check whether to enable dummy do-nothing calls to GPTLstart_gpu and GPTLstop_gpu
-# Only enable to estimate overhead of these calls by comparing to when disabled
-# Default disabled
-  AC_MSG_CHECKING([whether to make GPTLstart_gpu and GPTLstop_gpu do nothing])
-  AC_ARG_ENABLE([dummygpustartstop],
-    AS_HELP_STRING([--enable-dummygpustartstop], [Disable GPTLstart_gpu and GPTLstop_gpu]))
-  AS_IF([test "x$enable_dummygpustartstop" = xyes], [
-    AC_DEFINE([DUMMYGPUSTARTSTOP], [1], [Enable dummy GPTLstart_gpu and GPTLstop_gpu])
-    dummygpustartstop=yes
-  ],dummygpustartstop=no)
-  AC_MSG_RESULT($dummygpustartstop)
-  if test "x$dummygpustartstop" = xyes; then
-    FCFLAGS="$FCFLAGS -DDUMMYGPUSTARTSTOP"
-  fi
-
-# Check whether to disable validity checks in GPU start/stop routines
-# Default enabled
-  AC_MSG_CHECKING([whether to enable validity checking on GPU])
-  AC_ARG_ENABLE([gpuchecks],
-    AS_HELP_STRING([--disable-gpuchecks], [Disable validity checks in GPU start/stop routines]))
-  AS_IF([test "x$enable_gpuchecks" != xno], [
-    AC_DEFINE([ENABLE_GPUCHECKS], [1], [Enable validity checks in GPU start/stop routines])
-    gpuchecks=yes
-  ],gpuchecks=no)
-  AC_MSG_RESULT($gpuchecks)
-  if test "x$gpuchecks" = xyes; then
-    FCFLAGS="$FCFLAGS -DENABLE_GPUCHECKS"
-  fi
-
-# Whether to check for recursion on GPU.
-# Default disabled since recursion is a bad idea on GPU and checking for it adds overhead
-  AC_MSG_CHECKING([whether to allow recursive calls on GPU])
-  AC_ARG_ENABLE([gpurecursion],
-    AS_HELP_STRING([--enable-gpurecursion], [Check for recursive calls on GPU]))
-  AS_IF([test "x$enable_gpurecursion" = "xyes"], [
-    AC_DEFINE([ENABLE_GPURECURSION], [1], [enable recursion on GPU])
-    gpurecursion=yes
-  ],gpurecursion=no)
-  AC_MSG_RESULT($gpurecursion)
-
-# Whether to check for adding internal timers to GPTL
-# Default disabled due to significant overhead
-  AC_MSG_CHECKING([whether to enable internal GPTL timers on GPU])
-  AC_ARG_ENABLE([timegptl],
-    AS_HELP_STRING([--enable-timegptl], [enable internal GPTL timers on GPU]))
-  AS_IF([test "x$enable_timegptl" = "xyes"], [
-    AC_DEFINE([TIME_GPTL], [1], [enable internal GPTL timers on GPU])
-    internal_gptl_timers=yes
-  ],internal_gptl_timers=no)
-  AC_MSG_RESULT($internal_gptl_timers)
-
 # For OpenACC (currently only nvc and nvfortran), codes will need the following flags
 # Too complicated and fragile to enforce via env. vars. so just hardwire here.
 # Unfortunately AC_ARG_VAR doesn't expand variable names in description.
@@ -555,15 +496,6 @@ if test "x$use_cuda" = xyes; then
     [AC_MSG_RESULT(no)
      CFLAGS="$SAVED_CFLAGS"])
 fi
-
-# Check if discovering maxwarpid_found is wanted. Computing it adds quite a bit of overhead
-# because it is computed in get_warp_num.
-# Default disabled due to extra overhead
-AC_ARG_ENABLE([maxwarpid_found],
-  AS_HELP_STRING([--enable-maxwarpid_found], [Include output of maxwarpid found--adds overhead]))
-AS_IF([test "x$enable_maxwarpid_found" = xyes], [
-  AC_DEFINE([ENABLE_FOUND], [1], [Include output of maxwarpid found--adds overhead])
-])
 
 # Whether Fortran suppport is to be enabled. If so check for working compiler
 # Default enabled

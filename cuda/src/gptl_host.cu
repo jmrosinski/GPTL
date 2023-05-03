@@ -76,29 +76,4 @@ __host__ int GPTLcudadevsync (void)
   cudaDeviceSynchronize ();
   return 0;
 }
-
-// The need for these 2 wrapping functions enables gptl.c above to be built with a pure C compiler
-// and therefore not require a .cu extension, which itself can cause problems when CUDA is not
-// in play.
-__host__ int GPTLreset_all_gpu_fromhost (void)
-{
-  static int *global_retval = 0; // return code from __global__ function
-
-  if (global_retval == 0)  // Unallocated means first call
-    // Create space for a "return" value for __global__functions to be checked on CPU
-    gpuErrchk (cudaMallocManaged (&global_retval, sizeof (int)));
-
-  *global_retval = 0;
-  GPTLreset_all_gpu <<<1,1>>> (global_retval);
-  cudaDeviceSynchronize ();
-  if (*global_retval != 0)
-    printf ("GPTLreset_all_gpu_fromhost: Failure from GPTLreset_all_gpu\n");
-  return *global_retval;
-}
-
-__host__ int GPTLfinalize_gpu_fromhost (void)
-{
-  GPTLfinalize_gpu <<<1,1>>> ();
-  return 0;
-}
 }

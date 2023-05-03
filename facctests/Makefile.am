@@ -13,20 +13,11 @@ if HAVE_LIBUNWIND
 endif
 
 # These programs will be built but not installed.
-noinst_PROGRAMS = basic driver_vdmints3 warp2sm utrtest
+noinst_PROGRAMS = basic
 
 # Test programs that will be built for all configurations.
-check_PROGRAMS = basic badinput
-TESTS          = basic badinput
-
-driver_vdmints3_SOURCES = driver_vdmints3.cu vdmints3_sim.cu getval.cu
-driver_vdmints3_OBJS =    driver_vdmints3.o  vdmints3_sim.o  getval.o
-
-warp2sm_SOURCES = warp2sm.F90
-warp2sm_OBJS    = warp2sm.o
-
-utrtest_SOURCES = utrtest.F90
-utrtest_OBJS    = utrtest.o
+check_PROGRAMS = basic
+TESTS          = basic
 
 .F90.o:
 	$(FC) -c $< $(AM_FCFLAGS)
@@ -36,22 +27,6 @@ utrtest_OBJS    = utrtest.o
 	$(FC) -c $< $(AM_FCFLAGS)
 
 # Cannot remember if/why need both getval.o and getval.$(FC_MODEXT) here???
-basic.o: basic.F90 getval.o getval.$(FC_MODEXT) ../fortran/src/gptl.$(FC_MODEXT) ../cuda/src/gptl_acc.$(FC_MODEXT)
+basic.o: basic.F90 
 basic$(EXEEXT): basic.o
 	$(FC) -o $@ basic.o $(AM_LDFLAGS)
-
-badinput.o: badinput.F90 ../fortran/src/gptl.$(FC_MODEXT) ../cuda/src/gptl_acc.$(FC_MODEXT)
-badinput$(EXEEXT): badinput.o
-	$(FC) -o $@ badinput.o $(AM_LDFLAGS)
-
-driver_vdmints3.o: getval.$(FC_MODEXT) ../fortran/src/gptl.$(FC_MODEXT) ../cuda/src/gptl_acc.mod
-driver_vdmints3$(EXEEXT): $(driver_vdmints3_OBJS)
-	$(FC) -o $@ $(driver_vdmints3_OBJS) $(AM_LDFLAGS)
-
-warp2sm.o: warp2sm.F90
-warp2sm$(EXEEXT): warp2sm.o
-	$(FC) -o $@ warp2sm.o $(AM_LDFLAGS)
-
-utrtest.o: utrtest.F90
-utrtest$(EXEEXT): utrtest.o
-	$(FC) -o $@ utrtest.o $(AM_LDFLAGS)
