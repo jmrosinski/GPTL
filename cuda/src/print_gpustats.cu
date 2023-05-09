@@ -95,6 +95,12 @@ extern "C" {
   fprintf (fp, "ENABLE_GPUCHECKS was false\n");
 #endif
 
+#ifdef ENABLE_CONSTANTMEM
+  fprintf (fp, "ENABLE_CONSTANTMEM was true\n");
+#else
+  fprintf (fp, "ENABLE_CONSTANTMEM was false\n");
+#endif
+
 #ifdef ENABLE_GPURECURSION
   fprintf (fp, "ENABLE_GPURECURSION was true\n");
 #else

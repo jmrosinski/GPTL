@@ -593,8 +593,12 @@ int GPTLfinalize (void)
   tablesize = DEFAULT_TABLE_SIZE;
   tablesizem1 = tablesize - 1;
 
-#ifdef ENABLE_CUDA  
-  GPTLfinalize_gpu_fromhost ();
+#ifdef ENABLE_CUDA
+  int ret;
+  if ((ret = GPTLfinalize_gpu_fromhost ()) != 0) {
+    printf ("%s: Failure from GPTLfinalize_gpu_fromhost\n", ret);
+    return ret;
+  }
 #endif
   return 0;
 }

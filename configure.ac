@@ -465,6 +465,17 @@ if test "x$NVCC" != xno; then
     FCFLAGS="$FCFLAGS -DDUMMYGPUSTARTSTOP"
   fi
 
+# Check whether to disable constant memory use within GPTL. Early versions of CUDA don't allow it
+# Default enabled
+  AC_MSG_CHECKING([whether to enable use of CUDA constant memory by GPTL])
+  AC_ARG_ENABLE([constantmem],
+    AS_HELP_STRING([--disable-constantmem], [Disable use of CUDA constant memory by GPTL]))
+  AS_IF([test "x$enable_constantmem" != xno], [
+    AC_DEFINE([ENABLE_CONSTANTMEM], [1], [Enable use of CUDA constant memory by GPTL])
+    constantmem=yes
+  ],constantmem=no)
+  AC_MSG_RESULT($constantmem)
+
 # Check whether to disable validity checks in GPU start/stop routines
 # Default enabled
   AC_MSG_CHECKING([whether to enable validity checking on GPU])

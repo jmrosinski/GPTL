@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <cuda.h>
 
+static int *global_retval = 0; // return code from __global__ functions
+
 extern "C" {
 
 // Return useful GPU properties. Use arg list for SMcount, cores_per_sm, and cores_per_gpu even 
@@ -85,13 +87,11 @@ __host__ int GPTLcudadevsync (void)
 // in play.
 __host__ int GPTLreset_all_gpu_fromhost (void)
 {
-  static int *global_retval = 0; // return code from __global__ function
-
-  if (global_retval == 0)  // Unallocated means first call
     // Create space for a "return" value for __global__functions to be checked on CPU
+  if (global_retval == 0)        // address=0 means first call
     gpuErrchk (cudaMallocManaged (&global_retval, sizeof (int)));
 
-  *global_retval = 0;
+  *global_retval = 0;  // Init to success, failure in the global routine will be non-zero
   GPTLreset_all_gpu <<<1,1>>> (global_retval);
   cudaDeviceSynchronize ();
   if (*global_retval != 0)
@@ -101,7 +101,15 @@ __host__ int GPTLreset_all_gpu_fromhost (void)
 
 __host__ int GPTLfinalize_gpu_fromhost (void)
 {
-  GPTLfinalize_gpu <<<1,1>>> ();
-  return 0;
+  // Create space for a "return" value for __global__functions to be checked on CPU
+  if (global_retval == 0)        // address=0 means first call
+    gpuErrchk (cudaMallocManaged (&global_retval, sizeof (int)));
+
+  *global_retval = 0;  // Init to success, failure in the global routine will be non-zero
+  GPTLfinalize_gpu <<<1,1>>> (global_retval);
+  cudaDeviceSynchronize ();
+  if (*global_retval != 0)
+    printf ("GPTLfinalize_gpu_fromhost: Failure from GPTLfinalize_gpu\n");
+  return *global_retval;
 }
 }

@@ -86,6 +86,15 @@ if [[ $gpuchecks == "n" ]]; then
   cmd="$newcmd"
 fi
 
+printf "constantmem should be enabled unless problems are encountered\n"
+printf "Its usage lowers overall overhead of the GPTL GPU code"
+setvar_chk "constantmem" ${defyes[@]}
+printf "constantmem is $constantmem\n\n"
+if [[ $constantmem == "n" ]]; then
+  newcmd="$cmd --disable-constantmem"
+  cmd="$newcmd"
+fi
+
 printf "gpurecursion enables testing for recursive GPU function calls: Disable if none exist\n"
 setvar_chk "gpurecursion" ${defno[@]}
 printf "gpurecursion is $gpurecursion\n\n"

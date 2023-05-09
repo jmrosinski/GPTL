@@ -23,19 +23,19 @@ __device__ static Timer *timers = 0;            // array (also linked list) of t
 __device__ static Timername *timernames;        // array of timer names
 __device__ static int max_name_len;             // max length of timer name
 __device__ static int ntimers = 0;              // number of timers
-#define ENABLE_CONSTANTMEM
 #ifdef ENABLE_CONSTANTMEM
+__device__ __constant__ static bool initialized = false;     // GPTLinitialize has been called
 __device__ __constant__ static int maxtimers;   // max number of timers allowed
 __device__ __constant__ static int warpsize;    // warp size
 __device__ __constant__ static int maxwarps;    // max number of warps that will be examined
 #else
+__device__              static bool initialized = false;     // GPTLinitialize has been called
 __device__              static int maxtimers;   // max number of timers allowed
 __device__              static int warpsize;    // warp size
 __device__              static int maxwarps;    // max number of warps that will be examined
 #endif
            
 __device__ static int maxwarpid_found = 0;      // number of warps found : init to 0
-__device__ static bool initialized = false;     // GPTLinitialize has been called
 __device__ static bool verbose = false;         // output verbosity
 __device__ static double gpu_hz = 0.;           // clock freq
 __device__ static int warps_per_sm = 0;         // used for overhead calcs
@@ -56,10 +56,10 @@ extern "C" {
 
 // Local function prototypes
 __global__ static void initialize_gpu (const int, const int, const double, Timer *,
-				       Timername *, const int, const int, long long *, int *);
+				       Timername *, const int, long long *, int *);
 __device__ static inline int get_warp_num (void);         // get 0-based 1d warp number
-__device__ static inline int update_stats_gpu (const int, Timer *, const long long, const int,
-					       const uint);
+__device__ static inline void update_stats_gpu (const int, Timer *, const long long, const int,
+						const uint);
 __device__ static int my_strlen (const char *);
 __device__ static char *my_strcpy (char *, const char *);
 __device__ static int my_strcmp (const char *, const char *);
@@ -134,10 +134,18 @@ __host__ int GPTLinitialize_gpu (const int verbose_in,
 			    gpu_hz_in,
 			    timers_cpu,
 			    timernames_cpu,
-			    warpsize_in,
 			    cores_per_sm_in,
 			    globcount_cpu,
 			    global_retval);
+#ifdef ENABLE_CONSTANTMEM
+  // Can only change a __constant__ value from host
+  static bool truefalse;
+  if (*global_retval == 0)
+    truefalse = true;
+  else
+    truefalse = false;
+  gpuErrchk (cudaMemcpyToSymbol (initialized, &truefalse, sizeof (bool)));
+#endif
   // This should flush any existing print buffers
   cudaDeviceSynchronize ();
   return *global_retval;
@@ -154,7 +162,6 @@ __global__ static void initialize_gpu (const int verbose_in,
 				       const double gpu_hz_in,
 				       Timer *timers_cpu,
 				       Timername *timernames_cpu,
-				       const int warpsize_in,
 				       const int cores_per_sm_in,
 				       long long *globcount_cpu,
 				       int *global_retval)
@@ -206,14 +213,17 @@ __global__ static void initialize_gpu (const int verbose_in,
     printf ("Per call overhead est. t2-t1=%g should be near zero\n", (float) (t2-t1));
     printf ("Underlying wallclock timing routine is clock64\n");
   }
+#ifndef ENABLE_CONSTANTMEM
+  // If "initialized" is __constant__ its value will be changed in the CPU caller
   initialized = true;
+#endif
 }
 
 /*
 ** GPTLfinalize_gpu (): Finalization routine must be called from single-threaded
 **   region. Free all malloc'd space
 */
-__global__ void GPTLfinalize_gpu (void)
+__global__ void GPTLfinalize_gpu (int *global_retval)
 {
   static const char *thisfunc = "GPTLfinalize_gpu";
 
@@ -231,8 +241,12 @@ __global__ void GPTLfinalize_gpu (void)
   timers = 0;
   timernames = 0;
   max_name_len = 0;
+#ifndef ENABLE_CONSTANTMEM
+  // If "initialized" is __constant__ its value will be changed in the CPU caller
   initialized = false;
+#endif
   verbose = false;
+  *global_retval = 0;
 }
 
 /*
@@ -446,8 +460,9 @@ __device__ int GPTLstop_gpu (const int handle)
 #ifdef TIME_GPTL
   long long start = clock64 ();
 #endif
-  if (update_stats_gpu (handle, &timer, tp1, w, smid) != 0)
-    return GPTLerror_1s ("%s: error from update_stats_gpu\n", thisfunc);
+
+  update_stats_gpu (handle, &timer, tp1, w, smid);
+
 #ifdef DEBUG_PRINT
   printf ("%s: handle=%d count=%d\n", thisfunc, handle, (int) timer.count);
 #endif
@@ -471,15 +486,13 @@ __device__ int GPTLstop_gpu (const int handle)
 **   tp1: input time stamp
 **   w: warp index
 **   smid: input SM index
-**
-** Return value: 0 (success) or GPTLerror (failure)
 */
 
-__device__ static inline int update_stats_gpu (const int handle,
-					       Timer *ptr, 
-					       const long long tp1, 
-					       const int w,
-					       const uint smid)
+__device__ static inline void update_stats_gpu (const int handle,
+						Timer *ptr, 
+						const long long tp1, 
+						const int w,
+						const uint smid)
 {
   register long long delta;           // time diff from start()
   static const char *thisfunc = "update_stats_gpu";
@@ -525,7 +538,7 @@ __device__ static inline int update_stats_gpu (const int handle,
     if (delta < ptr->wall.min)  // On first call ptr->wall.min will be LLONG_MAX
       ptr->wall.min = delta;
   }
-  return SUCCESS;
+  return;
 }
 
 /*
@@ -1077,8 +1090,7 @@ __device__ static void stop_misc (int w, const int handle)
 #endif
 
   // Last 3 args are timestamp, w, smid
-  if (update_stats_gpu (handle, &timer, timer.wall.last, 0, 0U) != 0)
-    printf ("%s: problem with update_stats_gpu\n", thisfunc);
+  update_stats_gpu (handle, &timer, timer.wall.last, 0, 0U);
   timers[wi] = timer;
 }
 
