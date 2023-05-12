@@ -47,6 +47,7 @@ __device__ long long *globcount = 0;            // for timing GPTL itself
 __device__ static const int istart = 0;
 __device__ static const int istop = 1;
 __device__ static const int update_stats = 2;
+#define NUM_INTERNAL_TIMERS 3
 __device__ static const char *internal_name[NUM_INTERNAL_TIMERS] = {"GPTLstart_gpu",
 								    "GPTLstop_gpu",
 								    "update_stats"};
@@ -137,6 +138,7 @@ __host__ int GPTLinitialize_gpu (const int verbose_in,
 			    cores_per_sm_in,
 			    globcount_cpu,
 			    global_retval);
+  cudaDeviceSynchronize ();
 #ifdef ENABLE_CONSTANTMEM
   // Can only change a __constant__ value from host
   static bool truefalse;
