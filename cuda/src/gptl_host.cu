@@ -87,6 +87,8 @@ __host__ int GPTLcudadevsync (void)
 // in play.
 __host__ int GPTLreset_all_gpu_fromhost (void)
 {
+  cudaError_t cudaret;
+  static const char *thisfunc = "GPTLreset_all_gpu_fromhost";
     // Create space for a "return" value for __global__functions to be checked on CPU
   if (global_retval == 0)        // address=0 means first call
     gpuErrchk (cudaMallocManaged (&global_retval, sizeof (int)));
@@ -94,6 +96,13 @@ __host__ int GPTLreset_all_gpu_fromhost (void)
   *global_retval = 0;  // Init to success, failure in the global routine will be non-zero
   GPTLreset_all_gpu <<<1,1>>> (global_retval);
   cudaDeviceSynchronize ();
+  
+  cudaret = cudaGetLastError();
+  if (cudaret != cudaSuccess) {
+    printf("%s: %s\n", thisfunc, cudaGetErrorString(cudaret));
+    return -1;
+  }
+
   if (*global_retval != 0)
     printf ("GPTLreset_all_gpu_fromhost: Failure from GPTLreset_all_gpu\n");
   return *global_retval;
@@ -101,6 +110,8 @@ __host__ int GPTLreset_all_gpu_fromhost (void)
 
 __host__ int GPTLfinalize_gpu_fromhost (void)
 {
+  cudaError_t cudaret;
+  static const char *thisfunc = "GPTLfinalize_gpu_fromhost";
   // Create space for a "return" value for __global__functions to be checked on CPU
   if (global_retval == 0)        // address=0 means first call
     gpuErrchk (cudaMallocManaged (&global_retval, sizeof (int)));
@@ -108,6 +119,13 @@ __host__ int GPTLfinalize_gpu_fromhost (void)
   *global_retval = 0;  // Init to success, failure in the global routine will be non-zero
   GPTLfinalize_gpu <<<1,1>>> (global_retval);
   cudaDeviceSynchronize ();
+
+  cudaret = cudaGetLastError();
+  if (cudaret != cudaSuccess) {
+    printf("%s: %s\n", thisfunc, cudaGetErrorString(cudaret));
+    return -1;
+  }
+
   if (*global_retval != 0)
     printf ("GPTLfinalize_gpu_fromhost: Failure from GPTLfinalize_gpu\n");
   return *global_retval;
