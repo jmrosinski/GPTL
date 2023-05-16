@@ -3,7 +3,7 @@
 **
 ** Author: Jim Rosinski
 **
-** GPTL header file to be included in user code
+** GPTL CUDA header file to be included in user code
 */
 
 #ifndef GPTL_CUDA_H
@@ -24,8 +24,6 @@ __device__ int GPTLget_wallclock_gpu (const int, double *, double *, double *);
 __device__ int GPTLget_warp_thread (int *, int *);
 __device__ int GPTLsliced_up_how (const char *);
 __device__ int GPTLget_sm_thiswarp (int []);
-__device__ int GPTLcuProfilerStart (void);
-__device__ int GPTLcuProfilerStop (void);
 #ifdef __cplusplus
 };
 #endif

@@ -12,11 +12,3 @@
 #ifndef MAX
 #define MAX(X,Y) ((X) > (Y) ? (X) : (Y))
 #endif
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-extern int GPTLerror (const char *, ...);                  // print error msg and return
-#ifdef __cplusplus
-}
-#endif

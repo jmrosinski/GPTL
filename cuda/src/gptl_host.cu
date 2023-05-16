@@ -1,14 +1,14 @@
 #include "config.h"  // Must be first include.
-#include "device.h"
+#include "api.h"
 #include <stdio.h>
 #include <cuda.h>
 
-static int *global_retval = 0; // return code from __global__ functions
+// All routines in this file are either user-callable and/or called from gptl.c
+// So C++ name-mangling must be disabled
 
 extern "C" {
 
-// Return useful GPU properties. Use arg list for SMcount, cores_per_sm, and cores_per_gpu even 
-// though they're globals, because this is a user-callable routine
+// GPTLget_gpu_props: User-callable routine returns useful GPU properties. 
 __host__ int GPTLget_gpu_props (int *khz, int *warpsize, int *devnum, int *SMcount,
 				int *cores_per_sm, int *cores_per_gpu)
 {
@@ -76,58 +76,10 @@ __host__ int GPTLget_gpu_props (int *khz, int *warpsize, int *devnum, int *SMcou
   return 0;
 }
 
+// GPTLcudadevsync: User-callable routine to sync the GPU. 
 __host__ int GPTLcudadevsync (void)
 {
   cudaDeviceSynchronize ();
   return 0;
-}
-
-// The need for these 2 wrapping functions enables gptl.c above to be built with a pure C compiler
-// and therefore not require a .cu extension, which itself can cause problems when CUDA is not
-// in play.
-__host__ int GPTLreset_all_gpu_fromhost (void)
-{
-  cudaError_t cudaret;
-  static const char *thisfunc = "GPTLreset_all_gpu_fromhost";
-    // Create space for a "return" value for __global__functions to be checked on CPU
-  if (global_retval == 0)        // address=0 means first call
-    gpuErrchk (cudaMallocManaged (&global_retval, sizeof (int)));
-
-  *global_retval = 0;  // Init to success, failure in the global routine will be non-zero
-  GPTLreset_all_gpu <<<1,1>>> (global_retval);
-  cudaDeviceSynchronize ();
-  
-  cudaret = cudaGetLastError();
-  if (cudaret != cudaSuccess) {
-    printf("%s: %s\n", thisfunc, cudaGetErrorString(cudaret));
-    return -1;
-  }
-
-  if (*global_retval != 0)
-    printf ("GPTLreset_all_gpu_fromhost: Failure from GPTLreset_all_gpu\n");
-  return *global_retval;
-}
-
-__host__ int GPTLfinalize_gpu_fromhost (void)
-{
-  cudaError_t cudaret;
-  static const char *thisfunc = "GPTLfinalize_gpu_fromhost";
-  // Create space for a "return" value for __global__functions to be checked on CPU
-  if (global_retval == 0)        // address=0 means first call
-    gpuErrchk (cudaMallocManaged (&global_retval, sizeof (int)));
-
-  *global_retval = 0;  // Init to success, failure in the global routine will be non-zero
-  GPTLfinalize_gpu <<<1,1>>> (global_retval);
-  cudaDeviceSynchronize ();
-
-  cudaret = cudaGetLastError();
-  if (cudaret != cudaSuccess) {
-    printf("%s: %s\n", thisfunc, cudaGetErrorString(cudaret));
-    return -1;
-  }
-
-  if (*global_retval != 0)
-    printf ("GPTLfinalize_gpu_fromhost: Failure from GPTLfinalize_gpu\n");
-  return *global_retval;
 }
 }

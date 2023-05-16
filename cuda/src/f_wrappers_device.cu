@@ -7,11 +7,11 @@
 ** Must use wrappers not binding for all routines taking character string arguments
 */
 #include "config.h" // Must be first include.
-
+// gptl gpu-private 
+#include "gptl_cuda.h"  // user-visible function prototypes
+// system
 #include <stdlib.h>
 #include <stdio.h>
-#include "device.h"     // MAX_CHARS, private prototypes
-#include "gptl_cuda.h"  // user-visible function prototypes
 
 #if ( defined FORTRANUNDERSCORE )
 
@@ -25,6 +25,7 @@
 
 #endif
 
+// Fortran-callable so disable C++ name mangling
 extern "C" {
 
 // Local function prototypes
@@ -39,7 +40,7 @@ __device__ int gptlinit_handle_gpu (const char *name, int *handle, long long nc)
   const char *thisfunc = "gptlinit_handle_gpu";
 
   if (nc > MAX_CHARS)
-    return GPTLerror_1s2d ("%s: %d exceeds MAX_CHARS=%d\n", thisfunc, nc, MAX_CHARS);
+    return util::error_1s2d ("%s: %d exceeds MAX_CHARS=%d\n", thisfunc, nc, MAX_CHARS);
 
   if (name[nc-1] == '\0') {
     return GPTLinit_handle_gpu (name, handle);
@@ -57,7 +58,7 @@ __device__ int gptlsliced_up_how (const char *txt, long long nc)
   const char *thisfunc = "gptlsliced_up_how";
 
   if (nc > 128)
-    return GPTLerror_1s2d ("%s: %d exceeds %d\n", thisfunc, nc, 128);
+    return util::error_1s2d ("%s: %d exceeds %d\n", thisfunc, nc, 128);
 
   if (txt[nc-1] == '\0') {
     return GPTLsliced_up_how (txt);

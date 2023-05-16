@@ -5,21 +5,22 @@
 **
 ** Contains definitions private to GPTL and inaccessible to invoking user environment
 */
-
 #ifndef GPTL_DEVICE_H
 #define GPTL_DEVICE_H
 
+#include "config.h"
+#include "devicehost.h"
 #include <stdio.h>
 // Need cuda.h for cudaGetErrorString() below
 #include <cuda.h>
-#include "devicehost.h"
 
 #define SUCCESS 0
 #define FAILURE -1
 #define NOT_ROOT_OF_WARP -2
 #define WARPID_GT_MAXWARPS -3
 
-#define STRMATCH(X,Y) (my_strcmp((X),(Y)) == 0)
+// Flattening a 2d index into a 1d index gives good speedup 
+#define FLATTEN_TIMERS(SUB1,SUB2) (SUB1)*maxtimers + (SUB2)
 
 typedef struct {
   long long last;              // timestamp from last call
@@ -64,38 +65,35 @@ typedef struct {
   char name[MAX_CHARS+1];
 } Gpustats;
 
-// Function prototypes
-extern "C" {
-__global__ void GPTLreset_gpu (const int, int *global_retval);
-__global__ void GPTLreset_all_gpu (int *global_retval);
-__global__ void GPTLfinalize_gpu (int *global_retval);
-__global__ void GPTLfill_gpustats (Gpustats *, int *, int *);
-__global__ void GPTLget_memstats_gpu (float *, float *);
-__global__ void GPTLget_maxwarpid_info (int *, int *);
-__global__ void GPTLget_overhead_gpu (float *,            // Getting my warp index
-				      float *,            // start/stop pair
-				      float *,            // Underlying timing routine
-				      float *,            // misc start code
-				      float *,            // misc stop code
-				      float *,            // self_ohd
-				      float *,            // parent_ohd
-				      float *,            // my_strlen ohd
-				      float *,            // STRMATCH ohd
-				      int *);             // return code from __global__
-__device__ int GPTLget_maxwarpid_timed (void);
-__device__ int GPTLerror_1s (const char *, const char *);
-__device__ int GPTLerror_2s (const char *, const char *, const char *);
-__device__ int GPTLerror_3s (const char *, const char *, const char *, const char *);
-__device__ int GPTLerror_1s1d (const char *, const char *, const int);
-__device__ int GPTLerror_2s1d (const char *, const char *, const char *, const int);
-__device__ int GPTLerror_2s2d (const char *, const char *, const char *, const int, const int);
-__device__ int GPTLerror_2s3d (const char *, const char *, const char *, const int, const int,
-			       const int);
-__device__ int GPTLerror_1s2d (const char *, const char *, const int, const int);
-__device__ int GPTLerror_1s1d1s (const char *, const char *, const int, const char *);
-__device__ void GPTLreset_errors_gpu (void);                  /* num_errors to zero */
+namespace gpu {
+  extern __device__ {
+    // Variables used in multiple routines
+    Timer *timers;            // array (also linked list) of timers
+    Timername *timernames;    // array of timer names
+    int max_name_len;         // max length of timer name
+    int ntimers;              // number of timers
+    int maxwarpid_found;      // number of warps found : init to 0 
+    bool verbose;             // output verbosity                  
+    double gpu_hz;            // clock freq                        
+    int warps_per_sm;         // used for overhead calcs
+#ifdef ENABLE_CONSTANTMEM
+    __constant__ bool initialized; // GPTLinitialize has been called
+    __constant__ int maxtimers;    // max number of timers allowed
+    __constant__ int warpsize;     // warp size
+    __constant__ int maxwarps;     // max number of warps that will be examined
+#else
+                 bool initialized; // GPTLinitialize has been called
+                 int maxtimers;    // max number of timers allowed
+                 int warpsize;     // warp size
+                 int maxwarps;     // max number of warps that will be examined
+#endif
+    // Function prototypes used in multiple routines
+    inline int get_warp_num (void);         // get 0-based 1d warp number
+    inline void update_stats_gpu (const int, Timer *, const long long, const int, const uint);
+  }
 }
 
+// For error checking on GPU
 #define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
   inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
   {

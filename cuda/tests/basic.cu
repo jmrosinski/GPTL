@@ -154,7 +154,7 @@ int main (int argc, char **argv)
 
   // Since running on CPU here could instead call GPTLcudadevsync().
   cudaDeviceSynchronize ();   // Ensure printing of GPU results is complete before resetting
-  ret = GPTLreset ();         // Reset CPU and GPU timers
+  ret = GPTLreset ();         // Reset CPU timers
 
   cudaDeviceSynchronize ();   // Ensure resetting of timers is done before finalizing
   ret = GPTLfinalize ();      // Shutdown (incl. GPU)

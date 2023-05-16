@@ -595,8 +595,8 @@ int GPTLfinalize (void)
 
 #ifdef ENABLE_CUDA
   int ret;
-  if ((ret = GPTLfinalize_gpu_fromhost ()) != 0) {
-    printf ("%s: Failure from GPTLfinalize_gpu_fromhost\n", ret);
+  if ((ret = GPTLfinalize_gpu ()) != 0) {
+    printf ("%s: Failure from GPTLfinalize_gpu\n", ret);
     return ret;
   }
 #endif

@@ -3,7 +3,6 @@
 **
 ** Author: Jim Rosinski
 **
-** Contains definitions private to GPTL and inaccessible to invoking user environment
 */
 
 #ifndef _GPTL_PRIVATE_H
@@ -128,6 +127,7 @@ extern int GPTLget_overhead (FILE *,                       // file descriptor
 extern void GPTLprint_hashstats (FILE *, int, Hashentry **, int);
 extern void GPTLprint_memstats (FILE *, Timer **, int);
 extern Timer **GPTLget_timersaddr (void);
+extern int GPTLerror (const char *, ...);                  // print error msg and return
 // For now this one is local to gptl.c but that may change if needs calling from pr_summary
 extern int GPTLrename_duplicate_addresses (void);
 extern void __cyg_profile_func_enter (void *, void *);
@@ -143,9 +143,6 @@ extern int GPTLpmpi_setoption (const int, const int);
 #ifdef ENABLE_CUDA
 extern int GPTLinitialize_gpu (const int, const int, const int, const double, const int, const int);
 extern int GPTLprint_gpustats (FILE *, int, int, int, int, double, int);
-// These  last 2 are private routines--public interface is to their parent
-extern int GPTLreset_all_gpu_fromhost (void);
-extern int GPTLfinalize_gpu_fromhost (void);
 #endif
 #ifdef __cplusplus
 }
