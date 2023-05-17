@@ -1254,13 +1254,8 @@ int GPTLreset (void)
 #endif
     }
   }
-
-#ifdef ENABLE_CUDA
-  if (GPTLreset_all_gpu_fromhost () != 0)
-    printf ("%s: Failure from GPTLreset_all_gpu_fromhost\n", thisfunc);
-#endif
   if (verbose)
-    printf ("%s: accumulators for all timers set to zero\n", thisfunc);
+    printf ("%s: accumulators for all CPU timers set to zero\n", thisfunc);
 
   return 0;
 }
@@ -1975,7 +1970,6 @@ static int newchild (Timer *parent, Timer *child)
 static int get_outputfmt (const Timer *ptr, const int depth, const int indent, 
 			  Outputfmt *outputfmt)
 {
-  int ret;
   int namelen  = strlen (ptr->name);
   int chars2pr = namelen + indent*depth;
   int n;
@@ -1986,7 +1980,7 @@ static int get_outputfmt (const Timer *ptr, const int depth, const int indent,
   }
 
   for (n = 0; n < ptr->nchildren; ++n) {
-    ret = get_outputfmt (ptr->children[n], depth+1, indent, outputfmt);
+    (void) get_outputfmt (ptr->children[n], depth+1, indent, outputfmt);
     fill_output (depth, namelen, chars2pr, outputfmt);
   }
   return 0;

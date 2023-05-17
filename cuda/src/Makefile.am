@@ -47,7 +47,7 @@ output.o: output.cu ../include/output.h ../include/api.h ../include/util.h ../in
           ../include/timingohd.h
 overhead.o: overhead.cu ../include/overhead.h ../../include/private.h ../include/api.h \
             ../include/stringfuncs.h
-stringfuncs.o: stringfuncs.cu stringfuncs.h
+stringfuncs.o: stringfuncs.cu ../include/stringfuncs.h
 util.o: util.cu ../include/util.h ../include/api.h ../include/output.h
 
 CLEANFILES = *.ptx *.ii *.module_id *.cudafe1.* *.fatbin*

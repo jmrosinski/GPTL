@@ -5,8 +5,8 @@
 **
 ** Contains definitions private to GPTL and inaccessible to invoking user environment
 */
-#ifndef GPTL_DEVICE_H
-#define GPTL_DEVICE_H
+#ifndef GPTLAPI_H
+#define GPTLAPI_H
 
 #include "config.h"
 #include "devicehost.h"
@@ -20,7 +20,7 @@
 #define WARPID_GT_MAXWARPS -3
 
 // Flattening a 2d index into a 1d index gives good speedup 
-#define FLATTEN_TIMERS(SUB1,SUB2) (SUB1)*maxtimers + (SUB2)
+#define FLATTEN_TIMERS(SUB1,SUB2) (SUB1)*api::maxtimers + (SUB2)
 
 typedef struct {
   long long last;              // timestamp from last call
@@ -65,32 +65,36 @@ typedef struct {
   char name[MAX_CHARS+1];
 } Gpustats;
 
-namespace gpu {
-  extern __device__ {
-    // Variables used in multiple routines
-    Timer *timers;            // array (also linked list) of timers
-    Timername *timernames;    // array of timer names
-    int max_name_len;         // max length of timer name
-    int ntimers;              // number of timers
-    int maxwarpid_found;      // number of warps found : init to 0 
-    bool verbose;             // output verbosity                  
-    double gpu_hz;            // clock freq                        
-    int warps_per_sm;         // used for overhead calcs
+// These 2 allow the actual routines to be inlined, but provide for testing elsewhere in GPTL
+extern __device__ void GPTLupdate_stats_gpu (const int, Timer *, const long long, const int,
+					     const uint);
+extern __device__ int GPTLget_warp_num (void);
+
+namespace api {
+  // Variables used in multiple routines
+  extern __device__ Timer *timers;            // array (also linked list) of timers
+  extern __device__ Timername *timernames;    // array of timer names
+  extern __device__ int max_name_len;         // max length of timer name
+  extern __device__ int ntimers;              // number of timers
+  extern __device__ int maxwarpid_found;      // number of warps found : init to 0 
+  extern __device__ bool verbose;             // output verbosity                  
+  extern __device__ double gpu_hz;            // clock freq                        
+  extern __device__ int warps_per_sm;         // used for overhead calcs
 #ifdef ENABLE_CONSTANTMEM
-    __constant__ bool initialized; // GPTLinitialize has been called
-    __constant__ int maxtimers;    // max number of timers allowed
-    __constant__ int warpsize;     // warp size
-    __constant__ int maxwarps;     // max number of warps that will be examined
+  extern __device__    __constant__ bool initialized; // GPTLinitialize has been called
+  extern __device__    __constant__ int maxtimers;    // max number of timers allowed
+  extern __device__    __constant__ int warpsize;     // warp size
+  extern __device__    __constant__ int maxwarps;     // max number of warps that will be examined
 #else
-                 bool initialized; // GPTLinitialize has been called
-                 int maxtimers;    // max number of timers allowed
-                 int warpsize;     // warp size
-                 int maxwarps;     // max number of warps that will be examined
+  extern __device__                 bool initialized; // GPTLinitialize has been called
+  extern __device__                 int maxtimers;    // max number of timers allowed
+  extern __device__                 int warpsize;     // warp size
+  extern __device__                 int maxwarps;     // max number of warps that will be examined
 #endif
     // Function prototypes used in multiple routines
-    inline int get_warp_num (void);         // get 0-based 1d warp number
-    inline void update_stats_gpu (const int, Timer *, const long long, const int, const uint);
-  }
+  extern __device__ inline int get_warp_num (void);         // get 0-based 1d warp number
+  extern __device__ inline void update_stats_gpu (const int, Timer *, const long long, const int,
+						  const uint);
 }
 
 // For error checking on GPU

@@ -138,40 +138,31 @@ namespace util {
     num_errors = 0;
   }
 
-  /*
-  ** get_maxwarpid_info: maxwarpid_timed and maxwarpid_found are needed in various places,
-  **   mostly for printing.
-  */
-  __global__ int get_maxwarpid_info (int *maxwarpid_timed, int *maxwarpid_found)
-  {
-    int wi;
-    static const char *thisfunc = "get_maxwarpid_timed";
-
-    *maxwarpid_found = api::maxwarpid_found;
-    *maxwarpid_timed = 0;
-    
-    if ( ! api::initialized)
-      return error_1s ("%s: GPTLinitialize_gpu has not been called\n", thisfunc);
-    
-    if (api::get_warp_num () != 0)
-      return error_1s ("%s: must only be called by thread 0 of warp 0\n", thisfunc);
-    *maxwarpid_timed = get_maxwarpid_timed ();
-    
-    return;
-  }
-
+  // maxwarpid_timed is needed both on the CPU and on the GPU
+  // Thus the need for these 2 functions
   __device__ int get_maxwarpid_timed (void)
   {
     int maxwarpid_timed = 0;
-    
+
     for (int w = 0; w < api::maxwarps; ++w) {
       for (int i = api::ntimers; i > 0; --i) {
-	wi = FLATTEN_TIMERS(w,i);
-	if (timers[wi].count > 0 && w > maxwarpid_timed)
+	int wi = FLATTEN_TIMERS(w,i);
+	if (api::timers[wi].count > 0 && w > maxwarpid_timed)
 	  maxwarpid_timed = w;
       }
       return maxwarpid_timed;
     }
+  }
+
+  __global__ void glob_get_maxwarpid_timed (int *maxwarpid_timed)
+  {
+    *maxwarpid_timed = get_maxwarpid_timed ();
+  }
+
+  // get_maxwarpid_found is needed to return the result into a cudaMallocManaged variable
+  __global__ void glob_get_maxwarpid_found (int *maxwarpid_found)
+  {
+    *maxwarpid_found = api::maxwarpid_found;
   }
   
   /*

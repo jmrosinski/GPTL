@@ -5,7 +5,7 @@
 #include <limits.h>     // LLONG_MAX
 
 // File-local variables
-__device__ static int *retval;  // Return value passed to CPU from __global__ routines
+static int *retval;  // Return value passed to CPU from __global__ routines
 
 // Local function prototypes
 __global__ static void initialize_gpu (const int, const int, const double, Timer *,
@@ -34,7 +34,6 @@ extern "C" {
     // Set constant memory values: First arg is pass by reference so no "&"
     nbytes = maxwarps_in * maxtimers_in * sizeof (Timer);
     gpuErrchk (cudaMalloc (&timers_cpu, nbytes));
-    
 #ifdef ENABLE_CONSTANTMEM
     gpuErrchk (cudaMemcpyToSymbol (api::maxtimers, &maxtimers_in, sizeof (int)));
     gpuErrchk (cudaMemcpyToSymbol (api::warpsize,  &warpsize_in,  sizeof (int)));

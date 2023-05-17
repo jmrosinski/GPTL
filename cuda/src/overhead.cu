@@ -1,9 +1,10 @@
 #include "config.h" // Must be first include.
 // gptl gpu-private 
 #include "overhead.h"
-#include "private.h"
+#include "devicehost.h"
 #include "api.h"
 #include "stringfuncs.h"
+#include "gptl_cuda.h"
 // system
 #include <stdio.h>
 
@@ -49,13 +50,13 @@ __global__ void overhead::get_overhead_gpu (float *get_warp_num_ohd,  // Getting
   // cores active. Mimic the use by GPTLstart_gpu and GPTLstop_gpu by only thread 0 does work
 
   // Return if not thread 0 of the warp
-  if ((mywarp = api::get_warp_num ()) < 0)
+  if ((mywarp = GPTLget_warp_num ()) < 0)
     return;
   
   if (mywarp > api::warps_per_sm - 1) {
     *retval = -1;
     printf ("%s: mywarp=%d must be < warps_per_sm=%d. No GPU overhead stats will be gathered\n",
-	    thisfunc, mywarp, warps_per_sm);
+	    thisfunc, mywarp, api::warps_per_sm);
     return;
   }
 
@@ -73,7 +74,7 @@ __global__ void overhead::get_overhead_gpu (float *get_warp_num_ohd,  // Getting
   // get_warp_num overhead. Need a bogus computation or compiler may optimize out the code
   t1 = clock64();
   for (i = 0; i < iters; ++i) {
-    if ((get_warp_num ()) < -999)
+    if ((GPTLget_warp_num ()) < -999)
       get_warp_num_ohd[mywarp] = -999;  // Will actually NEVER get set
   }
   t2 = clock64();
@@ -112,7 +113,7 @@ __global__ void overhead::get_overhead_gpu (float *get_warp_num_ohd,  // Getting
   // my_strlen overhead
   t1 = clock64();
   for (i = 0; i < iters; ++i) {
-    ret = my_strlen (name);
+    ret = stringfuncs::my_strlen (name);
   }
   t2 = clock64();
   my_strlen_ohd[mywarp] = (t2 - t1) / (float) iters;
@@ -191,7 +192,7 @@ __device__ static void stop_misc (int w, const int handle)
 #endif
 
   // Last 3 args are timestamp, w, smid
-  api::update_stats_gpu (handle, &timer, timer.wall.last, 0, 0U);
+  GPTLupdate_stats_gpu (handle, &timer, timer.wall.last, 0, 0U);
   api::timers[wi] = timer;
 }
 

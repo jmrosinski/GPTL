@@ -142,6 +142,7 @@ extern int GPTLpmpi_setoption (const int, const int);
 
 #ifdef ENABLE_CUDA
 extern int GPTLinitialize_gpu (const int, const int, const int, const double, const int, const int);
+  extern int GPTLfinalize_gpu (void);
 extern int GPTLprint_gpustats (FILE *, int, int, int, int, double, int);
 #endif
 #ifdef __cplusplus

@@ -4,6 +4,7 @@
 #include "api.h"
 #include "util.h"
 #include "overhead.h"
+#include "gpustats.h"
 #ifdef TIME_GPTL
 #include "timingohd.h"
 #endif
@@ -13,10 +14,8 @@
 #include <limits.h>        // LLONG_MAX
 #include <cuda.h>
 
-namespace output {
-  int *maxwarpid_found;  // for both CPU and GPU
-  int *maxwarpid_timed;  // for both CPU and GPU
-}
+static int *maxwarpid_timed;  // for both CPU and GPU
+static int *maxwarpid_found;  // for both CPU and GPU
 
 // GPTLprint_gpustats is called from gptl.c so wrap everything in extern "C"
 extern "C" {
@@ -77,8 +76,8 @@ __host__ int GPTLprint_gpustats (FILE *fp, int warpsize_in, int warps_per_sm_in,
   gpuErrchk (cudaMallocManaged (&max_name_len_gpu,                sizeof (int)));
   gpuErrchk (cudaMallocManaged (&gpustats,         maxtimers_in * sizeof (Gpustats)));
 
-  gpuErrchk (cudaMallocManaged (&output::maxwarpid_found,     sizeof (int)));
-  gpuErrchk (cudaMallocManaged (&output::maxwarpid_timed,     sizeof (int)));
+  gpuErrchk (cudaMallocManaged (&maxwarpid_found,     sizeof (int)));
+  gpuErrchk (cudaMallocManaged (&maxwarpid_timed,     sizeof (int)));
 
   gpuErrchk (cudaMallocManaged (&get_warp_num_ohdgpu, warps_per_sm_in*sizeof (float)));
   gpuErrchk (cudaMallocManaged (&startstop_ohdgpu,    warps_per_sm_in*sizeof (float)));
@@ -133,7 +132,7 @@ __host__ int GPTLprint_gpustats (FILE *fp, int warpsize_in, int warps_per_sm_in,
   fprintf (fp, "ENABLE_FOUND (print max warpid found on GPU) was false\n");
 #endif
 
-  fill_all_gpustats <<<1,1>>> (gpustats, max_name_len_gpu, ngputimers);
+  gpustats::fill_all_gpustats <<<1,1>>> (gpustats, max_name_len_gpu, ngputimers);
   if (cudaGetLastError() != cudaSuccess)
     printf( "%s: Error from fill_all_gpustats\n", thisfunc);
   cudaDeviceSynchronize();
@@ -159,7 +158,8 @@ __host__ int GPTLprint_gpustats (FILE *fp, int warpsize_in, int warps_per_sm_in,
   ret = gethostname (hostname, HOSTSIZE);
   fprintf (fp, "%s: hostname=%s\n", thisfunc, hostname);
 
-  util::get_maxwarpid_info <<<1,1>>> (output::maxwarpid_timed, output::maxwarpid_found);
+  util::glob_get_maxwarpid_timed <<<1,1>>> (maxwarpid_timed);
+  util::glob_get_maxwarpid_found <<<1,1>>> (maxwarpid_found);
   cudaDeviceSynchronize();
 
   // Reset timer GPTL_ROOT (index 0) so overhead tests succeed
@@ -223,13 +223,12 @@ __host__ int GPTLprint_gpustats (FILE *fp, int warpsize_in, int warps_per_sm_in,
   fprintf (fp, "\n");
 
   fprintf (fp, "\nGPU timing stats\n");
-  fprintf (fp, "GPTL could handle up to %d warps (%d threads)\n",
-	   maxwarps, maxwarps_in * warpsize_in);
+  fprintf (fp, "GPTL could handle up to %d warps (%d threads)\n", maxwarps_in, maxwarps_in * warpsize_in);
   fprintf (fp, "This setting can be changed with: GPTLsetoption(GPTLmaxthreads_gpu,<number>)\n");
-  fprintf (fp, "%d = max warpId examined\n", output::maxwarpid_timed[0]);
+  fprintf (fp, "%d = max warpId examined\n", maxwarpid_timed[0]);
 #ifdef ENABLE_FOUND
   fprintf (fp, "%d = ESTIMATE of max warpId found. Could be bigger caused by race condition\n",
-	   output::maxwarpid_found[0]);
+	   maxwarpid_found[0]);
 #endif
   fprintf (fp, "Only warps which were timed are counted in the following stats\n");
   fprintf (fp, "Overhead estimates self_OH and parent_OH are for warp with \'maxcount\' calls\n");
@@ -266,7 +265,7 @@ __host__ int GPTLprint_gpustats (FILE *fp, int warpsize_in, int warps_per_sm_in,
       fprintf (fp, "%8.2e ", (float) gpustats[n].count); // # start/stops of region  
 
     fprintf (fp, "%6d ", gpustats[n].nwarps);            // nwarps involving name
-    fprintf (fp, "%6d ", output::maxwarpid_timed[0] - gpustats[n].nwarps + 1); // number of (untimed) holes
+    fprintf (fp, "%6d ", maxwarpid_timed[0] - gpustats[n].nwarps + 1); // number of (untimed) holes
     
     wallmax = gpustats[n].accum_max / gpu_hz_in;            // max time for name across warps
     if (wallmax < 0.01)

@@ -8,7 +8,9 @@
 */
 #include "config.h" // Must be first include.
 // gptl gpu-private 
-#include "gptl_cuda.h"  // user-visible function prototypes
+#include "gptl_cuda.h"   // user-visible function prototypes
+#include "devicehost.h"  // MAX_CHARS
+#include "util.h"        // error functions
 // system
 #include <stdlib.h>
 #include <stdio.h>
