@@ -9,6 +9,7 @@
 // gptl gpu-private 
 #include "gptl_cuda.h"
 #include "api.h"
+#include "init_final.h"
 #include "stringfuncs.h"
 #include "util.h"
 #include "timingohd.h"
@@ -17,6 +18,8 @@
 #include <string.h>        // memcpy
 #include <stdint.h>        // uint types
 #include <cuda.h>
+
+#undef DEBUG_PRINT
 
 namespace api {
   __device__ Timer *timers = 0;            // array (also linked list) of timers
@@ -27,17 +30,6 @@ namespace api {
   __device__ bool verbose = false;         // output verbosity                  
   __device__ double gpu_hz = 0.;           // clock freq                        
   __device__ int warps_per_sm = 0;         // used for overhead calcs         
-#ifdef ENABLE_CONSTANTMEM
-  __device__  __constant__ bool initialized = false; // GPTLinitialize has been called
-  __device__  __constant__ int maxtimers = 0;        // max number of timers allowed
-  __device__  __constant__ int warpsize = 0;         // warp size
-  __device__  __constant__ int maxwarps = 0;         // max number of warps that will be examined
-#else
-  __device__               bool initialized = false; // GPTLinitialize has been called
-  __device__               int maxtimers = 0;        // max number of timers allowed
-  __device__ 		   int warpsize = 0;         // warp size
-  __device__ 		   int maxwarps = 0;         // max number of warps that will be examined
-#endif
   
   /*
   ** update_stats_gpu: update stats inside ptr. Called by GPTLstop_gpu
@@ -57,7 +49,6 @@ namespace api {
   {
     register long long delta;           // time diff from start()
     static const char *thisfunc = "update_stats_gpu";
-
 #ifdef DEBUG_PRINT
     printf ("%s: ptr=%p setting onflg=false\n", thisfunc, ptr);
 #endif
@@ -100,6 +91,9 @@ namespace api {
       if (delta < ptr->wall.min)  // On first call ptr->wall.min will be LLONG_MAX
 	ptr->wall.min = delta;
     }
+#ifdef DEBUG_PRINT
+    printf ("%s: handle=%d count=%d\n", thisfunc, handle, (int) ptr->count);
+#endif
     return;
   }
   
@@ -122,19 +116,19 @@ namespace api {
       +  blockDim.x  *  blockDim.y  *  blockDim.z  *  gridDim.x  * blockIdx.y
       +  blockDim.x  *  blockDim.y  *  blockDim.z  *  gridDim.x  *  gridDim.y  * blockIdx.z;
     
-    warpId = threadId / warpsize;
+    warpId = threadId / init_final::warpsize;
 
     // Setting maxwarpid_found is a race condition that is ignored due to efficiency considerations
     // It is only printed as an estimate when GPTLpr is called.
 #ifdef ENABLE_FOUND
-    if (warpId+1 > maxwarpid_found)
+    if (warpId > maxwarpid_found)
       maxwarpid_found = warpId;
 #endif
 
     retval = warpId;
-    if (threadId % warpsize != 0)
+    if (threadId % init_final::warpsize != 0)
       retval = NOT_ROOT_OF_WARP;
-    else if (warpId > maxwarps-1)
+    else if (warpId > init_final::maxwarps-1)
       retval = WARPID_GT_MAXWARPS;
     
     // linearized warp number, or negative number which caller will handle appropriately
@@ -193,7 +187,7 @@ __device__ int GPTLinit_handle_gpu (const char *name, int *handle)
   // Note "acc copy(handle)" for this routine is better
   *handle = -999;
 
-  if ( ! api::initialized)
+  if ( ! init_final::initialized)
     return util::error_1s ("%s: GPTLinitialize has not been called\n", thisfunc);
   
   // Guts of this function are run only by thread 0 of warp 0 to prevent race conditions on handle. 
@@ -213,9 +207,9 @@ __device__ int GPTLinit_handle_gpu (const char *name, int *handle)
     }
   }
   
-  if (api::ntimers >= api::maxtimers-1) {
+  if (api::ntimers >= init_final::maxtimers) {
     return util::error_2s1d ("%s: Too many timers. name=%s maxtimers %d is too small\n",
-			     thisfunc, name, api::maxtimers);
+			     thisfunc, name, init_final::maxtimers);
   }
   // End of error checks. Initialize the handle
 
@@ -252,7 +246,7 @@ __device__ int GPTLstart_gpu (const int handle)
 #endif
 
 #ifdef ENABLE_GPUCHECKS
-  if ( ! api::initialized)
+  if ( ! init_final::initialized)
     return util::error_1s1d ("%s handle=%d: GPTLinitialize has not been called\n", 
 			     thisfunc, handle);
 #endif
@@ -270,7 +264,7 @@ __device__ int GPTLstart_gpu (const int handle)
 #ifdef ENABLE_GPUCHECKS
   if (handle < 0 || handle > api::ntimers)
     return util::error_1s1d ("%s: Invalid input handle=%d. GPTLinit_handle_gpu not called?\n",
-			   thisfunc, handle);
+			     thisfunc, handle);
 #endif
   wi = FLATTEN_TIMERS (w, handle);
   ptr = &api::timers[wi];
@@ -296,8 +290,9 @@ __device__ int GPTLstart_gpu (const int handle)
   ptr->wall.last = clock64 ();
   ptr->onflg = true;
 #ifdef TIME_GPTL
-  globcount[istart*api::maxwarps + w] += ptr->wall.last - start;
+  globcount[istart*init_final::maxwarps + w] += ptr->wall.last - start;
 #endif
+
   return SUCCESS;
 }
 
@@ -328,7 +323,7 @@ __device__ int GPTLstop_gpu (const int handle)
 #endif
 
 #ifdef ENABLE_GPUCHECKS
-  if ( ! api::initialized)
+  if ( ! init_final::initialized)
     return util::error_1s1d ("%s handle=%d: GPTLinitialize has not been called\n", 
 			     thisfunc, handle);
 #endif
@@ -390,8 +385,8 @@ __device__ int GPTLstop_gpu (const int handle)
   
 #ifdef TIME_GPTL
   long long stop = clock64 ();
-  globcount[istop*api::maxwarps + w]        += stop - tp1;
-  globcount[update_stats*api::maxwarps + w] += stop - start;
+  globcount[istop*init_final::maxwarps + w]        += stop - tp1;
+  globcount[update_stats*init_final::maxwarps + w] += stop - start;
 #endif
   
   return SUCCESS;
@@ -402,7 +397,7 @@ __device__ int GPTLget_wallclock_gpu (const int handle, double *accum, double *m
   int w, wi;
   static const char *thisfunc = "GPTLget_wallclock_gpu";
   
-  if ( ! api::initialized)
+  if ( ! init_final::initialized)
     return util::error_1s ("%s: GPTLinitialize_gpu has not been called\n", thisfunc);
 
   if (api::gpu_hz == 0.)
@@ -461,7 +456,7 @@ __device__ int GPTLget_warp_thread (int *warp, int *thread)
         +  blockDim.x  *  blockDim.y  *  blockDim.z  * blockIdx.x
         +  blockDim.x  *  blockDim.y  *  blockDim.z  *  gridDim.x  * blockIdx.y
         +  blockDim.x  *  blockDim.y  *  blockDim.z  *  gridDim.x  *  gridDim.y  * blockIdx.z;
-  *warp = (*thread) / api::warpsize;
+  *warp = (*thread) / init_final::warpsize;
   return 0;
 }
 

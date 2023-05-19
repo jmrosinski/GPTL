@@ -5,6 +5,6 @@
 
 namespace gpustats {
   extern __device__ void init_gpustats (Gpustats *, int);
-  extern __global__ void fill_all_gpustats (Gpustats *, int *, int *);
+  extern __global__ void fill_all_gpustats (Gpustats *, int *, int *, const int *);
 }
 #endif

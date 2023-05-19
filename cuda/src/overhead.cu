@@ -1,6 +1,7 @@
 #include "config.h" // Must be first include.
 // gptl gpu-private 
 #include "overhead.h"
+#include "init_final.h"
 #include "devicehost.h"
 #include "api.h"
 #include "stringfuncs.h"
@@ -135,7 +136,7 @@ __device__ static void start_misc (int w, const int handle)
   static const char *thisfunc = "startmisc";
 
 #ifdef ENABLE_GPUCHECKS
-  if ( ! api::initialized)
+  if ( ! init_final::initialized)
     printf ("%s: ! initialized\n", thisfunc);
 #endif
   if (w < 0)
@@ -166,7 +167,7 @@ __device__ static void stop_misc (int w, const int handle)
   static const char *thisfunc = "stopmisc";
 
 #ifdef ENABLE_GPUCHECKS
-  if ( ! api::initialized)
+  if ( ! init_final::initialized)
     printf ("%s: ! initialized\n", thisfunc);
   if (w < 0)
     printf ("%s: bad w value\n", thisfunc);
@@ -198,7 +199,7 @@ __device__ static void stop_misc (int w, const int handle)
 
 __global__ void overhead::get_memstats_gpu (float *regionmem, float *timernamemem)
 {
-  *regionmem    = (float) api::maxwarps * api::maxtimers * sizeof (Timer);
-  *timernamemem = (float)                 api::maxtimers * sizeof (Timername);
+  *regionmem    = (float) init_final::maxwarps * (init_final::maxtimers+1) * sizeof (Timer);
+  *timernamemem = (float)                        (init_final::maxtimers+1) * sizeof (Timername);
   return;
 }

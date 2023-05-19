@@ -15,10 +15,9 @@ namespace util {
 				    const int arg2);
   extern __device__ void note_gpu (const char *str);
   extern __device__ void reset_errors_gpu (void);
-  extern __device__ int get_maxwarpid_timed (void);
 
-  extern __global__ void glob_get_maxwarpid_timed (int *);
-  extern __global__ void glob_get_maxwarpid_found (int *);
+  extern __global__ void get_maxwarpid_timed (int *);
+  extern __global__ void get_maxwarpid_found (int *);
   extern __global__ void reset_gpu (const int, int *);
 }
 #endif

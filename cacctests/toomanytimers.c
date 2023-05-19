@@ -21,8 +21,8 @@ int main (int argc, char **argv)
   return 0;
 #endif
   
-  // Allow only 1 user timer (dimension of 2 due to GPTL_ROOT)
-  ret = GPTLsetoption (GPTLmaxtimers_gpu, 2);
+  // Allow only 1 user timer
+  ret = GPTLsetoption (GPTLmaxtimers_gpu, 1);
 
   // Initialize the GPTL library on CPU and GPU
   ret = GPTLinitialize ();

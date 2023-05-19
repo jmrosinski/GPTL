@@ -13,7 +13,7 @@ if HAVE_LIBUNWIND
 endif
 
 # These programs will be built but not installed.
-noinst_PROGRAMS = basic badinput
+noinst_PROGRAMS = basic badinput verify_results
 
 # Test programs that will be built for all configurations.
 check_PROGRAMS = basic badinput
@@ -34,3 +34,7 @@ basic$(EXEEXT): basic.o
 badinput.o: badinput.F90 ../fortran/src/gptl.$(FC_MODEXT) ../cuda/src/gptl_acc.$(FC_MODEXT)
 badinput$(EXEEXT): badinput.o
 	$(FC) -o $@ badinput.o $(AM_LDFLAGS)
+
+verify_results.o: verify_results.F90 ../fortran/src/gptl.$(FC_MODEXT) ../cuda/src/gptl_acc.$(FC_MODEXT)
+verify_results$(EXEEXT): verify_results.o
+	$(FC) -o $@ verify_results.o $(AM_LDFLAGS)

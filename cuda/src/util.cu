@@ -4,6 +4,7 @@
 
 #include "config.h" // Must be first include.
 #include "util.h"
+#include "init_final.h"
 #include "api.h"
 #include "output.h"
 #include <stdio.h>
@@ -120,13 +121,7 @@ namespace util {
     return -1;
   }
   
-  /*
-  ** note_gpu: print a note
-  **
-  ** Input arguments:
-  **   fmt: format string
-  **   variable list of additional arguments for vfprintf
-  */
+  // note_gpu: print a note
   __device__ void note_gpu (const char *str)
   {
     (void) printf ("GPTLnote_gpu: %s\n", str);
@@ -139,28 +134,22 @@ namespace util {
   }
 
   // maxwarpid_timed is needed both on the CPU and on the GPU
-  // Thus the need for these 2 functions
-  __device__ int get_maxwarpid_timed (void)
+  __global__ void get_maxwarpid_timed (int *maxwarpid_timed)
   {
-    int maxwarpid_timed = 0;
-
-    for (int w = 0; w < api::maxwarps; ++w) {
-      for (int i = api::ntimers; i > 0; --i) {
-	int wi = FLATTEN_TIMERS(w,i);
-	if (api::timers[wi].count > 0 && w > maxwarpid_timed)
-	  maxwarpid_timed = w;
+    *maxwarpid_timed = 0;
+    // Start w loop from 1 because maxwarpid_timed already inited to 0
+    // Start handle loop from 1 since0 is "phantom" timer GPTL_ROOT
+    for (int w = 1; w < init_final::maxwarps; ++w) {
+      for (int i = 1; i <= api::ntimers; ++i) {
+	int wi = FLATTEN_TIMERS (w,i);
+	if (api::timers[wi].count > 0 && w >= *maxwarpid_timed)
+	  *maxwarpid_timed = w;
       }
-      return maxwarpid_timed;
     }
   }
 
-  __global__ void glob_get_maxwarpid_timed (int *maxwarpid_timed)
-  {
-    *maxwarpid_timed = get_maxwarpid_timed ();
-  }
-
   // get_maxwarpid_found is needed to return the result into a cudaMallocManaged variable
-  __global__ void glob_get_maxwarpid_found (int *maxwarpid_found)
+  __global__ void get_maxwarpid_found (int *maxwarpid_found)
   {
     *maxwarpid_found = api::maxwarpid_found;
   }
@@ -174,7 +163,6 @@ namespace util {
   __global__ void reset_gpu (const int handle, int *global_retval)
   {
     int w, wi;
-    int maxwarpid_timed;
     static const char *thisfunc = "reset_gpu";
     
     *global_retval = 0;
@@ -184,8 +172,7 @@ namespace util {
       return;
     }
 
-    maxwarpid_timed = get_maxwarpid_timed ();
-    for (w = 0; w <= maxwarpid_timed; ++w) {
+    for (w = 0; w < init_final::maxwarps; ++w) {
       wi = FLATTEN_TIMERS(w,handle);
       api::timers[wi].onflg = false;
       api::timers[wi].count = 0;

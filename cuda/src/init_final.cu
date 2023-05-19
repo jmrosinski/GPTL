@@ -1,4 +1,5 @@
 #include "config.h"     // Must be first include.
+#include "init_final.h"
 #include "api.h"
 #include "util.h"
 #include "timingohd.h"
@@ -11,6 +12,20 @@ static int *retval;  // Return value passed to CPU from __global__ routines
 __global__ static void initialize_gpu (const int, const int, const double, Timer *,
 				       Timername *, const int, long long *, int *);
 __global__ void finalize_gpu (int *);
+
+namespace init_final {
+#ifdef ENABLE_CONSTANTMEM
+  __device__    __constant__ bool initialized; // GPTLinitialize has been called
+  __device__    __constant__ int maxtimers;    // max number of timers allowed
+  __device__    __constant__ int warpsize;     // warp size
+  __device__    __constant__ int maxwarps;     // max number of warps that will be examined
+#else
+  __device__                 bool initialized; // GPTLinitialize has been called
+  __device__                 int maxtimers;    // max number of timers allowed
+  __device__                 int warpsize;     // warp size
+  __device__                 int maxwarps;     // max number of warps that will be examined
+#endif
+}
 
 // GPTLinitialize_gpu and GPTLfinalize_gpu are called from host so do not name mangle
 extern "C" {
@@ -32,26 +47,26 @@ extern "C" {
     static long long *globcount_cpu = 0;   // for internally timing GPTL
 
     // Set constant memory values: First arg is pass by reference so no "&"
-    nbytes = maxwarps_in * maxtimers_in * sizeof (Timer);
+    nbytes = maxwarps_in * (maxtimers_in+1) * sizeof (Timer);
     gpuErrchk (cudaMalloc (&timers_cpu, nbytes));
 #ifdef ENABLE_CONSTANTMEM
-    gpuErrchk (cudaMemcpyToSymbol (api::maxtimers, &maxtimers_in, sizeof (int)));
-    gpuErrchk (cudaMemcpyToSymbol (api::warpsize,  &warpsize_in,  sizeof (int)));
-    gpuErrchk (cudaMemcpyToSymbol (api::maxwarps,  &maxwarps_in,  sizeof (int)));
+    gpuErrchk (cudaMemcpyToSymbol (init_final::maxtimers, &maxtimers_in, sizeof (int)));
+    gpuErrchk (cudaMemcpyToSymbol (init_final::warpsize,  &warpsize_in,  sizeof (int)));
+    gpuErrchk (cudaMemcpyToSymbol (init_final::maxwarps,  &maxwarps_in,  sizeof (int)));
 #else
     int *dmaxtimers;
     int *dwarpsize;
     int *dmaxwarps;
-    gpuErrchk (cudaGetSymbolAddress ((void **)&dmaxtimers, api::maxtimers));
-    gpuErrchk (cudaGetSymbolAddress ((void **)&dwarpsize, api::warpsize));
-    gpuErrchk (cudaGetSymbolAddress ((void **)&dmaxwarps, api::maxwarps));
+    gpuErrchk (cudaGetSymbolAddress ((void **)&dmaxtimers, init_final::maxtimers));
+    gpuErrchk (cudaGetSymbolAddress ((void **)&dwarpsize, init_final::warpsize));
+    gpuErrchk (cudaGetSymbolAddress ((void **)&dmaxwarps, init_final::maxwarps));
     
     gpuErrchk (cudaMemcpy (dmaxtimers, &maxtimers_in, sizeof(int), cudaMemcpyHostToDevice));
     gpuErrchk (cudaMemcpy (dwarpsize,  &warpsize_in,  sizeof(int), cudaMemcpyHostToDevice));
     gpuErrchk (cudaMemcpy (dmaxwarps,  &maxwarps_in,  sizeof(int), cudaMemcpyHostToDevice));
 #endif
 
-    nbytes = maxtimers_in * sizeof (Timername);
+    nbytes = (maxtimers_in+1) * sizeof (Timername);
     gpuErrchk (cudaMalloc (&timernames_cpu, nbytes));
 
     // Create space for a "return" value for __global__functions to be checked on CPU
@@ -78,7 +93,7 @@ extern "C" {
       truefalse = true;
     else
       truefalse = false;
-    gpuErrchk (cudaMemcpyToSymbol (api::initialized, &truefalse, sizeof (bool)));
+    gpuErrchk (cudaMemcpyToSymbol (init_final::initialized, &truefalse, sizeof (bool)));
 #endif
     // This should flush any existing print buffers
     cudaDeviceSynchronize ();
@@ -135,7 +150,7 @@ __global__ static void initialize_gpu (const int verbose_in,
 #ifdef VERBOSE
   printf ("Entered %s\n", thisfunc);
 #endif
-  if (api::initialized) {
+  if (init_final::initialized) {
     (void) util::error_1s ("%s: has already been called\n", thisfunc);
     *retval = -1;
     return;
@@ -144,19 +159,19 @@ __global__ static void initialize_gpu (const int verbose_in,
   // Set global vars from input args
   api::verbose      = verbose_in;
   api::gpu_hz       = gpu_hz_in;
-  api::warps_per_sm = cores_per_sm_in / api::warpsize;
+  api::warps_per_sm = cores_per_sm_in / init_final::warpsize;
   api::timers       = timers_cpu;
   api::timernames   = timernames_cpu;
 #ifdef TIME_GPTL
   timingohd::globcount  = globcount_cpu;
-  memset (timingohd::globcount, 0, api::maxwarps * NUM_INTERNAL_TIMERS * sizeof (long long));
+  memset (timingohd::globcount, 0, init_final::maxwarps * NUM_INTERNAL_TIMERS * sizeof (long long));
 #endif
 
   // Initialize timers
   api::ntimers = 0;
   api::max_name_len = 0;
-  for (w = 0; w < api::maxwarps; ++w) {
-    for (int i = 0; i < api::maxtimers; ++i) {
+  for (w = 0; w < init_final::maxwarps; ++w) {
+    for (int i = 0; i < init_final::maxtimers+1; ++i) {
       wi = FLATTEN_TIMERS(w,i);
       memset (&api::timers[wi], 0, sizeof (Timer));
       api::timers[wi].wall.min = LLONG_MAX;
@@ -176,7 +191,7 @@ __global__ static void initialize_gpu (const int verbose_in,
   }
 #ifndef ENABLE_CONSTANTMEM
   // If "initialized" is __constant__ its value will be changed in the CPU caller
-  api::initialized = true;
+  init_final::initialized = true;
 #endif
 }
 
@@ -190,7 +205,7 @@ __global__ void finalize_gpu (int *retval)
 {
   static const char *thisfunc = "finalize_gpu";
 
-  if ( ! api::initialized) {
+  if ( ! init_final::initialized) {
     (void) util::error_1s ("%s: initialization was not completed\n", thisfunc);
     return;
   }
@@ -206,7 +221,7 @@ __global__ void finalize_gpu (int *retval)
   api::max_name_len = 0;
 #ifndef ENABLE_CONSTANTMEM
   // If "initialized" is __constant__ its value will be changed in the CPU caller
-  api::initialized = false;
+  init_final::initialized = false;
 #endif
   api::verbose = false;
   *retval = 0;

@@ -74,7 +74,7 @@ __host__ int GPTLprint_gpustats (FILE *fp, int warpsize_in, int warps_per_sm_in,
   }
   gpuErrchk (cudaMallocManaged (&ngputimers,                      sizeof (int)));
   gpuErrchk (cudaMallocManaged (&max_name_len_gpu,                sizeof (int)));
-  gpuErrchk (cudaMallocManaged (&gpustats,         maxtimers_in * sizeof (Gpustats)));
+  gpuErrchk (cudaMallocManaged (&gpustats,     (maxtimers_in+1) * sizeof (Gpustats)));
 
   gpuErrchk (cudaMallocManaged (&maxwarpid_found,     sizeof (int)));
   gpuErrchk (cudaMallocManaged (&maxwarpid_timed,     sizeof (int)));
@@ -132,7 +132,12 @@ __host__ int GPTLprint_gpustats (FILE *fp, int warpsize_in, int warps_per_sm_in,
   fprintf (fp, "ENABLE_FOUND (print max warpid found on GPU) was false\n");
 #endif
 
-  gpustats::fill_all_gpustats <<<1,1>>> (gpustats, max_name_len_gpu, ngputimers);
+  // These 2 can overlap but synchronization needed before fill_all_gpustats()
+  util::get_maxwarpid_timed <<<1,1>>> (maxwarpid_timed);
+  util::get_maxwarpid_found <<<1,1>>> (maxwarpid_found);
+  cudaDeviceSynchronize();
+
+  gpustats::fill_all_gpustats <<<1,1>>> (gpustats, max_name_len_gpu, ngputimers, maxwarpid_timed);
   if (cudaGetLastError() != cudaSuccess)
     printf( "%s: Error from fill_all_gpustats\n", thisfunc);
   cudaDeviceSynchronize();
@@ -140,7 +145,7 @@ __host__ int GPTLprint_gpustats (FILE *fp, int warpsize_in, int warps_per_sm_in,
 #ifdef DEBUG_PRINT
   printf ("%s: ngputimers=%d\n",       thisfunc, *ngputimers);
   printf ("%s: max_name_len_gpu=%d\n", thisfunc, *max_name_len_gpu);
-  for (n = 0; n < *ngputimers; ++n) {
+  for (n = 1; n <= *ngputimers; ++n) {
     printf ("%s: timer=%s accum_max=%lld accum_min=%lld count_max=%d nwarps=%d\n", 
 	    thisfunc, gpustats[n].name, gpustats[n].accum_max, gpustats[n].accum_min, 
 	    gpustats[n].count_max, gpustats[n].nwarps);
@@ -157,10 +162,6 @@ __host__ int GPTLprint_gpustats (FILE *fp, int warpsize_in, int warps_per_sm_in,
   fprintf (fp, "%s: device number=%d\n", thisfunc, devnum);
   ret = gethostname (hostname, HOSTSIZE);
   fprintf (fp, "%s: hostname=%s\n", thisfunc, hostname);
-
-  util::glob_get_maxwarpid_timed <<<1,1>>> (maxwarpid_timed);
-  util::glob_get_maxwarpid_found <<<1,1>>> (maxwarpid_found);
-  cudaDeviceSynchronize();
 
   // Reset timer GPTL_ROOT (index 0) so overhead tests succeed
   util::reset_gpu <<<1,1>>> (0, retval);
@@ -239,7 +240,7 @@ __host__ int GPTLprint_gpustats (FILE *fp, int warpsize_in, int warps_per_sm_in,
   fprintf (fp, "name            = region name\n");
   fprintf (fp, "calls           = number of invocations across all examined warps\n");
   fprintf (fp, "warps           = number of examined warps for which region was timed at least once\n");
-  fprintf (fp, "holes           = number of examined warps for which region was never executed (maxwarpid_timed + 1 - num_warps_timed\n");
+  fprintf (fp, "holes           = number of examined warps for which region was never executed\n");
   fprintf (fp, "wallmax (warp)  = max wall time (sec) taken by any timed warp for this region, followed by the warp number\n");
   fprintf (fp, "wallmin (warp)  = min wall time (sec) taken by any timed warp for this region, followed by the warp number\n");
   fprintf (fp, "maxcount (warp) = max number of times region invoked by any timed warp, followed by the warp number\n");
@@ -254,7 +255,7 @@ __host__ int GPTLprint_gpustats (FILE *fp, int warpsize_in, int warps_per_sm_in,
   for (i = 0; i < extraspace; ++i)
     fprintf (fp, " ");
   fprintf (fp, "name    calls  warps  holes | wallmax  (warp)| wallmin (warp) | maxcount (warp)| mincount (warp)| negmax (warp) nwarps  | Bad_SM| self_OH parent_OH\n");
-  for (n = 0; n < ngputimers[0]; ++n) {
+  for (n = 1; n <= *ngputimers; ++n) {
     extraspace = max_name_len_gpu[0] - strlen (gpustats[n].name);
     for (i = 0; i < extraspace; ++i)
       fprintf (fp, " ");
