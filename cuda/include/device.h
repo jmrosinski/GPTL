@@ -67,8 +67,6 @@ typedef struct {
 // Function prototypes
 extern "C" {
 __global__ void GPTLreset_gpu (const int, int *global_retval);
-__global__ void GPTLreset_all_gpu (int *global_retval);
-__global__ void GPTLfinalize_gpu (int *global_retval);
 __global__ void GPTLfill_gpustats (Gpustats *, int *, int *);
 __global__ void GPTLget_memstats_gpu (float *, float *);
 __global__ void GPTLget_maxwarpid_info (int *, int *);

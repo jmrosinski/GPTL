@@ -20,7 +20,7 @@
 #define FLATTEN_TIMERS(SUB1,SUB2) (SUB1)*maxtimers + (SUB2)
 
 __device__ static Timer *timers = 0;            // array (also linked list) of timers
-__device__ static Timername *timernames;        // array of timer names
+__device__ static Timername *timernames = 0;    // array of timer names
 __device__ static int max_name_len;             // max length of timer name
 __device__ static int ntimers = 0;              // number of timers
 #ifdef ENABLE_CONSTANTMEM
@@ -41,8 +41,13 @@ __device__ static double gpu_hz = 0.;           // clock freq
 __device__ static int warps_per_sm = 0;         // used for overhead calcs
 __device__ static volatile int mutex_print = 0; // critical section unscrambles printf output
 
+// Moved these arrays to here because issuing "free" from device for them no longer works
+           static Timer *timers_cpu = 0;          // array of timers
+           static Timername *timernames_cpu = 0;  // array of timer names
+           static long long *globcount_cpu = 0;   // for internally timing GPTL
+
 #ifdef TIME_GPTL
-__device__ long long *globcount = 0;            // for timing GPTL itself
+__device__ static long long *globcount = 0;     // for timing GPTL itself
 // Indices for internal timers
 __device__ static const int istart = 0;
 __device__ static const int istop = 1;
@@ -58,6 +63,8 @@ extern "C" {
 // Local function prototypes
 __global__ static void initialize_gpu (const int, const int, const double, Timer *,
 				       Timername *, const int, long long *, int *);
+__global__ static void reset_all_gpu (int *);
+__global__ static void finalize_gpu (int *);
 __device__ static inline int get_warp_num (void);         // get 0-based 1d warp number
 __device__ static inline void update_stats_gpu (const int, Timer *, const long long, const int,
 						const uint);
@@ -68,20 +75,147 @@ __device__ static void start_misc (int, const int);
 __device__ static void stop_misc (int w, const int handle);
 __device__ static void init_gpustats (Gpustats *, int);
 __device__ static void fill_gpustats (Gpustats *, int, int);
-__device__ static void get_mutex (volatile int *);
-__device__ static void free_mutex (volatile int *);
 
-static int *global_retval;  // For saving "return" value from __global__ functions
-// Defining PRINTNEG will print to stdout whenever a negative interval (stop minus start) is
+static int *global_retval = 0;  // For saving "return" value from __global__ functions
+
+  // Defining PRINTNEG will print to stdout whenever a negative interval (stop minus start) is
 // encountered. Only useful when non-zero negative intervals are reported in timing output
 // Should be turned OFF normally--very expensive even when no negatives found.
 #undef PRINTNEG
 #ifdef PRINTNEG
+__device__ static void get_mutex (volatile int *);
+__device__ static void free_mutex (volatile int *);
 __device__ static void prbits8 (uint64_t);
 #endif
 
 // VERBOSE is a debugging ifdef local to the rest of this file
 #undef VERBOSE
+
+// start of host-specific functions that require nvcc
+
+// Return useful GPU properties. Use arg list for SMcount, cores_per_sm, and cores_per_gpu even 
+// though they're globals, because this is a user-callable routine
+__host__ int GPTLget_gpu_props (int *khz, int *warpsize, int *devnum, int *SMcount,
+				int *cores_per_sm, int *cores_per_gpu)
+{
+  cudaDeviceProp prop;
+  cudaError_t err;
+  static const char *thisfunc = "GPTLget_gpu_props";
+
+  if ((err = cudaGetDeviceProperties (&prop, 0)) != cudaSuccess) {
+    printf ("%s: error:%s", thisfunc, cudaGetErrorString (err));
+    return -1;
+  }
+
+  *khz      = prop.clockRate;
+  *warpsize = prop.warpSize;
+  *SMcount  = prop.multiProcessorCount;
+
+  // Begin code derived from stackoverflow to determine cores_per_sm
+  // If helper_cuda.h and cuda_runtime.h is available (it's not currently in PATH)
+  // could call _ConvertSMVer2Cores(prop.major, prop.minor) to get cores_per_sm
+  // probably also need cuda_runtime.h
+  switch (prop.major){
+  case 2: // Fermi
+    if (prop.minor == 1)
+      *cores_per_sm = 48;
+    else
+      *cores_per_sm = 32;
+    break;
+  case 3: // Kepler
+    *cores_per_sm = 192;
+    break;
+  case 5: // Maxwell
+    *cores_per_sm = 128;
+    break;
+  case 6: // Pascal
+    if ((prop.minor == 1) || (prop.minor == 2))
+      *cores_per_sm = 128;
+    else if (prop.minor == 0)
+      *cores_per_sm = 64;
+    else
+      printf("Unknown device type\n");
+    break;
+  case 7: // Volta and Turing
+    if ((prop.minor == 0) || (prop.minor == 5))
+      *cores_per_sm = 64;
+    else
+      printf("Unknown device type\n");
+    break;
+  case 8: // Ampere
+    if (prop.minor == 0)
+      *cores_per_sm = 64;
+    else
+      printf("Unknown device type\n");
+    break;
+  default:
+    printf("Unknown device type\n"); 
+    break;
+  }
+  // End code derived from stackoverflow to determine cores_per_sm
+  
+  // Use _ConvertSMVer2Cores when it is available from nvidia
+  //  cores_per_gpu = _ConvertSMVer2Cores (prop.major, prop.minor) * prop.multiProcessorCount);
+  *cores_per_gpu = *cores_per_sm * (*SMcount);
+  
+  err = cudaGetDevice (devnum);  // device number
+  return 0;
+}
+
+__host__ int GPTLcudadevsync (void)
+{
+  cudaDeviceSynchronize ();
+  return 0;
+}
+
+// The need for these 2 wrapping functions enables gptl.c above to be built with a pure C compiler
+// and therefore not require a .cu extension, which itself can cause problems when CUDA is not
+// in play.
+__host__ int GPTLreset_all_gpu_fromhost (void)
+{
+  cudaError_t cudaret;
+  static const char *thisfunc = "GPTLreset_all_gpu_fromhost";
+
+  reset_all_gpu <<<1,1>>> (global_retval);
+  cudaDeviceSynchronize ();
+  
+  cudaret = cudaGetLastError();
+  if (cudaret != cudaSuccess) {
+    printf("%s: %s\n", thisfunc, cudaGetErrorString(cudaret));
+    return -1;
+  }
+
+  if (*global_retval != 0)
+    printf ("GPTLreset_all_gpu_fromhost: Failure from reset_all_gpu\n");
+  return *global_retval;
+}
+
+__host__ int GPTLfinalize_gpu_fromhost (void)
+{
+  cudaError_t cudaret;
+  static const char *thisfunc = "GPTLfinalize_gpu_fromhost";
+
+  // Free memory for cudaMalloc'd items. Freeing the memory on the device fails in cuda 12.3
+  // so do it here
+  cudaFree (timers_cpu);
+  cudaFree (timernames_cpu);
+#ifdef TIME_GPTL
+  cudaFree (globcount_cpu);
+#endif
+  
+  finalize_gpu <<<1,1>>> (global_retval);
+  cudaDeviceSynchronize ();
+
+  cudaret = cudaGetLastError();
+  if (cudaret != cudaSuccess) {
+    printf("%s: %s\n", thisfunc, cudaGetErrorString(cudaret));
+    return -1;
+  }
+
+  if (*global_retval != 0)
+    printf ("GPTLfinalize_gpu_fromhost: Failure from finalize_gpu\n");
+  return *global_retval;
+}
 
 __host__ int GPTLinitialize_gpu (const int verbose_in,
 				 const int maxwarps_in,
@@ -92,16 +226,13 @@ __host__ int GPTLinitialize_gpu (const int verbose_in,
 {
   size_t nbytes;  // number of bytes to allocate
 
-  // Issue cudaMalloc from CPU, and pass address to GPU to avoid mem problems: When run from
+  // Issue cudaMalloc from CPU to avoid mem problems: When run from
   // __global__ routine, mallocable memory is severely decreased for some reason.
-  static Timer *timers_cpu = 0;          // array of timers
-  static Timername *timernames_cpu = 0;  // array of timer names
-  static long long *globcount_cpu = 0;   // for internally timing GPTL
 
-  // Set constant memory values: First arg is pass by reference so no "&"
   nbytes = maxwarps_in * maxtimers_in * sizeof (Timer);
   gpuErrchk (cudaMalloc (&timers_cpu, nbytes));
 
+  // Set constant memory values: First arg is pass by reference so no "&"
 #ifdef ENABLE_CONSTANTMEM
   gpuErrchk (cudaMemcpyToSymbol (maxtimers, &maxtimers_in, sizeof (int)));
   gpuErrchk (cudaMemcpyToSymbol (warpsize,  &warpsize_in,  sizeof (int)));
@@ -122,7 +253,7 @@ __host__ int GPTLinitialize_gpu (const int verbose_in,
   nbytes = maxtimers_in * sizeof (Timername);
   gpuErrchk (cudaMalloc (&timernames_cpu, nbytes));
 
-  // Create space for a "return" value for __global__functions to be checked on CPU
+  // Create space for a "return" value for __global__ functions to be checked on CPU
   gpuErrchk (cudaMallocManaged (&global_retval, sizeof (int)));
 
 #ifdef TIME_GPTL
@@ -152,6 +283,9 @@ __host__ int GPTLinitialize_gpu (const int verbose_in,
   cudaDeviceSynchronize ();
   return *global_retval;
 }
+
+// end of host-specific functions
+// start of device-specific functions
 
 /*
 ** initialize_gpu (): Initialization routine must be called from single-threaded
@@ -222,21 +356,18 @@ __global__ static void initialize_gpu (const int verbose_in,
 }
 
 /*
-** GPTLfinalize_gpu (): Finalization routine must be called from single-threaded
+** finalize_gpu (): Finalization routine must be called from single-threaded
 **   region. Free all malloc'd space
 */
-__global__ void GPTLfinalize_gpu (int *global_retval)
+__global__ void finalize_gpu (int *global_retval)
 {
-  static const char *thisfunc = "GPTLfinalize_gpu";
+  static const char *thisfunc = "finalize_gpu";
 
   if ( ! initialized) {
     (void) GPTLerror_1s ("%s: initialization was not completed\n", thisfunc);
+    *global_retval = -1;
     return;
   }
-
-  free (timers);
-  free (timernames);
-  
   GPTLreset_errors_gpu ();
 
   // Reset initial values
@@ -546,8 +677,6 @@ __device__ static inline void update_stats_gpu (const int handle,
 /*
 ** GPTLreset_gpu: reset a single timer to zero for all warps
 **   Should be invoked by a single thread
-**
-** Return argument: *global_retval 0 (success) -1 (failure)
 */
 __global__ void GPTLreset_gpu (const int handle, int *global_retval)
 {
@@ -582,18 +711,16 @@ __global__ void GPTLreset_gpu (const int handle, int *global_retval)
 }
 
 /*
-** GPTLreset_all_gpu: reset all timers to 0 for all warps
+** reset_all_gpu: reset all timers to 0 for all warps
 **   Should be invoked by a single thread
-**
-** Return argument: *global_retval 0 (success) -1 (failure)
 */
-__global__ void GPTLreset_all_gpu (int *global_retval)
+__global__ void reset_all_gpu (int *global_retval)
 {
   int i;
   int w;
   int wi;
   int maxwarpid_timed;
-  static const char *thisfunc = "GPTLreset_all_gpu";
+  static const char *thisfunc = "reset_all_gpu";
 
   *global_retval = 0;
   if ( ! initialized) {
@@ -1218,6 +1345,7 @@ __device__ int GPTLcuProfilerStop ()
   return 0;
 }
 
+#ifdef PRINTNEG
 __device__ static void get_mutex (volatile int *mutex)
 {
  bool isSet;
@@ -1233,5 +1361,6 @@ __device__ static void free_mutex (volatile int *mutex)
 {
   *mutex = 0;
 }
+#endif
 
 }

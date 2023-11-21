@@ -4,8 +4,7 @@
 lib_LIBRARIES = libgptl_cuda.a
 
 # These are the source files.
-libgptl_cuda_a_SOURCES = gptl_host.cu \
-	                 gptl_device.cu \
+libgptl_cuda_a_SOURCES = gptl_host_device.cu \
                          util_device.cu \
                          f_wrappers_device.cu \
                          print_gpustats.cu
@@ -19,7 +18,7 @@ if ENABLE_FACC
 include_HEADERS = gptl_acc.$(FC_MODEXT)
 
 libgptl_cuda_a_SOURCES += gptl_acc.F90
-# Override FCFLAGS settings because this is OpenACC
+# Override FCFLAGS settings because Fortran in this directory is OpenACC
 FCFLAGS_LOC = -DENABLE_CUDA @FACCFLAGS@
 .F90.o:
 	$(FC) -c $< $(FCFLAGS_LOC)
