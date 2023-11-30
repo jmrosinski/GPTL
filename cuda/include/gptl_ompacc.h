@@ -1,9 +1,9 @@
 /*
-** $Id: gptl_acc.h.template,v 1.3 2011-03-28 20:55:19 rosinski Exp $
+** $Id: gptl_ompacc.h.template,v 1.3 2011-03-28 20:55:19 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
-** GPTL header file to be included in user C OpenACC code
+** GPTL header file to be included in user C OpenMP GPU code
 */
 
 #ifndef GPTL_CACC_H
@@ -16,24 +16,17 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#pragma acc routine seq
+#pragma omp declare target
 int GPTLinit_handle_gpu (const char *, int *);
-#pragma acc routine seq
 int GPTLstart_gpu (const int);
-#pragma acc routine seq
 int GPTLstop_gpu (const int);
-#pragma acc routine seq
 void GPTLdummy_gpu (void);
-#pragma acc routine seq
 int GPTLmy_sleep (float);
-#pragma acc routine seq
 int GPTLget_wallclock_gpu (const int, double *, double *, double *);
-#pragma acc routine seq
 int GPTLget_warp_thread (int *, int *);
-#pragma acc routine seq
 int GPTLsliced_up_how (const char *);
-#pragma acc routine seq
 int GPTLget_sm_thiswarp (int []);
+#pragma omp end declare target
 #ifdef __cplusplus
 };
 #endif

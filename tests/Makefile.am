@@ -19,7 +19,7 @@ endif
 AM_LDFLAGS = -L../src -lgptl
 if ENABLE_CUDA
 # Link step requires -acc flag when linking to gptl_cuda lib
-  AM_LDFLAGS += -acc -L../cuda/src -lgptl_cuda -Mcuda=cc@CCAB@
+  AM_LDFLAGS += -acc -L../cuda/src -lgptl_cuda -cuda
 endif
 AM_LDFLAGS += @INSTR_LINK@
 

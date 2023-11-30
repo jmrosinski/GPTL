@@ -515,7 +515,7 @@ if test "x$NVCC" != xno; then
 # For OpenACC (currently only nvc and nvfortran), codes will need the following flags
 # Too complicated and fragile to enforce via env. vars. so just hardwire here.
 # Unfortunately AC_ARG_VAR doesn't expand variable names in description.
-  def="-m64 -acc -Minfo=accel -Mcuda=cc$CCAB"
+  def="-m64 -acc -Minfo=accel -cuda"
   AC_ARG_VAR(CACCFLAGS, [C-OpenACC compiler flags--defaults to $def])
   if test "x$CACCFLAGS" = x; then
     CACCFLAGS="$def"
@@ -524,19 +524,19 @@ if test "x$NVCC" != xno; then
     CACCFLAGS="-g $CACCFLAGS"
   fi
 
-  def="-m64 -acc -Mcuda=cc$CCAB"
+  def="-m64 -acc -cuda"
   AC_ARG_VAR(CACCLDFLAGS, [C-OpenACC link flags--defaults to $def])
   if test "x$CACCLDFLAGS" = x; then
     CACCLDFLAGS="$def"
   fi
   
-  def="-m64 -acc -Minfo=accel -Mcuda=cc$CCAB"
+  def="-m64 -acc -Minfo=accel -cuda"
   AC_ARG_VAR(FACCFLAGS, [F-OpenACC compiler flags--defaults to $def])
   if test "x$FACCFLAGS" = x; then
     FACCFLAGS="$def"
   fi
 
-  def="-m64 -acc -Mcuda=cc$CCAB -lstdc++"
+  def="-m64 -acc -cuda -lstdc++"
   AC_ARG_VAR(FACCLDFLAGS, [F-OpenACC link flags--defaults to $def])
   if test "x$FACCLDFLAGS" = x; then
     FACCLDFLAGS="$def"
