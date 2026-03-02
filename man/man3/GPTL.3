@@ -7,12 +7,15 @@ GPTL \- General Purpose Timing Library
 GPTL is a library for timing and profiling application codes written in C,
 C++, and Fortran. The Fortran calling interface matches the C/C++ interface,
 except that Fortran is case-insensitive. Code instrumentation with GPTL can
-be manual, automatic, or a mix of the two.
+be manual, automatic, or a mix of the two. Numerous html-based usage examples 
+exist in the doc/ subdirectory of this distribution. Also test suite codes
+in the tests/ and fortran/tests/ subdirectories can serve as templates.
 
 Manual instrumentation is done by inserting calls to GPTLstart("region_name")
 and GPTLstop("region_name") wherever the user wishes.  "region_name" is an
-arbitrary character string which will be reported in the output file when one
-of the GPTL print routines GPTLpr() or GPTLpr_file() is called. There is no
+arbitrary character string (of up to 63 characters) which will be reported in 
+the output file when one of the GPTL print routines GPTLpr() or GPTLpr_file()
+is called. There is no
 limit to the number of start/stop pairs that can be defined. The pairs can be
 nested to an arbitrary depth. GPTL retains knowledge of these parent-child
 relationships, and reports them by indenting the output appropriately.
@@ -41,9 +44,9 @@ task (see src/pmpi.c). Using this auto-profiling method alone, or in
 conjunction with compiler-generated auto-instrumention described, 
 performance profiles can be generated without any user modifications to the
 application source. The GPTL author is happy to accept modifications which add new
-MPI routines to auto-profile (jmrosinski@gmail.com).
+MPI routines to auto-profile. Just create an issue in git and I'll see it.
 
-GPTL is thread-safe. Per-thread timig information is maintined within the
+GPTL is thread-safe. Per-thread timing information is maintined within the
 library, and reported in the output file. Normally there is one output file
 per MPI process.  
 
@@ -56,9 +59,10 @@ most of the functionality provided by that library (./configure
 --enable-papi). GPTL also defines a set of derived events based on PAPI, such
 as computational intensity, L1 miss rate, and so forth.
 
-See http://jmrosinski.github.com/GPTL/ for a set of usage
-examples and further details on using the library. The file README which
-comes with the GPTL distribution also outlines simple usage examples.
+Subdirectory doc/ of the GPTL distribution contains a html-based set of usage examples 
+and further details on using the library. Also subdirectories tests/ and
+fortran/tests that are part of the test suite provide code examples which
+can serve as usage templates.
 
 The rest of this page lists all the available GPTL functions. Each has its
 own man page with usage details. The order of the functions listed here

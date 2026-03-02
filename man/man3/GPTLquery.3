@@ -28,11 +28,7 @@ instead.
 Requests all information about the timer identified by 
 .IR name .
 
-Only the first 15 characters of
-.IR name
-are significant, but this limit can be modified in the GPTL library code via the 
-.B #define 
-of MAX_CHARS.  Longer names are truncated. All statistics set by earlier calls to 
+All statistics set by earlier calls to 
 .B GPTLsetoption()
 (e.g. cpu time), or otherwise on by default (e.g. wallclock time), are counted.
 

@@ -28,8 +28,11 @@
 // Maximum allowed callstack depth
 #define MAX_STACK 128
 
-// longest timer name allowed (probably safe to just change)
-// Must be at least 16 to hold auto-profiled name, and 9 to hold "GPTL_ROOT"
+// Longest timer name allowed. Must be at least 16 to hold auto-profiled names,
+// and at least 9 to hold "GPTL_ROOT". And, at least one test suite code
+// relies on it being exactly 63.
+// For these and other reasons (some related to efficiency) users should
+// never change this setting
 #define MAX_CHARS 63
 
 // Longest allowed symbol name for libunwind

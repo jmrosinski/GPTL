@@ -1311,6 +1311,10 @@ int GPTLpr_file (const char *outfile)
 
   // Print version info from configure to output file
   fprintf (fp, "GPTL version info: %s\n", gptlversion);
+
+  // Tell the user the longest timer name allowed
+  fprintf (fp, "User-defined timer names may be up to %d characters long (neglecting trailing null)\n",
+	   MAX_CHARS);
   
   // Rename auto-instrumented entries with same name but different address due to lopping
   if ((ndup = GPTLrename_duplicate_addresses ()) > 0) {

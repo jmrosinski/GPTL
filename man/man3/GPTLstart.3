@@ -44,9 +44,8 @@ stop a timer defined by
 
 .SH ARGUMENTS
 .I name
--- name of timer to start/stop. Only the first 63 characters are
-significant. This limit can be modified in the GPTL library code by changing
-the value of MAX_CHARS in private.h.
+-- name of timer to start/stop. A maximum of 63 characters are allowed
+(neglecting the trailing null terminator if called from C/C++).
 .P
 The
 .B _handle

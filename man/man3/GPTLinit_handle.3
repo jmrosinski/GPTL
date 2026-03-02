@@ -40,9 +40,8 @@ initializing the handle variable.
 
 .SH ARGUMENTS
 .I name
--- name of region for which to initialize its handle variable. Only the first 63 characters are
-significant. This limit can be modified in the GPTL library code by changing
-the value of MAX_CHARS in private.h.
+-- name of region for which to initialize its handle variable. A maximum of 63 characters are 
+allowed (neglecting the trailing null terminator if called from C/C++).
 
 .I handle
 -- output value to be used later by the GPTL library. It is the hash value of variable
