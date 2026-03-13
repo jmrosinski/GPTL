@@ -2257,6 +2257,15 @@ int GPTLquery (const char *name, int t, int *count, int *onflg, double *wallcloc
 }
 
 /*
+** GPTLget_MAX_CHARS: Return max number of characters allowed in a user-defined timer name
+**   not including appended '\0'
+*/
+int GPTLget_MAX_CHARS (void)
+{
+  return MAX_CHARS;
+}
+
+/*
 ** GPTLget_wallclock: return wallclock accumulation for a timer.
 ** 
 ** Input args:

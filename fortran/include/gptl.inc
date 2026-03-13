@@ -111,6 +111,7 @@
       integer gptldisable
       integer gptlsetutr
       integer gptlquery
+      integer gptlget_max_chars
       integer gptlget_wallclock
       integer gptlget_wallclock_latest
       integer gptlget_threadwork
@@ -145,6 +146,7 @@
       external gptldisable
       external gptlsetutr
       external gptlquery
+      external gptlget_max_chars
       external gptlget_wallclock
       external gptlget_wallclock_latest
       external gptlget_threadwork

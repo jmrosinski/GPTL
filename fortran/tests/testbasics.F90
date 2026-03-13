@@ -19,6 +19,15 @@ program testbasics
     call exit (1)
   end if
   write(6,*)'Success'
+
+  write(6,*)'Testing gptlget_max_chars()...'
+  ret = gptlget_max_chars()
+  if (ret /= 63) then
+    write(6,*)'got MAX_CHARS=', ret, ' Expected 63. Needs to be at least 9, and test suite requires 63'
+    call exit (1)
+  end if
+  write(6,*)'MAX_CHARS=', ret
+  write(6,*)'Success'
   
   write(6,*)'Testing gptlstart...'
   if (gptlstart ('testbasics') /= 0) then

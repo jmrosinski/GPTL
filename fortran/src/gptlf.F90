@@ -146,6 +146,9 @@ module gptl
        integer :: maxcounters
      end function gptlquery
 
+     integer function gptlget_max_chars ()
+     end function gptlget_max_chars
+
      integer function gptlget_wallclock (name, t, value)
        character(len=*) :: name
        integer :: t

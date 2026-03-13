@@ -8,6 +8,7 @@ dist_man_MANS += man3/GPTL.3 \
                  man3/GPTLbarrier.3 \
                  man3/GPTLdisable.3 \
                  man3/GPTLenable.3 \
+                 man3/GPTLget_MAX_CHARS.3 \
                  man3/GPTLevent_code_to_name.3 \
                  man3/GPTLevent_name_to_code.3 \
                  man3/GPTLfinalize.3 \

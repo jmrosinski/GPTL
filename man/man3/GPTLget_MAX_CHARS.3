@@ -1,0 +1,29 @@
+.TH GPTLget_MAX_CHARS 3 "March, 2026" "GPTL"
+
+.SH NAME
+GPTLget_MAX_CHARS \- Return max characters allowed per user-defined timer name (exclusive of
+null terminator)
+
+.SH SYNOPSIS
+.B C/C++ Interface:
+.nf
+#include <gptl.h>
+int GPTLget_MAX_CHARS (void);
+.fi
+
+.B Fortran Interface:
+.nf
+use gptl
+integer gptlget_max_chars ()
+.fi
+
+.SH DESCRIPTION
+.B GPTLget_MAX_CHARS()
+Returns the value of internal macro MAX_CHARS
+
+.SH RESTRICTIONS
+None.
+
+.SH RETURN VALUE
+Value of internal macro MAX_CHARS. This is the maximum number of
+characters allowed in a user-defined timer name, exclusive of null terminator.

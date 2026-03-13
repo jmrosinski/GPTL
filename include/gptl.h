@@ -97,6 +97,7 @@ extern int GPTLdisable (void);
 extern int GPTLsetutr (const int);
 extern int GPTLquery (const char *, int, int *, int *, double *, double *, double *,
 		      long long *, const int);
+extern int GPTLget_MAX_CHARS (void);
 extern int GPTLget_wallclock (const char *, int, double *);
 extern int GPTLget_wallclock_latest (const char *, int, double *);
 extern int GPTLget_threadwork (const char *, double *, double *);

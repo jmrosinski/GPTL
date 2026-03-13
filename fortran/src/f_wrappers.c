@@ -40,6 +40,7 @@
 #define gptldisable gptldisable_
 #define gptlsetutr gptlsetutr_
 #define gptlquery gptlquery_
+#define gptlget_max_chars gptlget_max_chars_
 #define gptlget_wallclock gptlget_wallclock_
 #define gptlget_wallclock_latest gptlget_wallclock_latest_
 #define gptlget_threadwork gptlget_threadwork_
@@ -79,6 +80,7 @@
 #define gptldisable gptldisable_
 #define gptlsetutr gptlsetutr_
 #define gptlquery gptlquery_
+#define gptlget_max_chars gptlget_max_chars__
 #define gptlget_wallclock gptlget_wallclock__
 #define gptlget_wallclock_latest gptlget_wallclock_latest__
 #define gptlget_threadwork gptlget_threadwork__
@@ -126,6 +128,7 @@ int gptlsetutr (int *option);
 int gptlquery (const char *name, int *t, int *count, int *onflg, double *wallclock, 
 	       double *usr, double *sys, long long *papicounters_out, int *maxcounters, 
 	       int nc);
+int gptlget_max_chars (void);
 int gptlget_wallclock (const char *name, int *t, double *value, int nc);
 int gptlget_wallclock_last (const char *name, int *t, double *value, int nc);
 int gptlget_threadwork (const char *name, double *maxwork, double *imbal, int nc);
@@ -291,6 +294,11 @@ int gptlquery (const char *name, int *t, int *count, int *onflg, double *wallclo
   return GPTLquery (cname, *t, count, onflg, wallclock, usr, sys, papicounters_out, *maxcounters);
 }
 
+int gptlget_max_chars (void)
+{
+  return GPTLget_MAX_CHARS ();
+}
+  
 int gptlget_wallclock (const char *name, int *t, double *value, int nc)
 {
   char cname[nc+1];
